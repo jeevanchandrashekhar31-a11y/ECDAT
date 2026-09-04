@@ -1,0 +1,112 @@
+name: ecdat
+
+services:
+  # 1. PostgreSQL Database Service
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ecdat}
+      POSTGRES_USER: ${POSTGRES_USER:-ecdat_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-local-postgres-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    restart: unless-stopped
+
+  # 2. Node.js ECDAT Backend API & Risk Engine
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ecdat_app}:${POSTGRES_PASSWORD:-change-this-local-postgres-password}@postgres:5432/${POSTGRES_DB:-ecdat}
+      ECDAT_API_KEY: ${ECDAT_API_KEY:-change-this-local-api-key}
+      CORS_ORIGIN: http://localhost:${FRONTEND_PORT:-8080}
+      REQUIRE_DATABASE_HEALTH: "true"
+      MAX_JSON_SIZE: 10mb
+      MAX_UPLOAD_BYTES: 10485760
+      UPLOAD_RATE_LIMIT: 60
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - edge
+      - data
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-5000}:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:5000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+    restart: unless-stopped
+
+  # 3. React Vite & Nginx Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - edge
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  # 4. Automated Demo Seeding Service (Imports CBOM once Backend is Healthy)
+  demo-seed:
+    build:
+      context: .
+      dockerfile: docker/scanner.Dockerfile
+    command: ["python", "/opt/ecdat/docker/demo_import.py"]
+    environment:
+      ECDAT_API_URL: http://backend:5000/api/v1/cboms
+      ECDAT_API_KEY: ${ECDAT_API_KEY:-change-this-local-api-key}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - edge
+    restart: "no"
+
+  # 5. Optional Offline Scanner Utility (On-demand via --profile tools)
+  scanner:
+    build:
+      context: .
+      dockerfile: docker/scanner.Dockerfile
+    profiles: ["tools"]
+    command: ["python", "-m", "scanners.static.main", "/workspace", "--output", "/output/docker_static_cbom.json", "--fail-on", "none"]
+    volumes:
+      - ./:/workspace:ro
+      - ./artifacts:/output
+    network_mode: none
+    restart: "no"
+
+volumes:
+  postgres_data:
+    name: ecdat_postgres_data
+
+networks:
+  edge:
+    driver: bridge
+  data:
+    driver: bridge
+    internal: true

@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+node_modules
+**/node_modules
+artifacts
+reports
+.pytest_cache
+__pycache__
+**/__pycache__
+*.pem
+*.key
+*.p12
+frontend/dist

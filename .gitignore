@@ -2,3 +2,13 @@ bad_dir/
 *.json
 *.html
 __pycache__/
+.env
+.env.*
+!.env.example
+!docker/.env.example
+artifacts/
+reports/
+*.sarif
+*.pem
+*.key
+*.p12

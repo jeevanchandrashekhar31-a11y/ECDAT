@@ -1,0 +1,118 @@
+name: ECDAT static CBOM scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# The workflow reads the checked-out source only. It has no token, cloud, or LLM
+# credentials; static scanning is deterministic and LLM verification is off.
+permissions:
+  contents: read
+
+jobs:
+  scan-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Do not enable optional LLM verification in CI.
+      ECDAT_LLM_VERIFY: "false"
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Install Node dependencies
+        run: |
+          npm install --prefix backend --no-audit --no-fund
+          npm install --prefix frontend --no-audit --no-fund
+
+      - name: Generate static CBOM and SARIF
+        run: |
+          mkdir -p artifacts/ci
+          python -m scanners.static.main . \
+            --output artifacts/ci/static_cbom.json \
+            --output-sarif artifacts/ci/static_results.sarif \
+            --policy-profile regulated_bfsi \
+            --fail-on none
+
+      - name: Validate CBOM and generate risk summary
+        run: |
+          node backend/src/scripts/import_cbom.js artifacts/ci/static_cbom.json \
+            --policy-profile regulated_bfsi \
+            --fail-on none \
+            --summary-out artifacts/ci/summary.json \
+            --annotated-out artifacts/ci/annotated_cbom.json
+
+      - name: Run Python tests
+        run: python -m pytest --cov=scanners --cov-report=term-missing
+
+      - name: Check Python lint and formatting
+        run: |
+          python -m ruff check scanners tests
+          python -m ruff format --check scanners tests
+
+      - name: Enforce no shell execution in scanners
+        run: |
+          if rg -n "shell=True" scanners; then
+            echo "shell=True is forbidden in scanner code."
+            exit 1
+          fi
+
+      - name: Run backend tests
+        run: |
+          npm run lint --prefix backend
+          npm run test:coverage --prefix backend
+
+      - name: Test and build frontend
+        run: |
+          npm run lint --prefix frontend
+          npm run typecheck --prefix frontend
+          npm test --prefix frontend
+          npm run build --prefix frontend
+
+      # This deliberately scans only committed test data. continue-on-error
+      # makes the expected non-zero result demonstrative rather than disruptive.
+      - name: Demonstrate Critical gate on vulnerable fixture
+        id: critical_gate
+        continue-on-error: true
+        run: |
+          python -m scanners.static.main tests/fixtures/static \
+            --output artifacts/ci/vulnerable_fixture_cbom.json \
+            --output-sarif artifacts/ci/vulnerable_fixture.sarif \
+            --fail-on critical
+
+      - name: Verify vulnerable fixture was blocked
+        if: steps.critical_gate.outcome != 'failure'
+        run: |
+          echo "The intentionally vulnerable fixture did not trigger the Critical gate."
+          exit 1
+
+      - name: Upload scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecdat-scan-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            artifacts/ci/static_cbom.json
+            artifacts/ci/static_results.sarif
+            artifacts/ci/summary.json
+            artifacts/ci/annotated_cbom.json
+            artifacts/ci/vulnerable_fixture_cbom.json
+            artifacts/ci/vulnerable_fixture.sarif

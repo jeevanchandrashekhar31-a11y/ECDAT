@@ -1,0 +1,1 @@
+# ECDAT binary container tests
