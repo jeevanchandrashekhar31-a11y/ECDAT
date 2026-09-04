@@ -1,0 +1,4 @@
+bad_dir/
+*.json
+*.html
+__pycache__/
