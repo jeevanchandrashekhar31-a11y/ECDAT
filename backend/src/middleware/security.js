@@ -34,7 +34,7 @@ function redactSecrets(obj) {
  * Configures CORS with strict origin validation from the allowlist.
  */
 function createCorsMiddleware() {
-  const allowedOrigins = config.CORS_ORIGIN;
+  const allowedOrigins = config.CORS_ORIGIN || [];
 
   return cors({
     origin: (origin, callback) => {
@@ -44,6 +44,20 @@ function createCorsMiddleware() {
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
+
+      // Allow any local development origin (localhost, 127.0.0.1, [::1] on any dev port)
+      try {
+        const parsed = new URL(origin);
+        if (
+          parsed.hostname === "localhost" ||
+          parsed.hostname === "127.0.0.1" ||
+          parsed.hostname === "[::1]" ||
+          parsed.hostname === "0.0.0.0"
+        ) {
+          return callback(null, true);
+        }
+      } catch {}
+
       return callback(new Error("CORS Error: origin is not in the allowlist."));
     },
     credentials: true,

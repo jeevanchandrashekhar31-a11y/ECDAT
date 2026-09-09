@@ -1,83 +1,78 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import {
-  ShieldAlert,
+  Shield,
   Layers,
-  FileCode2,
-  Atom,
-  AlertOctagon,
+  Code2,
+  Globe,
+  PackageCheck,
   AlertTriangle,
-  ArrowRight,
-  Cpu,
-  RefreshCw,
-  Clock,
-  HelpCircle,
-  TrendingUp,
-  Server,
-  Network,
-  Eye,
+  Play,
+  FileJson,
+  Sparkles,
+  Download,
+  Copy,
+  Check,
+  X,
+  ExternalLink,
+  Loader2,
+  CheckCircle2,
+  FileText,
   Sliders,
+  Upload,
+  RefreshCw,
+  Cpu,
+  GitBranch,
+  Archive,
 } from 'lucide-react';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  CartesianGrid,
-} from 'recharts';
 import { api } from '../api/client';
 import { DashboardSummary } from '../types';
 import { MetricCard } from '../components/MetricCard';
-import { SeverityBadge, MoscaStatusBadge } from '../components/SeverityBadge';
 import { MoscaTable } from '../components/MoscaTable';
 
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: '#f43f5e',
-  high: '#f59e0b',
-  medium: '#06b6d4',
-  low: '#6366f1',
-  informational: '#64748b',
-};
-
-const MOSCA_COLORS: Record<string, string> = {
-  CRITICAL_URGENT: '#ef4444',
-  AT_RISK: '#f59e0b',
-  WATCH: '#0ea5e9',
-  SAFE: '#10b981',
-};
-
-const SOURCE_COLORS: Record<string, string> = {
-  network: '#06b6d4',
-  static: '#a855f7',
-  'binary-container': '#3b82f6',
-};
-
 export const Dashboard: React.FC = () => {
-  const { selectedScanId } = useOutletContext<{ selectedScanId?: string }>();
+  const outlet = useOutletContext<{ selectedScanId?: string; onUploadSuccess?: (id: string) => void }>() || {};
+  const selectedScanId = outlet.selectedScanId;
 
-  // Interactive controls state
-  const [selectedPolicy, setSelectedPolicy] = useState<string>('');
+  // Configuration state
+  const [targetType, setTargetType] = useState<'static' | 'network' | 'binary'>('static');
+  
+  // Static Code Scanner state
+  const [staticMode, setStaticMode] = useState<'upload' | 'git'>('upload');
+  const [staticZipFile, setStaticZipFile] = useState<File | null>(null);
+  const [staticFiles, setStaticFiles] = useState<File[]>([]);
+  const [gitUrl, setGitUrl] = useState<string>('');
+  
+  // Network Endpoint Scanner state
+  const [networkTarget, setNetworkTarget] = useState<string>('');
+  
+  // Binary / Container Scanner state
+  const [binaryMode, setBinaryMode] = useState<'upload' | 'image'>('upload');
+  const [binaryFile, setBinaryFile] = useState<File | null>(null);
+  const [containerImage, setContainerImage] = useState<string>('');
+
+  const [selectedPolicy, setSelectedPolicy] = useState<string>('regulated_bfsi');
   const [selectedScenario, setSelectedScenario] = useState<string>('baseline');
 
+  // Telemetry data state
   const [data, setData] = useState<DashboardSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showAccessibleTables, setShowAccessibleTables] = useState(false);
 
-  const fetchSummary = useCallback(async () => {
+  // Scanner pipeline execution state
+  const [runningAction, setRunningAction] = useState<string | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [mergedCbomModal, setMergedCbomModal] = useState<string | null>(null);
+  const [pqcModal, setPqcModal] = useState<any | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const fetchSummary = useCallback(async (overrideScanId?: string) => {
     setLoading(true);
     setError(null);
     try {
+      const activeId = overrideScanId !== undefined ? overrideScanId : selectedScanId;
       const res = await api.getDashboardSummary(
-        selectedScanId || undefined,
+        activeId && activeId !== 'all' ? activeId : undefined,
         selectedPolicy || undefined,
         selectedScenario || undefined
       );
@@ -89,7 +84,7 @@ export const Dashboard: React.FC = () => {
         setSelectedScenario(res.scenario);
       }
     } catch (err: unknown) {
-      setError((err as Error).message || 'Failed to connect to ECDAT backend.');
+      setError((err as Error).message || 'Failed to connect to backend.');
     } finally {
       setLoading(false);
     }
@@ -99,38 +94,131 @@ export const Dashboard: React.FC = () => {
     fetchSummary();
   }, [fetchSummary]);
 
-  if (loading && !data) {
-    return (
-      <div className="space-y-6">
-        <div className="h-16 bg-slate-900/60 border border-slate-800 rounded-xl animate-pulse"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="h-28 bg-slate-900/60 border border-slate-800 rounded-xl animate-pulse"></div>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-72 bg-slate-900/60 border border-slate-800 rounded-xl animate-pulse"></div>
-          <div className="h-72 bg-slate-900/60 border border-slate-800 rounded-xl animate-pulse"></div>
-        </div>
-      </div>
-    );
-  }
+  // Primary Scan Execution Trigger
+  const handleExecuteScan = async () => {
+    setRunningAction(targetType);
+    setActionFeedback(null);
 
-  if (error && !data) {
-    return (
-      <div className="p-8 rounded-2xl bg-rose-950/20 border border-rose-900/40 text-center space-y-4">
-        <AlertOctagon className="w-12 h-12 text-rose-400 mx-auto" />
-        <h2 className="text-xl font-bold text-white">Dashboard Telemetry Unavailable</h2>
-        <p className="text-sm text-slate-400 max-w-md mx-auto">{error}</p>
-        <button
-          onClick={fetchSummary}
-          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-semibold transition-colors"
-        >
-          Retry Connection
-        </button>
-      </div>
-    );
-  }
+    try {
+      let res: any;
+      if (targetType === 'static') {
+        if (staticMode === 'git') {
+          if (!gitUrl.trim()) throw new Error('Please provide a Git repository URL (e.g. https://github.com/org/repo.git)');
+          res = await api.triggerStaticScan(undefined, {
+            github_url: gitUrl.trim(),
+            policy_profile: selectedPolicy,
+            scenario: selectedScenario,
+          });
+        } else {
+          if (staticZipFile) {
+            res = await api.triggerStaticScan(staticZipFile, {
+              policy_profile: selectedPolicy,
+              scenario: selectedScenario,
+            });
+          } else if (staticFiles.length > 0) {
+            res = await api.triggerStaticScan(staticFiles, {
+              policy_profile: selectedPolicy,
+              scenario: selectedScenario,
+            });
+          } else {
+            throw new Error('Please select a project .ZIP archive or enter a Git repository URL.');
+          }
+        }
+        setActionFeedback({
+          type: 'success',
+          message: `Static code scan completed. Identified ${res.metrics?.total_assets ?? 0} cryptographic assets.`
+        });
+      } else if (targetType === 'network') {
+        const target = networkTarget.trim();
+        if (!target) throw new Error('Please enter a target URL or hostname (e.g. https://api.yourdomain.com or 192.168.1.1)');
+        res = await api.triggerNetworkScan(target, undefined, {
+          policy_profile: selectedPolicy,
+          scenario: selectedScenario,
+        });
+        setActionFeedback({
+          type: 'success',
+          message: `Network probe of ${target} completed successfully.`
+        });
+      } else if (targetType === 'binary') {
+        if (binaryMode === 'upload') {
+          if (!binaryFile) throw new Error('Please select a binary archive (.zip, .jar, .so, etc.) to scan.');
+          res = await api.triggerBinaryScan(binaryFile, {
+            policy_profile: selectedPolicy,
+            scenario: selectedScenario,
+          });
+        } else if (binaryMode === 'image') {
+          const img = containerImage.trim();
+          if (!img) throw new Error('Please enter a container image tag (e.g. nginx:alpine)');
+          res = await api.triggerBinaryScan(undefined, {
+            image: img,
+            policy_profile: selectedPolicy,
+            scenario: selectedScenario,
+          });
+        }
+        setActionFeedback({
+          type: 'success',
+          message: `Container & binary package analysis completed.`
+        });
+      }
+
+      if (res?.scan_id && outlet.onUploadSuccess) {
+        outlet.onUploadSuccess(res.scan_id);
+      }
+      await fetchSummary(res?.scan_id);
+    } catch (err: any) {
+      setActionFeedback({
+        type: 'error',
+        message: err.message || `Scan failed to execute.`
+      });
+    } finally {
+      setRunningAction(null);
+    }
+  };
+
+  const handleMergeCboms = async () => {
+    setRunningAction('merge');
+    setActionFeedback(null);
+    try {
+      const res = await api.mergeCboms([], {
+        policy_profile: selectedPolicy,
+        scenario: selectedScenario,
+      });
+      setActionFeedback({
+        type: 'success',
+        message: `Unified ${res.total_merged_components} components into CycloneDX 1.6 CBOM.`
+      });
+      await fetchSummary();
+      if (outlet.onUploadSuccess) outlet.onUploadSuccess(res.scan_id);
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', message: `Merge failed: ${err.message}` });
+    } finally {
+      setRunningAction(null);
+    }
+  };
+
+  const handleOpenMergedCbom = async () => {
+    setRunningAction('view_cbom');
+    try {
+      const cbom = await api.getMergedCbom();
+      setMergedCbomModal(JSON.stringify(cbom, null, 2));
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', message: `Could not load CBOM: ${err.message}` });
+    } finally {
+      setRunningAction(null);
+    }
+  };
+
+  const handleOpenPqcReport = async () => {
+    setRunningAction('view_pqc');
+    try {
+      const report = await api.getPqcReport();
+      setPqcModal(report);
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', message: `Could not load PQC report: ${err.message}` });
+    } finally {
+      setRunningAction(null);
+    }
+  };
 
   const metrics = data?.metrics || {
     total_assets: 0,
@@ -145,726 +233,683 @@ export const Dashboard: React.FC = () => {
     overall_cicd_pass: true,
   };
 
-  // Severity Donut Data
-  const severityChartData = [
-    { name: 'Critical', value: metrics.severity_counts.critical, color: SEVERITY_COLORS.critical },
-    { name: 'High', value: metrics.severity_counts.high, color: SEVERITY_COLORS.high },
-    { name: 'Medium', value: metrics.severity_counts.medium, color: SEVERITY_COLORS.medium },
-    { name: 'Low', value: metrics.severity_counts.low, color: SEVERITY_COLORS.low },
-    { name: 'Info', value: metrics.severity_counts.informational, color: SEVERITY_COLORS.informational },
-  ].filter((d) => d.value > 0);
-
-  // Mosca Bar Data
-  const moscaChartData = [
-    {
-      name: 'CRITICAL URGENT',
-      count: metrics.mosca_status_counts.CRITICAL_URGENT,
-      color: MOSCA_COLORS.CRITICAL_URGENT,
-    },
-    { name: 'AT RISK', count: metrics.mosca_status_counts.AT_RISK, color: MOSCA_COLORS.AT_RISK },
-    { name: 'WATCH', count: metrics.mosca_status_counts.WATCH, color: MOSCA_COLORS.WATCH },
-    { name: 'SAFE', count: metrics.mosca_status_counts.SAFE, color: MOSCA_COLORS.SAFE },
-  ];
-
-  // Ingestion Source Data
-  const findingsBySource = data?.findings_by_source || { network: 0, static: 0, 'binary-container': 0 };
-  const sourceChartData = [
-    { name: 'Network (TLS/SSH)', value: findingsBySource.network, color: SOURCE_COLORS.network },
-    { name: 'Static Code (AST/Regex)', value: findingsBySource.static, color: SOURCE_COLORS.static },
-    {
-      name: 'Binary / Container',
-      value: findingsBySource['binary-container'],
-      color: SOURCE_COLORS['binary-container'],
-    },
-  ].filter((d) => d.value > 0);
-
-  // Risk Trend Data (Historical Scans)
-  const riskTrend =
-    data?.risk_trend && data.risk_trend.length > 0
-      ? data.risk_trend
-      : [
-          {
-            date: 'Initial Scan',
-            critical: metrics.severity_counts.critical,
-            high: metrics.severity_counts.high,
-            quantum_risk: metrics.assets_at_quantum_risk,
-          },
-        ];
-
+  const hasScans = Boolean(data?.scan_id && metrics.total_assets > 0);
   const totalAtRisk =
     (metrics.assets_at_risk ?? metrics.mosca_status_counts.AT_RISK) +
     (metrics.assets_critical_urgent ?? metrics.mosca_status_counts.CRITICAL_URGENT);
 
-  const topAlgorithms = data?.most_common_risky_algorithms || [];
-  const topServices = data?.top_affected_services || [];
-
   return (
-    <div className="space-y-7 animate-fade-in">
-      {/* 1. TOP BANNER & SCENARIO CONTROLS */}
-      <div className="p-5 md:p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800 shadow-xl relative overflow-hidden">
-        <div
-          className={`absolute top-0 left-0 bottom-0 w-2 ${totalAtRisk > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-        ></div>
+    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+      {/* 1. TARGET & SCAN DISCOVERY HUB */}
+      <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pl-2">
-          {/* Headline Message */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-2xs font-mono px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/50 uppercase font-semibold">
-                Executive Quantum Briefing
-              </span>
-              <span className="text-2xs font-mono text-slate-500">Rule Engine v{data?.rule_version || '2026.1'}</span>
-            </div>
-
-            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
-              Quantum readiness posture:{' '}
-              <span
-                className={
-                  totalAtRisk > 0 ? 'text-amber-400 font-mono font-black' : 'text-emerald-400 font-mono font-black'
-                }
-              >
-                {totalAtRisk} asset{totalAtRisk === 1 ? '' : 's'}
-              </span>{' '}
-              are at risk under the selected Mosca scenario.
-            </h1>
-
-            <p className="text-xs text-slate-400 max-w-3xl">
-              Evaluated under Mosca’s Theorem ($X + Y &gt; Z$), measuring whether data confidentiality shelf-life ($X$)
-              plus migration lead time ($Y$) outlives the cryptanalytically relevant quantum horizon ($Z$).
-            </p>
-          </div>
-
-          {/* Interactive Policy & Scenario Selectors */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            {/* Scenario Selector */}
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor="scenario-select"
-                className="text-2xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1"
-              >
-                <Sliders className="w-3 h-3 text-cyan-400" />
-                Mosca Scenario:
-              </label>
-              <select
-                id="scenario-select"
-                value={selectedScenario}
-                onChange={(e) => setSelectedScenario(e.target.value)}
-                className="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-400 font-mono"
-              >
-                <option value="optimistic">Optimistic (Z = 12 yrs)</option>
-                <option value="baseline">Baseline (Z = 9 yrs)</option>
-                <option value="conservative">Conservative (Z = 6 yrs)</option>
-              </select>
-            </div>
-
-            {/* Policy Profile Selector */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="policy-select" className="text-2xs font-mono text-slate-400 uppercase tracking-wider">
-                Policy Profile:
-              </label>
-              <select
-                id="policy-select"
-                value={selectedPolicy}
-                onChange={(e) => setSelectedPolicy(e.target.value)}
-                className="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-400 font-mono"
-              >
-                <option value="regulated_bfsi">Regulated BFSI</option>
-                <option value="internal_enterprise">Internal Enterprise</option>
-                <option value="cnsa_2_0">CNSA 2.0 (High Security)</option>
-                <option value="nist_pqc_2024">NIST PQC 2024</option>
-                <option value="public_internet">Public Internet</option>
-                <option value="iot_ot">IoT / Embedded OT</option>
-              </select>
-            </div>
-
-            {/* Refresh Action */}
-            <button
-              onClick={fetchSummary}
-              disabled={loading}
-              title="Re-evaluate Telemetry"
-              className="mt-4 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700 disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. EIGHT EXECUTIVE KPI CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total Scanned Assets */}
-        <MetricCard
-          title="Total Scanned Assets"
-          value={metrics.total_assets}
-          subtitle="Unique hosts, repositories & images"
-          icon={<Layers className="w-5 h-5 text-cyan-400" />}
-          variant="cyan"
-        />
-
-        {/* Card 2: Total Crypto Findings */}
-        <MetricCard
-          title="Total Crypto Findings"
-          value={metrics.total_findings}
-          subtitle="Primitives, ciphers & protocols"
-          icon={<FileCode2 className="w-5 h-5 text-violet-400" />}
-          variant="violet"
-        />
-
-        {/* Card 3: Critical Findings */}
-        <MetricCard
-          title="Critical Findings"
-          value={metrics.severity_counts.critical}
-          subtitle="Immediate classical exploit risk"
-          icon={<AlertOctagon className="w-5 h-5 text-rose-400" />}
-          variant="rose"
-        />
-
-        {/* Card 4: Assets AT_RISK under Mosca */}
-        <MetricCard
-          title="Assets AT_RISK (Mosca)"
-          value={metrics.assets_at_risk ?? metrics.mosca_status_counts.AT_RISK}
-          subtitle="X + Y > Z (Deficit window active)"
-          icon={<AlertTriangle className="w-5 h-5 text-amber-400" />}
-          variant="amber"
-        />
-
-        {/* Card 5: Assets CRITICAL_URGENT */}
-        <MetricCard
-          title="Assets CRITICAL_URGENT"
-          value={metrics.assets_critical_urgent ?? metrics.mosca_status_counts.CRITICAL_URGENT}
-          subtitle="Immediate SNDL exposure danger"
-          icon={<Atom className="w-5 h-5 text-rose-400" />}
-          variant="rose"
-        />
-
-        {/* Card 6: Unknown / Unclassified Posture */}
-        <MetricCard
-          title="Unclassified Posture"
-          value={`${metrics.unknown_posture_percentage ?? 0}%`}
-          subtitle="Informational or unverified assets"
-          icon={<HelpCircle className="w-5 h-5 text-slate-400" />}
-          variant="slate"
-        />
-
-        {/* Card 7: Most Common Risky Algorithms */}
-        <div className="glass-card p-4 rounded-xl flex flex-col justify-between hover:border-slate-700 transition-colors">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Common Risky Algorithms
-              </span>
-              <Cpu className="w-4 h-4 text-cyan-400" />
-            </div>
-            <div className="flex flex-wrap gap-1.5 mt-2.5">
-              {topAlgorithms.length > 0 ? (
-                topAlgorithms.slice(0, 3).map((item) => (
-                  <span
-                    key={item.algorithm}
-                    className="text-2xs font-mono font-semibold px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-amber-300"
-                  >
-                    {item.algorithm} ({item.count})
-                  </span>
-                ))
-              ) : (
-                <span className="text-xs text-slate-500 font-mono">None detected</span>
-              )}
-            </div>
-          </div>
-          <p className="text-2xs text-slate-500 mt-2">Highest prevalence across discovery</p>
-        </div>
-
-        {/* Card 8: Top Affected Services */}
-        <div className="glass-card p-4 rounded-xl flex flex-col justify-between hover:border-slate-700 transition-colors">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Top Affected Targets
-              </span>
-              <Server className="w-4 h-4 text-rose-400" />
-            </div>
-            <div className="space-y-1 mt-2">
-              {topServices.length > 0 ? (
-                topServices.slice(0, 2).map((s, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
-                    <span className="font-mono text-slate-200 truncate max-w-[130px]" title={s.name}>
-                      {s.name}
-                    </span>
-                    <span className="text-2xs uppercase font-mono text-rose-400 font-semibold">{s.severity}</span>
-                  </div>
-                ))
-              ) : (
-                <span className="text-xs text-slate-500 font-mono">No vulnerable targets</span>
-              )}
-            </div>
-          </div>
-          <p className="text-2xs text-slate-500 mt-1">Priority services for remediation</p>
-        </div>
-      </div>
-
-      {/* Accessible View Toggle Bar */}
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-        <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
-          <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-          Visual Risk Telemetry &amp; Distributions
-        </span>
-        <button
-          onClick={() => setShowAccessibleTables(!showAccessibleTables)}
-          className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-md transition-colors"
-        >
-          <Eye className="w-3.5 h-3.5 text-cyan-400" />
-          <span>{showAccessibleTables ? 'Hide Accessible Tables' : 'View Accessible Data Tables'}</span>
-        </button>
-      </div>
-
-      {/* 3. CHARTS GRID (2x2) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chart 1: Severity Distribution */}
-        <div className="glass-card p-5 rounded-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
+        <div className="space-y-5 relative">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
             <div>
-              <h2 className="text-sm font-bold text-white">Cryptographic Severity Distribution</h2>
-              <p className="text-xs text-slate-400">Classical weakness and deprecated algorithm breakdown</p>
-            </div>
-            <span className="text-xs font-mono text-slate-400">{metrics.total_findings} findings</span>
-          </div>
-
-          <div className="h-60 w-full" aria-label="Donut chart showing severity distribution">
-            {severityChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={severityChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {severityChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="#020617" strokeWidth={2} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderColor: '#334155',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      fontSize: '12px',
-                    }}
-                    itemStyle={{ color: '#fff' }}
-                  />
-                  <Legend
-                    verticalAlign="bottom"
-                    iconType="circle"
-                    formatter={(value) => <span className="text-xs text-slate-300 font-mono">{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-500 text-xs">No findings recorded</div>
-            )}
-          </div>
-
-          {/* Accessible Table Fallback */}
-          {showAccessibleTables && (
-            <div className="mt-4 pt-4 border-t border-slate-800 text-xs">
-              <table className="w-full text-left font-mono">
-                <thead>
-                  <tr className="text-slate-400 border-b border-slate-800">
-                    <th className="pb-1">Severity</th>
-                    <th className="pb-1 text-right">Count</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/40 text-slate-300">
-                  {severityChartData.map((d) => (
-                    <tr key={d.name}>
-                      <td className="py-1">{d.name}</td>
-                      <td className="py-1 text-right font-bold">{d.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Chart 2: Mosca Status Distribution */}
-        <div className="glass-card p-5 rounded-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-bold text-white">Mosca Theorem Status Distribution</h2>
-              <p className="text-xs text-slate-400">Readiness categories under {selectedScenario} horizon ($Z$)</p>
-            </div>
-            <span className="text-xs font-mono text-amber-400 font-semibold">{totalAtRisk} at risk</span>
-          </div>
-
-          <div className="h-60 w-full" aria-label="Bar chart showing Mosca status distribution">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={moscaChartData} layout="vertical" margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-                <XAxis type="number" stroke="#64748b" fontSize={11} allowDecimals={false} />
-                <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={11} width={115} fontVariant="mono" />
-                <Tooltip
-                  cursor={{ fill: 'rgba(255, 255, 255, 0.03)' }}
-                  contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    fontSize: '12px',
-                  }}
-                />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                  {moscaChartData.map((entry, index) => (
-                    <Cell key={`bar-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Accessible Table Fallback */}
-          {showAccessibleTables && (
-            <div className="mt-4 pt-4 border-t border-slate-800 text-xs">
-              <table className="w-full text-left font-mono">
-                <thead>
-                  <tr className="text-slate-400 border-b border-slate-800">
-                    <th className="pb-1">Mosca Category</th>
-                    <th className="pb-1 text-right">Asset Count</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/40 text-slate-300">
-                  {moscaChartData.map((d) => (
-                    <tr key={d.name}>
-                      <td className="py-1">{d.name}</td>
-                      <td className="py-1 text-right font-bold">{d.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Chart 3: Findings by Ingestion Source */}
-        <div className="glass-card p-5 rounded-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-bold text-white">Findings by Ingestion Source</h2>
-              <p className="text-xs text-slate-400">Telemetry origin across discovery scanners</p>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-cyan-400 font-mono">
-              <Network className="w-3.5 h-3.5" />
-              <span>Multi-vector</span>
-            </div>
-          </div>
-
-          <div className="h-60 w-full" aria-label="Pie chart showing findings by source">
-            {sourceChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={sourceChartData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name.split(' ')[0]} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                  >
-                    {sourceChartData.map((entry, index) => (
-                      <Cell key={`source-cell-${index}`} fill={entry.color} stroke="#020617" strokeWidth={2} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderColor: '#334155',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      fontSize: '12px',
-                    }}
-                  />
-                  <Legend
-                    verticalAlign="bottom"
-                    iconType="circle"
-                    formatter={(value) => <span className="text-xs text-slate-300 font-mono">{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-500 text-xs">No multi-source data</div>
-            )}
-          </div>
-
-          {/* Accessible Table Fallback */}
-          {showAccessibleTables && (
-            <div className="mt-4 pt-4 border-t border-slate-800 text-xs">
-              <table className="w-full text-left font-mono">
-                <thead>
-                  <tr className="text-slate-400 border-b border-slate-800">
-                    <th className="pb-1">Scanner Source</th>
-                    <th className="pb-1 text-right">Findings Count</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/40 text-slate-300">
-                  {sourceChartData.map((d) => (
-                    <tr key={d.name}>
-                      <td className="py-1">{d.name}</td>
-                      <td className="py-1 text-right font-bold">{d.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Chart 4: Risk & Remediation Trend */}
-        <div className="glass-card p-5 rounded-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-bold text-white">Cryptographic Risk Trend</h2>
-              <p className="text-xs text-slate-400">Historical vulnerability progression across CBOM ingestions</p>
-            </div>
-            <span className="text-xs font-mono text-slate-400">{riskTrend.length} scan point(s)</span>
-          </div>
-
-          <div className="h-60 w-full" aria-label="Line chart showing risk trend over scans">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={riskTrend} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    fontSize: '12px',
-                  }}
-                />
-                <Legend verticalAlign="bottom" iconType="circle" />
-                <Line
-                  type="monotone"
-                  dataKey="critical"
-                  stroke="#f43f5e"
-                  strokeWidth={2}
-                  name="Critical"
-                  dot={{ r: 4 }}
-                />
-                <Line type="monotone" dataKey="high" stroke="#f59e0b" strokeWidth={2} name="High" dot={{ r: 4 }} />
-                <Line
-                  type="monotone"
-                  dataKey="quantum_risk"
-                  stroke="#a855f7"
-                  strokeWidth={2}
-                  name="Quantum Risk"
-                  dot={{ r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Accessible Table Fallback */}
-          {showAccessibleTables && (
-            <div className="mt-4 pt-4 border-t border-slate-800 text-xs">
-              <table className="w-full text-left font-mono">
-                <thead>
-                  <tr className="text-slate-400 border-b border-slate-800">
-                    <th className="pb-1">Scan Date</th>
-                    <th className="pb-1 text-center">Critical</th>
-                    <th className="pb-1 text-center">High</th>
-                    <th className="pb-1 text-right">Quantum Risk</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/40 text-slate-300">
-                  {riskTrend.map((pt, i) => (
-                    <tr key={i}>
-                      <td className="py-1">{pt.date}</td>
-                      <td className="py-1 text-center text-rose-400 font-bold">{pt.critical}</td>
-                      <td className="py-1 text-center text-amber-400 font-bold">{pt.high}</td>
-                      <td className="py-1 text-right text-purple-400 font-bold">{pt.quantum_risk}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 4. TOP RISKY ASSETS TABLE */}
-      <div className="glass-card p-6 rounded-2xl space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-          <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-rose-400" />
-              Priority Cryptographic Assets (Highest Exposure)
-            </h2>
-            <p className="text-xs text-slate-400">
-              Assets sorted by severe classical failure or Mosca quantum deficit margin
-            </p>
-          </div>
-          <Link
-            to="/assets"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
-          >
-            <span>View Full Inventory</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {data?.top_risky_assets && data.top_risky_assets.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm font-sans">
-              <thead>
-                <tr className="border-b border-slate-800 text-xs text-slate-400 uppercase font-mono">
-                  <th className="pb-3 pr-4">Primary Identifier</th>
-                  <th className="pb-3 pr-4">Asset Type</th>
-                  <th className="pb-3 pr-4">Highest Severity</th>
-                  <th className="pb-3 pr-4">Mosca Status</th>
-                  <th className="pb-3 pr-4 text-right">Margin</th>
-                  <th className="pb-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {data.top_risky_assets.map((asset) => (
-                  <tr key={asset.asset_id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="py-3.5 pr-4">
-                      <span
-                        className="font-mono text-xs font-bold text-white truncate max-w-[240px] block"
-                        title={asset.primary_identifier}
-                      >
-                        {asset.primary_identifier}
-                      </span>
-                    </td>
-                    <td className="py-3.5 pr-4 text-xs font-mono text-cyan-400 uppercase">{asset.asset_type}</td>
-                    <td className="py-3.5 pr-4">
-                      <SeverityBadge severity={asset.severity} size="sm" />
-                    </td>
-                    <td className="py-3.5 pr-4">
-                      <MoscaStatusBadge status={asset.mosca_status} size="sm" />
-                    </td>
-                    <td className="py-3.5 pr-4 text-right font-mono text-xs font-bold">
-                      <span className={asset.mosca_margin_years < 0 ? 'text-rose-400' : 'text-emerald-400'}>
-                        {asset.mosca_margin_years > 0
-                          ? `+${asset.mosca_margin_years}y`
-                          : `${asset.mosca_margin_years}y`}
-                      </span>
-                    </td>
-                    <td className="py-3.5 text-right">
-                      <Link
-                        to={`/assets/${encodeURIComponent(asset.asset_id)}`}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-slate-300 hover:text-cyan-400 transition-colors"
-                      >
-                        Inspect
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-xs text-slate-400 py-4">No risky assets detected under current filter policy.</p>
-        )}
-      </div>
-
-      {/* 5. INTERACTIVE MOSCA THEOREM ANALYSIS TABLE */}
-      {data?.mosca_analysis_table && data.mosca_analysis_table.length > 0 && (
-        <div className="glass-card p-6 rounded-2xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-amber-400" />
-                Mosca Theorem Calculus Matrix ($X + Y &gt; Z$)
-              </h2>
-              <p className="text-xs text-slate-400">
-                Algorithm-level parameters: Shelf-life ($X$), Migration Lead Time ($Y$), Quantum Horizon ($Z$), and
-                Margin
+              <h1 className="text-lg md:text-xl font-bold text-white flex items-center gap-2.5">
+                <Shield className="w-5 h-5 text-cyan-400" />
+                Cryptographic Discovery & Quantum Risk Engine
+              </h1>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Enter your repository path, network address, or container target to scan and generate an authentic CycloneDX 1.6 CBOM.
               </p>
             </div>
-            <span className="text-2xs font-mono px-2.5 py-1 rounded bg-slate-900 text-slate-400 border border-slate-800">
-              Scenario: {selectedScenario}
-            </span>
+
+            {/* Scenario & Policy Selectors */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1">
+                <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-2xs font-mono text-slate-400 uppercase">Scenario:</span>
+                <select
+                  value={selectedScenario}
+                  onChange={(e) => setSelectedScenario(e.target.value)}
+                  className="bg-transparent text-xs font-mono text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="optimistic" className="bg-slate-900">Optimistic (2036 / Z=12y)</option>
+                  <option value="baseline" className="bg-slate-900">Baseline (2031 / Z=9y)</option>
+                  <option value="conservative" className="bg-slate-900">Conservative (2028 / Z=6y)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1">
+                <span className="text-2xs font-mono text-slate-400 uppercase">Policy:</span>
+                <select
+                  value={selectedPolicy}
+                  onChange={(e) => setSelectedPolicy(e.target.value)}
+                  className="bg-transparent text-xs font-mono text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="regulated_bfsi" className="bg-slate-900">Regulated BFSI</option>
+                  <option value="cnsa_2_0" className="bg-slate-900">CNSA 2.0</option>
+                  <option value="nist_pqc_2024" className="bg-slate-900">NIST PQC 2024</option>
+                  <option value="internal_enterprise" className="bg-slate-900">Internal Enterprise</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <MoscaTable rows={data.mosca_analysis_table} />
+          {/* Target Selection Tabs */}
+          <div className="flex gap-2 border-b border-slate-800/60 pb-3">
+            <button
+              onClick={() => { setTargetType('static'); setActionFeedback(null); }}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                targetType === 'static'
+                  ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm shadow-cyan-500/10'
+                  : 'bg-slate-950/40 text-slate-400 border border-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <Code2 className="w-4 h-4" />
+              <span>Source Repository</span>
+            </button>
+
+            <button
+              onClick={() => { setTargetType('network'); setActionFeedback(null); }}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                targetType === 'network'
+                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/10'
+                  : 'bg-slate-950/40 text-slate-400 border border-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              <span>Network Endpoint</span>
+            </button>
+
+            <button
+              onClick={() => { setTargetType('binary'); setActionFeedback(null); }}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                targetType === 'binary'
+                  ? 'bg-blue-500/15 text-blue-300 border border-blue-500/40 shadow-sm shadow-blue-500/10'
+                  : 'bg-slate-950/40 text-slate-400 border border-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <PackageCheck className="w-4 h-4" />
+              <span>Container / Library</span>
+            </button>
+          </div>
+
+          {/* Target Input Controls */}
+          <div className="space-y-4">
+            {targetType === 'static' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setStaticMode('upload')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                        staticMode === 'upload'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Archive className="w-3.5 h-3.5" />
+                      <span>Upload ZIP / Project Folder</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStaticMode('git')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                        staticMode === 'git'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <GitBranch className="w-3.5 h-3.5" />
+                      <span>Git Repository URL</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                  <div className="md:col-span-8">
+                    {staticMode === 'upload' ? (
+                      <div className="relative flex items-center">
+                        <label className="w-full flex items-center justify-between bg-slate-950 border border-dashed border-slate-700 hover:border-cyan-500/60 rounded-xl px-4 py-2.5 text-xs text-slate-300 cursor-pointer transition-colors group">
+                          <div className="flex items-center gap-2.5 truncate">
+                            <Upload className="w-4 h-4 text-cyan-400 shrink-0 group-hover:scale-110 transition-transform" />
+                            {staticZipFile ? (
+                              <span className="font-mono text-cyan-300 truncate">
+                                {staticZipFile.name} ({(staticZipFile.size / (1024 * 1024)).toFixed(2)} MB)
+                              </span>
+                            ) : staticFiles.length > 0 ? (
+                              <span className="font-mono text-cyan-300 truncate">
+                                {staticFiles.length} file(s) selected
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">
+                                Click or drop project <strong className="text-slate-200 font-semibold">.ZIP archive</strong> or source files here
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-2xs bg-slate-800 text-slate-300 px-2 py-1 rounded-md border border-slate-700 font-medium shrink-0 ml-2">
+                            Browse Files
+                          </span>
+                          <input
+                            type="file"
+                            accept=".zip,.c,.h,.cpp,.hpp,.go,.js,.mjs,.cjs,.py"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files.length > 0) {
+                                const filesArray = Array.from(e.target.files);
+                                const zip = filesArray.find((f) => f.name.toLowerCase().endsWith('.zip'));
+                                if (zip) {
+                                  setStaticZipFile(zip);
+                                  setStaticFiles([]);
+                                } else {
+                                  setStaticFiles(filesArray);
+                                  setStaticZipFile(null);
+                                }
+                              }
+                            }}
+                          />
+                        </label>
+                        {(staticZipFile || staticFiles.length > 0) && (
+                          <button
+                            type="button"
+                            onClick={() => { setStaticZipFile(null); setStaticFiles([]); }}
+                            className="absolute right-24 p-1 text-slate-400 hover:text-rose-400"
+                            title="Clear selection"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <div className="relative flex items-center">
+                          <GitBranch className="w-4 h-4 text-cyan-400 absolute left-3 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={gitUrl}
+                            onChange={(e) => setGitUrl(e.target.value)}
+                            placeholder="e.g. https://github.com/org/repo.git"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-4 flex items-end">
+                    <button
+                      onClick={handleExecuteScan}
+                      disabled={runningAction !== null}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-bold text-xs transition-all shadow-md shadow-cyan-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {runningAction === 'static' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Play className="w-4 h-4 fill-slate-950" />
+                      )}
+                      <span>
+                        {runningAction === 'static'
+                          ? (staticMode === 'git' ? 'Cloning & Analyzing...' : 'Unpacking & Scanning...')
+                          : 'Scan Source Code'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {targetType === 'network' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                  <div className="md:col-span-8 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-2xs font-mono text-slate-400">
+                      <span>Target Endpoint URL or Domain:</span>
+                    </div>
+                    <div className="relative flex items-center">
+                      <Globe className="w-4 h-4 text-emerald-400 absolute left-3 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={networkTarget}
+                        onChange={(e) => setNetworkTarget(e.target.value)}
+                        placeholder="e.g. https://api.yourdomain.com or 192.168.1.1"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-4 flex items-end">
+                    <button
+                      onClick={handleExecuteScan}
+                      disabled={runningAction !== null}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {runningAction === 'network' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Play className="w-4 h-4 fill-slate-950" />
+                      )}
+                      <span>{runningAction === 'network' ? 'Probing TLS / SSH...' : 'Probe Network Endpoint'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {targetType === 'binary' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setBinaryMode('upload')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                        binaryMode === 'upload'
+                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload Binaries / ZIP</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBinaryMode('image')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                        binaryMode === 'image'
+                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <PackageCheck className="w-3.5 h-3.5" />
+                      <span>Container Image</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                  <div className="md:col-span-8">
+                    {binaryMode === 'upload' ? (
+                      <div className="relative flex items-center">
+                        <label className="w-full flex items-center justify-between bg-slate-950 border border-dashed border-slate-700 hover:border-blue-500/60 rounded-xl px-4 py-2.5 text-xs text-slate-300 cursor-pointer transition-colors group">
+                          <div className="flex items-center gap-2.5 truncate">
+                            <Upload className="w-4 h-4 text-blue-400 shrink-0 group-hover:scale-110 transition-transform" />
+                            {binaryFile ? (
+                              <span className="font-mono text-blue-300 truncate">
+                                {binaryFile.name} ({(binaryFile.size / (1024 * 1024)).toFixed(2)} MB)
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">
+                                Click or drop <strong className="text-slate-200 font-semibold">.ZIP, .jar, .so, .dll, or binary executable</strong>
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-2xs bg-slate-800 text-slate-300 px-2 py-1 rounded-md border border-slate-700 font-medium shrink-0 ml-2">
+                            Browse Binary
+                          </span>
+                          <input
+                            type="file"
+                            accept=".zip,.jar,.tar,.so,.dll,.exe,.bin"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setBinaryFile(e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </label>
+                        {binaryFile && (
+                          <button
+                            type="button"
+                            onClick={() => setBinaryFile(null)}
+                            className="absolute right-28 p-1 text-slate-400 hover:text-rose-400"
+                            title="Clear selection"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <div className="relative flex items-center">
+                          <PackageCheck className="w-4 h-4 text-blue-400 absolute left-3 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={containerImage}
+                            onChange={(e) => setContainerImage(e.target.value)}
+                            placeholder="e.g. your-org/app:latest"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-4 flex items-end">
+                    <button
+                      onClick={handleExecuteScan}
+                      disabled={runningAction !== null}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-slate-950 font-bold text-xs transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {runningAction === 'binary' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Play className="w-4 h-4 fill-slate-950" />
+                      )}
+                      <span>{runningAction === 'binary' ? 'Inventorying Packages...' : 'Scan Binary / Container'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Real-time Execution Feedback */}
+          {actionFeedback && (
+            <div
+              className={`p-3 rounded-xl flex items-center justify-between gap-3 text-xs font-medium border animate-in fade-in duration-200 ${
+                actionFeedback.type === 'success'
+                  ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60'
+                  : actionFeedback.type === 'error'
+                  ? 'bg-rose-950/40 text-rose-300 border-rose-800/60'
+                  : 'bg-cyan-950/40 text-cyan-300 border-cyan-800/60'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {actionFeedback.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                )}
+                <span>{actionFeedback.message}</span>
+              </div>
+              <button
+                onClick={() => setActionFeedback(null)}
+                className="text-slate-400 hover:text-white p-1 rounded transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {error && !actionFeedback && (
+            <div className="p-3 rounded-xl flex items-center justify-between gap-3 text-xs font-medium border bg-amber-950/40 text-amber-300 border-amber-800/60">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Notice: {error}</span>
+              </div>
+              <button onClick={() => setError(null)} className="text-slate-400 hover:text-white p-1">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 2. RESULTS VIEW (EMPTY STATE VS LIVE SCAN RESULTS) */}
+      {!hasScans ? (
+        <div className="bg-slate-900/40 border border-dashed border-slate-800/80 rounded-2xl p-12 text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto">
+            <Shield className="w-6 h-6" />
+          </div>
+          <div className="max-w-md mx-auto space-y-1">
+            <h2 className="text-base font-bold text-white">No Active Cryptographic Inventory</h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Zero mock data loaded. Enter your repository path, network endpoint, or upload files above and run a scan to generate your CycloneDX 1.6 Cryptographic Bill of Materials (CBOM) and quantum posture.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Posture Banner */}
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900/90 to-slate-950 border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
+                  Active Scan Verdict
+                </span>
+                <span className="text-2xs font-mono text-slate-500">{data?.scan_name || 'Current Session'}</span>
+              </div>
+              <h2 className="text-lg font-bold text-white">
+                Quantum readiness posture:{' '}
+                <span className={totalAtRisk > 0 ? 'text-amber-400 font-mono' : 'text-emerald-400 font-mono'}>
+                  {totalAtRisk} asset{totalAtRisk === 1 ? '' : 's'} at risk
+                </span>{' '}
+                under Mosca {selectedScenario} model.
+              </h2>
+            </div>
+
+            {/* Pipeline Action Buttons */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleMergeCboms}
+                disabled={runningAction !== null}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all disabled:opacity-50"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Merge CBOMs</span>
+              </button>
+
+              <button
+                onClick={handleOpenMergedCbom}
+                disabled={runningAction !== null}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all disabled:opacity-50"
+              >
+                <FileJson className="w-3.5 h-3.5 text-cyan-400" />
+                <span>View CBOM JSON</span>
+              </button>
+
+              <button
+                onClick={handleOpenPqcReport}
+                disabled={runningAction !== null}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-600/25 hover:bg-violet-600/35 text-violet-300 border border-violet-500/30 text-xs font-semibold transition-all disabled:opacity-50"
+              >
+                <FileText className="w-3.5 h-3.5 text-violet-400" />
+                <span>PQC Report</span>
+              </button>
+
+              <button
+                onClick={() => fetchSummary()}
+                disabled={loading}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                title="Refresh telemetry"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* 4 Focused Executive KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title="Total Cryptographic Assets"
+              value={metrics.total_assets}
+              subtitle="Ciphers, algorithms & protocols"
+              icon={<Layers className="w-5 h-5 text-cyan-400" />}
+              variant="cyan"
+            />
+            <MetricCard
+              title="Assets at Quantum Risk"
+              value={totalAtRisk}
+              subtitle="Exposed before migration (X+Y > Z)"
+              icon={<AlertTriangle className="w-5 h-5 text-amber-400" />}
+              variant="amber"
+            />
+            <MetricCard
+              title="Critical Classical Weaknesses"
+              value={metrics.critical_findings ?? metrics.severity_counts.critical}
+              subtitle="Broken primitives (MD5, SHA1, DES)"
+              icon={<Shield className="w-5 h-5 text-rose-400" />}
+              variant="rose"
+            />
+            <MetricCard
+              title="Post-Quantum Readiness"
+              value={`${Math.round(100 - (metrics.unknown_posture_percentage ?? 0))}%`}
+              subtitle="Quantified crypto inventory coverage"
+              icon={<Cpu className="w-5 h-5 text-emerald-400" />}
+              variant="emerald"
+            />
+          </div>
+
+          {/* Mosca Calculus Table */}
+          {data?.mosca_analysis_table && data.mosca_analysis_table.length > 0 && (
+            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-white">Mosca Theorem Calculus Breakdown</h3>
+                  <p className="text-xs text-slate-400">
+                    Calculated as ($X + Y &gt; Z$): Confidentiality life ($X$) + Migration time ($Y$) vs CRQC Horizon ($Z$).
+                  </p>
+                </div>
+                <Link
+                  to="/assets"
+                  className="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1"
+                >
+                  <span>Explore Assets Explorer</span>
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+              </div>
+
+              <MoscaTable rows={data.mosca_analysis_table} scanId={data?.scan_id || undefined} />
+            </div>
+          )}
         </div>
       )}
 
-      {/* 6. TOP MIGRATION PRIORITIES & PQC RECOMMENDATIONS */}
-      {data?.recommendations && data.recommendations.length > 0 && (
-        <div className="glass-card p-6 rounded-2xl space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-purple-400" />
-              <div>
-                <h2 className="text-base font-bold text-white">Top Post-Quantum Migration Priorities</h2>
-                <p className="text-xs text-slate-400">Target architectures and classical dual-track remediations</p>
+      {/* 3. MODALS */}
+      {/* CBOM JSON Viewer Modal */}
+      {mergedCbomModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="max-w-4xl w-full bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center gap-2.5">
+                <FileJson className="w-5 h-5 text-cyan-400" />
+                <div>
+                  <h3 className="text-sm font-bold text-white">CycloneDX 1.6 Cryptographic Bill of Materials</h3>
+                  <p className="text-2xs text-slate-400 font-mono">Live scanner inventory manifest</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(mergedCbomModal);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copied ? 'Copied!' : 'Copy JSON'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const blob = new Blob([mergedCbomModal], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `cbom_${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-bold"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download CBOM</span>
+                </button>
+
+                <button onClick={() => setMergedCbomModal(null)} className="p-1.5 text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
-            <span className="text-xs font-mono text-purple-400">{data.recommendations.length} recommendations</span>
+
+            <div className="flex-1 p-4 overflow-y-auto bg-slate-950 font-mono text-2xs text-cyan-300 leading-relaxed">
+              <pre className="whitespace-pre-wrap">{mergedCbomModal}</pre>
+            </div>
           </div>
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data.recommendations.slice(0, 4).map((rec, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/90 space-y-3 hover:border-purple-800/40 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-purple-300 uppercase tracking-wider font-mono">
-                    Target: {rec.recommended_target}
-                  </span>
-                  <span
-                    className={`text-2xs font-mono uppercase px-2 py-0.5 rounded font-bold ${
-                      rec.priority === 'critical'
-                        ? 'bg-red-950 text-red-300 border border-red-800'
-                        : 'bg-purple-950 text-purple-300 border border-purple-800'
-                    }`}
-                  >
-                    {rec.priority}
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-300 font-sans leading-relaxed">{rec.current_state}</p>
-
-                {rec.classical_remediation && (
-                  <div className="text-xs font-sans text-slate-400">
-                    <span className="text-slate-300 font-semibold block">Classical Track:</span>
-                    {rec.classical_remediation}
-                  </div>
-                )}
-
-                {rec.pqc_migration && (
-                  <div className="text-xs font-sans text-cyan-300/90">
-                    <span className="text-cyan-400 font-semibold block">PQC Upgrade:</span>
-                    {rec.pqc_migration}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-900 text-2xs font-mono text-slate-400">
-                  <div>
-                    <span className="text-slate-500 block">Complexity:</span>
-                    <span className="text-slate-300 capitalize">{rec.migration_complexity || 'Medium'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block">Latency:</span>
-                    <span className="text-slate-300 capitalize">{rec.latency_impact || 'Low'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block">Cost:</span>
-                    <span className="text-slate-300 capitalize">{rec.cost_category || 'Operational'}</span>
-                  </div>
+      {/* PQC Report Modal */}
+      {pqcModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="max-w-3xl w-full bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center gap-2.5">
+                <FileText className="w-5 h-5 text-violet-400" />
+                <div>
+                  <h3 className="text-sm font-bold text-white">Post-Quantum Cryptography Migration Plan</h3>
+                  <p className="text-2xs text-slate-400 font-mono">
+                    Policy: {pqcModal.policy_profile || 'regulated_bfsi'} • Scenario: {pqcModal.scenario || 'baseline'}
+                  </p>
                 </div>
               </div>
-            ))}
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const blob = new Blob([JSON.stringify(pqcModal, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `pqc_report_${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download JSON</span>
+                </button>
+
+                <Link
+                  to="/reports"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open Full Reports</span>
+                </Link>
+
+                <button onClick={() => setPqcModal(null)} className="p-1.5 text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 p-6 overflow-y-auto space-y-4">
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <span className="text-2xs font-mono uppercase text-violet-400 font-bold tracking-wider block">
+                  Recommended Sequence of Action
+                </span>
+                <ol className="text-xs text-slate-300 space-y-1.5 list-decimal list-inside font-sans">
+                  <li><span className="text-rose-400 font-semibold">Phase 1:</span> Eliminate classically broken algorithms (MD5, SHA-1, DES).</li>
+                  <li><span className="text-amber-400 font-semibold">Phase 2:</span> Upgrade network transport protocols to TLS 1.3 / SSH Modern.</li>
+                  <li><span className="text-yellow-400 font-semibold">Phase 3:</span> Identify long-lived data assets vulnerable to "Harvest Now, Decrypt Later".</li>
+                  <li><span className="text-cyan-400 font-semibold">Phase 4:</span> Pilot hybrid key exchange (X25519 + ML-KEM-768).</li>
+                  <li><span className="text-emerald-400 font-semibold">Phase 5:</span> Deploy standardized FIPS 203 / 204 PQC algorithms.</li>
+                </ol>
+              </div>
+
+              <div className="space-y-2.5">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                  Identified Recommendations ({pqcModal.recommendations?.length || 0})
+                </h4>
+                {(!pqcModal.recommendations || pqcModal.recommendations.length === 0) ? (
+                  <p className="text-xs text-slate-500 italic">No specific recommendations recorded.</p>
+                ) : (
+                  pqcModal.recommendations.map((rec: any, idx: number) => (
+                    <div key={idx} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono text-cyan-300 font-semibold">{rec.recommended_target}</span>
+                        <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded bg-violet-950 text-violet-300 border border-violet-800 font-bold">
+                          {rec.priority || 'High'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300">{rec.current_state}</p>
+                      {rec.pqc_migration && (
+                        <p className="text-xs text-violet-300"><span className="text-violet-400 font-semibold">PQC Path:</span> {rec.pqc_migration}</p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

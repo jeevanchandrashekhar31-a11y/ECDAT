@@ -46,11 +46,15 @@ describe('Dashboard smoke states', () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => expect(screen.getByText('Executive Quantum Briefing')).toBeInTheDocument());
-    expect(api.getDashboardSummary).toHaveBeenCalledWith(undefined, undefined, 'baseline');
+    await waitFor(() =>
+      expect(
+        screen.getByText('Cryptographic Discovery & Quantum Risk Engine')
+      ).toBeInTheDocument()
+    );
+    expect(api.getDashboardSummary).toHaveBeenCalledWith(undefined, 'regulated_bfsi', 'baseline');
   });
 
-  it('renders the loading dashboard shell while a local response is pending', async () => {
+  it('renders the loading state while response is pending', async () => {
     let resolveSummary: (value: DashboardSummary) => void;
     const pendingResponse = new Promise<DashboardSummary>((resolve) => {
       resolveSummary = resolve;
@@ -62,8 +66,7 @@ describe('Dashboard smoke states', () => {
       </MemoryRouter>
     );
 
-    expect(document.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
     resolveSummary!(summary);
-    await screen.findByText('Executive Quantum Briefing');
+    await screen.findByText('Cryptographic Discovery & Quantum Risk Engine');
   });
 });

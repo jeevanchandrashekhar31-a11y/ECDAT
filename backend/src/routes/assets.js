@@ -37,16 +37,10 @@ router.get("/", async (req, res, next) => {
     const connected = await isDbConnected();
     if (connected) {
       try {
-        // Resolve target scan_id if not explicitly specified
+        // Resolve target scan_id if explicitly specified and not 'all'
         let targetScanId = scanId;
-        if (!targetScanId) {
-          const latestScanRow = await db("scans")
-            .select("id")
-            .orderBy("created_at", "desc")
-            .first();
-          if (latestScanRow) {
-            targetScanId = latestScanRow.id;
-          }
+        if (targetScanId === 'all' || targetScanId === 'ALL') {
+          targetScanId = null;
         }
 
         let query = db("assets")
@@ -85,9 +79,16 @@ router.get("/", async (req, res, next) => {
         }
 
         if (source) {
-          query = query.whereRaw("LOWER(scans.scanner_type) LIKE LOWER(?)", [
-            `%${source}%`,
-          ]);
+          const srcLower = String(source).toLowerCase();
+          if (srcLower === 'static' || srcLower === 'code') {
+            query = query.whereRaw("(LOWER(scans.scanner_type) LIKE '%code%' OR LOWER(scans.scanner_type) LIKE '%static%')");
+          } else if (srcLower === 'binary' || srcLower === 'container') {
+            query = query.whereRaw("(LOWER(scans.scanner_type) LIKE '%binary%' OR LOWER(scans.scanner_type) LIKE '%container%')");
+          } else {
+            query = query.whereRaw("LOWER(scans.scanner_type) LIKE LOWER(?)", [
+              `%${source}%`,
+            ]);
+          }
         }
 
         if (dataSensitivity) {

@@ -25,7 +25,7 @@ router.get("/summary", async (req, res, next) => {
     if (connected) {
       try {
         let scanQuery = db("scans").select("*");
-        if (scanId) {
+        if (scanId && scanId !== "all" && scanId !== "ALL") {
           scanQuery = scanQuery.where("id", scanId);
         }
         if (policyProfile) {
@@ -354,6 +354,45 @@ router.get("/summary", async (req, res, next) => {
               "Migration timeline reflects estimated re-engineering, testing, and deployment overhead.",
               "Quantum computing horizon aligns with NIST Post-Quantum Cryptography transition guidance.",
             ],
+          });
+        } else {
+          // Connected to DB and zero scans found in DB -> return zero metrics directly
+          return res.status(200).json({
+            scan_id: null,
+            message: "No scans available. Zero mock data loaded.",
+            policy_profile: policyProfile || "internal_enterprise",
+            scenario: requestedScenario || "baseline",
+            rule_version: ruleVersion,
+            metrics: {
+              total_assets: 0,
+              total_findings: 0,
+              critical_findings: 0,
+              assets_at_quantum_risk: 0,
+              assets_at_risk: 0,
+              assets_critical_urgent: 0,
+              unknown_posture_percentage: 0,
+              severity_counts: {
+                critical: 0,
+                high: 0,
+                medium: 0,
+                low: 0,
+                informational: 0,
+              },
+              mosca_status_counts: {
+                SAFE: 0,
+                WATCH: 0,
+                AT_RISK: 0,
+                CRITICAL_URGENT: 0,
+              },
+              overall_cicd_pass: true,
+            },
+            findings_by_source: { network: 0, static: 0, "binary-container": 0 },
+            most_common_risky_algorithms: [],
+            top_affected_services: [],
+            risk_trend: [],
+            top_risky_assets: [],
+            recommendations: [],
+            mosca_analysis_table: [],
           });
         }
       } catch (dbErr) {

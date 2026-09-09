@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, X, FileCode, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Upload, X, FileCode, CheckCircle2, AlertTriangle, Loader2, Globe } from 'lucide-react';
 import { api } from '../api/client';
 
 interface CbomUploadModalProps {
@@ -13,7 +13,17 @@ const MAX_CBOM_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [file, setFile] = useState<File | null>(null);
   const [jsonText, setJsonText] = useState('');
-  const [mode, setMode] = useState<'file' | 'text'>('file');
+  const [mode, setMode] = useState<'scan' | 'file' | 'text'>('scan');
+  const [scanType, setScanType] = useState<'network' | 'static' | 'binary'>('network');
+  
+  // Live Scanner State
+  const [scanTarget, setScanTarget] = useState('');
+  const [staticSubMode, setStaticSubMode] = useState<'upload' | 'git'>('upload');
+  const [scanUploadFile, setScanUploadFile] = useState<File | null>(null);
+  const [scanGitUrl, setScanGitUrl] = useState('');
+  const [binarySubMode, setBinarySubMode] = useState<'upload' | 'image'>('upload');
+  const [binaryImageName, setBinaryImageName] = useState('');
+
   const [scanLabel, setScanLabel] = useState('');
   const [policyProfile, setPolicyProfile] = useState('regulated_bfsi');
   const [scenario, setScenario] = useState('baseline');
@@ -62,38 +72,92 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
     setError(null);
 
     try {
-      let uploadTarget: File | object;
-
-      if (mode === 'file') {
-        if (!file) {
-          throw new Error('Please select a CycloneDX CBOM JSON file to upload.');
+      if (mode === 'scan') {
+        let scanRes: any;
+        if (scanType === 'static') {
+          if (staticSubMode === 'git') {
+            if (!scanGitUrl.trim()) throw new Error('Please provide a Git repository URL.');
+            scanRes = await api.triggerStaticScan(undefined, {
+              github_url: scanGitUrl.trim(),
+              scan_label: scanLabel.trim() || undefined,
+              policy_profile: policyProfile,
+              scenario,
+            });
+          } else {
+            scanRes = await api.triggerStaticScan(scanUploadFile || undefined, {
+              scan_label: scanLabel.trim() || undefined,
+              policy_profile: policyProfile,
+              scenario,
+            });
+          }
+        } else if (scanType === 'network') {
+          const target = scanTarget.trim();
+          if (!target) throw new Error('Please enter a target URL or hostname (e.g. https://api.yourdomain.com)');
+          scanRes = await api.triggerNetworkScan(target, undefined, {
+            scan_label: scanLabel.trim() || undefined,
+            policy_profile: policyProfile,
+            scenario,
+          });
+        } else {
+          if (binarySubMode === 'image') {
+            const img = binaryImageName.trim();
+            if (!img) throw new Error('Please enter a container image name (e.g. your-org/app:latest)');
+            scanRes = await api.triggerBinaryScan(undefined, {
+              image: img,
+              scan_label: scanLabel.trim() || undefined,
+              policy_profile: policyProfile,
+              scenario,
+            });
+          } else {
+            if (!scanUploadFile) throw new Error('Please select a binary file or archive to scan.');
+            scanRes = await api.triggerBinaryScan(scanUploadFile, {
+              scan_label: scanLabel.trim() || undefined,
+              policy_profile: policyProfile,
+              scenario,
+            });
+          }
         }
-        uploadTarget = file;
+
+        if (scanRes?.scan_id) {
+          onSuccess(scanRes.scan_id);
+          onClose();
+        } else {
+          throw new Error('Scan completed without returning a scan ID.');
+        }
       } else {
-        if (!jsonText.trim()) {
-          throw new Error('Please paste a valid CycloneDX JSON payload.');
+        let uploadTarget: File | object;
+
+        if (mode === 'file') {
+          if (!file) {
+            throw new Error('Please select a CycloneDX CBOM JSON file to upload.');
+          }
+          uploadTarget = file;
+        } else {
+          if (!jsonText.trim()) {
+            throw new Error('Please paste a valid CycloneDX JSON payload.');
+          }
+          if (new Blob([jsonText]).size > MAX_CBOM_UPLOAD_BYTES) {
+            throw new Error('CBOM JSON must be 10 MB or smaller.');
+          }
+          try {
+            uploadTarget = JSON.parse(jsonText);
+          } catch (parseErr: unknown) {
+            throw new Error(`Invalid JSON format: ${(parseErr as Error).message}`);
+          }
         }
-        if (new Blob([jsonText]).size > MAX_CBOM_UPLOAD_BYTES) {
-          throw new Error('CBOM JSON must be 10 MB or smaller.');
-        }
-        try {
-          uploadTarget = JSON.parse(jsonText);
-        } catch (parseErr: unknown) {
-          throw new Error(`Invalid JSON format: ${(parseErr as Error).message}`);
-        }
+
+        const res = await api.uploadCbom(uploadTarget, {
+          scanLabel: scanLabel.trim() || undefined,
+          policyProfile,
+          scenario,
+          scannerType,
+        });
+
+        onSuccess(res.scan_id);
+        onClose();
       }
-
-      const res = await api.uploadCbom(uploadTarget, {
-        scanLabel: scanLabel.trim() || undefined,
-        policyProfile,
-        scenario,
-        scannerType,
-      });
-
-      onSuccess(res.scan_id);
-      onClose();
     } catch (err: unknown) {
-      setError((err as Error).message || 'Failed to upload CBOM.');
+      setError((err as Error).message || 'Operation failed.');
     } finally {
       setLoading(false);
     }
@@ -115,8 +179,8 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
             <Upload size={20} />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Ingest CycloneDX CBOM</h3>
-            <p className="text-xs text-slate-400">Upload cryptography bill of materials for risk and Mosca analysis</p>
+            <h3 className="text-lg font-bold text-white">Cryptographic Discovery & Ingestion</h3>
+            <p className="text-xs text-slate-400">Run a live scan or ingest CycloneDX CBOM for quantum risk assessment</p>
           </div>
         </div>
 
@@ -130,6 +194,17 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {/* Input Mode Switcher */}
           <div className="flex rounded-lg bg-slate-900 p-1 border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setMode('scan')}
+              className={`flex-1 py-1.5 rounded-md font-medium transition-all ${
+                mode === 'scan'
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Live Scanner
+            </button>
             <button
               type="button"
               onClick={() => setMode('file')}
@@ -154,7 +229,188 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
             </button>
           </div>
 
-          {/* Mode 1: File Drag & Drop */}
+          {/* Mode 1: Live Scanner Trigger */}
+          {mode === 'scan' && (
+            <div className="space-y-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setScanType('network')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg font-semibold text-2xs uppercase tracking-wider transition-all border ${
+                    scanType === 'network'
+                      ? 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Network TLS
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScanType('static')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg font-semibold text-2xs uppercase tracking-wider transition-all border ${
+                    scanType === 'static'
+                      ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-300'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Static Code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScanType('binary')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg font-semibold text-2xs uppercase tracking-wider transition-all border ${
+                    scanType === 'binary'
+                      ? 'bg-blue-500/20 border-blue-500/60 text-blue-300'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Binary / Container
+                </button>
+              </div>
+
+              {scanType === 'network' && (
+                <div className="space-y-2">
+                  <label className="block text-slate-400 font-medium">Target URL or Hostname</label>
+                  <div className="relative flex items-center">
+                    <Globe className="w-4 h-4 text-emerald-400 absolute left-3 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={scanTarget}
+                      onChange={(e) => setScanTarget(e.target.value)}
+                      placeholder="e.g. https://api.yourdomain.com or 192.168.1.1"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {scanType === 'static' && (
+                <div className="space-y-2.5">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setStaticSubMode('upload')}
+                      className={`px-2.5 py-1 rounded text-2xs font-medium transition-all ${
+                        staticSubMode === 'upload' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'
+                      }`}
+                    >
+                      Upload Project (.ZIP)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStaticSubMode('git')}
+                      className={`px-2.5 py-1 rounded text-2xs font-medium transition-all ${
+                        staticSubMode === 'git' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'
+                      }`}
+                    >
+                      Git Repository URL
+                    </button>
+                  </div>
+
+                  {staticSubMode === 'upload' ? (
+                    <div>
+                      <label className="w-full flex items-center justify-between bg-slate-900 border border-dashed border-slate-700 hover:border-cyan-500/60 rounded-lg px-3 py-2.5 text-xs text-slate-300 cursor-pointer">
+                        <div className="flex items-center gap-2 truncate">
+                          <Upload className="w-4 h-4 text-cyan-400 shrink-0" />
+                          <span className="truncate">
+                            {scanUploadFile ? scanUploadFile.name : 'Select project .ZIP or source archive'}
+                          </span>
+                        </div>
+                        <span className="text-2xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700 font-medium">
+                          Browse
+                        </span>
+                        <input
+                          type="file"
+                          accept=".zip,.c,.h,.cpp,.hpp,.go,.js,.py"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setScanUploadFile(e.target.files[0]);
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <input
+                        type="text"
+                        value={scanGitUrl}
+                        onChange={(e) => setScanGitUrl(e.target.value)}
+                        placeholder="e.g. https://github.com/org/repo.git"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500 font-mono text-xs"
+                      />
+                      <p className="text-[11px] text-slate-500">ECDAT will shallow-clone and discover AST cryptographic call sites.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {scanType === 'binary' && (
+                <div className="space-y-2.5">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBinarySubMode('upload')}
+                      className={`px-2.5 py-1 rounded text-2xs font-medium transition-all ${
+                        binarySubMode === 'upload' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' : 'text-slate-400'
+                      }`}
+                    >
+                      Upload Binary (.ZIP/.jar/.bin)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBinarySubMode('image')}
+                      className={`px-2.5 py-1 rounded text-2xs font-medium transition-all ${
+                        binarySubMode === 'image' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' : 'text-slate-400'
+                      }`}
+                    >
+                      Container Image
+                    </button>
+                  </div>
+
+                  {binarySubMode === 'upload' ? (
+                    <div>
+                      <label className="w-full flex items-center justify-between bg-slate-900 border border-dashed border-slate-700 hover:border-blue-500/60 rounded-lg px-3 py-2.5 text-xs text-slate-300 cursor-pointer">
+                        <div className="flex items-center gap-2 truncate">
+                          <Upload className="w-4 h-4 text-blue-400 shrink-0" />
+                          <span className="truncate">
+                            {scanUploadFile ? scanUploadFile.name : 'Select .ZIP, .jar, .dll, or binary executable'}
+                          </span>
+                        </div>
+                        <span className="text-2xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700 font-medium">
+                          Browse
+                        </span>
+                        <input
+                          type="file"
+                          accept=".zip,.jar,.tar,.so,.dll,.exe,.bin"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setScanUploadFile(e.target.files[0]);
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <input
+                        type="text"
+                        value={binaryImageName}
+                        onChange={(e) => setBinaryImageName(e.target.value)}
+                        placeholder="e.g. your-org/app:latest"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 font-mono text-xs"
+                      />
+                      <p className="text-[11px] text-slate-500">Catalogs package libraries, dependencies, and CPE identifiers using Syft.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Mode 2: File Drag & Drop */}
           {mode === 'file' && (
             <div
               onDragOver={(e) => e.preventDefault()}
@@ -186,7 +442,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
             </div>
           )}
 
-          {/* Mode 2: Paste Raw JSON */}
+          {/* Mode 3: Paste Raw JSON */}
           {mode === 'text' && (
             <div>
               <label className="block text-slate-300 font-medium mb-1">CycloneDX JSON Payload</label>
@@ -208,23 +464,9 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 type="text"
                 value={scanLabel}
                 onChange={(e) => setScanLabel(e.target.value)}
-                placeholder="e.g. Production Ingress Gateway"
+                placeholder="e.g. Production Infrastructure Scan"
                 className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
               />
-            </div>
-
-            <div>
-              <label className="block text-slate-400 mb-1">Scanner Source</label>
-              <select
-                value={scannerType}
-                onChange={(e) => setScannerType(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
-              >
-                <option value="combined">Combined Multi-Scanner</option>
-                <option value="network">Network (SSLyze / TLS)</option>
-                <option value="static">Static Code (Tree-sitter AST)</option>
-                <option value="binary_container">Binary / Syft Container</option>
-              </select>
             </div>
 
             <div>
@@ -254,6 +496,20 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 <option value="optimistic">Optimistic (12 yr horizon)</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-slate-400 mb-1">Scanner Type</label>
+              <select
+                value={scannerType}
+                onChange={(e) => setScannerType(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+              >
+                <option value="combined">Combined Multi-Scanner</option>
+                <option value="network">Network (TLS / SSLyze)</option>
+                <option value="static">Static Code (Tree-sitter AST)</option>
+                <option value="binary_container">Binary / Syft Container</option>
+              </select>
+            </div>
           </div>
 
           <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
@@ -266,18 +522,18 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
             </button>
             <button
               type="submit"
-              disabled={loading || (mode === 'file' && !file) || (mode === 'text' && !jsonText.trim())}
+              disabled={loading || (mode === 'file' && !file) || (mode === 'text' && !jsonText.trim()) || (mode === 'scan' && !scanTarget.trim())}
               className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold flex items-center gap-2 shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {loading ? (
                 <>
                   <Loader2 size={15} className="animate-spin" />
-                  <span>Ingesting...</span>
+                  <span>{mode === 'scan' ? 'Executing Scan...' : 'Ingesting...'}</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 size={15} />
-                  <span>Ingest & Assess Risk</span>
+                  <span>{mode === 'scan' ? 'Run Live Scan & Ingest' : 'Ingest & Assess Risk'}</span>
                 </>
               )}
             </button>

@@ -8,11 +8,19 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true
       },
       '/health': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true
+      },
+      '/scan': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true
+      },
+      '/cbom': {
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true
       }
     }

@@ -66,8 +66,34 @@ function apiKeyAuthMiddleware(req, res, next) {
     return next();
   }
 
-  // Health checks are always public
-  if (req.path === "/health" || req.path === "/api/v1/health") {
+  const demoPipelinePaths = [
+    "/health",
+    "/api/v1/health",
+    "/cbom/merge",
+    "/cbom/quantum-risk",
+    "/cbom/merged",
+    "/cbom/risk",
+    "/cbom/pqc-report",
+    "/api/v1/cbom/merge",
+    "/api/v1/cbom/quantum-risk",
+    "/api/v1/cbom/merged",
+    "/api/v1/cbom/risk",
+    "/api/v1/cbom/pqc-report",
+  ];
+
+  const rawPath = req.originalUrl || req.path || "";
+  const pathOnly = (req.path || "").toLowerCase();
+  const originalPathOnly = (rawPath.split("?")[0] || "").toLowerCase();
+
+  // Scanner pipeline and health routes are public demonstration endpoints
+  if (
+    demoPipelinePaths.includes(pathOnly) ||
+    demoPipelinePaths.includes(originalPathOnly) ||
+    pathOnly.startsWith("/scan/") ||
+    pathOnly.startsWith("/api/v1/scan/") ||
+    originalPathOnly.startsWith("/scan/") ||
+    originalPathOnly.startsWith("/api/v1/scan/")
+  ) {
     return next();
   }
 

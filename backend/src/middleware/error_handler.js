@@ -62,7 +62,8 @@ function errorHandler(err, req, res, _next) {
   // 4. Internal Server Error (500)
   if (config.NODE_ENV !== "test") {
     console.error(
-      `[ERROR] [${requestId}] Unhandled Server Error: ${err.name || "Error"}`,
+      `[ERROR] [${requestId}] Unhandled Server Error: ${err.message || err.name || "Error"}\n`,
+      err.stack || err
     );
   }
 

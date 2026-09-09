@@ -47,9 +47,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     try {
       const scansRes = await api.getScans();
-      setScans(scansRes.scans || []);
-      if (scansRes.scans && scansRes.scans.length > 0 && !selectedScanId) {
-        setSelectedScanId(scansRes.scans[0].id);
+      const list = scansRes.scans || [];
+      setScans(list);
+      const urlScanId = new URLSearchParams(window.location.search).get('scanId');
+      if (urlScanId) {
+        setSelectedScanId(urlScanId);
       }
     } catch {
       // ignore
@@ -63,11 +65,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     setApiKeyInput(stored || '');
   }, []);
 
+  // Synchronize state when URL changes
+  useEffect(() => {
+    const urlScanId = new URLSearchParams(location.search).get('scanId');
+    if (urlScanId) {
+      if (urlScanId !== selectedScanId) {
+        setSelectedScanId(urlScanId);
+      }
+    } else if (selectedScanId !== 'all') {
+      setSelectedScanId('all');
+    }
+  }, [location.search]);
+
   // Update selected scan query param when scan changes
   const handleScanChange = (newScanId: string) => {
     setSelectedScanId(newScanId);
     const searchParams = new URLSearchParams(location.search);
-    if (newScanId) {
+    if (newScanId && newScanId !== 'all') {
       searchParams.set('scanId', newScanId);
     } else {
       searchParams.delete('scanId');
@@ -82,9 +96,22 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     setKeyModalOpen(false);
   };
 
-  const handleUploadSuccess = (newScanId: string) => {
-    checkHealthAndScans();
-    handleScanChange(newScanId);
+  const handleUploadSuccess = async (newScanId: string) => {
+    setSelectedScanId(newScanId);
+    const searchParams = new URLSearchParams(location.search);
+    if (newScanId && newScanId !== 'all') {
+      searchParams.set('scanId', newScanId);
+    } else {
+      searchParams.delete('scanId');
+    }
+    navigate({ pathname: location.pathname, search: searchParams.toString() });
+
+    try {
+      const scansRes = await api.getScans();
+      setScans(scansRes.scans || []);
+    } catch {
+      // ignore
+    }
   };
 
   return (
@@ -202,16 +229,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Active Scan:</span>
             <div className="relative">
               <select
-                value={selectedScanId}
+                value={selectedScanId || 'all'}
                 onChange={(e) => handleScanChange(e.target.value)}
-                className="appearance-none bg-slate-800/90 text-slate-200 border border-slate-700/80 rounded-lg pl-3 pr-8 py-1.5 text-xs font-medium focus:outline-none focus:border-cyan-500 cursor-pointer min-w-[200px]"
+                className="appearance-none bg-slate-800/90 text-slate-200 border border-slate-700/80 rounded-lg pl-3 pr-8 py-1.5 text-xs font-medium focus:outline-none focus:border-cyan-500 cursor-pointer min-w-[290px]"
               >
-                {scans.length === 0 && <option value="">Latest Active Telemetry</option>}
-                {scans.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name || s.id} ({s.policy_profile || 'Default'})
-                  </option>
-                ))}
+                <option value="all">⚡ All Scans (Consolidated Enterprise Portfolio)</option>
+                {scans.map((s) => {
+                  const assetCount = s.metrics?.total_assets ?? 0;
+                  const dateStr = s.created_at ? new Date(s.created_at).toLocaleDateString() : '';
+                  const typeLabel = s.scanner_type ? `[${s.scanner_type.toUpperCase()}] ` : '';
+                  return (
+                    <option key={s.id} value={s.id}>
+                      {typeLabel}{s.name || s.id} — {assetCount.toLocaleString()} assets {dateStr ? `(${dateStr})` : ''}
+                    </option>
+                  );
+                })}
               </select>
               <ChevronDown
                 size={14}
@@ -292,23 +324,39 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   placeholder="e.g. ecdat-demo-admin-key-2026"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-cyan-500"
                 />
-                <p className="text-slate-500 text-[11px] mt-1">Leave blank for public read-only demonstration mode.</p>
+                <p className="text-slate-500 text-[11px] mt-1">
+                  Default development key: <code className="text-cyan-400 font-mono font-bold">ecdat-demo-admin-key-2026</code>
+                </p>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-between items-center gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setKeyModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300"
+                  onClick={() => {
+                    setSessionApiKey('ecdat-demo-admin-key-2026');
+                    setSavedKey('ecdat-demo-admin-key-2026');
+                    setApiKeyInput('ecdat-demo-admin-key-2026');
+                    setKeyModalOpen(false);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 text-2xs font-medium"
                 >
-                  Cancel
+                  Reset to Default
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold"
-                >
-                  Save to Session
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setKeyModalOpen(false)}
+                    className="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold"
+                  >
+                    Save Key
+                  </button>
+                </div>
               </div>
             </form>
           </div>

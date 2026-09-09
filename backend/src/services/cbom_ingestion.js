@@ -63,14 +63,15 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
     // 4. Insert Assets
     const topAssets = scanRecord.top_risky_assets || [];
     for (const asset of topAssets) {
+      const aid = String(asset.asset_id || "global").slice(0, 255);
       await trx("assets").insert({
         scan_id: scanRecord.id,
-        id: asset.asset_id,
-        primary_identifier: asset.asset_id,
-        asset_type: asset.asset_type || "network_session",
-        data_sensitivity: asset.data_sensitivity || "internal",
-        business_criticality: asset.business_criticality || "medium",
-        highest_severity: asset.severity || "Informational",
+        id: aid,
+        primary_identifier: aid,
+        asset_type: String(asset.asset_type || "network_session").slice(0, 50),
+        data_sensitivity: String(asset.data_sensitivity || "internal").slice(0, 50),
+        business_criticality: String(asset.business_criticality || "medium").slice(0, 50),
+        highest_severity: String(asset.severity || "Informational").slice(0, 50),
         at_quantum_risk:
           asset.mosca_status === "AT_RISK" ||
           asset.mosca_status === "CRITICAL_URGENT",
@@ -84,8 +85,8 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
     for (let i = 0; i < findings.length; i++) {
       const f = findings[i];
       const findingId = `fnd_${scanRecord.id}_${i}`;
-      const compId = f.bom_ref || `comp_${scanRecord.id}_${i}`;
-      const assetId = f.asset_id || f.bom_ref || "global";
+      const compId = String(f.bom_ref || `comp_${scanRecord.id}_${i}`).slice(0, 255);
+      const assetId = String(f.asset_id || f.bom_ref || "global").slice(0, 255);
 
       // Ensure asset row exists
       const assetRow = await trx("assets")
@@ -96,10 +97,10 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
           scan_id: scanRecord.id,
           id: assetId,
           primary_identifier: assetId,
-          asset_type: f.asset_type || "network_session",
-          data_sensitivity: f.data_sensitivity || "internal",
-          business_criticality: f.business_criticality || "medium",
-          highest_severity: f.severity || "Informational",
+          asset_type: String(f.asset_type || "network_session").slice(0, 50),
+          data_sensitivity: String(f.data_sensitivity || "internal").slice(0, 50),
+          business_criticality: String(f.business_criticality || "medium").slice(0, 50),
+          highest_severity: String(f.severity || "Informational").slice(0, 50),
           at_quantum_risk:
             f.mosca?.status === "AT_RISK" ||
             f.mosca?.status === "CRITICAL_URGENT",
@@ -117,12 +118,12 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
           scan_id: scanRecord.id,
           id: compId,
           asset_id: assetId,
-          name: f.algorithm || "crypto-asset",
+          name: String(f.algorithm || "crypto-asset").slice(0, 255),
           component_type:
             f.asset_type === "library_presence"
               ? "library"
               : "cryptographic-asset",
-          version: f.version || null,
+          version: f.version ? String(f.version).slice(0, 100) : null,
         });
       }
 
@@ -132,16 +133,16 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
         scan_id: scanRecord.id,
         component_id: compId,
         asset_id: assetId,
-        algorithm: f.algorithm,
+        algorithm: String(f.algorithm || "crypto-asset").slice(0, 100),
         key_size: f.key_size || null,
-        category: f.category || null,
-        finding_type: f.asset_type || null,
+        category: f.category ? String(f.category).slice(0, 50) : null,
+        finding_type: f.asset_type ? String(f.asset_type).slice(0, 50) : null,
         location: f.file_path || f.location || null,
         line_number: f.line_number ? parseInt(f.line_number, 10) : null,
         evidence_context: f.raw_evidence
           ? JSON.stringify(f.raw_evidence)
           : null,
-        confidence: f.confidence || "high",
+        confidence: String(f.confidence || "high").slice(0, 50),
       });
 
       // Insert Risk Assessment
@@ -149,10 +150,10 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
         id: `ra_${findingId}`,
         finding_id: findingId,
         scan_id: scanRecord.id,
-        severity: f.severity,
-        classical_risk: f.classical_risk,
-        quantum_relevance: f.quantum_relevance,
-        mosca_status: f.mosca?.status || "SAFE",
+        severity: String(f.severity || "Informational").slice(0, 50),
+        classical_risk: String(f.classical_risk || "NONE").slice(0, 50),
+        quantum_relevance: String(f.quantum_relevance || "NONE").slice(0, 50),
+        mosca_status: String(f.mosca?.status || "SAFE").slice(0, 50),
         mosca_x_years: f.mosca?.final_values?.X_shelf_life_years || 0,
         mosca_y_years: f.mosca?.final_values?.Y_migration_years || 0,
         mosca_z_years: f.mosca?.final_values?.Z_quantum_threat_years || 9,
@@ -160,7 +161,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
         cicd_pass: f.cicd_pass,
         applied_rules: JSON.stringify(f.applied_rule_ids || []),
         policy_violations: JSON.stringify(f.policy_violations || []),
-        explanation: f.explanation,
+        explanation: f.explanation || "N/A",
       });
 
       // Insert Recommendation
@@ -169,15 +170,17 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
           id: `rec_${findingId}`,
           scan_id: scanRecord.id,
           finding_id: findingId,
-          priority: f.recommendation.priority || "medium",
-          current_state: f.recommendation.current_state,
-          recommended_target: f.recommendation.recommended_target,
+          priority: String(f.recommendation.priority || "medium").slice(0, 50),
+          current_state: f.recommendation.current_state || "",
+          recommended_target: f.recommendation.recommended_target || "",
           classical_remediation: f.recommendation.classical_remediation,
           pqc_migration: f.recommendation.pqc_migration,
           hybrid_transition_recommended: Boolean(
             f.recommendation.hybrid_transition_recommended,
           ),
-          migration_complexity: f.recommendation.migration_complexity,
+          migration_complexity: f.recommendation.migration_complexity
+            ? String(f.recommendation.migration_complexity).slice(0, 50)
+            : null,
           latency_impact: f.recommendation.latency_impact,
           bandwidth_impact: f.recommendation.bandwidth_impact,
           cost_category: f.recommendation.cost_category,
@@ -323,33 +326,31 @@ async function getAllScans() {
   if (connected) {
     try {
       const rows = await db("scans").select("*").orderBy("created_at", "desc");
-      if (rows.length > 0) {
-        return rows.map((s) => ({
-          id: s.id,
-          project_id: s.project_id,
-          name: s.target_name,
-          scanner_type: s.scanner_type,
-          policy_profile: s.policy_profile_id,
-          scenario: s.scenario,
-          status: s.status,
-          created_at: s.created_at,
-          metrics: {
-            total_assets: s.total_assets,
-            total_findings: s.total_findings,
-            assets_at_quantum_risk: s.quantum_risk_count,
-            severity_counts: {
-              critical: s.critical_count,
-              high: s.high_count,
-              medium: s.medium_count,
-              low: s.low_count,
-              informational: s.info_count,
-            },
-            overall_cicd_pass: s.cicd_pass,
+      return rows.map((s) => ({
+        id: s.id,
+        project_id: s.project_id,
+        name: s.target_name,
+        scanner_type: s.scanner_type,
+        policy_profile: s.policy_profile_id,
+        scenario: s.scenario,
+        status: s.status,
+        created_at: s.created_at,
+        metrics: {
+          total_assets: s.total_assets,
+          total_findings: s.total_findings,
+          assets_at_quantum_risk: s.quantum_risk_count,
+          severity_counts: {
+            critical: s.critical_count,
+            high: s.high_count,
+            medium: s.medium_count,
+            low: s.low_count,
+            informational: s.info_count,
           },
-        }));
-      }
+          overall_cicd_pass: s.cicd_pass,
+        },
+      }));
     } catch (_err) {
-      // Fallback to in-memory
+      // Fallback to in-memory only on query failure
     }
   }
 
@@ -449,8 +450,21 @@ function getLatestScan() {
   return all[0];
 }
 
-function clearScans() {
+async function clearScans() {
   inMemoryScansStore.clear();
+  const connected = await isDbConnected();
+  if (connected) {
+    try {
+      await db("risk_assessments").del().catch(() => {});
+      await db("cboms").del().catch(() => {});
+      await db("scan_errors").del().catch(() => {});
+      await db("findings").del().catch(() => {});
+      await db("assets").del().catch(() => {});
+      await db("scans").del().catch(() => {});
+    } catch (_err) {
+      // ignore
+    }
+  }
 }
 
 module.exports = {

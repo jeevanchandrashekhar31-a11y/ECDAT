@@ -24,7 +24,9 @@ import { SeverityBadge } from '../components/SeverityBadge';
 import { MoscaStatusBadge } from '../components/MoscaTable';
 
 export const Assets: React.FC = () => {
-  const { selectedScanId } = useOutletContext<{ selectedScanId?: string }>();
+  const outlet = useOutletContext<{ selectedScanId?: string; scans?: any[] }>() || {};
+  const selectedScanId = outlet.selectedScanId;
+  const scans = outlet.scans || [];
 
   // Active View Tab: 'assets' | 'findings'
   const [activeTab, setActiveTab] = useState<'assets' | 'findings'>('assets');
@@ -63,9 +65,10 @@ export const Assets: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      const activeScanParam = selectedScanId && selectedScanId !== 'all' ? selectedScanId : undefined;
       if (activeTab === 'assets') {
         const res: AssetsResponse = await api.getAssets({
-          scanId: selectedScanId || undefined,
+          scanId: activeScanParam,
           severity: severityFilter || undefined,
           moscaStatus: moscaFilter || undefined,
           assetType: typeFilter || undefined,
@@ -102,7 +105,7 @@ export const Assets: React.FC = () => {
       } else {
         // Fetch direct findings
         const res: FindingsResponse = await api.getFindings({
-          scanId: selectedScanId || undefined,
+          scanId: activeScanParam,
           severity: severityFilter || undefined,
           moscaStatus: moscaFilter || undefined,
           assetType: typeFilter || undefined,
@@ -267,6 +270,36 @@ export const Assets: React.FC = () => {
             <span>Finding Explorer</span>
           </button>
         </div>
+      </div>
+
+      {/* Active Scan Context Banner */}
+      <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400 font-medium">Viewing Inventory:</span>
+          {selectedScanId && selectedScanId !== 'all' ? (
+            <span className="font-mono text-cyan-300 font-semibold flex items-center gap-1.5">
+              <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 text-2xs uppercase">
+                {scans.find((s: any) => s.id === selectedScanId)?.scanner_type || 'Scan'}
+              </span>
+              {scans.find((s: any) => s.id === selectedScanId)?.name || selectedScanId}
+            </span>
+          ) : (
+            <span className="font-mono text-emerald-400 font-semibold flex items-center gap-1.5">
+              <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-2xs uppercase">
+                Consolidated
+              </span>
+              All Scans (Static Code + Network Probes + Binaries)
+            </span>
+          )}
+        </div>
+        {selectedScanId && selectedScanId !== 'all' && (
+          <Link
+            to="/assets"
+            className="text-2xs text-cyan-400 hover:underline flex items-center gap-1"
+          >
+            <span>Switch to Consolidated View (All Scans)</span>
+          </Link>
+        )}
       </div>
 
       {/* 2. Quick Metric Pill Strip */}

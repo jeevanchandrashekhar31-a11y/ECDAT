@@ -3,6 +3,7 @@ const {
   getAllScans,
   getScanById,
   getScanErrors,
+  clearScans,
 } = require("../services/cbom_ingestion");
 
 const router = express.Router();
@@ -17,6 +18,22 @@ router.get("/", async (req, res, next) => {
     res.status(200).json({
       total: scans.length,
       scans,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * DELETE /api/v1/scans
+ * Clears all scan records for a pure clean state.
+ */
+router.delete("/", async (req, res, next) => {
+  try {
+    await clearScans();
+    res.status(200).json({
+      success: true,
+      message: "All scans and cryptographic inventory successfully cleared.",
     });
   } catch (err) {
     next(err);
