@@ -1,0 +1,119 @@
+[
+    {
+        "canonical_name": "OpenSSL",
+        "aliases": ["openssl", "libssl", "libcrypto", "openssl-dev", "libssl-dev", "libssl3", "libcrypto3"],
+        "ecosystems": ["C", "C++", "Debian", "RPM", "Alpine"],
+        "typical_capabilities": ["TLS", "X.509", "RSA", "ECC", "AES", "SHA2"],
+        "confidence_limits": "medium",
+        "pqc_support": "hybrid (via providers like OQS)",
+        "description": "High-level cryptographic functions and TLS implementation."
+    },
+    {
+        "canonical_name": "LibreSSL",
+        "aliases": ["libressl", "libressl-dev", "libtls"],
+        "ecosystems": ["C", "OpenBSD", "Alpine"],
+        "typical_capabilities": ["TLS", "X.509", "RSA", "ECC", "AES"],
+        "confidence_limits": "medium",
+        "pqc_support": "none",
+        "description": "OpenSSL fork focusing on security and code cleanup."
+    },
+    {
+        "canonical_name": "BoringSSL",
+        "aliases": ["boringssl"],
+        "ecosystems": ["C", "C++", "Android"],
+        "typical_capabilities": ["TLS", "X.509", "RSA", "ECC", "AES"],
+        "confidence_limits": "medium",
+        "pqc_support": "experimental CECPQ2",
+        "description": "Google OpenSSL fork."
+    },
+    {
+        "canonical_name": "mbedTLS",
+        "aliases": ["mbedtls", "libmbedtls", "mbedcrypto", "libmbedcrypto"],
+        "ecosystems": ["C", "Embedded", "Debian"],
+        "typical_capabilities": ["TLS", "X.509", "RSA", "ECC", "AES", "SHA2"],
+        "confidence_limits": "medium",
+        "pqc_support": "none natively",
+        "description": "mbed TLS."
+    },
+    {
+        "canonical_name": "wolfSSL",
+        "aliases": ["wolfssl", "libwolfssl"],
+        "ecosystems": ["C", "Embedded"],
+        "typical_capabilities": ["TLS", "X.509", "RSA", "ECC", "AES", "SHA2"],
+        "confidence_limits": "medium",
+        "pqc_support": "liboqs integration",
+        "description": "Embedded TLS library."
+    },
+    {
+        "canonical_name": "libsodium",
+        "aliases": ["libsodium", "libsodium-dev"],
+        "ecosystems": ["C", "Cross-platform"],
+        "typical_capabilities": ["Ed25519", "X25519", "ChaCha20", "Poly1305", "Argon2"],
+        "confidence_limits": "medium",
+        "pqc_support": "none natively",
+        "description": "Modern, easy-to-use software library for encryption, decryption, signatures."
+    },
+    {
+        "canonical_name": "Botan",
+        "aliases": ["botan", "libbotan", "botan-2", "botan-3"],
+        "ecosystems": ["C++", "Python"],
+        "typical_capabilities": ["TLS", "X.509", "RSA", "ECC", "AES", "SHA3"],
+        "confidence_limits": "medium",
+        "pqc_support": "Kyber, Dilithium (experimental)",
+        "description": "C++ cryptography library."
+    },
+    {
+        "canonical_name": "Java JCA / Bouncy Castle",
+        "aliases": ["bouncycastle", "bcprov", "bcpkix", "bc-fips", "bcprov-jdk15on", "bcprov-jdk18on", "org.bouncycastle"],
+        "ecosystems": ["Java", "Maven", "C#", "NuGet"],
+        "typical_capabilities": ["TLS", "X.509", "RSA", "ECC", "AES", "SHA3"],
+        "confidence_limits": "medium",
+        "pqc_support": "SPHINCS+, LMS, XMSS",
+        "description": "Java/C# cryptography APIs."
+    },
+    {
+        "canonical_name": "Go Crypto",
+        "aliases": ["golang.org/x/crypto", "crypto/tls", "crypto/x509", "crypto/rsa", "crypto/ecdsa"],
+        "ecosystems": ["Go", "Go Modules"],
+        "typical_capabilities": ["TLS", "X.509", "RSA", "ECC", "AES", "SHA3"],
+        "confidence_limits": "medium",
+        "pqc_support": "none natively",
+        "description": "Go standard and extended crypto packages."
+    },
+    {
+        "canonical_name": "libgcrypt",
+        "aliases": ["libgcrypt", "libgcrypt-dev", "libgcrypt20"],
+        "ecosystems": ["C", "Linux"],
+        "typical_capabilities": ["RSA", "ECC", "AES", "SHA3"],
+        "confidence_limits": "medium",
+        "pqc_support": "none",
+        "description": "General purpose cryptographic library based on the code from GnuPG."
+    },
+    {
+        "canonical_name": "NSS",
+        "aliases": ["nss", "libnss3", "mozilla-nss"],
+        "ecosystems": ["C", "Linux", "Firefox"],
+        "typical_capabilities": ["TLS", "X.509", "RSA", "ECC", "AES"],
+        "confidence_limits": "medium",
+        "pqc_support": "none",
+        "description": "Network Security Services."
+    },
+    {
+        "canonical_name": "crypto-js",
+        "aliases": ["crypto-js"],
+        "ecosystems": ["JavaScript", "npm"],
+        "typical_capabilities": ["AES", "SHA2", "MD5", "HMAC", "PBKDF2"],
+        "confidence_limits": "medium",
+        "pqc_support": "none",
+        "description": "JavaScript standard cryptographic library."
+    },
+    {
+        "canonical_name": "node-forge",
+        "aliases": ["node-forge"],
+        "ecosystems": ["JavaScript", "npm"],
+        "typical_capabilities": ["TLS", "X.509", "RSA", "AES", "SHA2"],
+        "confidence_limits": "medium",
+        "pqc_support": "none",
+        "description": "JavaScript implementations of TLS, cryptography, PKI, and ciphers."
+    }
+]

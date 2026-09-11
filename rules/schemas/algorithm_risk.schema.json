@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AlgorithmRiskRuleset",
+  "description": "Schema for cryptographic algorithm and protocol risk definitions in ECDAT.",
+  "type": "object",
+  "required": ["version", "algorithms"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the algorithm risk ruleset."
+    },
+    "description": {
+      "type": "string"
+    },
+    "last_updated": {
+      "type": "string"
+    },
+    "algorithms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "canonical_name",
+          "category",
+          "classical_risk_level",
+          "quantum_relevance",
+          "remediation_hint"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_\\-\\.]+$"
+          },
+          "canonical_name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "hash",
+              "symmetric_cipher",
+              "asymmetric_encryption",
+              "digital_signature",
+              "key_exchange",
+              "protocol",
+              "mac"
+            ]
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "classical_risk_level": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "none"]
+          },
+          "quantum_relevance": {
+            "type": "string",
+            "enum": [
+              "shor_vulnerable",
+              "grover_sensitive",
+              "quantum_safe",
+              "not_applicable"
+            ],
+            "description": "Distinguishes Shor's algorithm (breaks public key/discrete log/factoring) from Grover's algorithm (halves symmetric/hash search complexity)."
+          },
+          "conditions": {
+            "type": "array",
+            "description": "Sub-conditions based on key size, mode, or parameter variations.",
+            "items": {
+              "type": "object",
+              "required": ["condition", "classical_risk_level"],
+              "properties": {
+                "condition": {
+                  "type": "string"
+                },
+                "key_size_threshold_bits": {
+                  "type": "integer"
+                },
+                "operator": {
+                  "type": "string",
+                  "enum": ["<", "<=", "==", ">=", ">"]
+                },
+                "classical_risk_level": {
+                  "type": "string",
+                  "enum": ["critical", "high", "medium", "low", "none"]
+                },
+                "note": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "deprecation_notes": {
+            "type": "string"
+          },
+          "evidence_required": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "remediation_hint": {
+            "type": "string"
+          },
+          "references": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

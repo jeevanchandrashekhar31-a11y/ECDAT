@@ -1,0 +1,115 @@
+{
+  "version": "1.0.0",
+  "description": "ECDAT Mosca Theorem Configuration (X + Y > Z risk calculus)",
+  "last_updated": "2026-09-04",
+  "defaults": {
+    "X_shelf_life_years": 5,
+    "Y_migration_years": 3,
+    "Z_quantum_threat_years": 9
+  },
+  "scenarios": {
+    "optimistic": {
+      "Z_quantum_threat_years": 15,
+      "Y_multiplier": 0.8,
+      "description": "Optimistic quantum timeline: CRQC deployment delayed to ~2041; rapid standards and tooling maturity."
+    },
+    "baseline": {
+      "Z_quantum_threat_years": 9,
+      "Y_multiplier": 1.0,
+      "description": "Consensus baseline timeline: CRQC deployment ~2035 (consistent with CNSA 2.0 and BSI roadmaps)."
+    },
+    "conservative": {
+      "Z_quantum_threat_years": 5,
+      "Y_multiplier": 1.4,
+      "description": "Aggressive/Nation-state timeline: CRQC operational ~2031; slower migration velocity and legacy inertia."
+    }
+  },
+  "asset_type_defaults": {
+    "network_session": {
+      "X_shelf_life_years": 1,
+      "Y_migration_years": 2,
+      "harvest_now_decrypt_later_risk": "high",
+      "notes": "Transient network traffic; subject to Harvest-Now-Decrypt-Later (HNDL) if intercepted and stored."
+    },
+    "certificate": {
+      "X_shelf_life_years": 2,
+      "Y_migration_years": 2,
+      "harvest_now_decrypt_later_risk": "low",
+      "notes": "Public trust and mTLS certificates; signature forgery on expired certs is non-viable, but active cert spoofing is critical once CRQC is reached."
+    },
+    "hardcoded_private_key": {
+      "X_shelf_life_years": 8,
+      "Y_migration_years": 4,
+      "harvest_now_decrypt_later_risk": "critical",
+      "notes": "Statically embedded keys persist across deployments, enabling retrospective decryption of historical data."
+    },
+    "stored_encrypted_data": {
+      "X_shelf_life_years": 12,
+      "Y_migration_years": 5,
+      "harvest_now_decrypt_later_risk": "critical",
+      "notes": "Encrypted database columns, backups, or archival vaults; extreme HNDL exposure requiring immediate PQC / hybrid envelope protection."
+    },
+    "signing_key": {
+      "X_shelf_life_years": 10,
+      "Y_migration_years": 4,
+      "harvest_now_decrypt_later_risk": "medium",
+      "notes": "Code signing, document signing, and root CA keys; requires long-term non-repudiation and firmware integrity."
+    },
+    "library_presence": {
+      "X_shelf_life_years": 3,
+      "Y_migration_years": 3,
+      "harvest_now_decrypt_later_risk": "medium",
+      "notes": "Identified crypto library package; presence indicates capability rather than confirmed active ciphertext."
+    }
+  },
+  "sensitivity_adjustments": {
+    "public": {
+      "shelf_life_multiplier": 0.0,
+      "base_X_years": 0,
+      "description": "Public data requires no confidentiality shelf-life (X = 0)."
+    },
+    "internal": {
+      "shelf_life_multiplier": 1.0,
+      "base_X_years": 3,
+      "description": "Standard operational/internal business data (typical shelf-life 3 years)."
+    },
+    "confidential": {
+      "shelf_life_multiplier": 1.5,
+      "base_X_years": 7,
+      "description": "Proprietary business secrets, PII, intellectual property (shelf-life 7 years)."
+    },
+    "restricted": {
+      "shelf_life_multiplier": 2.5,
+      "base_X_years": 15,
+      "description": "State secrets, classified intelligence, clinical records, core financial ledgers (shelf-life 15+ years)."
+    }
+  },
+  "criticality_adjustments": {
+    "low": {
+      "migration_urgency_multiplier": 0.8,
+      "risk_weight": 0.7,
+      "description": "Non-essential testing/development systems; lower operational impact."
+    },
+    "medium": {
+      "migration_urgency_multiplier": 1.0,
+      "risk_weight": 1.0,
+      "description": "Standard business applications with moderate downtime tolerance."
+    },
+    "high": {
+      "migration_urgency_multiplier": 1.3,
+      "risk_weight": 1.4,
+      "description": "Core enterprise infrastructure, payment gateways, and production APIs."
+    },
+    "critical": {
+      "migration_urgency_multiplier": 1.8,
+      "risk_weight": 2.0,
+      "description": "National critical infrastructure, safety-critical systems, or identity foundations."
+    }
+  },
+  "validation_constraints": {
+    "min_years": 0.0,
+    "max_X_years": 100.0,
+    "max_Y_years": 50.0,
+    "max_Z_years": 50.0
+  }
+}

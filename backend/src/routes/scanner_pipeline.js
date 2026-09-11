@@ -10,7 +10,6 @@ const router = express.Router();
 // Root directory of ECDAT project
 const REPO_ROOT = path.resolve(__dirname, '../../../');
 const ARTIFACTS_DIR = path.resolve(REPO_ROOT, 'artifacts');
-const DEMO_MERGED_PATH = path.resolve(ARTIFACTS_DIR, 'merged_cbom.json');
 
 // Cache for the latest merged CBOM
 let cachedMergedCbom = null;
@@ -73,6 +72,7 @@ function runGitClone(repoUrl, targetDir, timeoutMs = 60000) {
     if (!trimmed) {
       return reject(new Error("Git repository URL cannot be empty."));
     }
+
     // Auto-normalize URLs missing protocol scheme (e.g. github.com/user/repo)
     if (!trimmed.startsWith('https://') && !trimmed.startsWith('http://') && !trimmed.startsWith('git@') && !trimmed.startsWith('git://')) {
       if (trimmed.includes('/') && !trimmed.startsWith('/')) {
@@ -81,8 +81,32 @@ function runGitClone(repoUrl, targetDir, timeoutMs = 60000) {
         return reject(new Error(`Invalid Git repository URL: '${repoUrl}'. URL must start with https://, http://, or git@`));
       }
     }
-    fs.mkdirSync(targetDir, { recursive: true });
-    const child = spawn('git', ['clone', '--depth', '1', trimmed, targetDir], { shell: false });
+
+    // Strip web UI /tree/<branch> or /blob/<branch> patterns from browser copy-paste
+    let branch = null;
+    const treeMatch = trimmed.match(/^(https?:\/\/[^/]+\/[^/]+(?:\/[^/]+)?)\/(?:tree|blob)\/([^/]+)/);
+    if (treeMatch) {
+      trimmed = treeMatch[1];
+      branch = treeMatch[2];
+    }
+    // Remove trailing slashes
+    trimmed = trimmed.replace(/\/+$/, '');
+
+    // Ensure targetDir is clean and exists
+    try {
+      if (fs.existsSync(targetDir)) {
+        fs.rmSync(targetDir, { recursive: true, force: true });
+      }
+      fs.mkdirSync(targetDir, { recursive: true });
+    } catch {}
+
+    const cloneArgs = ['clone', '--depth', '1'];
+    if (branch) {
+      cloneArgs.push('-b', branch);
+    }
+    cloneArgs.push(trimmed, targetDir);
+
+    const child = spawn('git', cloneArgs, { shell: false });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', data => { stdout += data.toString(); });
@@ -122,7 +146,7 @@ async function extractZipArchive(zipFilePath, targetDir) {
  */
 function parseNetworkTarget(inputTarget, defaultPort = 443) {
   if (!inputTarget || !String(inputTarget).trim()) {
-    return { host: 'badssl.com', port: 443 };
+    return null;
   }
   let str = String(inputTarget).trim();
   try {
@@ -141,6 +165,7 @@ function parseNetworkTarget(inputTarget, defaultPort = 443) {
     str = parts[0];
     port = parseInt(parts[1], 10) || defaultPort;
   }
+  if (!str) return null;
   return { host: str, port };
 }
 
@@ -162,15 +187,40 @@ router.post('/scan/static', upload.any(), async (req, res, next) => {
   let scanLabel = req.body?.scan_label;
 
   try {
+    // Detect Git repository URL across all possible input properties
+    const candidateGitUrl = [
+      req.body?.github_url,
+      req.body?.git_url,
+      req.body?.repo_url,
+      req.body?.repository,
+      req.body?.target,
+      req.body?.target_dir,
+      req.body?.url
+    ].find(val => {
+      if (typeof val !== 'string') return false;
+      const s = val.trim();
+      return (
+        s.startsWith('https://') ||
+        s.startsWith('http://') ||
+        s.startsWith('git@') ||
+        s.includes('github.com') ||
+        s.includes('gitlab.com') ||
+        s.includes('bitbucket.org') ||
+        s.endsWith('.git')
+      );
+    });
+
+    const isGitMode = Boolean(candidateGitUrl || (req.body?.github_url && String(req.body.github_url).trim()));
+    const gitRepoUrl = candidateGitUrl ? candidateGitUrl.trim() : (req.body?.github_url ? String(req.body.github_url).trim() : null);
+
     // A. Git Repository Clone Mode
-    if (req.body?.github_url && String(req.body.github_url).trim()) {
-      let repoUrl = String(req.body.github_url).trim();
+    if (isGitMode && gitRepoUrl) {
       targetDir = uploadDir;
-      const cleanUrl = repoUrl.replace(/\/+$/, '');
+      const cleanUrl = gitRepoUrl.replace(/\/+$/, '');
       const repoName = path.basename(cleanUrl.replace(/\.git$/, '')) || 'repository';
       scanLabel = scanLabel || `Git Repo: ${repoName}`;
       try {
-        await runGitClone(repoUrl, targetDir, 60000);
+        await runGitClone(gitRepoUrl, targetDir, 60000);
       } catch (cloneErr) {
         return res.status(400).json({
           success: false,
@@ -206,24 +256,20 @@ router.post('/scan/static', upload.any(), async (req, res, next) => {
       }
       targetDir = uploadDir;
     }
-    // C. Fallback to specified target_dir or existing real targets
+    // C. Explicit target_dir mode
     else {
-      let explicitPath = req.body?.target_dir;
+      let explicitPath = req.body?.target_dir || req.body?.target;
       if (!explicitPath || !explicitPath.trim()) {
-        if (fs.existsSync(path.resolve(REPO_ROOT, 'examples/real_target'))) {
-          targetDir = path.resolve(REPO_ROOT, 'examples/real_target');
-        } else if (fs.existsSync(path.resolve(REPO_ROOT, 'examples'))) {
-          targetDir = path.resolve(REPO_ROOT, 'examples');
-        } else {
-          targetDir = REPO_ROOT;
-        }
+        return res.status(400).json({
+          success: false,
+          error: "Please provide a Git repository URL, upload project files/ZIP, or specify a valid target directory."
+        });
+      }
+      explicitPath = explicitPath.trim().replace(/^['"]|['"]$/g, '');
+      if (!path.isAbsolute(explicitPath)) {
+        targetDir = path.resolve(REPO_ROOT, explicitPath);
       } else {
-        explicitPath = explicitPath.trim().replace(/^['"]|['"]$/g, '');
-        if (!path.isAbsolute(explicitPath)) {
-          targetDir = path.resolve(REPO_ROOT, explicitPath);
-        } else {
-          targetDir = explicitPath;
-        }
+        targetDir = explicitPath;
       }
       scanLabel = scanLabel || `Static Scan: ${path.basename(targetDir)}`;
     }
@@ -293,9 +339,22 @@ router.post('/scan/static', upload.any(), async (req, res, next) => {
 // --------------------------------------------------------------------------
 router.post('/scan/network', async (req, res, next) => {
   try {
-    const rawTarget = req.body?.url || req.body?.target || req.body?.host || 'badssl.com';
+    const rawTarget = req.body?.url || req.body?.target || req.body?.host;
+    if (!rawTarget || !String(rawTarget).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Please provide a target hostname or IP address to scan."
+      });
+    }
     const rawPort = req.body?.port || 443;
-    const { host, port } = parseNetworkTarget(rawTarget, rawPort);
+    const parsed = parseNetworkTarget(rawTarget, rawPort);
+    if (!parsed || !parsed.host) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid network target: '${rawTarget}'. Please provide a valid hostname or IP address.`
+      });
+    }
+    const { host, port } = parsed;
 
     const tempOut = path.resolve(REPO_ROOT, `artifacts/temp_network_${Date.now()}.json`);
 
@@ -396,7 +455,7 @@ router.post('/scan/binary', upload.any(), async (req, res, next) => {
     // B. Container Image or Explicit Path Mode
     else {
       let explicitTarget = req.body?.image || req.body?.target;
-      if (req.body?.image) {
+      if (req.body?.image && String(req.body.image).trim()) {
         target = req.body.image.trim();
         targetType = 'image';
         scanLabel = scanLabel || `Container: ${target}`;
@@ -411,12 +470,10 @@ router.post('/scan/binary', upload.any(), async (req, res, next) => {
           scanLabel = scanLabel || `Binary Target: ${path.basename(target)}`;
         }
       } else {
-        if (fs.existsSync(path.resolve(REPO_ROOT, 'examples/real_target'))) {
-          target = path.resolve(REPO_ROOT, 'examples/real_target');
-        } else {
-          target = REPO_ROOT;
-        }
-        scanLabel = scanLabel || `Binary Inventory: ${path.basename(target)}`;
+        return res.status(400).json({
+          success: false,
+          error: "Please upload binary files/ZIP, specify a container image name, or provide a target path."
+        });
       }
     }
 
@@ -580,13 +637,13 @@ router.post('/cbom/quantum-risk', async (req, res, next) => {
     let cbom = req.body?.cbom;
     if (!cbom) {
       const latest = getLatestScan();
-      cbom = latest?.annotated_bom || latest?.raw_cbom || cachedMergedCbom || loadJsonSafe(DEMO_MERGED_PATH);
+      cbom = latest?.annotated_bom || latest?.raw_cbom || cachedMergedCbom;
     }
 
     if (!cbom) {
-      return res.status(400).json({
-        success: false,
-        error: 'No CBOM available for quantum risk assessment. Trigger a scan or supply a CBOM payload.'
+      return res.status(404).json({
+        error: 'NotFound',
+        message: 'No scan has been run yet. Please run a scan or supply a CBOM payload first.'
       });
     }
 
@@ -618,9 +675,12 @@ router.post('/cbom/quantum-risk', async (req, res, next) => {
 router.get('/cbom/merged', async (req, res, next) => {
   try {
     const latest = getLatestScan();
-    const cbom = cachedMergedCbom || latest?.annotated_bom || latest?.raw_cbom || loadJsonSafe(DEMO_MERGED_PATH);
+    const cbom = cachedMergedCbom || latest?.annotated_bom || latest?.raw_cbom;
     if (!cbom) {
-      return res.status(404).json({ error: 'NotFound', message: 'No merged CBOM available yet.' });
+      return res.status(404).json({
+        error: 'NotFound',
+        message: 'No scan has been run yet. Please run a scan first.'
+      });
     }
     res.status(200).json(cbom);
   } catch (err) {
@@ -635,18 +695,10 @@ router.get('/cbom/risk', async (req, res, next) => {
   try {
     const latest = getLatestScan();
     if (!latest) {
-      // Ingest default merged if empty
-      const demoMerged = loadJsonSafe(DEMO_MERGED_PATH);
-      if (demoMerged) {
-        const seeded = await ingestCbom(demoMerged, { scannerType: 'combined', scanName: 'Initial Seed Telemetry' });
-        return res.status(200).json({
-          scan_id: seeded.id,
-          metrics: seeded.metrics,
-          top_risky_assets: seeded.top_risky_assets || [],
-          mosca_status_counts: seeded.metrics.mosca_status_counts
-        });
-      }
-      return res.status(404).json({ error: 'NotFound', message: 'No risk assessment data available yet.' });
+      return res.status(404).json({
+        error: 'NotFound',
+        message: 'No scan has been run yet. Please run a scan first.'
+      });
     }
 
     res.status(200).json({

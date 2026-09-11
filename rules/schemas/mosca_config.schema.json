@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MoscaConfigSchema",
+  "description": "Schema for Mosca Theorem parameterization (X + Y > Z) and sensitivity/criticality adjustments in ECDAT.",
+  "type": "object",
+  "required": [
+    "version",
+    "description",
+    "defaults",
+    "scenarios",
+    "asset_type_defaults",
+    "sensitivity_adjustments",
+    "criticality_adjustments",
+    "validation_constraints"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "last_updated": {
+      "type": "string"
+    },
+    "defaults": {
+      "type": "object",
+      "required": ["X_shelf_life_years", "Y_migration_years", "Z_quantum_threat_years"],
+      "additionalProperties": false,
+      "properties": {
+        "X_shelf_life_years": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "Y_migration_years": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 50
+        },
+        "Z_quantum_threat_years": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 50
+        }
+      }
+    },
+    "scenarios": {
+      "type": "object",
+      "required": ["optimistic", "baseline", "conservative"],
+      "additionalProperties": false,
+      "properties": {
+        "optimistic": { "$ref": "#/definitions/scenario_params" },
+        "baseline": { "$ref": "#/definitions/scenario_params" },
+        "conservative": { "$ref": "#/definitions/scenario_params" }
+      }
+    },
+    "asset_type_defaults": {
+      "type": "object",
+      "required": [
+        "network_session",
+        "certificate",
+        "hardcoded_private_key",
+        "stored_encrypted_data",
+        "signing_key",
+        "library_presence"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "type": "object",
+          "required": ["X_shelf_life_years", "Y_migration_years", "notes"],
+          "additionalProperties": false,
+          "properties": {
+            "X_shelf_life_years": { "type": "number", "minimum": 0, "maximum": 100 },
+            "Y_migration_years": { "type": "number", "minimum": 0, "maximum": 50 },
+            "harvest_now_decrypt_later_risk": {
+              "type": "string",
+              "enum": ["critical", "high", "medium", "low", "none"]
+            },
+            "notes": { "type": "string" }
+          }
+        }
+      }
+    },
+    "sensitivity_adjustments": {
+      "type": "object",
+      "required": ["public", "internal", "confidential", "restricted"],
+      "additionalProperties": false,
+      "properties": {
+        "public": { "$ref": "#/definitions/sensitivity_entry" },
+        "internal": { "$ref": "#/definitions/sensitivity_entry" },
+        "confidential": { "$ref": "#/definitions/sensitivity_entry" },
+        "restricted": { "$ref": "#/definitions/sensitivity_entry" }
+      }
+    },
+    "criticality_adjustments": {
+      "type": "object",
+      "required": ["low", "medium", "high", "critical"],
+      "additionalProperties": false,
+      "properties": {
+        "low": { "$ref": "#/definitions/criticality_entry" },
+        "medium": { "$ref": "#/definitions/criticality_entry" },
+        "high": { "$ref": "#/definitions/criticality_entry" },
+        "critical": { "$ref": "#/definitions/criticality_entry" }
+      }
+    },
+    "validation_constraints": {
+      "type": "object",
+      "required": [
+        "min_years",
+        "max_X_years",
+        "max_Y_years",
+        "max_Z_years"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "min_years": { "type": "number", "minimum": 0 },
+        "max_X_years": { "type": "number", "minimum": 1 },
+        "max_Y_years": { "type": "number", "minimum": 1 },
+        "max_Z_years": { "type": "number", "minimum": 1 }
+      }
+    }
+  },
+  "definitions": {
+    "scenario_params": {
+      "type": "object",
+      "required": ["Z_quantum_threat_years", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "Z_quantum_threat_years": { "type": "number", "minimum": 1, "maximum": 50 },
+        "Y_multiplier": { "type": "number", "minimum": 0.1, "maximum": 5.0 },
+        "description": { "type": "string" }
+      }
+    },
+    "sensitivity_entry": {
+      "type": "object",
+      "required": ["shelf_life_multiplier", "base_X_years", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "shelf_life_multiplier": { "type": "number", "minimum": 0, "maximum": 10 },
+        "base_X_years": { "type": "number", "minimum": 0, "maximum": 100 },
+        "description": { "type": "string" }
+      }
+    },
+    "criticality_entry": {
+      "type": "object",
+      "required": ["migration_urgency_multiplier", "risk_weight", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "migration_urgency_multiplier": { "type": "number", "minimum": 0.1, "maximum": 5.0 },
+        "risk_weight": { "type": "number", "minimum": 0.1, "maximum": 5.0 },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

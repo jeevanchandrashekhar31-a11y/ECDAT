@@ -13,6 +13,7 @@ const {
   MoscaStatus,
   QuantumRelevance,
   EvidenceConfidence,
+  AssetType,
 } = require("./types");
 
 const SEVERITY_LEVELS = [
@@ -194,8 +195,12 @@ function classifyFinding(input) {
 
   // 5. Evaluate Mosca Quantum Risk
   const isIntegrityOnly =
-    matchedRule?.category === "digital_signature" ||
-    matchedRule?.category === "hash";
+    (matchedRule?.category === "digital_signature" ||
+      matchedRule?.category === "hash" ||
+      assetType === AssetType.CERTIFICATE ||
+      input.category === "digital_signature") &&
+    input.category !== "key_exchange" &&
+    assetType !== AssetType.NETWORK_SESSION;
   const moscaResult = calculateMosca({
     assetType,
     dataSensitivity,
@@ -231,7 +236,12 @@ function classifyFinding(input) {
   ) {
     severity = Severities.HIGH;
   } else if (policyViolations.length > 0) {
-    severity = Severities.MEDIUM;
+    severity =
+      profileName === "regulated_bfsi" ||
+      profileName === "government_high_value" ||
+      profile?.cicd_fail_threshold === "medium"
+        ? Severities.HIGH
+        : Severities.MEDIUM;
   } else if (
     classicalRisk === "medium" ||
     moscaResult.status === MoscaStatus.WATCH

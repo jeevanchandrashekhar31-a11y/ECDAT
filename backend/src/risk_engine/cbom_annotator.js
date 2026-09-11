@@ -9,6 +9,7 @@ function extractComponentCryptoDetails(component) {
   let keySize = null;
   let assetType = "file";
   let category = null;
+  let evidenceType = null;
   let certificateProperties = null;
   let protocolProperties = null;
 
@@ -30,10 +31,17 @@ function extractComponentCryptoDetails(component) {
       assetType = "hardcoded_private_key";
       category = "key_material";
     } else if (cpAssetType === "algorithm") {
+      if (component["bom-ref"]?.startsWith("net:")) {
+        assetType = "network_session";
+        category = "key_exchange";
+      }
       const algoProps = cryptoProps.algorithmProperties || {};
       if (algoProps.parameterSetIdentifier) {
         const size = parseInt(algoProps.parameterSetIdentifier, 10);
         if (!isNaN(size)) keySize = size;
+      }
+      if (algoProps.algorithmFamily === "ECC/DH" || algoProps.algorithmFamily === "DH") {
+        category = "key_exchange";
       }
     }
   }
@@ -41,11 +49,15 @@ function extractComponentCryptoDetails(component) {
   // Component type overrides
   if (component.type === "library") {
     assetType = "library_presence";
+    evidenceType = "package_inventory";
   }
 
   // Extract from properties if available
   const properties = component.properties || [];
   for (const prop of properties) {
+    if (prop.name === "ecdat:evidence_type") {
+      evidenceType = prop.value;
+    }
     if (prop.name === "ecdat:isSelfSigned") {
       certificateProperties = certificateProperties || {};
       certificateProperties.isSelfSigned = prop.value === "true";
@@ -68,6 +80,7 @@ function extractComponentCryptoDetails(component) {
     keySize,
     assetType,
     category,
+    evidenceType,
     certificateProperties,
     protocolProperties,
   };
@@ -110,6 +123,15 @@ function annotateCbom(cbomData, options = {}) {
   const classifiedResults = [];
 
   for (const comp of components) {
+    // Skip root target containers (e.g. host application/service) that are not crypto assets or libraries
+    if (
+      (comp.type === "application" || comp.type === "service" || comp.type === "device") &&
+      !comp.cryptoProperties &&
+      comp.type !== "cryptographic-asset"
+    ) {
+      continue;
+    }
+
     const details = extractComponentCryptoDetails(comp);
     const findingContext = comp["bom-ref"] || comp.name || "crypto-asset";
 
@@ -118,6 +140,8 @@ function annotateCbom(cbomData, options = {}) {
       algorithm: details.algorithm,
       keySize: details.keySize,
       assetType: details.assetType,
+      category: details.category,
+      evidenceType: details.evidenceType,
       policyProfile,
       scenario,
       certificateProperties: details.certificateProperties,

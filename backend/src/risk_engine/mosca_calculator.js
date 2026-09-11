@@ -79,6 +79,13 @@ function calculateMosca({
     finalY = baseY * critUrgencyMult * scenarioYMult;
   }
 
+  // Non-Shor vulnerable assets (symmetric ciphers, hashes, protocols, quantum-safe schemes)
+  // do not suffer from polynomial-time quantum cryptanalysis or quantum HNDL shelf-life exposure.
+  if (quantumRelevance !== QuantumRelevance.SHOR_VULNERABLE) {
+    finalX = 0;
+    finalY = 0;
+  }
+
   // 3. Determine Z (Time until CRQC)
   const finalZ = scenarioConfig.Z_quantum_threat_years;
 

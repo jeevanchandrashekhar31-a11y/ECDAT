@@ -1,0 +1,119 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:68e9860b-8d59-4b68-8e6d-5a93df75e119",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-09-04T20:00:00Z",
+    "tools": {
+      "components": [
+        { "name": "ecdat-scanner-network", "version": "1.0.0" },
+        { "name": "ecdat-scanner-static", "version": "1.0.0" },
+        { "name": "ecdat-scanner-binary", "version": "1.0.0" }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "cryptographic-asset",
+      "name": "TLS 1.0 Protocol Session",
+      "bom-ref": "net:tls/gateway.internal.bank:443",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "type": "tls",
+          "version": "TLS 1.0",
+          "cipherSuites": [
+            { "name": "TLS_RSA_WITH_AES_128_CBC_SHA" }
+          ]
+        }
+      },
+      "properties": [
+        { "name": "ecdat:scanner", "value": "network" },
+        { "name": "ecdat:target", "value": "gateway.internal.bank:443" },
+        { "name": "ecdat:asset_type", "value": "network_session" },
+        { "name": "ecdat:data_sensitivity", "value": "critical" }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "name": "RSA-2048 Server Certificate",
+      "bom-ref": "net:cert/gateway.internal.bank:443",
+      "cryptoProperties": {
+        "assetType": "certificate",
+        "certificateProperties": {
+          "subjectName": "CN=gateway.internal.bank",
+          "issuerName": "CN=Internal Bank Root CA",
+          "isExpired": false,
+          "isSelfSigned": false
+        }
+      },
+      "properties": [
+        { "name": "ecdat:algorithm", "value": "RSA" },
+        { "name": "ecdat:key_size", "value": "2048" },
+        { "name": "ecdat:scanner", "value": "network" },
+        { "name": "ecdat:asset_type", "value": "certificate" },
+        { "name": "ecdat:business_criticality", "value": "critical" }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "name": "Legacy MD5 Checksum Routine",
+      "bom-ref": "static:ast/src/auth/token_hasher.c:42",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "hash",
+          "executionEnvironment": "application"
+        }
+      },
+      "properties": [
+        { "name": "ecdat:algorithm", "value": "MD5" },
+        { "name": "ecdat:scanner", "value": "static" },
+        { "name": "ecdat:asset_type", "value": "source_code_call" },
+        { "name": "ecdat:file_path", "value": "src/auth/token_hasher.c" },
+        { "name": "ecdat:line_number", "value": "42" },
+        { "name": "ecdat:confidence", "value": "high" },
+        { "name": "ecdat:analysis_source", "value": "tree_sitter_ast" }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "name": "OpenSSL 1.1.1u Shared Library",
+      "bom-ref": "pkg:deb/debian/libssl1.1@1.1.1u-1~deb11u1?arch=amd64",
+      "version": "1.1.1u-1~deb11u1",
+      "purl": "pkg:deb/debian/libssl1.1@1.1.1u-1~deb11u1?arch=amd64",
+      "cryptoProperties": {
+        "assetType": "related-crypto-material"
+      },
+      "properties": [
+        { "name": "ecdat:scanner", "value": "binary_container" },
+        { "name": "ecdat:evidence_type", "value": "package_inventory" },
+        { "name": "ecdat:confidence", "value": "medium" },
+        { "name": "ecdat:asset_type", "value": "library_presence" },
+        { "name": "ecdat:canonical_name", "value": "OpenSSL" },
+        { "name": "ecdat:disclaimer", "value": "Library presence does not prove active crypto usage." }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "name": "Database Customer Storage Vault",
+      "bom-ref": "db:vault/customer_pii_vault",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "block-cipher",
+          "executionEnvironment": "operating-system"
+        }
+      },
+      "properties": [
+        { "name": "ecdat:algorithm", "value": "AES" },
+        { "name": "ecdat:key_size", "value": "128" },
+        { "name": "ecdat:scanner", "value": "combined" },
+        { "name": "ecdat:asset_type", "value": "stored_encrypted_data" },
+        { "name": "ecdat:data_sensitivity", "value": "critical" },
+        { "name": "ecdat:business_criticality", "value": "high" }
+      ]
+    }
+  ]
+}

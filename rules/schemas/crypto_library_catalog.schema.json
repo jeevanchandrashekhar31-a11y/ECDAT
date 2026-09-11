@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CryptoLibraryCatalogSchema",
+  "description": "Schema for cryptographic library catalog and confidence limits in ECDAT.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "canonical_name",
+      "aliases",
+      "ecosystems",
+      "typical_capabilities",
+      "confidence_limits",
+      "pqc_support",
+      "description"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "canonical_name": { "type": "string" },
+      "aliases": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "ecosystems": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "typical_capabilities": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "confidence_limits": {
+        "type": "string",
+        "enum": ["high", "medium", "low"]
+      },
+      "pqc_support": { "type": "string" },
+      "description": { "type": "string" }
+    }
+  }
+}

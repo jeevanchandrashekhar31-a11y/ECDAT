@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PQCRecommendationsSchema",
+  "description": "Schema for context-aware Post-Quantum Cryptography and Classical remediation recommendations in ECDAT.",
+  "type": "object",
+  "required": ["version", "description", "recommendations"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "last_updated": {
+      "type": "string"
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "recommendation_id",
+          "target_category",
+          "current_condition",
+          "proposed_option",
+          "standard_reference",
+          "security_rationale",
+          "compatibility_risk",
+          "estimated_migration_complexity",
+          "latency_impact_category",
+          "bandwidth_storage_impact_category",
+          "cost_category",
+          "hybrid_transition_recommended",
+          "confidence_and_assumptions"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "recommendation_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_\\-]+$"
+          },
+          "target_category": {
+            "type": "string",
+            "enum": [
+              "key_establishment",
+              "digital_signature",
+              "tls_protocol",
+              "ssh_protocol",
+              "stored_data_encryption",
+              "classical_hash_migration",
+              "symmetric_cipher_quantum_margin",
+              "hardcoded_key_remediation",
+              "library_inventory",
+              "pki_certificate"
+            ]
+          },
+          "applies_to_algorithms": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "current_condition": {
+            "type": "string",
+            "description": "Description of the triggering cryptographic configuration, key size, or usage context."
+          },
+          "proposed_option": {
+            "type": "string",
+            "description": "Concrete target algorithm, standard, or hybrid configuration recommended for migration."
+          },
+          "standard_reference": {
+            "type": "string",
+            "description": "Specific standard or guidance (e.g. NIST FIPS 203, FIPS 204, FIPS 205, CNSA 2.0, RFC 9180, BSI TR-02102)."
+          },
+          "security_rationale": {
+            "type": "string"
+          },
+          "compatibility_risk": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "estimated_migration_complexity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "very_high"]
+          },
+          "latency_impact_category": {
+            "type": "string",
+            "enum": ["negligible", "minor", "moderate", "significant"]
+          },
+          "bandwidth_storage_impact_category": {
+            "type": "string",
+            "enum": ["negligible", "minor", "moderate", "significant"]
+          },
+          "cost_category": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "hybrid_transition_recommended": {
+            "type": "boolean"
+          },
+          "confidence_and_assumptions": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

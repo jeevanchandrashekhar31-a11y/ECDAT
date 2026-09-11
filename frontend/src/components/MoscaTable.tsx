@@ -74,7 +74,7 @@ export const MoscaTable: React.FC<MoscaTableProps> = ({ rows, scanId, limit }) =
             <th className="py-3 px-3 text-center" title="X + Y total transition burden">
               X + Y
             </th>
-            <th className="py-3 px-3 text-center" title="Quantum security margin: Z - (X + Y)">
+            <th className="py-3 px-3 text-center" title="Quantum threat margin: (X + Y) - Z (>0 deficit, <=0 buffer)">
               Margin
             </th>
             <th className="py-3 px-3">Mosca Status</th>
@@ -83,7 +83,7 @@ export const MoscaTable: React.FC<MoscaTableProps> = ({ rows, scanId, limit }) =
         </thead>
         <tbody className="divide-y divide-slate-800/60 text-slate-200 font-mono">
           {displayRows.map((row, idx) => {
-            const isNegative = row.mosca_margin_years < 0;
+            const isDeficit = row.mosca_margin_years > 0;
             return (
               <tr key={`${row.asset_id}-${idx}`} className="hover:bg-slate-800/40 transition-colors">
                 <td
@@ -99,7 +99,7 @@ export const MoscaTable: React.FC<MoscaTableProps> = ({ rows, scanId, limit }) =
                 <td className="py-3 px-2 text-center text-slate-300">{row.Y_migration_years}y</td>
                 <td className="py-3 px-2 text-center text-slate-300">{row.Z_quantum_threat_years}y</td>
                 <td className="py-3 px-3 text-center font-bold text-slate-100">{row.mosca_sum_years}y</td>
-                <td className={`py-3 px-3 text-center font-bold ${isNegative ? 'text-rose-400' : 'text-emerald-400'}`}>
+                <td className={`py-3 px-3 text-center font-bold ${isDeficit ? 'text-rose-400' : 'text-emerald-400'}`}>
                   {row.mosca_margin_years > 0 ? `+${row.mosca_margin_years}y` : `${row.mosca_margin_years}y`}
                 </td>
                 <td className="py-3 px-3 font-sans">

@@ -37,6 +37,35 @@ test("API - GET /health returns 200 with service status and version", async () =
   });
 });
 
+test("Scanner Pipeline - /cbom/risk, /cbom/merged, and /cbom/quantum-risk return 404 when no scan has run", async () => {
+  await withServer(async (baseUrl) => {
+    // 1. GET /cbom/risk
+    const riskRes = await fetch(`${baseUrl}/cbom/risk`);
+    assert.strictEqual(riskRes.status, 404);
+    const riskData = await riskRes.json();
+    assert.strictEqual(riskData.error, "NotFound");
+    assert.ok(riskData.message.toLowerCase().includes("no scan has been run yet"));
+
+    // 2. GET /cbom/merged
+    const mergedRes = await fetch(`${baseUrl}/cbom/merged`);
+    assert.strictEqual(mergedRes.status, 404);
+    const mergedData = await mergedRes.json();
+    assert.strictEqual(mergedData.error, "NotFound");
+    assert.ok(mergedData.message.toLowerCase().includes("no scan has been run yet"));
+
+    // 3. POST /cbom/quantum-risk without prior scan or payload
+    const qrRes = await fetch(`${baseUrl}/cbom/quantum-risk`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    assert.strictEqual(qrRes.status, 404);
+    const qrData = await qrRes.json();
+    assert.strictEqual(qrData.error, "NotFound");
+    assert.ok(qrData.message.toLowerCase().includes("no scan has been run yet"));
+  });
+});
+
 test("API - Bad JSON payload returns safe 400 error", async () => {
   await withServer(async (baseUrl) => {
     const res = await fetch(`${baseUrl}/api/v1/cbom/ingest`, {

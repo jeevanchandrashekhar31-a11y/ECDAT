@@ -1,0 +1,366 @@
+{
+  "version": "1.0.0",
+  "description": "ECDAT Cryptographic Algorithm and Protocol Risk Assessment Rules",
+  "last_updated": "2026-09-04",
+  "algorithms": [
+    {
+      "id": "md5",
+      "canonical_name": "MD5",
+      "category": "hash",
+      "aliases": ["md5", "evp_md5", "mbedtls_md5", "wc_md5hash", "crypto.md5"],
+      "classical_risk_level": "critical",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "MD5 is completely broken classically due to practical collision attacks (RFC 6151). Collision generation takes seconds.",
+      "evidence_required": ["hash_call", "digest_output", "certificate_signature"],
+      "remediation_hint": "Migrate immediately to SHA-256 or SHA-3/BLAKE3 for general hashing; Argon2id for password hashing.",
+      "references": ["RFC 6151", "NIST SP 800-131A Rev 2"]
+    },
+    {
+      "id": "sha1",
+      "canonical_name": "SHA-1",
+      "category": "hash",
+      "aliases": ["sha1", "sha-1", "evp_sha1", "mbedtls_sha1", "wc_sha"],
+      "classical_risk_level": "high",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "SHA-1 has proven practical collision attacks (SHAttered, Shambles). Forbidden for digital signatures and certificates by NIST since Dec 2022.",
+      "evidence_required": ["hash_call", "tls_signature_algorithm", "certificate_signature"],
+      "remediation_hint": "Upgrade to SHA-256, SHA-384, or SHA-3. For HMAC, SHA-1 is not broken by collisions but should be phased out.",
+      "references": ["NIST SP 800-131A Rev 2", "CAB Forum Baseline Requirements"]
+    },
+    {
+      "id": "sha224",
+      "canonical_name": "SHA-224",
+      "category": "hash",
+      "aliases": ["sha224", "sha-224", "evp_sha224"],
+      "classical_risk_level": "low",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "SHA-224 provides 112 bits of classical collision resistance. Being phased out in favor of SHA-256+.",
+      "evidence_required": ["hash_call"],
+      "remediation_hint": "Adopt standard SHA-256 for broader interoperability and 128-bit security level.",
+      "references": ["FIPS 180-4"]
+    },
+    {
+      "id": "sha256",
+      "canonical_name": "SHA-256",
+      "category": "hash",
+      "aliases": ["sha256", "sha-256", "evp_sha256", "mbedtls_sha256"],
+      "classical_risk_level": "none",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "Standard secure hash algorithm providing 128-bit collision resistance and 256-bit preimage resistance against classical attackers. Grover search reduces preimage to 128 bits, which remains secure.",
+      "evidence_required": ["hash_call", "signature_hash"],
+      "remediation_hint": "Compliant and secure for general applications.",
+      "references": ["FIPS 180-4", "NIST SP 800-57 Part 1"]
+    },
+    {
+      "id": "sha384",
+      "canonical_name": "SHA-384",
+      "category": "hash",
+      "aliases": ["sha384", "sha-384", "evp_sha384"],
+      "classical_risk_level": "none",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "Standard high-security hash algorithm providing 192-bit classical collision resistance. Recommended for CNSA Suite and Top Secret data.",
+      "evidence_required": ["hash_call"],
+      "remediation_hint": "Secure and recommended for high-security applications.",
+      "references": ["FIPS 180-4", "NSA CNSA Suite"]
+    },
+    {
+      "id": "sha512",
+      "canonical_name": "SHA-512",
+      "category": "hash",
+      "aliases": ["sha512", "sha-512", "evp_sha512"],
+      "classical_risk_level": "none",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "Standard high-security hash algorithm providing 256-bit collision resistance and 512-bit preimage resistance.",
+      "evidence_required": ["hash_call"],
+      "remediation_hint": "Secure and recommended for high-performance 64-bit architectures.",
+      "references": ["FIPS 180-4"]
+    },
+    {
+      "id": "sha3",
+      "canonical_name": "SHA-3",
+      "category": "hash",
+      "aliases": ["sha3", "sha-3", "keccak", "sha3-256", "sha3-512"],
+      "classical_risk_level": "none",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "Sponge-construction hash function resistant to length-extension attacks. Provides strong quantum security margin against Grover's algorithm.",
+      "evidence_required": ["hash_call"],
+      "remediation_hint": "State-of-the-art secure hash standard.",
+      "references": ["FIPS 202"]
+    },
+    {
+      "id": "rsa",
+      "canonical_name": "RSA",
+      "category": "asymmetric_encryption",
+      "aliases": ["rsa", "rsa_generate_key_ex", "rsa_new", "pkcs1", "oaep"],
+      "classical_risk_level": "low",
+      "quantum_relevance": "shor_vulnerable",
+      "conditions": [
+        {
+          "condition": "Key size < 2048 bits",
+          "key_size_threshold_bits": 2048,
+          "operator": "<",
+          "classical_risk_level": "critical",
+          "note": "RSA keys under 2048 bits are factorable or insecure against modern compute."
+        },
+        {
+          "condition": "Key size == 2048 bits",
+          "key_size_threshold_bits": 2048,
+          "operator": "==",
+          "classical_risk_level": "medium",
+          "note": "2048-bit RSA provides 112-bit classical security; disallowed by NIST after 2030."
+        },
+        {
+          "condition": "Key size >= 3072 bits",
+          "key_size_threshold_bits": 3072,
+          "operator": ">=",
+          "classical_risk_level": "none",
+          "note": "3072-bit and 4096-bit RSA provide 128-bit classical security, but completely vulnerable to Shor's algorithm on a CRQC."
+        }
+      ],
+      "deprecation_notes": "All RSA variants are fully broken by Shor's algorithm on a Cryptographically Relevant Quantum Computer (CRQC), which factors integers in polynomial time.",
+      "evidence_required": ["key_size", "certificate_public_key", "ast_rsa_api"],
+      "remediation_hint": "Plan migration to ML-KEM (FIPS 203) for key encapsulation and ML-DSA / SLH-DSA (FIPS 204/205) for signatures. Use hybrid schemes (e.g. X25519+ML-KEM-768) during transition.",
+      "references": ["NIST SP 800-57", "NIST FIPS 203", "NIST FIPS 204"]
+    },
+    {
+      "id": "dsa",
+      "canonical_name": "DSA",
+      "category": "digital_signature",
+      "aliases": ["dsa", "wc_dsasign", "wc_dsaverify"],
+      "classical_risk_level": "critical",
+      "quantum_relevance": "shor_vulnerable",
+      "deprecation_notes": "DSA is deprecated in FIPS 186-5 for digital signature generation. Fragile to nonce reuse and broken by Shor's algorithm.",
+      "evidence_required": ["signature_algorithm", "key_type"],
+      "remediation_hint": "Migrate to Ed25519 classically or ML-DSA (FIPS 204) for post-quantum security.",
+      "references": ["NIST FIPS 186-5"]
+    },
+    {
+      "id": "ecdsa",
+      "canonical_name": "ECDSA",
+      "category": "digital_signature",
+      "aliases": ["ecdsa", "ec_key_new_by_curve_name", "crypto/ecdsa", "webcrypto.ecdsa", "ec", "ecc", "ec-256", "ec-384", "ec-521", "ecc-256", "ecc-384", "ecc-521"],
+      "classical_risk_level": "none",
+      "quantum_relevance": "shor_vulnerable",
+      "conditions": [
+        {
+          "condition": "Curve size < 256 bits (e.g. secp160r1, secp192r1)",
+          "key_size_threshold_bits": 256,
+          "operator": "<",
+          "classical_risk_level": "critical",
+          "note": "Curves smaller than 256 bits have inadequate classical security."
+        },
+        {
+          "condition": "Curve P-256 or P-384",
+          "key_size_threshold_bits": 256,
+          "operator": ">=",
+          "classical_risk_level": "none",
+          "note": "Classically secure, but completely broken by Shor's algorithm on a CRQC."
+        }
+      ],
+      "deprecation_notes": "Elliptic Curve Discrete Logarithm Problem (ECDLP) is solved in polynomial time by Shor's algorithm. All NIST and SECG curves will be broken by a CRQC.",
+      "evidence_required": ["curve_name", "key_size", "signature_algorithm"],
+      "remediation_hint": "Migrate to ML-DSA (FIPS 204) or stateful hash signatures (LMS/XMSS) for firmware. Use dual-signature hybrid schemes in interim.",
+      "references": ["NIST FIPS 186-5", "NIST FIPS 204"]
+    },
+    {
+      "id": "ecdh",
+      "canonical_name": "ECDH",
+      "category": "key_exchange",
+      "aliases": ["ecdh", "ec_key", "secp256r1", "prime256v1", "secp384r1"],
+      "classical_risk_level": "none",
+      "quantum_relevance": "shor_vulnerable",
+      "deprecation_notes": "Classically sound with curves >= 256 bits, but vulnerable to Harvest-Now-Decrypt-Later (HNDL) attacks because recorded key exchanges can be retroactively broken by Shor's algorithm.",
+      "evidence_required": ["tls_cipher_suite", "key_exchange_group"],
+      "remediation_hint": "Adopt hybrid key exchange combining X25519 or P-256 with ML-KEM-768 (X25519MLKEM768).",
+      "references": ["IETF draft-ietf-tls-hybrid-design", "NIST FIPS 203"]
+    },
+    {
+      "id": "dh",
+      "canonical_name": "Diffie-Hellman",
+      "category": "key_exchange",
+      "aliases": ["dh", "diffie-hellman", "dh_new", "dhe"],
+      "classical_risk_level": "medium",
+      "quantum_relevance": "shor_vulnerable",
+      "conditions": [
+        {
+          "condition": "DH group < 2048 bits",
+          "key_size_threshold_bits": 2048,
+          "operator": "<",
+          "classical_risk_level": "critical",
+          "note": "Logjam attack showed 1024-bit DH can be broken by nation-state classical compute."
+        },
+        {
+          "condition": "DH group >= 2048 bits",
+          "key_size_threshold_bits": 2048,
+          "operator": ">=",
+          "classical_risk_level": "low",
+          "note": "Classically acceptable, but broken by Shor's algorithm on a CRQC."
+        }
+      ],
+      "deprecation_notes": "Finite-field DH is computationally expensive, prone to small-subgroup attacks, and completely broken by Shor's algorithm.",
+      "evidence_required": ["dh_group_size", "tls_cipher_suite"],
+      "remediation_hint": "Replace with ECDH (X25519) combined with ML-KEM-768.",
+      "references": ["RFC 7919", "NIST SP 800-56A Rev 3"]
+    },
+    {
+      "id": "x25519",
+      "canonical_name": "X25519",
+      "category": "key_exchange",
+      "aliases": ["x25519", "curve25519", "ed25519_key_exchange"],
+      "classical_risk_level": "none",
+      "quantum_relevance": "shor_vulnerable",
+      "deprecation_notes": "Gold-standard classical ECDH key exchange offering 128-bit security, high performance, and side-channel resistance. Vulnerable to Shor's algorithm on a CRQC.",
+      "evidence_required": ["tls_supported_group", "key_exchange_call"],
+      "remediation_hint": "Combine with ML-KEM-768 in hybrid mode (X25519MLKEM768) to protect against Harvest-Now-Decrypt-Later.",
+      "references": ["RFC 7748", "NIST FIPS 203"]
+    },
+    {
+      "id": "aes",
+      "canonical_name": "AES",
+      "category": "symmetric_cipher",
+      "aliases": ["aes", "evp_aes_128_gcm", "evp_aes_256_gcm", "aes-cbc", "aes-gcm", "aes-ctr"],
+      "classical_risk_level": "none",
+      "quantum_relevance": "grover_sensitive",
+      "conditions": [
+        {
+          "condition": "AES-128",
+          "key_size_threshold_bits": 128,
+          "operator": "==",
+          "classical_risk_level": "none",
+          "note": "AES-128 provides 128-bit classical security. Grover's algorithm provides a quadratic speedup, reducing effective security to 64 bits against an optimal quantum exhaustive search."
+        },
+        {
+          "condition": "AES-256",
+          "key_size_threshold_bits": 256,
+          "operator": "==",
+          "classical_risk_level": "none",
+          "note": "AES-256 provides 256-bit classical security and 128-bit quantum security against Grover's algorithm, satisfying all post-quantum security levels."
+        }
+      ],
+      "deprecation_notes": "AES is NOT broken by quantum computers. Grover's algorithm halves key length search complexity (O(2^(n/2))), meaning AES-256 retains 128 bits of quantum security margin.",
+      "evidence_required": ["cipher_name", "key_size", "mode_of_operation"],
+      "remediation_hint": "For long-lived confidential data (shelf-life > 10 years), upgrade from AES-128 to AES-256 in authenticated modes (GCM, GCM-SIV). Ensure GCM nonces are never reused.",
+      "references": ["FIPS 197", "NIST SP 800-38D", "CNSA 2.0"]
+    },
+    {
+      "id": "des",
+      "canonical_name": "DES",
+      "category": "symmetric_cipher",
+      "aliases": ["des", "evp_des_ecb", "evp_des_cbc", "des_encrypt"],
+      "classical_risk_level": "critical",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "Single DES has a 56-bit key which can be brute-forced in hours classically (RFC 4772). Formally withdrawn by NIST.",
+      "evidence_required": ["cipher_call"],
+      "remediation_hint": "Immediately replace with AES-256-GCM or ChaCha20-Poly1305.",
+      "references": ["NIST SP 800-131A"]
+    },
+    {
+      "id": "3des",
+      "canonical_name": "3DES",
+      "category": "symmetric_cipher",
+      "aliases": ["3des", "triple-des", "des-ede3", "evp_des_ede3"],
+      "classical_risk_level": "high",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "Sweet32 attack (CVE-2016-2183) exploits 64-bit block size collision vulnerability. Disallowed in TLS and deprecated by NIST after 2023.",
+      "evidence_required": ["cipher_call", "tls_cipher_suite"],
+      "remediation_hint": "Replace with AES-GCM (128 or 256-bit).",
+      "references": ["NIST SP 800-67 Rev 2", "CVE-2016-2183"]
+    },
+    {
+      "id": "rc2",
+      "canonical_name": "RC2",
+      "category": "symmetric_cipher",
+      "aliases": ["rc2", "evp_rc2_cbc", "evp_rc2_40_cbc"],
+      "classical_risk_level": "critical",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "Vulnerable to related-key attacks and typically deployed with weak 40-bit export keys.",
+      "evidence_required": ["cipher_call"],
+      "remediation_hint": "Replace with AES-256-GCM.",
+      "references": ["RFC 2268"]
+    },
+    {
+      "id": "rc4",
+      "canonical_name": "RC4",
+      "category": "symmetric_cipher",
+      "aliases": ["rc4", "arcfour", "evp_rc4", "crypto.rc4"],
+      "classical_risk_level": "critical",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "RC4 contains profound statistical biases in keystream (Bar Mitzvah, RC4 NOMORE attacks). Prohibited in TLS by RFC 7465.",
+      "evidence_required": ["cipher_call", "tls_cipher_suite"],
+      "remediation_hint": "Prohibit all RC4 usage immediately; replace with AES-GCM or ChaCha20-Poly1305.",
+      "references": ["RFC 7465", "RFC 7568"]
+    },
+    {
+      "id": "chacha20_poly1305",
+      "canonical_name": "ChaCha20-Poly1305",
+      "category": "symmetric_cipher",
+      "aliases": ["chacha20-poly1305", "chacha20_poly1305", "evp_chacha20_poly1305"],
+      "classical_risk_level": "none",
+      "quantum_relevance": "grover_sensitive",
+      "deprecation_notes": "High-performance authenticated cipher resistant to cache-timing attacks. 256-bit key provides 128 bits of security against Grover search.",
+      "evidence_required": ["cipher_call", "tls_cipher_suite"],
+      "remediation_hint": "Excellent secure cipher for mobile and embedded platforms without hardware AES acceleration.",
+      "references": ["RFC 8439"]
+    },
+    {
+      "id": "tls10",
+      "canonical_name": "TLS 1.0",
+      "category": "protocol",
+      "aliases": ["tls1.0", "tlsv1.0", "tlsv1_0", "tls_1_0"],
+      "classical_risk_level": "critical",
+      "quantum_relevance": "not_applicable",
+      "deprecation_notes": "Formally deprecated by IETF in RFC 8996. Vulnerable to BEAST, POODLE, CBC-padding oracle attacks, and weak MD5/SHA-1 signatures.",
+      "evidence_required": ["tls_protocol_version"],
+      "remediation_hint": "Disable TLS 1.0 across all servers and clients; require TLS 1.2 or TLS 1.3.",
+      "references": ["RFC 8996", "PCI-DSS v4.0"]
+    },
+    {
+      "id": "tls11",
+      "canonical_name": "TLS 1.1",
+      "category": "protocol",
+      "aliases": ["tls1.1", "tlsv1.1", "tlsv1_1", "tls_1_1"],
+      "classical_risk_level": "critical",
+      "quantum_relevance": "not_applicable",
+      "deprecation_notes": "Formally deprecated by IETF in RFC 8996. Relies on SHA-1 handshakes and lacks modern AEAD-only ciphersuites.",
+      "evidence_required": ["tls_protocol_version"],
+      "remediation_hint": "Disable TLS 1.1 across all configurations; require TLS 1.2 or TLS 1.3.",
+      "references": ["RFC 8996", "NIST SP 800-52 Rev 2"]
+    },
+    {
+      "id": "tls12",
+      "canonical_name": "TLS 1.2",
+      "category": "protocol",
+      "aliases": ["tls1.2", "tlsv1.2", "tlsv1_2", "tls_1_2"],
+      "classical_risk_level": "low",
+      "quantum_relevance": "not_applicable",
+      "conditions": [
+        {
+          "condition": "TLS 1.2 with static RSA or CBC ciphers",
+          "classical_risk_level": "high",
+          "note": "Static RSA lacks Forward Secrecy; CBC mode vulnerable to Lucky13 timing attacks."
+        },
+        {
+          "condition": "TLS 1.2 with ECDHE-GCM",
+          "classical_risk_level": "none",
+          "note": "Classically secure with AEAD ciphers and Ephemeral Diffie-Hellman."
+        }
+      ],
+      "deprecation_notes": "TLS 1.2 supports legacy insecure cipher suites and relies on classical key exchange (ECDHE/DHE) vulnerable to Harvest-Now-Decrypt-Later.",
+      "evidence_required": ["tls_protocol_version", "negotiated_cipher_suite"],
+      "remediation_hint": "Mandate AEAD ciphersuites only. Enable TLS 1.3 with hybrid post-quantum key exchange.",
+      "references": ["RFC 5246", "NIST SP 800-52 Rev 2"]
+    },
+    {
+      "id": "tls13",
+      "canonical_name": "TLS 1.3",
+      "category": "protocol",
+      "aliases": ["tls1.3", "tlsv1.3", "tlsv1_3", "tls_1_3"],
+      "classical_risk_level": "none",
+      "quantum_relevance": "not_applicable",
+      "deprecation_notes": "Current state-of-the-art TLS protocol. Eliminates legacy insecure ciphers and mandates forward secrecy. Classical key exchange remains vulnerable to CRQC without hybrid PQC groups.",
+      "evidence_required": ["tls_protocol_version", "supported_groups"],
+      "remediation_hint": "Configure TLS 1.3 with hybrid post-quantum key exchange groups (X25519MLKEM768 or SecP256r1MLKEM768).",
+      "references": ["RFC 8446", "IETF draft-ietf-tls-hybrid-design"]
+    }
+  ]
+}

@@ -43,7 +43,7 @@ async function run() {
   let scenario = "baseline";
   let scanLabel = null;
   let scannerType = "combined";
-  let projectName = "demo_project";
+  let projectName = "default_project";
   let failOn = "none";
   let summaryOut = null;
   let annotatedOut = null;
@@ -88,8 +88,10 @@ async function run() {
   }
 
   if (!filePath) {
-    // Default demo fallback path
-    filePath = path.resolve(__dirname, "../../../artifacts/merged_cbom.json");
+    console.error(
+      `\n[ERROR] CBOM file path is required.\nUsage: node src/scripts/import_cbom.js <filepath> [--policy-profile <policy>] [--scenario <scenario>] [--fail-on <gate>]\n`,
+    );
+    process.exit(1);
   }
 
   const resolvedPath = path.isAbsolute(filePath)
@@ -122,7 +124,7 @@ async function run() {
   }
 
   try {
-    const label = scanLabel || `Demo Import: ${path.basename(resolvedPath)}`;
+    const label = scanLabel || `Imported CBOM: ${path.basename(resolvedPath)}`;
     const scanRecord = await ingestCbom(cbomData, {
       policyProfile,
       scenario,

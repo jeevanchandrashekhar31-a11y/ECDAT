@@ -84,6 +84,10 @@ def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
             comp.properties.add(Property(name="ecdat:isExpired", value=str(cert.get("isExpired")).lower()))
         if cert.get("isSelfSigned") is not None:
             comp.properties.add(Property(name="ecdat:isSelfSigned", value=str(cert.get("isSelfSigned")).lower()))
+        if cert.get("algo_family"):
+            comp.properties.add(Property(name="ecdat:algorithm", value=str(cert.get("algo_family"))))
+        if cert.get("key_size"):
+            comp.properties.add(Property(name="ecdat:key_size", value=str(cert.get("key_size"))))
         comp.properties.add(Property(name="ecdat:chainPosition", value=position))
 
         bom.components.add(comp)
@@ -185,6 +189,9 @@ def binary_finding_to_cbom(finding: BinaryContainerFinding) -> Bom:
         comp.properties.add(Property(name="syft:cpe", value=finding.cpe))
     if finding.artifact_path:
         comp.properties.add(Property(name="syft:artifact_path", value=finding.artifact_path))
+    if finding.crypto_library:
+        comp.properties.add(Property(name="ecdat:crypto_library", value=finding.crypto_library))
+        comp.properties.add(Property(name="ecdat:algorithm", value=finding.crypto_library))
 
     bom.components.add(comp)
     return bom

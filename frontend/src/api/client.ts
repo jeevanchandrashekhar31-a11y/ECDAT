@@ -271,14 +271,14 @@ export const api = {
     const gitUrl = options.github_url || (isGit ? rawTarget : undefined);
     const targetDir = !isGit && rawTarget ? rawTarget : undefined;
 
+    const payload: Record<string, any> = { ...options };
+    if (gitUrl) payload.github_url = gitUrl;
+    if (targetDir) payload.target_dir = targetDir;
+
     return request('/scan/static', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        github_url: gitUrl,
-        target_dir: targetDir,
-        ...options,
-      }),
+      body: JSON.stringify(payload),
     });
   },
 

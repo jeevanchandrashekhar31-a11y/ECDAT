@@ -1,0 +1,16 @@
+{
+  "name": "ecdat-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Enterprise Cryptographic Discovery and Assessment Tool",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "start": "npm --prefix backend start",
+    "backend": "npm --prefix backend start",
+    "frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend start",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "test": "npm --prefix backend test"
+  }
+}

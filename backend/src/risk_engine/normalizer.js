@@ -155,6 +155,18 @@ function normalizeAlgorithm(rawName, explicitKeySize = null) {
       keySize: parsedKeySize,
     };
   }
+  if (
+    clean.startsWith("ec-") ||
+    clean.startsWith("ecc-") ||
+    clean === "ec" ||
+    clean === "ecc"
+  ) {
+    return {
+      canonicalName: "ECDSA",
+      matchedRule: algos.find((a) => a.id === "ecdsa"),
+      keySize: parsedKeySize || 256,
+    };
+  }
   if (clean.includes("x25519") || clean.includes("curve25519")) {
     return {
       canonicalName: "X25519",
@@ -210,6 +222,37 @@ function normalizeAlgorithm(rawName, explicitKeySize = null) {
       matchedRule: algos.find((a) => a.id === "dh"),
       keySize: parsedKeySize,
     };
+  }
+
+  // 4. Crypto library catalog lookup
+  const libraryCatalog = rules.crypto_library_catalog;
+  if (Array.isArray(libraryCatalog)) {
+    for (const lib of libraryCatalog) {
+      const canon = (lib.canonical_name || "").toLowerCase();
+      const matched =
+        clean === canon ||
+        clean.includes(canon) ||
+        (lib.aliases &&
+          lib.aliases.some((a) => {
+            const al = a.toLowerCase();
+            return clean === al || (al.length >= 6 && clean.includes(al));
+          }));
+      if (matched) {
+        return {
+          canonicalName: lib.canonical_name,
+          matchedRule: {
+            id: lib.canonical_name.toLowerCase().replace(/[^a-z0-9]/g, "_"),
+            canonical_name: lib.canonical_name,
+            category: "crypto_library",
+            classical_risk_level: "none",
+            quantum_relevance: "shor_vulnerable",
+            pqc_support: lib.pqc_support,
+            typical_capabilities: lib.typical_capabilities,
+          },
+          keySize: parsedKeySize,
+        };
+      }
+    }
   }
 
   return {
