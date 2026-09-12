@@ -2,8 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
-const { ingestCbom, getLatestScan, getAllScans, getScanById } = require('../services/cbom_ingestion');
-const config = require('../config');
+const { ingestCbom, getLatestScan, getAllScans } = require('../services/cbom_ingestion');
 
 const router = express.Router();
 

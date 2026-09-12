@@ -1,4 +1,4 @@
-import { DashboardSummary, AssetsResponse, AssetDetail, FindingsResponse, FindingItem, ScanItem } from '../types';
+import { DashboardSummary, AssetsResponse, AssetDetail, FindingsResponse, FindingItem, ScanItem, Metrics } from '../types';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 
@@ -239,7 +239,7 @@ export const api = {
     message: string;
     scan_source: string;
     scan_id: string;
-    metrics: unknown;
+    metrics: Metrics;
     cbom: unknown;
   }> => {
     // If files or a zip file are provided
@@ -271,7 +271,7 @@ export const api = {
     const gitUrl = options.github_url || (isGit ? rawTarget : undefined);
     const targetDir = !isGit && rawTarget ? rawTarget : undefined;
 
-    const payload: Record<string, any> = { ...options };
+    const payload: Record<string, unknown> = { ...options };
     if (gitUrl) payload.github_url = gitUrl;
     if (targetDir) payload.target_dir = targetDir;
 
@@ -291,7 +291,7 @@ export const api = {
     message: string;
     scan_source: string;
     scan_id: string;
-    metrics: unknown;
+    metrics: Metrics;
     cbom: unknown;
   }> => {
     return request('/scan/network', {
@@ -314,7 +314,7 @@ export const api = {
     message: string;
     scan_source: string;
     scan_id: string;
-    metrics: unknown;
+    metrics: Metrics;
     cbom: unknown;
   }> => {
     if (target instanceof File || (Array.isArray(target) && target.length > 0 && target[0] instanceof File)) {

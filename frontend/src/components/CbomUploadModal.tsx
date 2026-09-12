@@ -73,7 +73,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
 
     try {
       if (mode === 'scan') {
-        let scanRes: any;
+        let scanRes: { scan_id?: string } | undefined;
         if (scanType === 'static') {
           if (staticSubMode === 'git') {
             if (!scanGitUrl.trim()) throw new Error('Please provide a Git repository URL.');

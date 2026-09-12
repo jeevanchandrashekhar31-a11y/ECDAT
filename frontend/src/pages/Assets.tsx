@@ -19,12 +19,12 @@ import {
   Cpu,
 } from 'lucide-react';
 import { api } from '../api/client';
-import { AssetSummaryItem, AssetsResponse, FindingItem, FindingsResponse } from '../types';
+import { AssetSummaryItem, AssetsResponse, FindingItem, FindingsResponse, ScanItem } from '../types';
 import { SeverityBadge } from '../components/SeverityBadge';
 import { MoscaStatusBadge } from '../components/MoscaTable';
 
 export const Assets: React.FC = () => {
-  const outlet = useOutletContext<{ selectedScanId?: string; scans?: any[] }>() || {};
+  const outlet = useOutletContext<{ selectedScanId?: string; scans?: ScanItem[] }>() || {};
   const selectedScanId = outlet.selectedScanId;
   const scans = outlet.scans || [];
 
@@ -279,9 +279,9 @@ export const Assets: React.FC = () => {
           {selectedScanId && selectedScanId !== 'all' ? (
             <span className="font-mono text-cyan-300 font-semibold flex items-center gap-1.5">
               <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 text-2xs uppercase">
-                {scans.find((s: any) => s.id === selectedScanId)?.scanner_type || 'Scan'}
+                {scans.find((s) => s.id === selectedScanId)?.scanner_type || 'Scan'}
               </span>
-              {scans.find((s: any) => s.id === selectedScanId)?.name || selectedScanId}
+              {scans.find((s) => s.id === selectedScanId)?.name || selectedScanId}
             </span>
           ) : (
             <span className="font-mono text-emerald-400 font-semibold flex items-center gap-1.5">

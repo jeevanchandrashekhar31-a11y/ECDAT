@@ -63,7 +63,19 @@ export const Dashboard: React.FC = () => {
   const [runningAction, setRunningAction] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [mergedCbomModal, setMergedCbomModal] = useState<string | null>(null);
-  const [pqcModal, setPqcModal] = useState<any | null>(null);
+  const [pqcModal, setPqcModal] = useState<{
+    scan_id?: string;
+    policy_profile?: string;
+    scenario?: string;
+    recommendations?: Array<{
+      recommended_target?: string;
+      priority?: string;
+      current_state?: string;
+      pqc_migration?: string;
+    }>;
+    metrics?: unknown;
+    html_report_url?: string;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const fetchSummary = useCallback(async (overrideScanId?: string) => {
@@ -100,7 +112,7 @@ export const Dashboard: React.FC = () => {
     setActionFeedback(null);
 
     try {
-      let res: any;
+      let res: Awaited<ReturnType<typeof api.triggerStaticScan>> | undefined;
       if (targetType === 'static') {
         if (staticMode === 'git') {
           if (!gitUrl.trim()) throw new Error('Please provide a Git repository URL (e.g. https://github.com/org/repo.git)');
@@ -165,10 +177,10 @@ export const Dashboard: React.FC = () => {
         outlet.onUploadSuccess(res.scan_id);
       }
       await fetchSummary(res?.scan_id);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setActionFeedback({
         type: 'error',
-        message: err.message || `Scan failed to execute.`
+        message: (err as Error).message || `Scan failed to execute.`
       });
     } finally {
       setRunningAction(null);
@@ -189,8 +201,8 @@ export const Dashboard: React.FC = () => {
       });
       await fetchSummary();
       if (outlet.onUploadSuccess) outlet.onUploadSuccess(res.scan_id);
-    } catch (err: any) {
-      setActionFeedback({ type: 'error', message: `Merge failed: ${err.message}` });
+    } catch (err: unknown) {
+      setActionFeedback({ type: 'error', message: `Merge failed: ${(err as Error).message}` });
     } finally {
       setRunningAction(null);
     }
@@ -201,8 +213,8 @@ export const Dashboard: React.FC = () => {
     try {
       const cbom = await api.getMergedCbom();
       setMergedCbomModal(JSON.stringify(cbom, null, 2));
-    } catch (err: any) {
-      setActionFeedback({ type: 'error', message: `Could not load CBOM: ${err.message}` });
+    } catch (err: unknown) {
+      setActionFeedback({ type: 'error', message: `Could not load CBOM: ${(err as Error).message}` });
     } finally {
       setRunningAction(null);
     }
@@ -212,9 +224,21 @@ export const Dashboard: React.FC = () => {
     setRunningAction('view_pqc');
     try {
       const report = await api.getPqcReport();
-      setPqcModal(report);
-    } catch (err: any) {
-      setActionFeedback({ type: 'error', message: `Could not load PQC report: ${err.message}` });
+      setPqcModal(report as unknown as {
+        scan_id?: string;
+        policy_profile?: string;
+        scenario?: string;
+        recommendations?: Array<{
+          recommended_target?: string;
+          priority?: string;
+          current_state?: string;
+          pqc_migration?: string;
+        }>;
+        metrics?: unknown;
+        html_report_url?: string;
+      });
+    } catch (err: unknown) {
+      setActionFeedback({ type: 'error', message: `Could not load PQC report: ${(err as Error).message}` });
     } finally {
       setRunningAction(null);
     }
@@ -893,7 +917,7 @@ export const Dashboard: React.FC = () => {
                 {(!pqcModal.recommendations || pqcModal.recommendations.length === 0) ? (
                   <p className="text-xs text-slate-500 italic">No specific recommendations recorded.</p>
                 ) : (
-                  pqcModal.recommendations.map((rec: any, idx: number) => (
+                  pqcModal.recommendations.map((rec, idx: number) => (
                     <div key={idx} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-mono text-cyan-300 font-semibold">{rec.recommended_target}</span>
