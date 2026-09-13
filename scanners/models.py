@@ -35,12 +35,21 @@ class NetworkCryptoFinding(BaseModel):
     business_criticality: str = "medium"
 
     timestamp: str = ""
-    tool_version: str = "ECDAT Network Scanner v2.0 (SSLyze)"
+    tool_version: str = "ECDAT Network Scanner v3.0"
     target_supplied: str = ""
     resolved_endpoint: Optional[str] = None
     scan_status: str = "success"
     error_reason: Optional[str] = None
     protocol: str = "TLS"
+
+    signature_algorithms: List[str] = Field(default_factory=list)
+    key_exchanges: List[str] = Field(default_factory=list)
+    alpn_protocols: List[str] = Field(default_factory=list)
+    weak_algorithms: List[str] = Field(default_factory=list)
+    trust_problems: List[str] = Field(default_factory=list)
+    quantum_vulnerabilities: List[str] = Field(default_factory=list)
+    authorization_id: Optional[str] = None
+    audit_id: Optional[str] = None
 
 
 class CodeCryptoFinding(BaseModel):
@@ -75,6 +84,9 @@ class CodeCryptoFinding(BaseModel):
     analysis_source: str = "regex"
     needs_human_review: bool = False
     reason: Optional[str] = None
+    fingerprint: Optional[str] = None
+    secret_type: Optional[str] = None
+
 
 
 class BinaryContainerFinding(BaseModel):
@@ -103,3 +115,43 @@ class BinaryContainerFinding(BaseModel):
     artifact_path: Optional[str] = None
     data_sensitivity: str = "internal"
     business_criticality: str = "medium"
+
+
+# Re-export domain contracts for unified access across scanners
+from scanners.domain.contracts import (  # noqa: E402
+    DiscoveryEngine,
+    ScanRequest,
+    ScanContext,
+    Finding,
+    Evidence,
+    CryptoAsset,
+    AssetRelationship,
+    Observation,
+    RiskAssessment,
+    PolicyEvaluation,
+    RemediationPlan,
+    RemediationAction,
+    ScanResult,
+    ScanType,
+    ScanStatus,
+    SeverityLevel,
+    ConfidenceLevel,
+    AssetType,
+    RelationshipType,
+    QuantumRelevance,
+    MoscaStatus,
+    EvidenceSource,
+)
+from scanners.domain.canonical_model import (  # noqa: E402
+    ProvenanceRecord,
+    CanonicalCryptoEntity,
+    CanonicalRelationship,
+    CanonicalCryptoInventory,
+)
+from scanners.domain.correlation_engine import (  # noqa: E402
+    CorrelationEngine,
+    CorrelationEvidence,
+    EvidenceOrigin,
+    GraphSecurityViolation,
+    AuditLogEntry,
+)

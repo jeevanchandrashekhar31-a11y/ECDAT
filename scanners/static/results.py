@@ -14,9 +14,11 @@ class StaticFinding(BaseModel):
     analysis_source: str = "regex"
     needs_human_review: bool = False
     reason: Optional[str] = None
+    fingerprint: Optional[str] = None
+    secret_type: Optional[str] = None
 
     def to_dict(self):
-        return {
+        d = {
             "file_path": self.file_path,
             "line_number": self.line_number,
             "rule_id": self.rule_id,
@@ -29,3 +31,9 @@ class StaticFinding(BaseModel):
             "needs_human_review": self.needs_human_review,
             "reason": self.reason,
         }
+        if self.fingerprint:
+            d["fingerprint"] = self.fingerprint
+        if self.secret_type:
+            d["secret_type"] = self.secret_type
+        return d
+

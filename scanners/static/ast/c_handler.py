@@ -1,85 +1,140 @@
-import tree_sitter_c
-import tree_sitter
-from typing import List
+"""
+ECDAT C AST Handlers and Language Adapter (Phase 2.6)
+Provides:
+- CLanguageAdapter
+- CHandler
+- CCryptoRuleProvider
+"""
+
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+import tree_sitter
+import tree_sitter_c
+
+from scanners.domain.errors import ParserFailureError
+from scanners.static.ast.abstraction import (
+    ASTNormalizer,
+    CryptoDetectionRule,
+    CryptoRuleProvider,
+    DataFlowProvider,
+    LanguageAdapter,
+    NormalizedAssignmentNode,
+    NormalizedCallNode,
+    Parser,
+)
 from scanners.static.ast.base import AstHandler
+from scanners.static.ast.c_cpp_detector import CCppCryptoDetector
 from scanners.static.results import StaticFinding
 
-C_CRYPTO_QUERY = """
-(call_expression
-  function: (identifier) @func_name
-  (#match? @func_name "^(EVP_md5|EVP_sha1|EVP_sha224|EVP_sha256|EVP_sha384|EVP_sha512|EVP_aes_.*|EVP_des_.*|EVP_rc4|EVP_PKEY_.*|RSA_generate_key_ex|RSA_new|EC_KEY_new_by_curve_name|DH_.*|PEM_read_.*PrivateKey|PEM_write_.*PrivateKey|SSL_CTX_new|TLS_method|mbedtls_md5|mbedtls_sha1|mbedtls_sha256|mbedtls_rsa_gen_key|mbedtls_ecp_group_load|mbedtls_ssl_config_defaults|mbedtls_ssl_conf_ciphersuites|wc_Md5Hash|wc_Sha|wc_RsaKeyGen|wolfSSL_CTX_new)$")
-) @call
 
-(call_expression
-  function: (identifier) @func_name
-  (#match? @func_name "^(rand|srand)$")
-) @weak_rand
-"""
+class CTreeSitterParser(Parser):
+    def __init__(self, language: tree_sitter.Language, lang_name: str = "c"):
+        self.language = language
+        self.lang_name = lang_name
+        self._parser = tree_sitter.Parser(self.language)
+
+    def parse(self, source_bytes: bytes) -> tree_sitter.Tree:
+        try:
+            tree = self._parser.parse(source_bytes)
+            if not tree:
+                raise ParserFailureError(f"Failed to parse {self.lang_name} source text")
+            return tree
+        except Exception as e:
+            if isinstance(e, ParserFailureError):
+                raise
+            raise ParserFailureError(f"Tree-sitter {self.lang_name} parse failure: {e}", fatal=False) from e
+
+
+class CGenericNormalizer(ASTNormalizer):
+    def extract_function_calls(self, tree: Any, source_bytes: bytes) -> List[NormalizedCallNode]:
+        return []
+
+    def extract_assignments(self, tree: Any, source_bytes: bytes) -> List[NormalizedAssignmentNode]:
+        return []
+
+
+class CGenericDataFlow(DataFlowProvider):
+    def resolve_constant(self, var_name: str, assignments: List[NormalizedAssignmentNode]) -> Optional[Any]:
+        return None
+
+
+class CCryptoRuleProvider(CryptoRuleProvider):
+    def get_rules(self) -> List[CryptoDetectionRule]:
+        return [
+            CryptoDetectionRule("C_WEAK_HASH_MD5", "MD5", "EVP_md5() / MD5()", "weak_hash", "critical", "high"),
+            CryptoDetectionRule("C_WEAK_HASH_SHA1", "SHA-1", "EVP_sha1() / SHA1()", "weak_hash", "high", "high"),
+            CryptoDetectionRule("C_WEAK_CIPHER_DES", "DES", "EVP_des_cbc() / mbedtls_des_crypt_ecb()", "weak_cipher", "critical", "high"),
+            CryptoDetectionRule("C_WEAK_CIPHER_RC4", "RC4", "EVP_rc4()", "weak_cipher", "critical", "high"),
+            CryptoDetectionRule("C_WEAK_CIPHER_BLOWFISH", "Blowfish", "EVP_bf_cbc()", "weak_cipher", "critical", "high"),
+            CryptoDetectionRule("C_INSECURE_CIPHER_MODE_ECB", "ECB", "EVP_aes_128_ecb()", "insecure_cipher_mode", "critical", "high"),
+            CryptoDetectionRule("C_WEAK_RSA_KEY_SIZE", "RSA-Weak", "RSA_generate_key_ex(rsa, 1024, ...)", "weak_asymmetric_key", "critical", "high"),
+            CryptoDetectionRule("C_WEAK_ECC_CURVE", "ECDSA-P224", "EC_KEY_new_by_curve_name(NID_secp224k1)", "weak_asymmetric_key", "high", "high"),
+            CryptoDetectionRule("C_DISABLED_CERT_VALIDATION", "SSL_VERIFY_NONE", "SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL)", "disabled_certificate_validation", "critical", "high"),
+            CryptoDetectionRule("C_INSECURE_TLS_VERSION", "TLSv1.0", "SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION)", "insecure_tls_protocol", "critical", "high"),
+            CryptoDetectionRule("C_WEAK_CERT_SIGNATURE_ALGO", "MD5WithRSA", "X509_sign(x, pkey, EVP_md5())", "weak_signature_algorithm", "critical", "high"),
+        ]
 
 
 class CHandler(AstHandler):
+    """Retained for backward compatibility while using CCppCryptoDetector."""
+
     def __init__(self):
         super().__init__(tree_sitter.Language(tree_sitter_c.language()))
 
     def extract_findings(self, source_code: bytes, file_path: Path, root_dir: Path) -> List[StaticFinding]:
-        findings = []
-        tree = self.parse(source_code)
+        detector = CCppCryptoDetector(file_path, root_dir, source_code, self.language, is_cpp=False)
+        return detector.detect()
 
-        matches = self.run_query(tree, C_CRYPTO_QUERY)
 
-        source_str = source_code.decode("utf-8", errors="replace")
-        lines = source_str.split("\n")
+# =====================================================================
+# C Language Adapter
+# =====================================================================
+class CLanguageAdapter(LanguageAdapter):
+    language = "c"
+    supported_versions = ["C99", "C11", "C17"]
+    parser_version = "tree-sitter-c 0.23.0"
+    supported_crypto_apis = [
+        "OpenSSL / BoringSSL / LibreSSL EVP",
+        "OpenSSL direct hash (MD5, SHA1, SHA256)",
+        "libcrypto RSA/EC_KEY/DH/Ed25519",
+        "mbedTLS",
+        "wolfSSL",
+        "libsodium",
+    ]
+    unsupported_constructs = [
+        "complex preprocessor macro metaprogramming",
+        "dynamic function pointer dispatch",
+        "inline assembly crypto blocks",
+    ]
+    confidence_behavior = {
+        "direct_function_call": "high",
+        "macro_expanded_call": "high",
+        "function_pointer_target": "low",
+    }
+    tested_corpus = [
+        "tests/fixtures/static/vulnerable_c.c",
+        "tests/fixtures/static/clean_c.c",
+    ]
 
-        for match in matches:
-            # match is a tuple: (pattern_index, captures_dict)
-            captures = match[1]
-            if "func_name" in captures and "call" in captures:
-                func_node = captures["func_name"][0]
-                call_node = captures["call"][0]
+    def __init__(self):
+        self._lang = tree_sitter.Language(tree_sitter_c.language())
+        self._parser = CTreeSitterParser(self._lang, "c")
+        self._normalizer = CGenericNormalizer()
+        self._rule_provider = CCryptoRuleProvider()
+        self._data_flow = CGenericDataFlow()
 
-                func_name = func_node.text.decode("utf-8")
-                line_number = call_node.start_point[0] + 1
-                evidence = lines[line_number - 1].strip()
+    def get_parser(self) -> Parser:
+        return self._parser
 
-                # Check for inactive code (basic check - could be improved)
-                # Tree-sitter C grammar puts preprocessor #if 0 blocks into `preproc_if` nodes,
-                # but if they are inactive they might just be parsed as text or we can ignore them if needed.
-                # True awareness needs full preprocessor.
+    def get_ast_normalizer(self) -> ASTNormalizer:
+        return self._normalizer
 
-                algo = func_name
-                finding_type = "crypto_api_call"
-                severity = "medium"
-                confidence = "high"
-                rule_id = "AST_C_API"
+    def get_crypto_rule_provider(self) -> CryptoRuleProvider:
+        return self._rule_provider
 
-                if "md5" in func_name.lower():
-                    finding_type = "weak_hash"
-                elif (
-                    "sha1" in func_name.lower()
-                    or "sha" in func_name.lower()
-                    and not ("256" in func_name or "512" in func_name)
-                ):
-                    finding_type = "weak_hash"
-                elif "des" in func_name.lower() or "rc4" in func_name.lower():
-                    finding_type = "weak_cipher"
+    def get_data_flow_provider(self) -> DataFlowProvider:
+        return self._data_flow
 
-                finding = self._create_finding(
-                    file_path, root_dir, line_number, rule_id, algo, evidence, confidence, finding_type
-                )
-                findings.append(finding)
-
-            elif "func_name" in captures and "weak_rand" in captures:
-                func_node = captures["func_name"][0]
-                call_node = captures["weak_rand"][0]
-
-                func_name = func_node.text.decode("utf-8")
-                line_number = call_node.start_point[0] + 1
-                evidence = lines[line_number - 1].strip()
-
-                finding = self._create_finding(
-                    file_path, root_dir, line_number, "AST_C_WEAK_RAND", func_name, evidence, "low", "weak_prng"
-                )
-                findings.append(finding)
-
-        return findings
+    def extract_findings(self, source_bytes: bytes, file_path: Path, root_dir: Path) -> List[StaticFinding]:
+        detector = CCppCryptoDetector(file_path, root_dir, source_bytes, self._lang, is_cpp=False)
+        return detector.detect()

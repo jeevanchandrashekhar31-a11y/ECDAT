@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CryptoLibraryFingerprints",
+  "type": "object",
+  "required": ["version", "schema_version", "libraries"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "scoring_weights": {
+      "type": "object",
+      "properties": {
+        "library_match": { "type": "number" },
+        "symbol_match": { "type": "number" },
+        "string_match": { "type": "number" },
+        "high_confidence_threshold": { "type": "number" },
+        "medium_confidence_threshold": { "type": "number" },
+        "low_confidence_threshold": { "type": "number" }
+      }
+    },
+    "libraries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "library_patterns",
+          "symbol_signatures",
+          "distinctive_strings",
+          "disambiguation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "typical_capabilities": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "library_patterns": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "symbol_signatures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["pattern", "kind"],
+              "properties": {
+                "pattern": { "type": "string" },
+                "kind": { "type": "string", "enum": ["prefix", "exact", "regex"] },
+                "weight": { "type": "number" }
+              }
+            }
+          },
+          "distinctive_strings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["pattern", "kind"],
+              "properties": {
+                "pattern": { "type": "string" },
+                "kind": { "type": "string", "enum": ["exact", "substring", "regex"] },
+                "weight": { "type": "number" }
+              }
+            }
+          },
+          "disambiguation": {
+            "type": "object",
+            "properties": {
+              "competing_libraries": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "distinguishing_symbols": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "distinguishing_strings": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "negative_indicators": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "thresholds": {
+            "type": "object",
+            "properties": {
+              "min_signals_for_high": { "type": "integer" },
+              "min_signals_for_medium": { "type": "integer" },
+              "min_strings_without_symbols": { "type": "integer" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

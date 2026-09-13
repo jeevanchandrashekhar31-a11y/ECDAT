@@ -18,8 +18,11 @@ const assetsRoutes = require("./routes/assets");
 const dashboardRoutes = require("./routes/dashboard");
 const reportsRoutes = require("./routes/reports");
 const scannerPipeline = require("./routes/scanner_pipeline");
+const sbomRoutes = require("./routes/sbom");
+const certificatesRoutes = require("./routes/certificates");
 
 const app = express();
+
 
 // 1. Security & Standard Middleware
 app.use(helmetMiddleware);
@@ -39,20 +42,26 @@ app.use(apiKeyAuthMiddleware);
 
 // 5. Direct Scanner Pipeline Routes (root-level for /scan/* and /cbom/*)
 app.use(scannerPipeline);
+app.use("/sbom", sbomRoutes);
 
 // 6. API v1 Router
 const apiV1 = express.Router();
 apiV1.use("/health", healthRoutes);
 apiV1.use("/cboms", cbomRoutes);
 apiV1.use("/cbom", cbomRoutes);
+apiV1.use("/sbom", sbomRoutes);
+apiV1.use("/sboms", sbomRoutes);
 apiV1.use("/scans", scansRoutes);
 apiV1.use("/findings", findingsRoutes);
 apiV1.use("/assets", assetsRoutes);
 apiV1.use("/dashboard", dashboardRoutes);
 apiV1.use("/reports", reportsRoutes);
+apiV1.use("/certificates", certificatesRoutes);
 apiV1.use(scannerPipeline);
 
+
 app.use("/api/v1", apiV1);
+
 
 // 5. Centralized Error Handling
 app.use(notFoundHandler);

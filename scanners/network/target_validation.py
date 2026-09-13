@@ -58,9 +58,13 @@ def is_ip_allowed(ip_str: str, allow_private: bool) -> bool:
     if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_reserved:
         return False
 
+    if str(ip) in ("100.100.100.200", "169.254.169.254"):
+        return False
+
     if ip.is_private:
         return allow_private
     return ip.is_global
+
 
 
 def validate_and_resolve(target: str, allow_private: bool = False, default_port: int = 443) -> NormalizedTarget:

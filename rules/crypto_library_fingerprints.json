@@ -1,0 +1,427 @@
+{
+  "version": "1.0.0",
+  "schema_version": "1.0",
+  "description": "Versioned cryptographic library fingerprints for binary, container, and filesystem analysis with multi-signal evidence scoring.",
+  "scoring_weights": {
+    "library_match": 35,
+    "symbol_match": 25,
+    "string_match": 10,
+    "high_confidence_threshold": 50,
+    "medium_confidence_threshold": 30,
+    "low_confidence_threshold": 20
+  },
+  "libraries": [
+    {
+      "id": "openssl",
+      "name": "OpenSSL",
+      "category": "native_c_cpp",
+      "description": "OpenSSL cryptography and SSL/TLS toolkit.",
+      "typical_capabilities": ["TLS", "AES", "RSA", "ECDSA", "SHA2", "SHA3", "EVP", "X509"],
+      "library_patterns": [
+        "libcrypto\\.so(?:\\.[0-9]+)*",
+        "libssl\\.so(?:\\.[0-9]+)*",
+        "libcrypto(?:\\.[0-9]+)*\\.dylib",
+        "libssl(?:\\.[0-9]+)*\\.dylib",
+        "libcrypto-[0-9_]+.*\\.dll",
+        "libssl-[0-9_]+.*\\.dll"
+      ],
+      "symbol_signatures": [
+        { "pattern": "OPENSSL_init_crypto", "kind": "exact", "weight": 30 },
+        { "pattern": "OpenSSL_version", "kind": "exact", "weight": 30 },
+        { "pattern": "OSSL_PROVIDER_load", "kind": "exact", "weight": 30 },
+        { "pattern": "EVP_EncryptInit_ex", "kind": "exact", "weight": 25 },
+        { "pattern": "EVP_CIPHER_CTX_new", "kind": "exact", "weight": 25 },
+        { "pattern": "EVP_DigestInit_ex", "kind": "exact", "weight": 25 },
+        { "pattern": "X509_verify_cert", "kind": "exact", "weight": 20 },
+        { "pattern": "BIO_new_socket", "kind": "exact", "weight": 20 },
+        { "pattern": "FIPS_mode", "kind": "exact", "weight": 20 },
+        { "pattern": "EVP_", "kind": "prefix", "weight": 15 },
+        { "pattern": "SSL_CTX_", "kind": "prefix", "weight": 15 }
+      ],
+      "distinctive_strings": [
+        { "pattern": "OpenSSL 3.", "kind": "substring", "weight": 20 },
+        { "pattern": "OpenSSL 1.1.", "kind": "substring", "weight": 20 },
+        { "pattern": "OPENSSLDIR:", "kind": "substring", "weight": 25 },
+        { "pattern": "ENGINESDIR:", "kind": "substring", "weight": 20 },
+        { "pattern": "OpenSSL HMAC method", "kind": "substring", "weight": 15 },
+        { "pattern": "OpenSSL alternative validation", "kind": "substring", "weight": 15 }
+      ],
+      "disambiguation": {
+        "competing_libraries": ["boringssl", "libressl"],
+        "distinguishing_symbols": ["OSSL_PROVIDER_load", "OpenSSL_version", "OPENSSL_init_crypto"],
+        "distinguishing_strings": ["OPENSSLDIR:", "ENGINESDIR:", "OpenSSL 3."],
+        "negative_indicators": ["BORINGSSL_bcm_power_on_self_test", "bssl::", "LIBRESSL_VERSION_TEXT", "tls_config_new"]
+      },
+      "thresholds": {
+        "min_signals_for_high": 2,
+        "min_signals_for_medium": 1,
+        "min_strings_without_symbols": 2
+      }
+    },
+    {
+      "id": "boringssl",
+      "name": "BoringSSL",
+      "category": "native_c_cpp",
+      "description": "Google's fork of OpenSSL used in Chromium, Android, and WebRTC.",
+      "typical_capabilities": ["TLS", "AES", "RSA", "ECDSA", "ChaCha20-Poly1305", "BoringSSL-FIPS"],
+      "library_patterns": [
+        "libboringssl\\.so",
+        "libbssl\\.so"
+      ],
+      "symbol_signatures": [
+        { "pattern": "BORINGSSL_bcm_power_on_self_test", "kind": "exact", "weight": 35 },
+        { "pattern": "BORINGSSL_self_test", "kind": "exact", "weight": 35 },
+        { "pattern": "CRYPTO_library_init", "kind": "exact", "weight": 30 },
+        { "pattern": "BN_MONT_CTX_set_locked", "kind": "exact", "weight": 25 },
+        { "pattern": "BORINGSSL_", "kind": "prefix", "weight": 30 },
+        { "pattern": "bssl::", "kind": "prefix", "weight": 30 }
+      ],
+      "distinctive_strings": [
+        { "pattern": "BORINGSSL_bcm_power_on_self_test", "kind": "substring", "weight": 35 },
+        { "pattern": "BoringSSL", "kind": "substring", "weight": 20 },
+        { "pattern": "bssl::", "kind": "substring", "weight": 25 },
+        { "pattern": "Google-internal BoringSSL", "kind": "substring", "weight": 30 }
+      ],
+      "disambiguation": {
+        "competing_libraries": ["openssl", "libressl"],
+        "distinguishing_symbols": ["BORINGSSL_bcm_power_on_self_test", "bssl::", "BORINGSSL_self_test"],
+        "distinguishing_strings": ["BORINGSSL_bcm_power_on_self_test", "bssl::"],
+        "negative_indicators": ["OSSL_PROVIDER_load", "LIBRESSL_VERSION_TEXT"]
+      },
+      "thresholds": {
+        "min_signals_for_high": 2,
+        "min_signals_for_medium": 1,
+        "min_strings_without_symbols": 2
+      }
+    },
+    {
+      "id": "libressl",
+      "name": "LibreSSL",
+      "category": "native_c_cpp",
+      "description": "OpenBSD fork of OpenSSL focused on security and modern cryptography.",
+      "typical_capabilities": ["TLS", "libtls", "AES", "RSA", "ECDSA", "ChaCha20-Poly1305"],
+      "library_patterns": [
+        "libtls\\.so(?:\\.[0-9]+)*",
+        "libtls\\.dylib",
+        "libressl\\.so"
+      ],
+      "symbol_signatures": [
+        { "pattern": "tls_init", "kind": "exact", "weight": 30 },
+        { "pattern": "tls_config_new", "kind": "exact", "weight": 30 },
+        { "pattern": "tls_connect", "kind": "exact", "weight": 25 },
+        { "pattern": "tls_configure", "kind": "exact", "weight": 25 },
+        { "pattern": "tls_read", "kind": "exact", "weight": 20 },
+        { "pattern": "tls_write", "kind": "exact", "weight": 20 },
+        { "pattern": "tls_close", "kind": "exact", "weight": 20 },
+        { "pattern": "LIBRESSL_VERSION_NUMBER", "kind": "exact", "weight": 30 }
+      ],
+      "distinctive_strings": [
+        { "pattern": "LibreSSL", "kind": "substring", "weight": 20 },
+        { "pattern": "LIBRESSL_VERSION_TEXT", "kind": "substring", "weight": 30 },
+        { "pattern": "libtls client configuration", "kind": "substring", "weight": 25 },
+        { "pattern": "LibreSSL Portable", "kind": "substring", "weight": 25 }
+      ],
+      "disambiguation": {
+        "competing_libraries": ["openssl", "boringssl"],
+        "distinguishing_symbols": ["tls_init", "tls_config_new", "LIBRESSL_VERSION_NUMBER"],
+        "distinguishing_strings": ["LIBRESSL_VERSION_TEXT", "LibreSSL Portable"],
+        "negative_indicators": ["OSSL_PROVIDER_load", "BORINGSSL_bcm_power_on_self_test"]
+      },
+      "thresholds": {
+        "min_signals_for_high": 2,
+        "min_signals_for_medium": 1,
+        "min_strings_without_symbols": 2
+      }
+    },
+    {
+      "id": "mbedtls",
+      "name": "mbedTLS",
+      "category": "embedded_c",
+      "description": "Arm/TrustedFirmware light-weight cryptographic and SSL/TLS library.",
+      "typical_capabilities": ["TLS", "AES", "ECC", "RSA", "SHA2", "Entropy", "PKCS#11"],
+      "library_patterns": [
+        "libmbedtls\\.so(?:\\.[0-9]+)*",
+        "libmbedcrypto\\.so(?:\\.[0-9]+)*",
+        "libmbedx509\\.so(?:\\.[0-9]+)*",
+        "mbedtls\\.dll",
+        "mbedcrypto\\.dll",
+        "libmbedtls\\.dylib"
+      ],
+      "symbol_signatures": [
+        { "pattern": "mbedtls_ssl_init", "kind": "exact", "weight": 30 },
+        { "pattern": "mbedtls_cipher_setup", "kind": "exact", "weight": 30 },
+        { "pattern": "mbedtls_aes_crypt_cbc", "kind": "exact", "weight": 25 },
+        { "pattern": "mbedtls_sha256", "kind": "exact", "weight": 25 },
+        { "pattern": "mbedtls_x509_crt_parse", "kind": "exact", "weight": 25 },
+        { "pattern": "mbedtls_pk_sign", "kind": "exact", "weight": 25 },
+        { "pattern": "mbedtls_entropy_init", "kind": "exact", "weight": 25 },
+        { "pattern": "mbedtls_", "kind": "prefix", "weight": 20 }
+      ],
+      "distinctive_strings": [
+        { "pattern": "mbed TLS", "kind": "substring", "weight": 20 },
+        { "pattern": "MBEDTLS_ERR_", "kind": "substring", "weight": 25 },
+        { "pattern": "https://www.trustedfirmware.org", "kind": "substring", "weight": 25 },
+        { "pattern": "mbedtls_version_get_string", "kind": "substring", "weight": 25 },
+        { "pattern": "mbedtls_platform_setup", "kind": "substring", "weight": 20 }
+      ],
+      "disambiguation": {
+        "competing_libraries": [],
+        "distinguishing_symbols": ["mbedtls_ssl_init", "mbedtls_cipher_setup"],
+        "distinguishing_strings": ["MBEDTLS_ERR_", "mbed TLS"],
+        "negative_indicators": []
+      },
+      "thresholds": {
+        "min_signals_for_high": 2,
+        "min_signals_for_medium": 1,
+        "min_strings_without_symbols": 2
+      }
+    },
+    {
+      "id": "wolfssl",
+      "name": "wolfSSL",
+      "category": "embedded_c",
+      "description": "Embedded SSL/TLS and cryptography engine (formerly CyaSSL).",
+      "typical_capabilities": ["TLS 1.3", "FIPS 140-3", "AES", "RSA", "ECC", "wolfCrypt", "Post-Quantum"],
+      "library_patterns": [
+        "libwolfssl\\.so(?:\\.[0-9]+)*",
+        "libcyassl\\.so(?:\\.[0-9]+)*",
+        "wolfssl\\.dll",
+        "libwolfssl\\.dylib"
+      ],
+      "symbol_signatures": [
+        { "pattern": "wolfSSL_Init", "kind": "exact", "weight": 30 },
+        { "pattern": "wolfSSL_CTX_new", "kind": "exact", "weight": 30 },
+        { "pattern": "wc_InitSha256", "kind": "exact", "weight": 30 },
+        { "pattern": "wc_AesCbcEncrypt", "kind": "exact", "weight": 25 },
+        { "pattern": "wc_RsaPublicKeyDecode", "kind": "exact", "weight": 25 },
+        { "pattern": "wolfSSL_read", "kind": "exact", "weight": 20 },
+        { "pattern": "wolfSSL_", "kind": "prefix", "weight": 20 },
+        { "pattern": "wc_", "kind": "prefix", "weight": 15 }
+      ],
+      "distinctive_strings": [
+        { "pattern": "wolfSSL", "kind": "substring", "weight": 20 },
+        { "pattern": "wolfCrypt", "kind": "substring", "weight": 25 },
+        { "pattern": "CyaSSL", "kind": "substring", "weight": 20 },
+        { "pattern": "wolfSSL version", "kind": "substring", "weight": 25 },
+        { "pattern": "www.wolfssl.com", "kind": "substring", "weight": 25 }
+      ],
+      "disambiguation": {
+        "competing_libraries": [],
+        "distinguishing_symbols": ["wolfSSL_Init", "wc_InitSha256"],
+        "distinguishing_strings": ["wolfCrypt", "wolfSSL version"],
+        "negative_indicators": []
+      },
+      "thresholds": {
+        "min_signals_for_high": 2,
+        "min_signals_for_medium": 1,
+        "min_strings_without_symbols": 2
+      }
+    },
+    {
+      "id": "botan",
+      "name": "Botan",
+      "category": "native_cpp",
+      "description": "Modern C++ cryptography and TLS library.",
+      "typical_capabilities": ["C++11/20", "TLS", "AES", "RSA", "Kyber", "Dilithium", "PQC", "PKCS#11"],
+      "library_patterns": [
+        "libbotan-[0-9]+\\.so(?:\\.[0-9]+)*",
+        "libbotan\\.so(?:\\.[0-9]+)*",
+        "botan\\.dll",
+        "libbotan-[0-9]+\\.dylib"
+      ],
+      "symbol_signatures": [
+        { "pattern": "_ZN5Botan", "kind": "prefix", "weight": 30 },
+        { "pattern": "botan_ffi_", "kind": "prefix", "weight": 30 },
+        { "pattern": "botan_cipher_init", "kind": "exact", "weight": 25 },
+        { "pattern": "botan_block_cipher_init", "kind": "exact", "weight": 25 },
+        { "pattern": "botan_hash_init", "kind": "exact", "weight": 25 },
+        { "pattern": "botan_rng_init", "kind": "exact", "weight": 25 },
+        { "pattern": "botan_privkey_create", "kind": "exact", "weight": 25 }
+      ],
+      "distinctive_strings": [
+        { "pattern": "Botan ", "kind": "substring", "weight": 20 },
+        { "pattern": "Botan::", "kind": "substring", "weight": 25 },
+        { "pattern": "botan_ffi_version", "kind": "substring", "weight": 25 },
+        { "pattern": "Botan cryptographic library", "kind": "substring", "weight": 25 }
+      ],
+      "disambiguation": {
+        "competing_libraries": [],
+        "distinguishing_symbols": ["_ZN5Botan", "botan_ffi_"],
+        "distinguishing_strings": ["Botan::", "botan_ffi_version"],
+        "negative_indicators": []
+      },
+      "thresholds": {
+        "min_signals_for_high": 2,
+        "min_signals_for_medium": 1,
+        "min_strings_without_symbols": 2
+      }
+    },
+    {
+      "id": "libsodium",
+      "name": "libsodium",
+      "category": "native_c",
+      "description": "High-speed modern crypto library based on NaCl (Networking and Cryptography library).",
+      "typical_capabilities": ["Ed25519", "Curve25519", "ChaCha20-Poly1305", "Argon2", "BLAKE2b"],
+      "library_patterns": [
+        "libsodium\\.so(?:\\.[0-9]+)*",
+        "libsodium\\.dylib",
+        "libsodium\\.dll"
+      ],
+      "symbol_signatures": [
+        { "pattern": "sodium_init", "kind": "exact", "weight": 35 },
+        { "pattern": "crypto_box_easy", "kind": "exact", "weight": 30 },
+        { "pattern": "crypto_secretbox_easy", "kind": "exact", "weight": 30 },
+        { "pattern": "crypto_sign_detached", "kind": "exact", "weight": 25 },
+        { "pattern": "crypto_pwhash_argon2id", "kind": "exact", "weight": 25 },
+        { "pattern": "crypto_generichash", "kind": "exact", "weight": 25 },
+        { "pattern": "crypto_aead_chacha20poly1305_ietf_encrypt", "kind": "exact", "weight": 25 },
+        { "pattern": "sodium_", "kind": "prefix", "weight": 20 },
+        { "pattern": "crypto_box_", "kind": "prefix", "weight": 20 },
+        { "pattern": "crypto_secretbox_", "kind": "prefix", "weight": 20 }
+      ],
+      "distinctive_strings": [
+        { "pattern": "sodium_version_string", "kind": "substring", "weight": 30 },
+        { "pattern": "libsodium", "kind": "substring", "weight": 20 },
+        { "pattern": "crypto_box_curve25519xsalsa20poly1305", "kind": "substring", "weight": 25 },
+        { "pattern": "sodium_init() failed", "kind": "substring", "weight": 25 }
+      ],
+      "disambiguation": {
+        "competing_libraries": [],
+        "distinguishing_symbols": ["sodium_init", "crypto_box_easy"],
+        "distinguishing_strings": ["sodium_version_string", "crypto_box_curve25519xsalsa20poly1305"],
+        "negative_indicators": []
+      },
+      "thresholds": {
+        "min_signals_for_high": 2,
+        "min_signals_for_medium": 1,
+        "min_strings_without_symbols": 2
+      }
+    },
+    {
+      "id": "jca_jce",
+      "name": "JCA/JCE-related artifacts",
+      "category": "java_crypto",
+      "description": "Java Cryptography Architecture (JCA) / Java Cryptography Extension (JCE) and Bouncy Castle providers.",
+      "typical_capabilities": ["JCA Provider", "SunJCE", "Bouncy Castle", "PKCS#11", "X.509"],
+      "library_patterns": [
+        "bcprov.*\\.jar",
+        "bcpkix.*\\.jar",
+        "sunjce_provider\\.jar",
+        "libj2pkcs11\\.so",
+        "libsunec\\.so",
+        "jce\\.jar"
+      ],
+      "symbol_signatures": [
+        { "pattern": "Java_sun_security_pkcs11_wrapper_PKCS11_C_Initialize", "kind": "exact", "weight": 30 },
+        { "pattern": "Java_sun_security_ec_ECDHKeyAgreement_deriveKey", "kind": "exact", "weight": 30 },
+        { "pattern": "org/bouncycastle/jce/provider/BouncyCastleProvider", "kind": "exact", "weight": 35 },
+        { "pattern": "javax/crypto/Cipher", "kind": "exact", "weight": 25 },
+        { "pattern": "java/security/MessageDigest", "kind": "exact", "weight": 20 },
+        { "pattern": "sun/security/pkcs11/SunPKCS11", "kind": "exact", "weight": 25 }
+      ],
+      "distinctive_strings": [
+        { "pattern": "org.bouncycastle.jce.provider.BouncyCastleProvider", "kind": "substring", "weight": 30 },
+        { "pattern": "SunJCE Provider", "kind": "substring", "weight": 25 },
+        { "pattern": "JCE Unlimited Strength", "kind": "substring", "weight": 25 },
+        { "pattern": "Java Cryptography Extension", "kind": "substring", "weight": 20 },
+        { "pattern": "org.bouncycastle", "kind": "substring", "weight": 20 }
+      ],
+      "disambiguation": {
+        "competing_libraries": [],
+        "distinguishing_symbols": ["org/bouncycastle/jce/provider/BouncyCastleProvider", "Java_sun_security_ec_ECDHKeyAgreement_deriveKey"],
+        "distinguishing_strings": ["SunJCE Provider", "org.bouncycastle.jce.provider.BouncyCastleProvider"],
+        "negative_indicators": []
+      },
+      "thresholds": {
+        "min_signals_for_high": 2,
+        "min_signals_for_medium": 1,
+        "min_strings_without_symbols": 2
+      }
+    },
+    {
+      "id": "windows_cng",
+      "name": "Windows CNG",
+      "category": "windows_crypto",
+      "description": "Microsoft Windows Cryptography API: Next Generation (CNG) and legacy CryptoAPI.",
+      "typical_capabilities": ["BCrypt", "NCrypt", "FIPS 140", "SChannel", "Key Storage Provider"],
+      "library_patterns": [
+        "bcrypt\\.dll",
+        "ncrypt\\.dll",
+        "crypt32\\.dll",
+        "cryptbase\\.dll",
+        "advapi32\\.dll"
+      ],
+      "symbol_signatures": [
+        { "pattern": "BCryptOpenAlgorithmProvider", "kind": "exact", "weight": 35 },
+        { "pattern": "BCryptEncrypt", "kind": "exact", "weight": 30 },
+        { "pattern": "BCryptCreateHash", "kind": "exact", "weight": 25 },
+        { "pattern": "BCryptGenerateSymmetricKey", "kind": "exact", "weight": 25 },
+        { "pattern": "NCryptOpenStorageProvider", "kind": "exact", "weight": 30 },
+        { "pattern": "NCryptSignHash", "kind": "exact", "weight": 30 },
+        { "pattern": "CryptAcquireContextW", "kind": "exact", "weight": 25 },
+        { "pattern": "CertOpenSystemStoreW", "kind": "exact", "weight": 25 },
+        { "pattern": "BCrypt", "kind": "prefix", "weight": 20 },
+        { "pattern": "NCrypt", "kind": "prefix", "weight": 20 }
+      ],
+      "distinctive_strings": [
+        { "pattern": "Microsoft Software Key Storage Provider", "kind": "substring", "weight": 30 },
+        { "pattern": "Microsoft Enhanced Cryptographic Provider", "kind": "substring", "weight": 25 },
+        { "pattern": "MS_DEF_PROV", "kind": "substring", "weight": 25 },
+        { "pattern": "MS_ENH_RSA_AES_PROV", "kind": "substring", "weight": 25 },
+        { "pattern": "Microsoft Platform Crypto Provider", "kind": "substring", "weight": 25 }
+      ],
+      "disambiguation": {
+        "competing_libraries": [],
+        "distinguishing_symbols": ["BCryptOpenAlgorithmProvider", "NCryptOpenStorageProvider"],
+        "distinguishing_strings": ["Microsoft Software Key Storage Provider", "MS_ENH_RSA_AES_PROV"],
+        "negative_indicators": []
+      },
+      "thresholds": {
+        "min_signals_for_high": 2,
+        "min_signals_for_medium": 1,
+        "min_strings_without_symbols": 2
+      }
+    },
+    {
+      "id": "apple_security",
+      "name": "Apple Security frameworks",
+      "category": "apple_crypto",
+      "description": "Apple CommonCrypto and macOS/iOS Security.framework toolkit.",
+      "typical_capabilities": ["CommonCrypto", "Security.framework", "Secure Transport", "Keychain", "SecKey"],
+      "library_patterns": [
+        "libcommonCrypto(?:\\.[0-9]+)*\\.dylib",
+        "Security\\.framework",
+        "libcorecrypto(?:\\.[0-9]+)*\\.dylib"
+      ],
+      "symbol_signatures": [
+        { "pattern": "CCCrypt", "kind": "exact", "weight": 35 },
+        { "pattern": "CCCryptorCreate", "kind": "exact", "weight": 30 },
+        { "pattern": "CC_SHA256_Init", "kind": "exact", "weight": 25 },
+        { "pattern": "CC_MD5", "kind": "exact", "weight": 20 },
+        { "pattern": "SecKeyEncrypt", "kind": "exact", "weight": 30 },
+        { "pattern": "SecKeyRawSign", "kind": "exact", "weight": 30 },
+        { "pattern": "SecCertificateCreateWithData", "kind": "exact", "weight": 25 },
+        { "pattern": "SecTrustEvaluateWithError", "kind": "exact", "weight": 25 },
+        { "pattern": "CCCrypt", "kind": "prefix", "weight": 20 },
+        { "pattern": "SecKey", "kind": "prefix", "weight": 20 }
+      ],
+      "distinctive_strings": [
+        { "pattern": "com.apple.security", "kind": "substring", "weight": 25 },
+        { "pattern": "Apple CommonCrypto", "kind": "substring", "weight": 25 },
+        { "pattern": "Security-framework", "kind": "substring", "weight": 20 },
+        { "pattern": "kSecClassKey", "kind": "substring", "weight": 25 }
+      ],
+      "disambiguation": {
+        "competing_libraries": [],
+        "distinguishing_symbols": ["CCCrypt", "SecKeyEncrypt"],
+        "distinguishing_strings": ["Apple CommonCrypto", "com.apple.security"],
+        "negative_indicators": []
+      },
+      "thresholds": {
+        "min_signals_for_high": 2,
+        "min_signals_for_medium": 1,
+        "min_strings_without_symbols": 2
+      }
+    }
+  ]
+}

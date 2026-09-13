@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ecdat.io/schemas/crypto_dependency_mapping.schema.json",
+  "title": "ECDAT Crypto Dependency Mapping Ruleset",
+  "description": "Versioned schema mapping packages and libraries to cryptographic capabilities and explicit reachability levels.",
+  "type": "object",
+  "required": [
+    "version",
+    "description",
+    "last_updated",
+    "reachability_levels",
+    "packages"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the mapping knowledge base"
+    },
+    "description": {
+      "type": "string"
+    },
+    "last_updated": {
+      "type": "string"
+    },
+    "reachability_levels": {
+      "type": "object",
+      "required": [
+        "CAPABILITY_PRESENT",
+        "TRANSIENT_IMPORT",
+        "DIRECT_API_CALL",
+        "RUNTIME_CONFIRMED"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "CAPABILITY_PRESENT": {
+          "type": "object",
+          "required": ["code", "description", "reachable"],
+          "properties": {
+            "code": { "type": "string" },
+            "description": { "type": "string" },
+            "reachable": { "type": "boolean" }
+          }
+        },
+        "TRANSIENT_IMPORT": {
+          "type": "object",
+          "required": ["code", "description", "reachable"],
+          "properties": {
+            "code": { "type": "string" },
+            "description": { "type": "string" },
+            "reachable": { "type": "boolean" }
+          }
+        },
+        "DIRECT_API_CALL": {
+          "type": "object",
+          "required": ["code", "description", "reachable"],
+          "properties": {
+            "code": { "type": "string" },
+            "description": { "type": "string" },
+            "reachable": { "type": "boolean" }
+          }
+        },
+        "RUNTIME_CONFIRMED": {
+          "type": "object",
+          "required": ["code", "description", "reachable"],
+          "properties": {
+            "code": { "type": "string" },
+            "description": { "type": "string" },
+            "reachable": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "package_id",
+          "canonical_name",
+          "ecosystems",
+          "crypto_capabilities",
+          "api_identifiers"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "package_id": { "type": "string" },
+          "canonical_name": { "type": "string" },
+          "aliases": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "ecosystems": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "crypto_capabilities": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "api_identifiers": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "pqc_support": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  }
+}

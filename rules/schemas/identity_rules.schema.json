@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ecdat.io/schemas/identity_rules.schema.json",
+  "title": "ECDAT Identity Rules Schema",
+  "description": "Validation schema for ECDAT deterministic identifier generation rules and versioned configurations.",
+  "type": "object",
+  "required": ["version", "activeVersion", "supportedVersions", "schemes"],
+  "properties": {
+    "version": { "type": "string" },
+    "activeVersion": { "type": "string", "pattern": "^v[0-9]+$" },
+    "supportedVersions": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^v[0-9]+$" },
+      "minItems": 1
+    },
+    "schemes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["hashingAlgorithm", "urnPrefix", "digestLength", "entityTypes"],
+        "properties": {
+          "hashingAlgorithm": { "type": "string", "enum": ["sha256"] },
+          "urnPrefix": { "type": "string" },
+          "digestLength": { "type": "integer", "minimum": 16, "maximum": 64 },
+          "canonicalization": { "type": "string", "enum": ["rfc8785"] },
+          "entityTypes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": ["requiredFields", "excludedFields"],
+              "properties": {
+                "requiredFields": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "excludedFields": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

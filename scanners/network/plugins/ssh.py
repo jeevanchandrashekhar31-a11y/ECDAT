@@ -101,6 +101,39 @@ class SshScanner:
                     ciphers.extend([f"mac:{x}" for x in caps["mac"]])
                     ciphers.extend([f"comp:{x}" for x in caps["compression"]])
                     finding.cipher_suites = ciphers
+                    finding.key_exchanges = list(caps.get("kex", []))
+                    finding.signature_algorithms = list(caps.get("host_key", []))
+
+                    # Weak SSH algorithms
+                    weak = []
+                    for k in caps.get("kex", []):
+                        if "sha1" in k.lower() or "group1-" in k:
+                            weak.append(f"weak_kex:{k}")
+                    for hk in caps.get("host_key", []):
+                        if "dss" in hk.lower() or hk == "ssh-rsa":
+                            weak.append(f"weak_host_key:{hk}")
+                    for enc in caps.get("encryption", []):
+                        if "arcfour" in enc.lower() or "3des" in enc.lower() or "des" in enc.lower():
+                            weak.append(f"weak_cipher:{enc}")
+                        elif "-cbc" in enc.lower():
+                            weak.append(f"vulnerable_cipher_mode_cbc:{enc}")
+                    for mac in caps.get("mac", []):
+                        if "md5" in mac.lower():
+                            weak.append(f"weak_mac:{mac}")
+                        elif "sha1" in mac.lower():
+                            weak.append(f"deprecated_mac:{mac}")
+                    finding.weak_algorithms = sorted(list(set(weak)))
+
+                    # Quantum vulnerabilities
+                    q_vulns = []
+                    if any("diffie-hellman" in k.lower() or "curve25519" in k.lower() or "ecdh" in k.lower() for k in caps.get("kex", [])):
+                        q_vulns.append("shor_vulnerable_key_exchange")
+                    if any("rsa" in hk.lower() or "ecdsa" in hk.lower() or "ed25519" in hk.lower() or "dss" in hk.lower() for hk in caps.get("host_key", [])):
+                        q_vulns.append("shor_vulnerable_host_key")
+                    if any("128" in enc for enc in caps.get("encryption", [])):
+                        q_vulns.append("grover_sensitive_symmetric_cipher")
+                    finding.quantum_vulnerabilities = sorted(list(set(q_vulns)))
+
                     finding.scan_status = "success"
                 else:
                     finding.scan_status = "partial"

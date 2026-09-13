@@ -1,0 +1,136 @@
+{
+  "version": "1.0.0",
+  "description": "ECDAT Runtime & eBPF Instrumentation Architecture and Probe Catalog",
+  "last_updated": "2026-09-13",
+  "metadata_only_rules": {
+    "strictly_forbidden_fields": [
+      "private_key",
+      "plaintext",
+      "password",
+      "token",
+      "payload",
+      "key_material",
+      "decrypted_data",
+      "secret"
+    ],
+    "allowed_metadata_fields": [
+      "process_id",
+      "process_name",
+      "container_id",
+      "library_name",
+      "function_name",
+      "crypto_operation",
+      "algorithm_name",
+      "key_size_bits",
+      "curve_or_group",
+      "operation_mode",
+      "tls_version",
+      "cipher_suite",
+      "timestamp_ns"
+    ]
+  },
+  "security_boundary": {
+    "privilege_isolation": {
+      "dedicated_agent_only": true,
+      "control_plane_unprivileged": true,
+      "minimal_linux_capabilities": ["CAP_BPF", "CAP_PERFMON"],
+      "no_full_cap_sys_admin": true
+    },
+    "resource_limits": {
+      "max_event_buffer_size_mb": 16,
+      "max_events_per_second": 5000,
+      "max_memory_overhead_mb": 64,
+      "watchdog_timeout_seconds": 5
+    },
+    "kernel_compatibility": {
+      "minimum_kernel_version": "5.8.0",
+      "required_subsystems": ["uprobes", "bpf_ringbuf"]
+    }
+  },
+  "supported_libraries": [
+    {
+      "library_id": "openssl",
+      "library_name": "OpenSSL",
+      "probes": [
+        {
+          "probe_id": "openssl_evp_encrypt_init_ex",
+          "function_name": "EVP_EncryptInit_ex",
+          "crypto_operation": "symmetric_encryption_init",
+          "captured_parameters": ["cipher_name", "key_length", "mode"]
+        },
+        {
+          "probe_id": "openssl_evp_digest_init_ex",
+          "function_name": "EVP_DigestInit_ex",
+          "crypto_operation": "hash_init",
+          "captured_parameters": ["digest_name"]
+        },
+        {
+          "probe_id": "openssl_ssl_write",
+          "function_name": "SSL_write",
+          "crypto_operation": "tls_transmit_record",
+          "captured_parameters": ["bytes_count"]
+        },
+        {
+          "probe_id": "openssl_ssl_read",
+          "function_name": "SSL_read",
+          "crypto_operation": "tls_receive_record",
+          "captured_parameters": ["bytes_count"]
+        },
+        {
+          "probe_id": "openssl_ssl_do_handshake",
+          "function_name": "SSL_do_handshake",
+          "crypto_operation": "tls_handshake",
+          "captured_parameters": ["tls_version", "cipher_suite", "kex_group"]
+        }
+      ]
+    },
+    {
+      "library_id": "boringssl",
+      "library_name": "BoringSSL",
+      "probes": [
+        {
+          "probe_id": "boringssl_ssl_do_handshake",
+          "function_name": "SSL_do_handshake",
+          "crypto_operation": "tls_handshake",
+          "captured_parameters": ["tls_version", "cipher_suite", "kex_group"]
+        }
+      ]
+    },
+    {
+      "library_id": "libressl",
+      "library_name": "LibreSSL",
+      "probes": [
+        {
+          "probe_id": "libressl_tls_handshake",
+          "function_name": "tls_handshake",
+          "crypto_operation": "tls_handshake",
+          "captured_parameters": ["tls_version", "cipher_suite"]
+        }
+      ]
+    },
+    {
+      "library_id": "mbedtls",
+      "library_name": "mbedTLS",
+      "probes": [
+        {
+          "probe_id": "mbedtls_ssl_handshake",
+          "function_name": "mbedtls_ssl_handshake",
+          "crypto_operation": "tls_handshake",
+          "captured_parameters": ["tls_version", "ciphersuite_id"]
+        }
+      ]
+    },
+    {
+      "library_id": "wolfssl",
+      "library_name": "wolfSSL",
+      "probes": [
+        {
+          "probe_id": "wolfssl_negotiate",
+          "function_name": "wolfSSL_negotiate",
+          "crypto_operation": "tls_handshake",
+          "captured_parameters": ["tls_version", "cipher_suite"]
+        }
+      ]
+    }
+  ]
+}

@@ -69,11 +69,23 @@ function parseBodySize(value) {
   return `${bytes}b`;
 }
 
+const {
+  resolveSecret,
+  sanitizeCredentialUrl,
+  sanitizeConfigForLogging,
+  validateConfig,
+} = require("./config/schema");
+
 const nodeEnv = getEnv("NODE_ENV", "development");
-const apiKey =
+const rawApiKey =
   nodeEnv === "production"
     ? getEnv("ECDAT_API_KEY", undefined, true)
     : getEnv("ECDAT_API_KEY", "ecdat-demo-admin-key-2026");
+
+const rawDatabaseUrl = getEnv(
+  "DATABASE_URL",
+  "postgresql://postgres:postgres@localhost:5432/ecdat",
+);
 
 const config = {
   NODE_ENV: nodeEnv,
@@ -88,26 +100,23 @@ const config = {
   CORS_ORIGIN: parseCorsOrigins(
     getEnv("CORS_ORIGIN", "http://localhost:3000,http://localhost:5173"),
   ),
-  DATABASE_URL: getEnv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/ecdat",
-  ),
+  DATABASE_URL: resolveSecret(rawDatabaseUrl),
   RULES_DIR: path.resolve(__dirname, "../../rules"),
   DEFAULT_POLICY_PROFILE: getEnv(
     "DEFAULT_POLICY_PROFILE",
     "internal_enterprise",
   ),
   DEFAULT_SCENARIO: getEnv("DEFAULT_SCENARIO", "baseline"),
-  ECDAT_API_KEY: apiKey,
+  ECDAT_API_KEY: resolveSecret(rawApiKey),
   REQUIRE_AUTH_FOR_READS: getEnv("REQUIRE_AUTH_FOR_READS", "false") === "true",
   REQUIRE_DATABASE_HEALTH:
     getEnv("REQUIRE_DATABASE_HEALTH", "false") === "true",
   VERSION: "1.0.0",
 };
 
-// Validate critical constraints
-if (isNaN(config.PORT) || config.PORT <= 0 || config.PORT > 65535) {
-  throw new Error(`Configuration Error: Invalid PORT '${process.env.PORT}'`);
-}
+// Validate constraints and halt insecure production startup
+validateConfig(config);
 
 module.exports = config;
+module.exports.sanitizeConfigForLogging = sanitizeConfigForLogging;
+module.exports.sanitizeCredentialUrl = sanitizeCredentialUrl;

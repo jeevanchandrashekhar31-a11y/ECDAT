@@ -1,104 +1,203 @@
-import tree_sitter_javascript
-import tree_sitter
-from typing import List
+"""
+ECDAT JavaScript & TypeScript AST Handlers and Language Adapters (Phase 2.4)
+Provides:
+- JavascriptLanguageAdapter
+- TypescriptLanguageAdapter
+- JavascriptHandler
+"""
+
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+import tree_sitter
+import tree_sitter_javascript
+import tree_sitter_typescript
+
+from scanners.domain.errors import ParserFailureError
+from scanners.static.ast.abstraction import (
+    ASTNormalizer,
+    CryptoDetectionRule,
+    CryptoRuleProvider,
+    DataFlowProvider,
+    LanguageAdapter,
+    NormalizedAssignmentNode,
+    NormalizedCallNode,
+    Parser,
+)
 from scanners.static.ast.base import AstHandler
+from scanners.static.ast.javascript_detector import JavascriptCryptoDetector
 from scanners.static.results import StaticFinding
 
-JS_CRYPTO_QUERY = """
-(call_expression
-  function: (identifier) @func_name
-  arguments: (arguments (string) @algo)
-  (#match? @func_name "^(createHash|createCipher|createDecipher|createSign|createVerify)$")
-) @call
 
-(call_expression
-  function: (member_expression
-    object: (identifier) @obj
-    property: (property_identifier) @func_name)
-  (#match? @obj "^(crypto|webcrypto|subtle)$")
-  (#match? @func_name "^(createHash|createCipher|createDecipher|createSign|createVerify|digest|sign|verify|encrypt|decrypt)$")
-) @member_call
+class JSTSTreeSitterParser(Parser):
+    def __init__(self, language: tree_sitter.Language, lang_name: str):
+        self.language = language
+        self.lang_name = lang_name
+        self._parser = tree_sitter.Parser(self.language)
 
-(call_expression
-  function: (identifier) @req
-  arguments: (arguments (string) @pkg)
-  (#match? @req "^require$")
-  (#match? @pkg "(crypto|crypto-js|node-forge)")
-) @require
+    def parse(self, source_bytes: bytes) -> tree_sitter.Tree:
+        try:
+            tree = self._parser.parse(source_bytes)
+            if not tree:
+                raise ParserFailureError(f"Failed to parse {self.lang_name} source text")
+            return tree
+        except Exception as e:
+            if isinstance(e, ParserFailureError):
+                raise
+            raise ParserFailureError(f"Tree-sitter {self.lang_name} parse failure: {e}", fatal=False) from e
 
-(import_statement
-  source: (string) @pkg
-  (#match? @pkg "(crypto|crypto-js|node-forge)")
-) @import
-"""
+
+class JSTSGenericNormalizer(ASTNormalizer):
+    def extract_function_calls(self, tree: Any, source_bytes: bytes) -> List[NormalizedCallNode]:
+        return []
+
+    def extract_assignments(self, tree: Any, source_bytes: bytes) -> List[NormalizedAssignmentNode]:
+        return []
+
+
+class JSTSGenericDataFlow(DataFlowProvider):
+    def resolve_constant(self, var_name: str, assignments: List[NormalizedAssignmentNode]) -> Optional[Any]:
+        return None
+
+
+class JSTSCryptoRuleProvider(CryptoRuleProvider):
+    def get_rules(self) -> List[CryptoDetectionRule]:
+        return [
+            CryptoDetectionRule("JS_WEAK_HASH", "MD5", "crypto.createHash('md5')", "weak_hash", "critical", "high"),
+            CryptoDetectionRule("JS_WEAK_CIPHER", "DES", "crypto.createCipheriv('des-ecb')", "weak_cipher", "critical", "high"),
+            CryptoDetectionRule("JS_INSECURE_CIPHER_MODE_ECB", "ECB", "createCipheriv('aes-128-ecb')", "insecure_cipher_mode", "critical", "high"),
+            CryptoDetectionRule("JS_WEAK_RSA_KEY_SIZE", "RSA-Weak", "generateKeyPairSync('rsa', { modulusLength: 1024 })", "weak_asymmetric_key", "critical", "high"),
+            CryptoDetectionRule("JS_DISABLED_CERT_VALIDATION", "rejectUnauthorized: false", "https.Agent({ rejectUnauthorized: false })", "disabled_certificate_validation", "critical", "high"),
+            CryptoDetectionRule("JS_INSECURE_TLS_VERSION", "TLSv1.0", "https.createServer({ minVersion: 'TLSv1' })", "insecure_tls_protocol", "critical", "high"),
+            CryptoDetectionRule("JS_JWT_NONE_ALGORITHM", "JWT-NONE", "jwt.verify(..., { algorithms: ['none'] })", "insecure_jwt_algorithm", "critical", "high"),
+            CryptoDetectionRule("JS_CRYPTOJS_MD5", "MD5", "CryptoJS.MD5(...)", "weak_hash", "critical", "high"),
+        ]
 
 
 class JavascriptHandler(AstHandler):
+    """Retained for backward compatibility while using the advanced semantic detector."""
+
     def __init__(self):
         super().__init__(tree_sitter.Language(tree_sitter_javascript.language()))
 
     def extract_findings(self, source_code: bytes, file_path: Path, root_dir: Path) -> List[StaticFinding]:
-        findings = []
-        tree = self.parse(source_code)
+        detector = JavascriptCryptoDetector(file_path, root_dir, source_code, self.language, is_typescript=False)
+        return detector.detect()
 
-        matches = self.run_query(tree, JS_CRYPTO_QUERY)
 
-        source_str = source_code.decode("utf-8", errors="replace")
-        lines = source_str.split("\n")
+# =====================================================================
+# 1. JavaScript Language Adapter
+# =====================================================================
+class JavascriptLanguageAdapter(LanguageAdapter):
+    language = "javascript"
+    supported_versions = ["ES6+", "Node.js 16+", "Node.js 18+", "Node.js 20+", "Node.js 22+"]
+    parser_version = "tree-sitter-javascript 0.23.0"
+    supported_crypto_apis = [
+        "node:crypto",
+        "crypto.createHash",
+        "crypto.createHmac",
+        "crypto.createCipheriv",
+        "crypto.generateKeyPairSync",
+        "crypto.createDiffieHellman",
+        "window.crypto.subtle",
+        "https.Agent ({ rejectUnauthorized: false })",
+        "crypto-js",
+        "node-forge",
+        "jsonwebtoken (jwt.verify)",
+    ]
+    unsupported_constructs = [
+        "runtime eval() dynamic code string evaluation",
+        "Function() constructor string evaluation",
+        "dynamically computed property access over network strings",
+    ]
+    confidence_behavior = {
+        "destructured_import_call": "high",
+        "aliased_require_call": "high",
+        "constant_propagated_argument": "high",
+        "wrapper_function_call": "high",
+        "dynamic_eval_expression": "low",
+    }
+    tested_corpus = [
+        "tests/fixtures/static/vulnerable_js.js",
+        "tests/fixtures/static/clean_js.js",
+    ]
 
-        for match in matches:
-            captures = match[1]
-            if "func_name" in captures and "algo" in captures and "call" in captures:
-                func_node = captures["func_name"][0]
-                algo_node = captures["algo"][0]
-                call_node = captures["call"][0]
+    def __init__(self):
+        self._lang = tree_sitter.Language(tree_sitter_javascript.language())
+        self._parser = JSTSTreeSitterParser(self._lang, "javascript")
+        self._normalizer = JSTSGenericNormalizer()
+        self._rule_provider = JSTSCryptoRuleProvider()
+        self._data_flow = JSTSGenericDataFlow()
 
-                func_name = func_node.text.decode("utf-8")
-                algo_val = algo_node.text.decode("utf-8").strip("'\"")
+    def get_parser(self) -> Parser:
+        return self._parser
 
-                line_number = call_node.start_point[0] + 1
-                evidence = lines[line_number - 1].strip()
+    def get_ast_normalizer(self) -> ASTNormalizer:
+        return self._normalizer
 
-                finding_type = "crypto_api_call"
-                if "md5" in algo_val.lower() or "sha1" in algo_val.lower():
-                    finding_type = "weak_hash"
+    def get_crypto_rule_provider(self) -> CryptoRuleProvider:
+        return self._rule_provider
 
-                finding = self._create_finding(
-                    file_path,
-                    root_dir,
-                    line_number,
-                    "AST_JS_API",
-                    f"{func_name}({algo_val})",
-                    evidence,
-                    "high",
-                    finding_type,
-                )
-                findings.append(finding)
+    def get_data_flow_provider(self) -> DataFlowProvider:
+        return self._data_flow
 
-            elif "func_name" in captures and "member_call" in captures:
-                func_node = captures["func_name"][0]
-                obj_node = captures["obj"][0]
-                call_node = captures["member_call"][0]
+    def extract_findings(self, source_bytes: bytes, file_path: Path, root_dir: Path) -> List[StaticFinding]:
+        detector = JavascriptCryptoDetector(file_path, root_dir, source_bytes, self._lang, is_typescript=False)
+        return detector.detect()
 
-                func_name = f"{obj_node.text.decode('utf-8')}.{func_node.text.decode('utf-8')}"
-                line_number = call_node.start_point[0] + 1
-                evidence = lines[line_number - 1].strip()
 
-                finding = self._create_finding(
-                    file_path, root_dir, line_number, "AST_JS_API", func_name, evidence, "high", "crypto_api_call"
-                )
-                findings.append(finding)
+# =====================================================================
+# 2. TypeScript Language Adapter
+# =====================================================================
+class TypescriptLanguageAdapter(LanguageAdapter):
+    language = "typescript"
+    supported_versions = ["4.x", "5.x"]
+    parser_version = "tree-sitter-typescript 0.23.2"
+    supported_crypto_apis = [
+        "node:crypto",
+        "crypto.createHash",
+        "crypto.createHmac",
+        "crypto.createCipheriv",
+        "crypto.generateKeyPairSync",
+        "window.crypto.subtle",
+        "https.Agent ({ rejectUnauthorized: false })",
+        "crypto-js",
+        "node-forge",
+        "jsonwebtoken",
+    ]
+    unsupported_constructs = [
+        "runtime eval() dynamic code string evaluation",
+        "Function() constructor string evaluation",
+    ]
+    confidence_behavior = {
+        "destructured_import_call": "high",
+        "aliased_require_call": "high",
+        "constant_propagated_argument": "high",
+        "wrapper_function_call": "high",
+    }
+    tested_corpus = [
+        "tests/fixtures/static/vulnerable_ts.ts",
+        "tests/fixtures/static/clean_ts.ts",
+    ]
 
-            elif "pkg" in captures and ("require" in captures or "import" in captures):
-                pkg_node = captures["pkg"][0]
-                line_number = pkg_node.start_point[0] + 1
-                evidence = lines[line_number - 1].strip()
-                pkg_val = pkg_node.text.decode("utf-8").strip("'\"")
+    def __init__(self):
+        self._lang = tree_sitter.Language(tree_sitter_typescript.language_typescript())
+        self._parser = JSTSTreeSitterParser(self._lang, "typescript")
+        self._normalizer = JSTSGenericNormalizer()
+        self._rule_provider = JSTSCryptoRuleProvider()
+        self._data_flow = JSTSGenericDataFlow()
 
-                finding = self._create_finding(
-                    file_path, root_dir, line_number, "AST_JS_IMPORT", pkg_val, evidence, "medium", "crypto_library"
-                )
-                findings.append(finding)
+    def get_parser(self) -> Parser:
+        return self._parser
 
-        return findings
+    def get_ast_normalizer(self) -> ASTNormalizer:
+        return self._normalizer
+
+    def get_crypto_rule_provider(self) -> CryptoRuleProvider:
+        return self._rule_provider
+
+    def get_data_flow_provider(self) -> DataFlowProvider:
+        return self._data_flow
+
+    def extract_findings(self, source_bytes: bytes, file_path: Path, root_dir: Path) -> List[StaticFinding]:
+        detector = JavascriptCryptoDetector(file_path, root_dir, source_bytes, self._lang, is_typescript=True)
+        return detector.detect()

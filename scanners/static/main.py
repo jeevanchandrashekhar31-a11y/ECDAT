@@ -11,10 +11,14 @@ from scanners.cbom_mapping import code_finding_to_cbom, merge_cboms, serialize_c
 from scanners.models import CodeCryptoFinding
 from scanners.gating import VALID_FAIL_ON, evaluate_static_gate, static_finding_severity
 
-from scanners.static.ast.c_handler import CHandler
-from scanners.static.ast.cpp_handler import CppHandler
-from scanners.static.ast.go_handler import GoHandler
-from scanners.static.ast.javascript_handler import JavascriptHandler
+from scanners.domain.contracts import ScanStatus
+from scanners.domain.errors import (
+    ParserFailureError,
+    PermissionFailureError,
+    ScannerFailureError,
+    evaluate_scan_status,
+)
+from scanners.static.ast.adapters import get_default_adapter_registry
 
 
 def main():
@@ -23,7 +27,7 @@ def main():
     parser.add_argument("-o", "--output", default="artifacts/static_cbom.json", help="Output CBOM JSON path")
     parser.add_argument(
         "--include-ext",
-        default=".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs",
+        default=".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.py,.pyw,.java,.kt,.kts,.ts,.tsx,.cs,.rs",
         help="Comma-separated list of extensions to include",
     )
     parser.add_argument(
@@ -73,32 +77,28 @@ def main():
     print(f"Discovered {len(files_to_scan)} files to scan.")
     print(f"Skipped files: {discovery.skipped_stats}")
 
-    c_handler = CHandler()
-    cpp_handler = CppHandler()
-    go_handler = GoHandler()
-    js_handler = JavascriptHandler()
-
+    registry = get_default_adapter_registry()
     findings = []
+    scan_errors = []
 
     for fpath in files_to_scan:
         try:
             with open(fpath, "rb") as f:
                 source_code = f.read()
             content = source_code.decode("utf-8", errors="replace")
-        except (PermissionError, OSError):
+        except (PermissionError, OSError) as pe:
             discovery.skipped_stats["unreadable"] += 1
+            scan_errors.append(PermissionFailureError(f"Cannot read file: {fpath}", {"file": str(fpath)}, fatal=False))
             continue
 
         ext = fpath.suffix.lower()
         ast_findings = []
-        if ext in (".c", ".h"):
-            ast_findings = c_handler.extract_findings(source_code, fpath, discovery.root_dir)
-        elif ext in (".cpp", ".hpp", ".cc"):
-            ast_findings = cpp_handler.extract_findings(source_code, fpath, discovery.root_dir)
-        elif ext == ".go":
-            ast_findings = go_handler.extract_findings(source_code, fpath, discovery.root_dir)
-        elif ext in (".js", ".mjs", ".cjs"):
-            ast_findings = js_handler.extract_findings(source_code, fpath, discovery.root_dir)
+        adapter = registry.get_by_extension(ext)
+        if adapter:
+            try:
+                ast_findings = adapter.extract_findings(source_code, fpath, discovery.root_dir)
+            except Exception as e:
+                scan_errors.append(ParserFailureError(f"AST parsing failed for {fpath}: {e}", {"file": str(fpath)}, fatal=False))
 
         raw_matches = apply_regex_rules(content)
         regex_findings = []
@@ -133,9 +133,19 @@ def main():
                 # Basic superseding check (e.g. AST found specific function, regex found base algo name)
                 final_file_findings[key_algo] = f
 
+        # Secret-safe candidate detection
+        from scanners.static.secret_detector import SecretSafeDetector
+        _, secret_candidates = SecretSafeDetector.detect_and_redact(content, file_path=str(fpath.relative_to(discovery.root_dir)))
+        secret_findings = SecretSafeDetector.create_static_findings(secret_candidates)
+        for sf in secret_findings:
+            key_algo = f"{sf.file_path}:{sf.line_number}:{sf.algorithm}"
+            if key_algo not in final_file_findings:
+                final_file_findings[key_algo] = sf
+
         findings.extend(list(final_file_findings.values()))
 
     print(f"Found {len(findings)} potential cryptographic usage sites.")
+
 
     if args.llm_verify:
         from scanners.static.llm_verifier import LLMVerifier
@@ -194,9 +204,12 @@ def main():
             analysis_source=finding.analysis_source,
             needs_human_review=finding.needs_human_review,
             reason=finding.reason,
+            fingerprint=getattr(finding, "fingerprint", None),
+            secret_type=getattr(finding, "secret_type", None),
         )
 
         cboms.append(code_finding_to_cbom(ccf))
+
 
     out_dir = Path(args.output).parent
     out_dir.mkdir(parents=True, exist_ok=True)

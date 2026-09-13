@@ -1,0 +1,355 @@
+{
+  "version": "1.0.0",
+  "description": "ECDAT Versioned Knowledge Base mapping packages and libraries to cryptographic capabilities and 4-tier reachability levels.",
+  "last_updated": "2026-09-13",
+  "reachability_levels": {
+    "CAPABILITY_PRESENT": {
+      "code": "CAPABILITY_PRESENT",
+      "description": "Package contains cryptographic capability (declared in manifest or SBOM), but neither import nor direct API call is observed.",
+      "reachable": false
+    },
+    "TRANSIENT_IMPORT": {
+      "code": "TRANSIENT_IMPORT",
+      "description": "Package or application imports crypto module/package, but no direct cryptographic API invocation is observed in code.",
+      "reachable": false
+    },
+    "DIRECT_API_CALL": {
+      "code": "DIRECT_API_CALL",
+      "description": "Application source code directly calls cryptographic API methods, functions, or constructors.",
+      "reachable": true
+    },
+    "RUNTIME_CONFIRMED": {
+      "code": "RUNTIME_CONFIRMED",
+      "description": "Dynamic tracing, network observation, or runtime evidence confirms active cryptographic execution.",
+      "reachable": true
+    }
+  },
+  "packages": [
+    {
+      "package_id": "pkg:pypi/cryptography",
+      "canonical_name": "cryptography",
+      "aliases": ["pyca/cryptography", "python-cryptography"],
+      "ecosystems": ["pypi", "python"],
+      "crypto_capabilities": ["AES", "RSA", "ECDSA", "Ed25519", "X25519", "ChaCha20-Poly1305", "SHA2", "SHA3", "HMAC", "HKDF", "PBKDF2", "X.509"],
+      "api_identifiers": [
+        "cryptography.hazmat.primitives.ciphers",
+        "cryptography.hazmat.primitives.asymmetric",
+        "cryptography.hazmat.primitives.hashes",
+        "cryptography.x509",
+        "Cipher",
+        "generate_private_key",
+        "load_pem_private_key",
+        "load_der_private_key",
+        "load_pem_pkcs7_certificates",
+        "load_der_pkcs7_certificates"
+      ],
+      "pqc_support": "hybrid/planned via OpenSSL 3 providers",
+      "description": "Comprehensive Python cryptographic recipes and primitives."
+    },
+    {
+      "package_id": "pkg:pypi/pycryptodome",
+      "canonical_name": "pycryptodome",
+      "aliases": ["Crypto", "Cryptodome", "pycrypto"],
+      "ecosystems": ["pypi", "python"],
+      "crypto_capabilities": ["AES", "DES", "3DES", "RSA", "DSA", "ECC", "ChaCha20", "MD5", "SHA1", "SHA2", "SHA3"],
+      "api_identifiers": [
+        "Crypto.Cipher.AES.new",
+        "Crypto.Cipher.DES.new",
+        "Crypto.PublicKey.RSA.generate",
+        "Crypto.PublicKey.RSA.import_key",
+        "Crypto.Hash.SHA256.new",
+        "Crypto.Hash.MD5.new"
+      ],
+      "pqc_support": "none",
+      "description": "Self-contained cryptographic library for Python."
+    },
+    {
+      "package_id": "pkg:pypi/hashlib-stdlib",
+      "canonical_name": "hashlib",
+      "aliases": ["_hashlib", "python-hashlib"],
+      "ecosystems": ["pypi", "python"],
+      "crypto_capabilities": ["MD5", "SHA1", "SHA224", "SHA256", "SHA384", "SHA512", "SHA3", "BLAKE2", "PBKDF2", "scrypt"],
+      "api_identifiers": [
+        "hashlib.md5",
+        "hashlib.sha1",
+        "hashlib.sha256",
+        "hashlib.sha512",
+        "hashlib.new",
+        "hashlib.pbkdf2_hmac",
+        "hashlib.scrypt"
+      ],
+      "pqc_support": "none",
+      "description": "Python standard library secure hash and message digest algorithms."
+    },
+    {
+      "package_id": "pkg:pypi/pyjwt",
+      "canonical_name": "pyjwt",
+      "aliases": ["jwt", "python-jwt"],
+      "ecosystems": ["pypi", "python"],
+      "crypto_capabilities": ["HMAC", "RSA", "ECDSA", "EdDSA", "JWT-Sign", "JWT-Verify"],
+      "api_identifiers": [
+        "jwt.encode",
+        "jwt.decode",
+        "jwt.algorithms.RSAAlgorithm",
+        "jwt.algorithms.HMACAlgorithm"
+      ],
+      "pqc_support": "none",
+      "description": "JSON Web Token implementation in Python."
+    },
+    {
+      "package_id": "pkg:npm/crypto-js",
+      "canonical_name": "crypto-js",
+      "aliases": ["cryptojs"],
+      "ecosystems": ["npm", "javascript", "typescript"],
+      "crypto_capabilities": ["AES", "DES", "TripleDES", "Rabbit", "RC4", "MD5", "SHA1", "SHA256", "SHA512", "HMAC", "PBKDF2"],
+      "api_identifiers": [
+        "CryptoJS.AES.encrypt",
+        "CryptoJS.AES.decrypt",
+        "CryptoJS.DES.encrypt",
+        "CryptoJS.RC4.encrypt",
+        "CryptoJS.MD5",
+        "CryptoJS.SHA1",
+        "CryptoJS.SHA256",
+        "CryptoJS.HmacSHA256"
+      ],
+      "pqc_support": "none",
+      "description": "JavaScript library of crypto standards implemented in JavaScript."
+    },
+    {
+      "package_id": "pkg:npm/node-forge",
+      "canonical_name": "node-forge",
+      "aliases": ["forge"],
+      "ecosystems": ["npm", "javascript", "typescript"],
+      "crypto_capabilities": ["AES", "DES", "RSA", "ECDSA", "ED25519", "TLS", "X.509", "PKCS#7", "SHA1", "SHA256", "HMAC"],
+      "api_identifiers": [
+        "forge.cipher.createCipher",
+        "forge.pki.rsa.generateKeyPair",
+        "forge.pki.certificateFromPem",
+        "forge.md.sha256.create",
+        "forge.md.md5.create",
+        "forge.tls.createConnection"
+      ],
+      "pqc_support": "none",
+      "description": "Native implementation of TLS and various cryptographic tools in JavaScript."
+    },
+    {
+      "package_id": "pkg:npm/jsonwebtoken",
+      "canonical_name": "jsonwebtoken",
+      "aliases": ["jwt-node"],
+      "ecosystems": ["npm", "javascript", "typescript"],
+      "crypto_capabilities": ["HMAC", "RSA", "ECDSA", "JWT-Sign", "JWT-Verify"],
+      "api_identifiers": [
+        "jwt.sign",
+        "jwt.verify",
+        "jwt.decode"
+      ],
+      "pqc_support": "none",
+      "description": "Implementation of JSON Web Tokens for Node.js."
+    },
+    {
+      "package_id": "pkg:npm/bcrypt",
+      "canonical_name": "bcrypt",
+      "aliases": ["bcryptjs"],
+      "ecosystems": ["npm", "javascript", "typescript"],
+      "crypto_capabilities": ["Bcrypt", "Password-Hashing", "Blowfish"],
+      "api_identifiers": [
+        "bcrypt.hash",
+        "bcrypt.hashSync",
+        "bcrypt.compare",
+        "bcrypt.genSalt"
+      ],
+      "pqc_support": "none",
+      "description": "A library to help you hash passwords using bcrypt."
+    },
+    {
+      "package_id": "pkg:maven/org.bouncycastle/bcprov-jdk18on",
+      "canonical_name": "bcprov-jdk18on",
+      "aliases": ["bcprov", "bcprov-jdk15on", "bcprov-jdk15to18", "org.bouncycastle.bcprov"],
+      "ecosystems": ["maven", "java", "kotlin"],
+      "crypto_capabilities": ["AES", "RSA", "ECDSA", "Ed25519", "ML-KEM", "ML-DSA", "Kyber", "Dilithium", "Falcon", "SPHINCS+", "SHA2", "SHA3"],
+      "api_identifiers": [
+        "org.bouncycastle.jce.provider.BouncyCastleProvider",
+        "org.bouncycastle.crypto.engines",
+        "org.bouncycastle.pqc.crypto",
+        "org.bouncycastle.pqc.jcajce.provider"
+      ],
+      "pqc_support": "full (ML-KEM, ML-DSA, Kyber, Dilithium, Falcon, SPHINCS+)",
+      "description": "Bouncy Castle Crypto Package Provider with leading PQC support."
+    },
+    {
+      "package_id": "pkg:maven/javax.crypto/jce",
+      "canonical_name": "javax.crypto",
+      "aliases": ["java.security", "jca", "jce"],
+      "ecosystems": ["maven", "java", "kotlin"],
+      "crypto_capabilities": ["Cipher", "MessageDigest", "Mac", "Signature", "KeyGenerator", "KeyPairGenerator", "SecretKeyFactory", "SSLContext"],
+      "api_identifiers": [
+        "Cipher.getInstance",
+        "MessageDigest.getInstance",
+        "Mac.getInstance",
+        "Signature.getInstance",
+        "KeyGenerator.getInstance",
+        "KeyPairGenerator.getInstance",
+        "SecretKeyFactory.getInstance",
+        "SSLContext.getInstance"
+      ],
+      "pqc_support": "extensible via JCA security providers",
+      "description": "Standard Java Cryptography Architecture (JCA) and Extension (JCE)."
+    },
+    {
+      "package_id": "pkg:golang/golang.org/x/crypto",
+      "canonical_name": "golang.org/x/crypto",
+      "aliases": ["x/crypto", "golang-crypto"],
+      "ecosystems": ["golang", "go"],
+      "crypto_capabilities": ["ChaCha20Poly1305", "Argon2", "bcrypt", "scrypt", "SSH", "OpenPGP", "curve25519", "ed25519", "blake2b"],
+      "api_identifiers": [
+        "chacha20poly1305.New",
+        "argon2.IDKey",
+        "bcrypt.GenerateFromPassword",
+        "ssh.Dial",
+        "curve25519.X25519"
+      ],
+      "pqc_support": "experimental hybrid support",
+      "description": "Go supplementary cryptography libraries."
+    },
+    {
+      "package_id": "pkg:golang/crypto/standard",
+      "canonical_name": "crypto",
+      "aliases": ["crypto/tls", "crypto/aes", "crypto/rsa", "crypto/ecdsa", "crypto/sha256"],
+      "ecosystems": ["golang", "go"],
+      "crypto_capabilities": ["AES", "DES", "RSA", "ECDSA", "Ed25519", "SHA1", "SHA256", "SHA512", "HMAC", "TLS 1.2", "TLS 1.3"],
+      "api_identifiers": [
+        "aes.NewCipher",
+        "rsa.GenerateKey",
+        "rsa.EncryptPKCS1v15",
+        "ecdsa.GenerateKey",
+        "tls.Listen",
+        "tls.Dial",
+        "tls.Config",
+        "sha256.Sum256",
+        "hmac.New"
+      ],
+      "pqc_support": "X25519MLKEM768 in Go 1.24+",
+      "description": "Go standard library cryptography packages."
+    },
+    {
+      "package_id": "pkg:cargo/ring",
+      "canonical_name": "ring",
+      "aliases": ["ring-crypto"],
+      "ecosystems": ["crates.io", "rust"],
+      "crypto_capabilities": ["AES-GCM", "ChaCha20-Poly1305", "RSA", "ECDSA", "Ed25519", "X25519", "SHA256", "SHA384", "SHA512", "HMAC", "PBKDF2"],
+      "api_identifiers": [
+        "ring::aead",
+        "ring::agreement",
+        "ring::digest",
+        "ring::hmac",
+        "ring::pbkdf2",
+        "ring::rand",
+        "ring::signature"
+      ],
+      "pqc_support": "none",
+      "description": "Safe, fast, small crypto using Rust with BoringSSL core."
+    },
+    {
+      "package_id": "pkg:cargo/rustls",
+      "canonical_name": "rustls",
+      "aliases": ["rustls-tls"],
+      "ecosystems": ["crates.io", "rust"],
+      "crypto_capabilities": ["TLS 1.2", "TLS 1.3", "Certificate-Verification", "ALPN", "SNI"],
+      "api_identifiers": [
+        "rustls::ClientConfig",
+        "rustls::ServerConfig",
+        "rustls::Stream",
+        "rustls::Connection"
+      ],
+      "pqc_support": "hybrid post-quantum key exchange support via provider",
+      "description": "Modern, safe TLS library in Rust."
+    },
+    {
+      "package_id": "pkg:cargo/aes-gcm",
+      "canonical_name": "aes-gcm",
+      "aliases": ["RustCrypto/AEADs/aes-gcm"],
+      "ecosystems": ["crates.io", "rust"],
+      "crypto_capabilities": ["AES-GCM", "AES-128", "AES-256", "AEAD"],
+      "api_identifiers": [
+        "aes_gcm::Aes128Gcm",
+        "aes_gcm::Aes256Gcm",
+        "aes_gcm::aead::Aead::encrypt",
+        "aes_gcm::aead::Aead::decrypt"
+      ],
+      "pqc_support": "quantum resistant symmetric key length (256-bit)",
+      "description": "Pure Rust implementation of AES-GCM (Authenticated Encryption with Associated Data)."
+    },
+    {
+      "package_id": "pkg:generic/openssl",
+      "canonical_name": "openssl",
+      "aliases": ["libssl", "libcrypto", "openssl-dev", "libssl-dev", "libssl3", "libcrypto3"],
+      "ecosystems": ["c", "cpp", "native", "debian", "rpm", "alpine"],
+      "crypto_capabilities": ["TLS", "X.509", "RSA", "ECC", "AES", "ChaCha20-Poly1305", "SHA2", "SHA3", "HMAC", "EVP"],
+      "api_identifiers": [
+        "EVP_EncryptInit",
+        "EVP_EncryptInit_ex",
+        "EVP_CipherInit",
+        "EVP_DigestInit",
+        "RSA_new",
+        "EC_KEY_new",
+        "SSL_CTX_new",
+        "SSL_new",
+        "SSL_connect",
+        "SSL_accept"
+      ],
+      "pqc_support": "hybrid via OQS-provider (OpenSSL 3.x)",
+      "description": "Definitive open-source cryptographic library and TLS implementation."
+    },
+    {
+      "package_id": "pkg:generic/libsodium",
+      "canonical_name": "libsodium",
+      "aliases": ["libsodium-dev", "sodium"],
+      "ecosystems": ["c", "cpp", "native"],
+      "crypto_capabilities": ["Ed25519", "X25519", "ChaCha20-Poly1305", "Argon2", "SipHash", "BLAKE2b"],
+      "api_identifiers": [
+        "crypto_box_keypair",
+        "crypto_box_easy",
+        "crypto_sign_keypair",
+        "crypto_sign_detached",
+        "crypto_secretbox_easy",
+        "crypto_pwhash"
+      ],
+      "pqc_support": "none natively",
+      "description": "Modern, easy-to-use software library for encryption, decryption, and signatures."
+    },
+    {
+      "package_id": "pkg:generic/mbedtls",
+      "canonical_name": "mbedtls",
+      "aliases": ["libmbedtls", "mbedcrypto", "libmbedcrypto"],
+      "ecosystems": ["c", "cpp", "embedded", "native"],
+      "crypto_capabilities": ["TLS 1.2", "TLS 1.3", "X.509", "RSA", "ECC", "AES", "SHA2", "SHA3"],
+      "api_identifiers": [
+        "mbedtls_cipher_setup",
+        "mbedtls_ssl_init",
+        "mbedtls_ssl_setup",
+        "mbedtls_pk_init",
+        "mbedtls_md_setup"
+      ],
+      "pqc_support": "experimental",
+      "description": "Lightweight, modular cryptographic and TLS library designed for embedded systems."
+    },
+    {
+      "package_id": "pkg:nuget/System.Security.Cryptography",
+      "canonical_name": "System.Security.Cryptography",
+      "aliases": ["System.Security.Cryptography.Algorithms", "System.Security.Cryptography.Cng"],
+      "ecosystems": ["nuget", "csharp", "dotnet"],
+      "crypto_capabilities": ["Aes", "DES", "TripleDES", "RSA", "ECDsa", "ECDiffieHellman", "SHA256", "SHA512", "HMACSHA256"],
+      "api_identifiers": [
+        "Aes.Create",
+        "DES.Create",
+        "TripleDES.Create",
+        "RSA.Create",
+        "ECDsa.Create",
+        "SHA256.Create",
+        "HMACSHA256.Create"
+      ],
+      "pqc_support": "in development for .NET 9/10",
+      "description": "Standard .NET Cryptographic primitives and CSP abstractions."
+    }
+  ]
+}

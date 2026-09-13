@@ -5,6 +5,7 @@ from sslyze import Scanner, ServerNetworkLocation, ServerScanRequest, ScanComman
 
 from scanners.models import NetworkCryptoFinding
 from scanners.network.cert_parser import parse_cert
+from scanners.network.intelligence import enrich_finding_intelligence
 from scanners.network.target_validation import NormalizedTarget
 
 logger = logging.getLogger(__name__)
@@ -110,6 +111,7 @@ class TlsScanner:
                     partial = True
 
             finding.scan_status = "partial" if partial else "success"
+            enrich_finding_intelligence(finding)
             findings.append(finding)
 
         return findings
@@ -138,6 +140,10 @@ class TlsScanner:
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
+            try:
+                ctx.set_alpn_protocols(["h2", "http/1.1"])
+            except Exception:
+                pass
 
             with ctx.wrap_socket(sock, server_hostname=target.hostname) as ss:
                 ver = ss.version()
@@ -146,6 +152,10 @@ class TlsScanner:
                 cipher = ss.cipher()
                 if cipher and cipher[0]:
                     finding.cipher_suites.append(cipher[0])
+
+                alpn = ss.selected_alpn_protocol()
+                if alpn:
+                    finding.alpn_protocols.append(alpn)
 
                 der_cert = ss.getpeercert(binary_form=True)
                 if der_cert:
@@ -158,8 +168,10 @@ class TlsScanner:
                         finding.key_sizes[fam] = sz
 
             finding.scan_status = "success"
+            enrich_finding_intelligence(finding)
         except Exception as e:
             finding.scan_status = "failed"
             finding.error_reason = str(e)
 
         return finding
+

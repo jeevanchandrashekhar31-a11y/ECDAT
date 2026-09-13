@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "activeVersion": "v1",
+  "supportedVersions": ["v1"],
+  "schemes": {
+    "v1": {
+      "hashingAlgorithm": "sha256",
+      "urnPrefix": "urn:ecdat:v1",
+      "digestLength": 32,
+      "canonicalization": "rfc8785",
+      "entityTypes": {
+        "asset": {
+          "requiredFields": ["tenantId", "applicationId", "assetType", "provenance", "coreProperties"],
+          "excludedFields": ["displayName", "lineNumber", "columnNumber", "timestamp", "localAbsolutePath"]
+        },
+        "finding": {
+          "requiredFields": ["tenantId", "applicationId", "assetId", "ruleId", "algorithmStandard"],
+          "excludedFields": ["lineNumber", "timestamp", "scanId"]
+        },
+        "evidence": {
+          "requiredFields": ["proofType", "canonicalLocation", "snippetHash"],
+          "excludedFields": ["timestamp", "scanId"]
+        },
+        "relationship": {
+          "requiredFields": ["sourceAssetId", "targetAssetId", "relationshipType"],
+          "excludedFields": ["timestamp", "metadata"]
+        }
+      }
+    }
+  }
+}

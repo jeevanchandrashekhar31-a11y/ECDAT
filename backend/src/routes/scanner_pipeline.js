@@ -362,8 +362,10 @@ router.post('/scan/network', async (req, res, next) => {
     }
 
     try {
-      await runPythonCommand(['-m', 'scanners.network.main', `${host}:${port}`, '-o', tempOut, '--timeout', '10'], 20000);
+      const authorizedBy = req.body?.authorized_by || 'ecdat-web-operator';
+      await runPythonCommand(['-m', 'scanners.network.main', `${host}:${port}`, '-o', tempOut, '--timeout', '10', '--authorized-by', authorizedBy, '--allowed-hosts', host], 20000);
     } catch (scannerErr) {
+
       return res.status(400).json({
         success: false,
         error: `Network probe failed: ${scannerErr.message}. Ensure target host is reachable.`
