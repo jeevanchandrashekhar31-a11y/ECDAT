@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ECDAT Post-Quantum & Hybrid Algorithm Catalog Schema",
+  "type": "object",
+  "required": ["catalog_version", "last_updated", "algorithms"],
+  "properties": {
+    "catalog_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "last_updated": {
+      "type": "string"
+    },
+    "algorithms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "standard_name",
+          "category",
+          "mechanism_type",
+          "standard_reference",
+          "standard_version",
+          "nist_quantum_security_level",
+          "harvest_now_decrypt_later_resilient",
+          "quantum_authentication_resilient"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "standard_name": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "category": {
+            "type": "string",
+            "enum": ["classical", "post_quantum", "hybrid"]
+          },
+          "mechanism_type": {
+            "type": "string",
+            "enum": [
+              "key_exchange",
+              "digital_signature",
+              "stateful_hash_signature",
+              "symmetric_cipher",
+              "hash"
+            ]
+          },
+          "standard_reference": {
+            "type": "string"
+          },
+          "standard_version": {
+            "type": "string"
+          },
+          "usage_category": {
+            "type": "string",
+            "enum": [
+              "GENERAL_KEY_EXCHANGE",
+              "EPHEMERAL_TLS_KEX",
+              "GENERAL_DIGITAL_SIGNATURE",
+              "HIGH_ASSURANCE_DIGITAL_SIGNATURE",
+              "FIRMWARE_CODE_SIGNING",
+              "DATA_AT_REST_ENCAPSULATION",
+              "HYBRID_COMBINER"
+            ]
+          },
+          "characteristics": {
+            "type": "object",
+            "properties": {
+              "public_key_bytes": { "type": "integer" },
+              "private_key_bytes": { "type": "integer" },
+              "ciphertext_bytes": { "type": ["integer", "null"] },
+              "signature_bytes": { "type": ["integer", "null"] },
+              "performance_profile": { "type": "string" }
+            }
+          },
+          "migration_considerations": {
+            "type": "object",
+            "properties": {
+              "mtu_impact": { "type": "string" },
+              "state_management": { "type": "string" },
+              "performance_overhead": { "type": "string" },
+              "crypto_agility_guidance": { "type": "string" }
+            }
+          },
+          "interoperability_considerations": {
+            "type": "object",
+            "properties": {
+              "iana_codepoints": {
+                "oneOf": [
+                  { "type": "string" },
+                  { "type": "array", "items": { "type": "string" } },
+                  { "type": "null" }
+                ]
+              },
+              "client_server_support": { "type": "string" },
+              "pki_x509_support": { "type": "string" },
+              "fallback_handling": { "type": "string" }
+            }
+          },
+          "authority_recommendations": {
+            "type": "object",
+            "properties": {
+              "nist": { "type": "string" },
+              "anssi": { "type": "string" },
+              "bsi": { "type": "string" },
+              "nsa_cnsa": { "type": "string" },
+              "ietf": { "type": "string" }
+            }
+          },
+          "iana_tls_group_id": {
+            "type": ["integer", "null"]
+          },
+          "iana_tls_group_hex": {
+            "type": ["string", "null"]
+          },
+          "ssh_name": {
+            "type": ["string", "null"]
+          },
+          "oid": {
+            "type": ["string", "null"]
+          },
+          "nist_quantum_security_level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "harvest_now_decrypt_later_resilient": {
+            "type": "boolean"
+          },
+          "quantum_authentication_resilient": {
+            "type": "boolean"
+          },
+          "hybrid_components": {
+            "type": ["object", "null"],
+            "required": [
+              "classical_component",
+              "post_quantum_component",
+              "combiner_function"
+            ],
+            "properties": {
+              "classical_component": { "type": "string" },
+              "post_quantum_component": { "type": "string" },
+              "combiner_function": { "type": "string" }
+            }
+          },
+          "deprecation_status": {
+            "type": "string",
+            "enum": ["current", "draft", "deprecated", "experimental"]
+          }
+        }
+      }
+    }
+  }
+}

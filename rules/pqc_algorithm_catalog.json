@@ -1,0 +1,1122 @@
+{
+  "catalog_version": "2.0.0",
+  "description": "ECDAT Versioned Knowledge Base of Post-Quantum, Hybrid, and Classical Cryptographic Algorithms",
+  "last_updated": "2026-09-13",
+  "authorities_tracked": {
+    "nist": "National Institute of Standards and Technology (FIPS 203, FIPS 204, FIPS 205, SP 800-208)",
+    "anssi": "Agence nationale de la sécurité des systèmes d'information (French Cybersecurity Agency PQC Scientific Opinions & Hybrid Transition Guidelines)",
+    "bsi": "Bundesamt für Sicherheit in der Informationstechnik (German Federal Office for Information Security Technical Guidelines BSI TR-02102)",
+    "nsa_cnsa": "National Security Agency Commercial National Security Algorithm Suite 2.0 (CNSA 2.0 Transition Timelines)",
+    "ietf": "Internet Engineering Task Force Post-Quantum Use in Protocols (PQUIP) and TLS Working Groups"
+  },
+  "algorithms": [
+    {
+      "id": "ml_kem_512",
+      "standard_name": "ML-KEM-512",
+      "aliases": ["mlkem512", "Kyber512", "FIPS203-ML-KEM-512"],
+      "category": "post_quantum",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "NIST FIPS 203",
+      "standard_version": "FIPS 203 (Final - August 2024)",
+      "usage_category": "GENERAL_KEY_EXCHANGE",
+      "characteristics": {
+        "public_key_bytes": 800,
+        "private_key_bytes": 1632,
+        "ciphertext_bytes": 768,
+        "signature_bytes": null,
+        "performance_profile": "Extremely fast keygen and decapsulation; minimal CPU overhead."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Public key (800B) and ciphertext (768B) fit cleanly within standard 1500-byte Ethernet MTU.",
+        "state_management": "Stateless KEM. No state tracking or non-volatile storage required.",
+        "performance_overhead": "Faster than classical RSA-2048 and comparable to ECDH P-256.",
+        "crypto_agility_guidance": "Recommended for constrained embedded devices or low-bandwidth networks."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Supported in liboqs, OpenSSL 3.5, and standard PQC libraries.",
+        "pki_x509_support": "Standardized under draft-ietf-lamps-kyber-certificates.",
+        "fallback_handling": "Not recommended as sole mechanism by ANSSI/BSI; pair with classical ECDH in hybrid mode."
+      },
+      "authority_recommendations": {
+        "nist": "NIST Category 1 (AES-128 equivalent). Approved for general use under FIPS 203.",
+        "anssi": "Stage 2 hybrid mode required; standalone PQC not permitted for sensitive government systems.",
+        "bsi": "Acceptable for Category 1 security; hybrid deployment strongly advised.",
+        "nsa_cnsa": "NOT approved for CNSA 2.0. NSA mandates Category 5 (ML-KEM-1024) exclusively.",
+        "ietf": "Supported in draft-ietf-pquip-pqt-hybrid-kems."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "2.16.840.1.101.3.4.4.1",
+      "nist_quantum_security_level": 1,
+      "harvest_now_decrypt_later_resilient": true,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "ml_kem_768",
+      "standard_name": "ML-KEM-768",
+      "aliases": ["mlkem768", "Kyber768", "FIPS203-ML-KEM-768"],
+      "category": "post_quantum",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "NIST FIPS 203",
+      "standard_version": "FIPS 203 (Final - August 2024)",
+      "usage_category": "GENERAL_KEY_EXCHANGE",
+      "characteristics": {
+        "public_key_bytes": 1184,
+        "private_key_bytes": 2400,
+        "ciphertext_bytes": 1088,
+        "signature_bytes": null,
+        "performance_profile": "Optimal security/performance balance. Sub-millisecond encapsulation and decapsulation."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Public key (1184B) approaches typical single-packet MTU (1500B); when paired in hybrid TLS ClientHello, message fragmentation can occur on poorly configured middleboxes.",
+        "state_management": "Stateless KEM. No non-volatile synchronization required.",
+        "performance_overhead": "Negligible latency increase; CPU cycles comparable to X25519.",
+        "crypto_agility_guidance": "Primary default target for enterprise general-purpose data-in-transit protection."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Broadly deployed across Chrome, Firefox, Cloudflare, OpenSSL 3.4+, BoringSSL, AWS KMS.",
+        "pki_x509_support": "Draft IETF LAMPS specifications available.",
+        "fallback_handling": "Deploy via hybrid groups (X25519MLKEM768) to protect against unforeseen lattice cryptanalysis."
+      },
+      "authority_recommendations": {
+        "nist": "NIST Category 3 (AES-192 equivalent). Primary recommended general-purpose KEM.",
+        "anssi": "Stage 2 hybrid mode mandatory. Recommends pairing with X25519 or P-256.",
+        "bsi": "Recommended for general commercial systems in hybrid configuration.",
+        "nsa_cnsa": "NOT approved for National Security Systems (NSS). CNSA 2.0 requires Level 5.",
+        "ietf": "Core post-quantum KEM selected for TLS 1.3 hybrid key exchange."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "2.16.840.1.101.3.4.4.2",
+      "nist_quantum_security_level": 3,
+      "harvest_now_decrypt_later_resilient": true,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "ml_kem_1024",
+      "standard_name": "ML-KEM-1024",
+      "aliases": ["mlkem1024", "Kyber1024", "FIPS203-ML-KEM-1024"],
+      "category": "post_quantum",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "NIST FIPS 203",
+      "standard_version": "FIPS 203 (Final - August 2024)",
+      "usage_category": "HIGH_ASSURANCE_DIGITAL_SIGNATURE",
+      "characteristics": {
+        "public_key_bytes": 1568,
+        "private_key_bytes": 3168,
+        "ciphertext_bytes": 1568,
+        "signature_bytes": null,
+        "performance_profile": "High security margin; slightly higher memory footprint and key sizes."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Public key (1568B) strictly exceeds standard 1500-byte Ethernet MTU, guaranteeing IP fragmentation or TLS record segmentation.",
+        "state_management": "Stateless KEM.",
+        "performance_overhead": "Well within hardware budget for enterprise servers; slightly higher bandwidth.",
+        "crypto_agility_guidance": "Mandatory for high-assurance, defense, and top-secret intelligence requirements."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Supported in OpenSSL 3.4+, liboqs, AWS KMS, and CNSA 2.0 compliant appliances.",
+        "pki_x509_support": "Supported in draft-ietf-lamps specifications.",
+        "fallback_handling": "Pair with P-384 or X448 for CNSA 2.0 dual-layer defense."
+      },
+      "authority_recommendations": {
+        "nist": "NIST Category 5 (AES-256 equivalent). Highest security classification.",
+        "anssi": "Approved for high-assurance environments in hybrid mode.",
+        "bsi": "Recommended for high-security applications.",
+        "nsa_cnsa": "MANDATORY for US National Security Systems under CNSA 2.0 (deployment timeline 2025-2030).",
+        "ietf": "Standardized in IETF hybrid specifications (SecP384r1MLKEM1024)."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "2.16.840.1.101.3.4.4.3",
+      "nist_quantum_security_level": 5,
+      "harvest_now_decrypt_later_resilient": true,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "ml_dsa_44",
+      "standard_name": "ML-DSA-44",
+      "aliases": ["mldsa44", "Dilithium2", "FIPS204-ML-DSA-44"],
+      "category": "post_quantum",
+      "mechanism_type": "digital_signature",
+      "standard_reference": "NIST FIPS 204",
+      "standard_version": "FIPS 204 (Final - August 2024)",
+      "usage_category": "GENERAL_DIGITAL_SIGNATURE",
+      "characteristics": {
+        "public_key_bytes": 1312,
+        "private_key_bytes": 2560,
+        "ciphertext_bytes": null,
+        "signature_bytes": 2420,
+        "performance_profile": "Very fast verification; signature creation is faster than classical RSA."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Signature size (2.4 KB) significantly larger than classical ECDSA (64 B) or RSA (256 B); increases TLS certificate chain and handshake size.",
+        "state_management": "Stateless signature scheme.",
+        "performance_overhead": "Fast CPU verification; main bottleneck is network bandwidth and packet size expansion.",
+        "crypto_agility_guidance": "Recommended for embedded and client authentication certificates."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Standard implementations in OpenSSL 3.5, Bouncy Castle, WolfSSL.",
+        "pki_x509_support": "IETF draft-ietf-lamps-dilithium-certificates specifies OID encodings.",
+        "fallback_handling": "Use composite signatures (draft-ietf-lamps-pq-composite-sigs) during transition."
+      },
+      "authority_recommendations": {
+        "nist": "NIST Category 2 (SHA-256 equivalent). Approved under FIPS 204.",
+        "anssi": "Permitted in hybrid signature configuration.",
+        "bsi": "Suitable for general digital signature usage.",
+        "nsa_cnsa": "NOT approved for CNSA 2.0. NSA mandates Category 5 (ML-DSA-87).",
+        "ietf": "Draft standards active in LAMPS and TLS working groups."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "2.16.840.1.101.3.4.3.17",
+      "nist_quantum_security_level": 2,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": true,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "ml_dsa_65",
+      "standard_name": "ML-DSA-65",
+      "aliases": ["mldsa65", "Dilithium3", "FIPS204-ML-DSA-65"],
+      "category": "post_quantum",
+      "mechanism_type": "digital_signature",
+      "standard_reference": "NIST FIPS 204",
+      "standard_version": "FIPS 204 (Final - August 2024)",
+      "usage_category": "GENERAL_DIGITAL_SIGNATURE",
+      "characteristics": {
+        "public_key_bytes": 1952,
+        "private_key_bytes": 4032,
+        "ciphertext_bytes": null,
+        "signature_bytes": 3309,
+        "performance_profile": "Balanced primary signature scheme. Extremely fast verification."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Public key (1.95 KB) + signature (3.3 KB) adds ~5.3 KB per certificate in PKI hierarchy.",
+        "state_management": "Stateless signature scheme.",
+        "performance_overhead": "Verification is ~10x faster than RSA-2048 verification.",
+        "crypto_agility_guidance": "Primary recommended post-quantum signature algorithm for enterprise PKI and code signing."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Growing adoption in PKI software, HashiCorp Vault, CFSSL.",
+        "pki_x509_support": "Standardized under IETF LAMPS.",
+        "fallback_handling": "Pair with ECDSA P-256 / P-384 in composite certificates for backward compatibility."
+      },
+      "authority_recommendations": {
+        "nist": "NIST Category 3. Primary general-purpose signature scheme.",
+        "anssi": "Recommended for hybrid X.509 architectures.",
+        "bsi": "Recommended general signature scheme.",
+        "nsa_cnsa": "NOT approved for NSS; NSA requires ML-DSA-87 for CNSA 2.0.",
+        "ietf": "Standardized in IETF draft-ietf-lamps-dilithium-certificates."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "2.16.840.1.101.3.4.3.18",
+      "nist_quantum_security_level": 3,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": true,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "ml_dsa_87",
+      "standard_name": "ML-DSA-87",
+      "aliases": ["mldsa87", "Dilithium5", "FIPS204-ML-DSA-87"],
+      "category": "post_quantum",
+      "mechanism_type": "digital_signature",
+      "standard_reference": "NIST FIPS 204",
+      "standard_version": "FIPS 204 (Final - August 2024)",
+      "usage_category": "HIGH_ASSURANCE_DIGITAL_SIGNATURE",
+      "characteristics": {
+        "public_key_bytes": 2592,
+        "private_key_bytes": 4896,
+        "ciphertext_bytes": null,
+        "signature_bytes": 4627,
+        "performance_profile": "Highest security lattice signature. Fast verification, larger payload."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Signature (4.6 KB) requires buffer resizing in hardware security appliances.",
+        "state_management": "Stateless signature scheme.",
+        "performance_overhead": "Requires accommodating ~7.2 KB total public-key + signature footprint.",
+        "crypto_agility_guidance": "Mandatory for CNSA 2.0 classified and defense systems."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Supported in government-certified cryptographic modules and OpenSSL 3.5.",
+        "pki_x509_support": "Supported in draft-ietf-lamps-dilithium-certificates.",
+        "fallback_handling": "Pair with ECDSA P-384 or RSA-4096 in composite certificates."
+      },
+      "authority_recommendations": {
+        "nist": "NIST Category 5. Highest security signature standard under FIPS 204.",
+        "anssi": "Approved for high-assurance applications.",
+        "bsi": "Approved for long-term security guarantees.",
+        "nsa_cnsa": "MANDATORY for US National Security Systems digital signatures under CNSA 2.0.",
+        "ietf": "Tracked in IETF LAMPS."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "2.16.840.1.101.3.4.3.19",
+      "nist_quantum_security_level": 5,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": true,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "slh_dsa_sha2_128s",
+      "standard_name": "SLH-DSA-SHA2-128s",
+      "aliases": ["slhdsa128s", "SPHINCS+-SHA2-128s", "FIPS205-SLH-DSA"],
+      "category": "post_quantum",
+      "mechanism_type": "digital_signature",
+      "standard_reference": "NIST FIPS 205",
+      "standard_version": "FIPS 205 (Final - August 2024)",
+      "usage_category": "HIGH_ASSURANCE_DIGITAL_SIGNATURE",
+      "characteristics": {
+        "public_key_bytes": 32,
+        "private_key_bytes": 64,
+        "ciphertext_bytes": null,
+        "signature_bytes": 7856,
+        "performance_profile": "Compact public keys (32B); large signatures (7.8KB); slower signing speed."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Signatures exceed 7.8 KB; unsuited for high-throughput interactive TLS sessions.",
+        "state_management": "Stateless hash-based signature scheme. No non-volatile state synchronization risk.",
+        "performance_overhead": "Signing takes tens of milliseconds; verification is relatively fast.",
+        "crypto_agility_guidance": "Vital hedge against potential mathematical breakthroughs in structured lattice problems."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Supported in OpenSSL 3.5, liboqs, Bouncy Castle.",
+        "pki_x509_support": "OID registered under NIST Computer Security Objects Register (CSOR).",
+        "fallback_handling": "Ideal conservative backup algorithm for root certificate authorities and document signing."
+      },
+      "authority_recommendations": {
+        "nist": "NIST Category 1. Standardized as stateless hash-based alternative to lattice schemes.",
+        "anssi": "Strongly endorses hash-based foundations due to mature, well-understood security reductions.",
+        "bsi": "Recommended as conservative fallback if lattice assumptions are questioned.",
+        "nsa_cnsa": "Secondary backup signature scheme under CNSA 2.0.",
+        "ietf": "Tracked in IETF LAMPS for PKIX certificates."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "2.16.840.1.101.3.4.3.22",
+      "nist_quantum_security_level": 1,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": true,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "slh_dsa_sha2_256s",
+      "standard_name": "SLH-DSA-SHA2-256s",
+      "aliases": ["slhdsa256s", "SPHINCS+-SHA2-256s"],
+      "category": "post_quantum",
+      "mechanism_type": "digital_signature",
+      "standard_reference": "NIST FIPS 205",
+      "standard_version": "FIPS 205 (Final - August 2024)",
+      "usage_category": "HIGH_ASSURANCE_DIGITAL_SIGNATURE",
+      "characteristics": {
+        "public_key_bytes": 64,
+        "private_key_bytes": 128,
+        "ciphertext_bytes": null,
+        "signature_bytes": 29792,
+        "performance_profile": "Ultra-conservative hash-based security; signature size is ~29.8 KB."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Extremely large signatures (29.8 KB); cannot be transmitted over single IP packets.",
+        "state_management": "Stateless. Completely safe from state reuse vulnerabilities.",
+        "performance_overhead": "Heavy signature generation overhead; best for root CA and archival signing.",
+        "crypto_agility_guidance": "Use where long-term mathematical assurance outweighs bandwidth constraints."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Implemented in specialized PQC and archive signing tools.",
+        "pki_x509_support": "Standardized under CSOR OIDs.",
+        "fallback_handling": "Not suitable for interactive TLS."
+      },
+      "authority_recommendations": {
+        "nist": "NIST Category 5. Highest security stateless hash-based signature standard.",
+        "anssi": "Approved for maximum-security archival integrity.",
+        "bsi": "Approved for ultra-long-term security.",
+        "nsa_cnsa": "Approved as conservative backup under CNSA 2.0.",
+        "ietf": "Covered in IETF LAMPS."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "2.16.840.1.101.3.4.3.26",
+      "nist_quantum_security_level": 5,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": true,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "lms_hss",
+      "standard_name": "LMS/HSS",
+      "aliases": ["LMS", "HSS", "Leighton-Micali-Signature", "RFC8554", "SP800-208-LMS"],
+      "category": "post_quantum",
+      "mechanism_type": "stateful_hash_signature",
+      "standard_reference": "NIST SP 800-208 & RFC 8554",
+      "standard_version": "RFC 8554 / NIST SP 800-208 (2020)",
+      "usage_category": "FIRMWARE_CODE_SIGNING",
+      "characteristics": {
+        "public_key_bytes": 56,
+        "private_key_bytes": 64,
+        "ciphertext_bytes": null,
+        "signature_bytes": 2500,
+        "performance_profile": "Extremely fast verification in hardware/ASIC; compact public key; finite signing capacity."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Moderate signature size (~2.5 KB); easily handled in bootloader and firmware blocks.",
+        "state_management": "CRITICAL HAZARD: Stateful scheme. Re-using a one-time signature index completely destroys private key security. Requires atomic non-volatile hardware state tracking.",
+        "performance_overhead": "Ideal for boot ROM and hardware root-of-trust verification.",
+        "crypto_agility_guidance": "Strictly restricted to firmware, operating system updates, and bootloader code signing. FORBIDDEN for ephemeral TLS, multi-threaded signing, or general PKI."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Supported in hardware security modules (HSMs), UEFI secure boot, and CNSA 2.0 bootloader stacks.",
+        "pki_x509_support": "Supported under RFC 8708 for CMS/firmware packages.",
+        "fallback_handling": "HSMs must enforce monotonic hardware counters to prevent VM snapshot rollback attacks."
+      },
+      "authority_recommendations": {
+        "nist": "Approved in NIST SP 800-208 exclusively for firmware and software update signing under strict state management.",
+        "anssi": "Approved exclusively for embedded and firmware signing under certified hardware control.",
+        "bsi": "Permitted with strict HSM-enforced state isolation.",
+        "nsa_cnsa": "MANDATORY for firmware and software code signing under CNSA 2.0 (transition begins 2025).",
+        "ietf": "Standardized in RFC 8554 and RFC 8708."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "1.2.840.113549.1.9.16.1.32",
+      "nist_quantum_security_level": 3,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": true,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "xmss_mt",
+      "standard_name": "XMSS/XMSS^MT",
+      "aliases": ["XMSS", "XMSS-MT", "RFC8391", "SP800-208-XMSS"],
+      "category": "post_quantum",
+      "mechanism_type": "stateful_hash_signature",
+      "standard_reference": "NIST SP 800-208 & RFC 8391",
+      "standard_version": "RFC 8391 / NIST SP 800-208 (2020)",
+      "usage_category": "FIRMWARE_CODE_SIGNING",
+      "characteristics": {
+        "public_key_bytes": 64,
+        "private_key_bytes": 132,
+        "ciphertext_bytes": null,
+        "signature_bytes": 2800,
+        "performance_profile": "Very fast verification; multi-tree structure allows millions of signatures."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Signatures (~2.8 KB) fit well in firmware packages and update containers.",
+        "state_management": "CRITICAL HAZARD: Stateful scheme. Must never roll back private key state. Key reuse completely breaks security.",
+        "performance_overhead": "Fast verification in hardware; suitable for secure boot and microcode updates.",
+        "crypto_agility_guidance": "Approved exclusively for software/firmware updates. Never use for general-purpose messaging or interactive TLS."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Standardized in RFC 8391; supported in specialized HSMs and bootloaders.",
+        "pki_x509_support": "Standardized in RFC 8708 for CMS.",
+        "fallback_handling": "Requires HSM with physical monotonic counters to survive power loss or VM rollbacks."
+      },
+      "authority_recommendations": {
+        "nist": "NIST SP 800-208 approved for software/firmware signing under certified state control.",
+        "anssi": "Allowed exclusively for firmware signing with certified state protection.",
+        "bsi": "Permitted with strict HSM-enforced state isolation.",
+        "nsa_cnsa": "Approved alternative to LMS under CNSA 2.0 for software and firmware signing.",
+        "ietf": "Standardized in RFC 8391."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "1.3.6.1.4.1.41482.3.1",
+      "nist_quantum_security_level": 3,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": true,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "x25519_mlkem768",
+      "standard_name": "X25519MLKEM768",
+      "aliases": ["x25519mlkem768", "X25519-ML-KEM-768", "x25519_kyber768"],
+      "category": "hybrid",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
+      "standard_version": "draft-ietf-tls-hybrid-design-01 (FIPS 203 finalized 2024)",
+      "usage_category": "EPHEMERAL_TLS_KEX",
+      "characteristics": {
+        "public_key_bytes": 1216,
+        "private_key_bytes": 2432,
+        "ciphertext_bytes": 1120,
+        "signature_bytes": null,
+        "performance_profile": "Industry workhorse for TLS 1.3. Total key share is 1216B (32B X25519 + 1184B ML-KEM-768)."
+      },
+      "migration_considerations": {
+        "mtu_impact": "ClientHello size increases by ~1.2 KB. 99.9% of modern networks pass without fragmentation.",
+        "state_management": "Stateless ephemeral key exchange.",
+        "performance_overhead": "Imperceptible latency overhead in production (benchmarked < 1.5ms additional handshake time).",
+        "crypto_agility_guidance": "Recommended default for all enterprise TLS 1.3 endpoints transitioning to post-quantum protection."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": ["4588", "0x11ec"],
+        "client_server_support": "Standardized IANA codepoint 0x11ec. Native in OpenSSL 3.4+, Chrome 131+, Cloudflare, AWS.",
+        "pki_x509_support": "Not applicable (ephemeral key exchange only).",
+        "fallback_handling": "If peer does not support 0x11ec, falls back seamlessly to classical X25519 without security downgrade."
+      },
+      "authority_recommendations": {
+        "nist": "NIST SP 800-227 (Draft) endorses hybrid KEMs for defense-in-depth transition.",
+        "anssi": "MANDATORY Stage 2 hybrid configuration for all French government and critical infrastructure.",
+        "bsi": "Recommended hybrid approach to mitigate lattice cryptanalytic risk.",
+        "nsa_cnsa": "Permitted during transition; NSA ultimate target is pure Level 5.",
+        "ietf": "Standardized in IETF TLS Working Group under draft-ietf-tls-hybrid-design."
+      },
+      "iana_tls_group_id": 4588,
+      "iana_tls_group_hex": "0x11ec",
+      "ssh_name": null,
+      "oid": null,
+      "nist_quantum_security_level": 3,
+      "harvest_now_decrypt_later_resilient": true,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": {
+        "classical_component": "x25519",
+        "post_quantum_component": "ml_kem_768",
+        "combiner_function": "HKDF-SHA256"
+      },
+      "deprecation_status": "current"
+    },
+    {
+      "id": "secp256r1_mlkem768",
+      "standard_name": "SecP256r1MLKEM768",
+      "aliases": ["secp256r1mlkem768", "P256-ML-KEM-768"],
+      "category": "hybrid",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
+      "standard_version": "draft-ietf-tls-hybrid-design-01",
+      "usage_category": "EPHEMERAL_TLS_KEX",
+      "characteristics": {
+        "public_key_bytes": 1249,
+        "private_key_bytes": 2432,
+        "ciphertext_bytes": 1153,
+        "signature_bytes": null,
+        "performance_profile": "FIPS-compliant hybrid group combining NIST P-256 with ML-KEM-768."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Total key share is 1249 bytes; comfortably fits within standard MTU.",
+        "state_management": "Stateless ephemeral key exchange.",
+        "performance_overhead": "Negligible latency impact.",
+        "crypto_agility_guidance": "Recommended for regulated enterprise environments (BFSI, healthcare) requiring FIPS 140 classical components."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": ["4589", "0x11ed"],
+        "client_server_support": "Standardized IANA codepoint 0x11ed. Supported in OpenSSL 3.4+, Windows Schannel preview, Java 24.",
+        "pki_x509_support": "Not applicable (ephemeral key exchange).",
+        "fallback_handling": "Falls back to P-256 if client or server does not support ML-KEM."
+      },
+      "authority_recommendations": {
+        "nist": "Meets FIPS 140-3 requirements when FIPS-validated P-256 module is utilized.",
+        "anssi": "Approved Stage 2 hybrid group.",
+        "bsi": "Approved hybrid group for government communications.",
+        "nsa_cnsa": "Permitted during transition phase.",
+        "ietf": "Standardized in IETF draft-ietf-tls-hybrid-design."
+      },
+      "iana_tls_group_id": 4589,
+      "iana_tls_group_hex": "0x11ed",
+      "ssh_name": null,
+      "oid": null,
+      "nist_quantum_security_level": 3,
+      "harvest_now_decrypt_later_resilient": true,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": {
+        "classical_component": "secp256r1",
+        "post_quantum_component": "ml_kem_768",
+        "combiner_function": "HKDF-SHA256"
+      },
+      "deprecation_status": "current"
+    },
+    {
+      "id": "x25519_mlkem1024",
+      "standard_name": "X25519MLKEM1024",
+      "aliases": ["x25519mlkem1024", "X25519-ML-KEM-1024"],
+      "category": "hybrid",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
+      "standard_version": "draft-ietf-tls-hybrid-design-01",
+      "usage_category": "EPHEMERAL_TLS_KEX",
+      "characteristics": {
+        "public_key_bytes": 1600,
+        "private_key_bytes": 3200,
+        "ciphertext_bytes": 1600,
+        "signature_bytes": null,
+        "performance_profile": "High-assurance hybrid group combining X25519 with Level 5 ML-KEM-1024."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Key share (1600B) exceeds 1500-byte MTU; requires TCP segmentation handling.",
+        "state_management": "Stateless ephemeral key exchange.",
+        "performance_overhead": "Slightly higher bandwidth overhead.",
+        "crypto_agility_guidance": "Recommended for high-value data transmission requiring Level 5 quantum resilience."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": ["4590", "0x11ee"],
+        "client_server_support": "Standardized IANA codepoint 0x11ee.",
+        "pki_x509_support": "Not applicable.",
+        "fallback_handling": "Seamless fallback to X25519."
+      },
+      "authority_recommendations": {
+        "nist": "Level 5 quantum security.",
+        "anssi": "Approved for high-security hybrid operations.",
+        "bsi": "Approved for high-security requirements.",
+        "nsa_cnsa": "Compatible with Level 5 requirements.",
+        "ietf": "Standardized in IETF draft-ietf-tls-hybrid-design."
+      },
+      "iana_tls_group_id": 4590,
+      "iana_tls_group_hex": "0x11ee",
+      "ssh_name": null,
+      "oid": null,
+      "nist_quantum_security_level": 5,
+      "harvest_now_decrypt_later_resilient": true,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": {
+        "classical_component": "x25519",
+        "post_quantum_component": "ml_kem_1024",
+        "combiner_function": "HKDF-SHA384"
+      },
+      "deprecation_status": "current"
+    },
+    {
+      "id": "secp384r1_mlkem1024",
+      "standard_name": "SecP384r1MLKEM1024",
+      "aliases": ["secp384r1mlkem1024", "P384-ML-KEM-1024"],
+      "category": "hybrid",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
+      "standard_version": "draft-ietf-tls-hybrid-design-01",
+      "usage_category": "EPHEMERAL_TLS_KEX",
+      "characteristics": {
+        "public_key_bytes": 1665,
+        "private_key_bytes": 3216,
+        "ciphertext_bytes": 1665,
+        "signature_bytes": null,
+        "performance_profile": "Full CNSA 2.0 and FIPS-aligned high-assurance hybrid group."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Key share (1665B) will segment over standard MTU.",
+        "state_management": "Stateless ephemeral key exchange.",
+        "performance_overhead": "Higher compute and network overhead; targeted at classified/defense backbones.",
+        "crypto_agility_guidance": "Recommended for government, aerospace, and defense environments adhering to CNSA 2.0."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": ["4591", "0x11ef"],
+        "client_server_support": "Standardized IANA codepoint 0x11ef.",
+        "pki_x509_support": "Not applicable.",
+        "fallback_handling": "Falls back to P-384."
+      },
+      "authority_recommendations": {
+        "nist": "Level 5 quantum security; FIPS 140 compliant classical P-384.",
+        "anssi": "Approved for Stage 2 high-assurance.",
+        "bsi": "Approved for Level 5 high-assurance.",
+        "nsa_cnsa": "STRONGLY ALIGNED with CNSA 2.0 dual-layer transition recommendations.",
+        "ietf": "Standardized in IETF draft-ietf-tls-hybrid-design."
+      },
+      "iana_tls_group_id": 4591,
+      "iana_tls_group_hex": "0x11ef",
+      "ssh_name": null,
+      "oid": null,
+      "nist_quantum_security_level": 5,
+      "harvest_now_decrypt_later_resilient": true,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": {
+        "classical_component": "secp384r1",
+        "post_quantum_component": "ml_kem_1024",
+        "combiner_function": "HKDF-SHA384"
+      },
+      "deprecation_status": "current"
+    },
+    {
+      "id": "sntrup761x25519_sha512",
+      "standard_name": "sntrup761x25519-sha512@openssh.com",
+      "aliases": ["sntrup761x25519"],
+      "category": "hybrid",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "OpenSSH 9.0+ & IETF draft-tinnes-ssh-pq-kex",
+      "standard_version": "OpenSSH 9.0 implementation",
+      "usage_category": "EPHEMERAL_TLS_KEX",
+      "characteristics": {
+        "public_key_bytes": 1190,
+        "private_key_bytes": 1795,
+        "ciphertext_bytes": 1071,
+        "signature_bytes": null,
+        "performance_profile": "NTRU Prime lattice hybrid; default in OpenSSH since version 9.0."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Comfortably fits within SSH protocol packet frames.",
+        "state_management": "Stateless.",
+        "performance_overhead": "Negligible for interactive and automated SSH sessions.",
+        "crypto_agility_guidance": "Current default in OpenSSH. Transitioning to ML-KEM-768 under modern OpenSSH 9.8+."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Supported across all OpenSSH 9.0+ installations worldwide.",
+        "pki_x509_support": "Not applicable.",
+        "fallback_handling": "Falls back to curve25519-sha256 if remote server is older than OpenSSH 9.0."
+      },
+      "authority_recommendations": {
+        "nist": "Streamlined NTRU Prime was not selected in final NIST round; NIST standard is ML-KEM.",
+        "anssi": "Acknowledges OpenSSH practical deployment; recommends migrating to ML-KEM long-term.",
+        "bsi": "Recognized as effective interim defense against HNDL for SSH.",
+        "nsa_cnsa": "Not approved under CNSA 2.0.",
+        "ietf": "Documented in draft-tinnes-ssh-pq-kex."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": "sntrup761x25519-sha512@openssh.com",
+      "oid": null,
+      "nist_quantum_security_level": 3,
+      "harvest_now_decrypt_later_resilient": true,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": {
+        "classical_component": "x25519",
+        "post_quantum_component": "sntrup761",
+        "combiner_function": "SHA-512-Concat"
+      },
+      "deprecation_status": "current"
+    },
+    {
+      "id": "mlkem768x25519_sha512",
+      "standard_name": "mlkem768x25519-sha512@openssh.com",
+      "aliases": ["mlkem768x25519"],
+      "category": "hybrid",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "IETF draft-kampanakis-curdle-ssh-pq-kex & NIST FIPS 203",
+      "standard_version": "OpenSSH 9.8+ implementation",
+      "usage_category": "EPHEMERAL_TLS_KEX",
+      "characteristics": {
+        "public_key_bytes": 1216,
+        "private_key_bytes": 2432,
+        "ciphertext_bytes": 1120,
+        "signature_bytes": null,
+        "performance_profile": "Standardized FIPS 203 ML-KEM hybrid for SSH."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Fully compatible with standard SSH packet buffers.",
+        "state_management": "Stateless.",
+        "performance_overhead": "Fast execution on modern CPU architectures.",
+        "crypto_agility_guidance": "Recommended target for modern enterprise SSH server and client configurations."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Supported in OpenSSH 9.8+ and PuTTY 0.81+.",
+        "pki_x509_support": "Not applicable.",
+        "fallback_handling": "Falls back to sntrup761x25519 or curve25519."
+      },
+      "authority_recommendations": {
+        "nist": "Incorporates official FIPS 203 ML-KEM-768 standard.",
+        "anssi": "Approved Stage 2 hybrid configuration.",
+        "bsi": "Approved hybrid configuration.",
+        "nsa_cnsa": "Permitted during transition.",
+        "ietf": "Draft draft-kampanakis-curdle-ssh-pq-kex active in CURDLE WG."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": "mlkem768x25519-sha512@openssh.com",
+      "oid": null,
+      "nist_quantum_security_level": 3,
+      "harvest_now_decrypt_later_resilient": true,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": {
+        "classical_component": "x25519",
+        "post_quantum_component": "ml_kem_768",
+        "combiner_function": "SHA-512-Concat"
+      },
+      "deprecation_status": "current"
+    },
+    {
+      "id": "x25519_kyber768_draft00",
+      "standard_name": "X25519Kyber768Draft00",
+      "aliases": ["x25519kyber768draft00", "X25519Kyber768"],
+      "category": "hybrid",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "IETF draft-kwiatkowski-tls-ecdhe-kyber-00",
+      "standard_version": "draft-00 (Pre-standardization Experiment)",
+      "usage_category": "EPHEMERAL_TLS_KEX",
+      "characteristics": {
+        "public_key_bytes": 1216,
+        "private_key_bytes": 2432,
+        "ciphertext_bytes": 1120,
+        "signature_bytes": null,
+        "performance_profile": "Legacy experimental codepoint used during initial Chrome/Cloudflare experiments."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Same as standardized ML-KEM-768.",
+        "state_management": "Stateless.",
+        "performance_overhead": "Low.",
+        "crypto_agility_guidance": "MIGRATE IMMEDIATELY: Uses pre-standard Round 3 Kyber with unassigned codepoint 0x6399."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": ["25497", "0x6399"],
+        "client_server_support": "Deprecated in modern browsers; superseded by IANA standardized 0x11ec.",
+        "pki_x509_support": "Not applicable.",
+        "fallback_handling": "Deprecated codepoint must be disabled in favor of 0x11ec."
+      },
+      "authority_recommendations": {
+        "nist": "Superseded by official FIPS 203 standard.",
+        "anssi": "Deprecated; transition to FIPS 203.",
+        "bsi": "Deprecated; transition to FIPS 203.",
+        "nsa_cnsa": "Never approved.",
+        "ietf": "Draft expired; replaced by draft-ietf-tls-hybrid-design."
+      },
+      "iana_tls_group_id": 25497,
+      "iana_tls_group_hex": "0x6399",
+      "ssh_name": null,
+      "oid": null,
+      "nist_quantum_security_level": 3,
+      "harvest_now_decrypt_later_resilient": true,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": {
+        "classical_component": "x25519",
+        "post_quantum_component": "kyber_768_round3",
+        "combiner_function": "HKDF-SHA256"
+      },
+      "deprecation_status": "experimental"
+    },
+    {
+      "id": "x25519",
+      "standard_name": "X25519",
+      "aliases": ["curve25519"],
+      "category": "classical",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "RFC 7748 / RFC 8446",
+      "standard_version": "RFC 7748 (2016)",
+      "usage_category": "GENERAL_KEY_EXCHANGE",
+      "characteristics": {
+        "public_key_bytes": 32,
+        "private_key_bytes": 32,
+        "ciphertext_bytes": 32,
+        "signature_bytes": null,
+        "performance_profile": "Extremely fast classical Montgomery curve key exchange."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Minimal (32 bytes).",
+        "state_management": "Stateless.",
+        "performance_overhead": "Extremely low.",
+        "crypto_agility_guidance": "Vulnerable to Shor's algorithm. Retain as classical anchor in hybrid schemes (X25519MLKEM768)."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": ["29", "0x001d"],
+        "client_server_support": "Universally supported across TLS 1.3 implementations.",
+        "pki_x509_support": "RFC 8410.",
+        "fallback_handling": "Standard fallback."
+      },
+      "authority_recommendations": {
+        "nist": "NIST SP 800-131A approved classically; vulnerable to quantum computers.",
+        "anssi": "Classical component in Stage 2 hybrid.",
+        "bsi": "Approved classical component in TR-02102-1.",
+        "nsa_cnsa": "Must be phased out under CNSA 2.0.",
+        "ietf": "Standard TLS 1.3 group."
+      },
+      "iana_tls_group_id": 29,
+      "iana_tls_group_hex": "0x001d",
+      "ssh_name": "curve25519-sha256",
+      "oid": "1.3.101.110",
+      "nist_quantum_security_level": 0,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "secp256r1",
+      "standard_name": "secp256r1",
+      "aliases": ["prime256v1", "NIST P-256"],
+      "category": "classical",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "FIPS 186-5 & RFC 8446",
+      "standard_version": "FIPS 186-5",
+      "usage_category": "GENERAL_KEY_EXCHANGE",
+      "characteristics": {
+        "public_key_bytes": 65,
+        "private_key_bytes": 32,
+        "ciphertext_bytes": 65,
+        "signature_bytes": null,
+        "performance_profile": "Standard classical Weierstrass curve key exchange."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Minimal (65 bytes uncompressed).",
+        "state_management": "Stateless.",
+        "performance_overhead": "Hardware accelerated on modern CPUs.",
+        "crypto_agility_guidance": "Vulnerable to Shor's algorithm. Pair with ML-KEM-768 in SecP256r1MLKEM768."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": ["23", "0x0017"],
+        "client_server_support": "Universal worldwide support in TLS 1.2 and 1.3.",
+        "pki_x509_support": "Universal.",
+        "fallback_handling": "Standard."
+      },
+      "authority_recommendations": {
+        "nist": "Classically compliant under FIPS 186-5; must migrate to PQC.",
+        "anssi": "Approved classical hybrid component.",
+        "bsi": "Approved classical component.",
+        "nsa_cnsa": "Must be replaced under CNSA 2.0 timeline.",
+        "ietf": "RFC 8446."
+      },
+      "iana_tls_group_id": 23,
+      "iana_tls_group_hex": "0x0017",
+      "ssh_name": "ecdh-sha2-nistp256",
+      "oid": "1.2.840.10045.3.1.7",
+      "nist_quantum_security_level": 0,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "secp384r1",
+      "standard_name": "secp384r1",
+      "aliases": ["NIST P-384"],
+      "category": "classical",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "FIPS 186-5 & RFC 8446",
+      "standard_version": "FIPS 186-5",
+      "usage_category": "GENERAL_KEY_EXCHANGE",
+      "characteristics": {
+        "public_key_bytes": 97,
+        "private_key_bytes": 48,
+        "ciphertext_bytes": 97,
+        "signature_bytes": null,
+        "performance_profile": "High-security classical curve (192-bit classical security level)."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Minimal (97 bytes).",
+        "state_management": "Stateless.",
+        "performance_overhead": "Moderate CPU cycles.",
+        "crypto_agility_guidance": "Pair with ML-KEM-1024 for high-security hybrid transitions."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": ["24", "0x0018"],
+        "client_server_support": "Universal in enterprise and government systems.",
+        "pki_x509_support": "Universal.",
+        "fallback_handling": "Standard."
+      },
+      "authority_recommendations": {
+        "nist": "Classically approved.",
+        "anssi": "Approved classical hybrid component.",
+        "bsi": "Approved classical component.",
+        "nsa_cnsa": "Previously CNSA 1.0; migrating to ML-KEM-1024 under CNSA 2.0.",
+        "ietf": "RFC 8446."
+      },
+      "iana_tls_group_id": 24,
+      "iana_tls_group_hex": "0x0018",
+      "ssh_name": "ecdh-sha2-nistp384",
+      "oid": "1.3.132.0.34",
+      "nist_quantum_security_level": 0,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "rsa_key_exchange",
+      "standard_name": "RSA",
+      "aliases": ["RSA-KeyExchange", "static-rsa"],
+      "category": "classical",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "PKCS#1 & RFC 5246",
+      "standard_version": "RFC 5246 (TLS 1.2 legacy)",
+      "usage_category": "GENERAL_KEY_EXCHANGE",
+      "characteristics": {
+        "public_key_bytes": 256,
+        "private_key_bytes": 256,
+        "ciphertext_bytes": 256,
+        "signature_bytes": null,
+        "performance_profile": "Deprecated static key transport without forward secrecy."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Standard.",
+        "state_management": "Stateless.",
+        "performance_overhead": "High private key operation overhead.",
+        "crypto_agility_guidance": "ELIMINATE: Lacks forward secrecy and completely broken by Shor's algorithm."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Removed in TLS 1.3.",
+        "pki_x509_support": "Legacy.",
+        "fallback_handling": "Must be prohibited."
+      },
+      "authority_recommendations": {
+        "nist": "Disallowed in modern TLS; lacks forward secrecy.",
+        "anssi": "Prohibited.",
+        "bsi": "Prohibited in TR-02102-2.",
+        "nsa_cnsa": "Strictly prohibited.",
+        "ietf": "Forbidden in RFC 8446 (TLS 1.3)."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": null,
+      "oid": "1.2.840.113549.1.1.1",
+      "nist_quantum_security_level": 0,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": null,
+      "deprecation_status": "deprecated"
+    },
+    {
+      "id": "dhe_key_exchange",
+      "standard_name": "DHE",
+      "aliases": ["Diffie-Hellman", "EDH"],
+      "category": "classical",
+      "mechanism_type": "key_exchange",
+      "standard_reference": "RFC 7919 & RFC 5246",
+      "standard_version": "RFC 7919",
+      "usage_category": "GENERAL_KEY_EXCHANGE",
+      "characteristics": {
+        "public_key_bytes": 256,
+        "private_key_bytes": 256,
+        "ciphertext_bytes": 256,
+        "signature_bytes": null,
+        "performance_profile": "Finite-field Diffie-Hellman ephemeral key exchange."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Standard.",
+        "state_management": "Stateless.",
+        "performance_overhead": "Compute intensive compared to elliptic curves.",
+        "crypto_agility_guidance": "Vulnerable to Shor's algorithm. Migrate directly to hybrid ML-KEM."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": ["256", "0x0100"],
+        "client_server_support": "Deprecated in modern deployments due to Logjam vulnerabilities.",
+        "pki_x509_support": "Not applicable.",
+        "fallback_handling": "Fallback to ECDHE or hybrid."
+      },
+      "authority_recommendations": {
+        "nist": "Minimum 2048-bit required classically.",
+        "anssi": "Minimum 2048-bit required; replace with hybrid.",
+        "bsi": "Minimum 2048-bit required.",
+        "nsa_cnsa": "Disallowed under CNSA 2.0.",
+        "ietf": "RFC 7919 standardized groups."
+      },
+      "iana_tls_group_id": 256,
+      "iana_tls_group_hex": "0x0100",
+      "ssh_name": "diffie-hellman-group14-sha256",
+      "oid": "1.2.840.113549.1.3.1",
+      "nist_quantum_security_level": 0,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "rsa_signature",
+      "standard_name": "RSA",
+      "aliases": ["rsa-sha256", "sha256WithRSAEncryption"],
+      "category": "classical",
+      "mechanism_type": "digital_signature",
+      "standard_reference": "RFC 8017 & NIST SP 800-56B",
+      "standard_version": "PKCS#1 v2.2",
+      "usage_category": "GENERAL_DIGITAL_SIGNATURE",
+      "characteristics": {
+        "public_key_bytes": 256,
+        "private_key_bytes": 1024,
+        "ciphertext_bytes": null,
+        "signature_bytes": 256,
+        "performance_profile": "Very fast public key verification; slower private key signing."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Compact signatures (256-384B); well supported across all network gear.",
+        "state_management": "Stateless.",
+        "performance_overhead": "Baseline standard.",
+        "crypto_agility_guidance": "Completely broken by Shor's algorithm. Plan dual-signing / composite transition to ML-DSA."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Universal support worldwide.",
+        "pki_x509_support": "Universal.",
+        "fallback_handling": "Standard."
+      },
+      "authority_recommendations": {
+        "nist": "2048-bit minimum through 2030; must transition to ML-DSA/SLH-DSA.",
+        "anssi": "Minimum 2048-bit through 2030; transition to hybrid signatures.",
+        "bsi": "Minimum 2048-bit; BSI recommends migration planning now.",
+        "nsa_cnsa": "Must be completely phased out of NSS by 2030 under CNSA 2.0.",
+        "ietf": "Universal legacy."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": "rsa-sha2-512",
+      "oid": "1.2.840.113549.1.1.11",
+      "nist_quantum_security_level": 0,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    },
+    {
+      "id": "ecdsa_signature",
+      "standard_name": "ECDSA",
+      "aliases": ["ecdsa-with-SHA256", "ecdsa-with-SHA384"],
+      "category": "classical",
+      "mechanism_type": "digital_signature",
+      "standard_reference": "FIPS 186-5 & ANSI X9.62",
+      "standard_version": "FIPS 186-5",
+      "usage_category": "GENERAL_DIGITAL_SIGNATURE",
+      "characteristics": {
+        "public_key_bytes": 65,
+        "private_key_bytes": 32,
+        "ciphertext_bytes": null,
+        "signature_bytes": 64,
+        "performance_profile": "Extremely compact signatures (64B); fast signing; moderate verification."
+      },
+      "migration_considerations": {
+        "mtu_impact": "Smallest signature footprint (64 bytes).",
+        "state_management": "Stateless (requires secure nonces or deterministic RFC 6979).",
+        "performance_overhead": "Low.",
+        "crypto_agility_guidance": "Completely broken by Shor's algorithm. Plan transition to ML-DSA-65 or composite certificates."
+      },
+      "interoperability_considerations": {
+        "iana_codepoints": null,
+        "client_server_support": "Universal support in modern systems.",
+        "pki_x509_support": "Universal.",
+        "fallback_handling": "Standard."
+      },
+      "authority_recommendations": {
+        "nist": "Approved classically; vulnerable to quantum computers.",
+        "anssi": "Permitted in hybrid signatures.",
+        "bsi": "Approved classically.",
+        "nsa_cnsa": "Must be phased out by 2030 under CNSA 2.0.",
+        "ietf": "RFC 8446."
+      },
+      "iana_tls_group_id": null,
+      "iana_tls_group_hex": null,
+      "ssh_name": "ecdsa-sha2-nistp256",
+      "oid": "1.2.840.10045.4.3.2",
+      "nist_quantum_security_level": 0,
+      "harvest_now_decrypt_later_resilient": false,
+      "quantum_authentication_resilient": false,
+      "hybrid_components": null,
+      "deprecation_status": "current"
+    }
+  ]
+}
