@@ -184,7 +184,7 @@ function validateCbomStructure(payload, options = {}) {
       );
     }
 
-    const validVersions = ["1.4", "1.5", "1.6"];
+    const validVersions = ["1.4", "1.5", "1.6", "1.7"];
     if (!validVersions.includes(String(payload.specVersion))) {
       errors.push(
         `Unsupported specVersion: expected one of [${validVersions.join(", ")}], received '${payload.specVersion}'`,
