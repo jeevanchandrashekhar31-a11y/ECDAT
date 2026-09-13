@@ -1,6 +1,7 @@
 const { getRules } = require("./rules_loader");
 const { annotateCbom } = require("./cbom_annotator");
 const { Severities, MoscaStatus } = require("./types");
+const { prioritizeEnterpriseRisk } = require("./prioritizer");
 
 /**
  * Generates an executive summary JSON document tailored for frontends and audit reports.
@@ -31,6 +32,24 @@ function generateSummary(cbomData, options = {}) {
     informational: 0,
   };
 
+  const confidenceCounts = {
+    confirmed: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+    heuristic: 0,
+  };
+
+  const confidenceMatrix = {
+    critical: { confirmed: 0, high: 0, medium: 0, low: 0, heuristic: 0 },
+    high: { confirmed: 0, high: 0, medium: 0, low: 0, heuristic: 0 },
+    medium: { confirmed: 0, high: 0, medium: 0, low: 0, heuristic: 0 },
+    low: { confirmed: 0, high: 0, medium: 0, low: 0, heuristic: 0 },
+    informational: { confirmed: 0, high: 0, medium: 0, low: 0, heuristic: 0 },
+  };
+
+  let uncertainDetectionsCount = 0;
+
   const moscaStatusCounts = {
     [MoscaStatus.SAFE]: 0,
     [MoscaStatus.WATCH]: 0,
@@ -44,10 +63,21 @@ function generateSummary(cbomData, options = {}) {
   const policyViolations = [];
 
   for (const item of classifiedResults) {
-    // 1. Severity count
-    const sevKey = item.severity.toLowerCase();
+    // 1. Severity count & Confidence matrix
+    const sevKey = (item.risk_severity || item.severity || "informational").toLowerCase();
+    const confKey = (item.risk_confidence || "high").toLowerCase();
+
     if (severityCounts[sevKey] !== undefined) {
       severityCounts[sevKey]++;
+    }
+    if (confidenceCounts[confKey] !== undefined) {
+      confidenceCounts[confKey]++;
+    }
+    if (confidenceMatrix[sevKey] && confidenceMatrix[sevKey][confKey] !== undefined) {
+      confidenceMatrix[sevKey][confKey]++;
+    }
+    if (item.is_uncertain_detection) {
+      uncertainDetectionsCount++;
     }
 
     // 2. Mosca count
@@ -65,6 +95,12 @@ function generateSummary(cbomData, options = {}) {
         key_size: item.key_size,
         asset_type: item.asset_type,
         severity: item.severity,
+        risk_severity: item.risk_severity || item.severity,
+        risk_confidence: item.risk_confidence || "HIGH",
+        confidence_score: item.confidence_score,
+        confidence_rationale: item.confidence_rationale,
+        is_uncertain_detection: Boolean(item.is_uncertain_detection),
+        action_guidance: item.action_guidance,
         mosca_status: mStatus,
         mosca_margin: item.mosca?.mosca_margin_years ?? null,
         cicd_pass: item.cicd_pass,
@@ -153,6 +189,9 @@ function generateSummary(cbomData, options = {}) {
         moscaStatusCounts[MoscaStatus.AT_RISK] +
         moscaStatusCounts[MoscaStatus.CRITICAL_URGENT],
       severity_counts: severityCounts,
+      confidence_counts: confidenceCounts,
+      confidence_matrix: confidenceMatrix,
+      uncertain_detections_count: uncertainDetectionsCount,
       mosca_status_counts: moscaStatusCounts,
       overall_cicd_pass: overallCicdPass,
     },
@@ -160,6 +199,10 @@ function generateSummary(cbomData, options = {}) {
     mosca_analysis_table: moscaAnalysisTable,
     recommendations: Array.from(recommendationMap.values()),
     policy_violations: policyViolations,
+    prioritization: prioritizeEnterpriseRisk(classifiedResults, {
+      policyProfile,
+      scenario,
+    }),
     assumptions: [
       `Assumed quantum threat timeline '${scenario}' (Z = ${rules.mosca_config?.scenarios?.[scenario]?.Z_quantum_threat_years || 9} years).`,
       `Evaluated under '${policyProfile}' policy environment constraints.`,

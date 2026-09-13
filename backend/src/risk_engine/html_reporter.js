@@ -18,7 +18,7 @@ function sanitizeReportText(str) {
   if (!str) return "";
   return str
     .replace(
-      /-----BEGIN [A-Z ]+PRIVATE KEY-----[a-zA-Z0-9\/\+=\r\n]+-----END [A-Z ]+PRIVATE KEY-----/g,
+      /(?:-----BEGIN (?:[A-Z0-9_-]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z0-9_-]+ )?PRIVATE KEY-----|-----BEGIN OPENSSH PRIVATE KEY-----[\s\S]*?-----END OPENSSH PRIVATE KEY-----|-----BEGIN PGP PRIVATE KEY BLOCK-----[\s\S]*?-----END PGP PRIVATE KEY BLOCK-----)/gi,
       "[REDACTED_PRIVATE_KEY]",
     )
     .replace(/bearer\s+[a-zA-Z0-9_\-\.]{20,}/gi, "bearer [REDACTED_TOKEN]");
@@ -38,6 +38,7 @@ function generateHtmlReport(summary) {
     mosca_analysis_table: moscaTable = [],
     recommendations = [],
     assumptions = [],
+    prioritization = {},
   } = summary;
 
   const cicdBadge = metrics.overall_cicd_pass
@@ -107,10 +108,10 @@ function generateHtmlReport(summary) {
     .badge-high { background-color: var(--color-high); color: #fff; }
     .badge-medium { background-color: var(--color-medium); color: #000; }
     .badge-low { background-color: var(--color-low); color: #fff; }
-    .badge-info { background-color: var(--color-info); color: #fff; }
-    .badge-watch { background-color: #f59e0b; color: #000; }
     .badge-safe { background-color: #10b981; color: #fff; }
     .badge-urgent { background-color: #b91c1c; color: #fff; }
+    .badge-confirmed { background-color: #059669; color: #fff; }
+    .badge-heuristic { background-color: #64748b; color: #fff; }
 
     .grid-metrics {
       display: grid;
@@ -196,23 +197,23 @@ function generateHtmlReport(summary) {
     <div class="grid-metrics">
       <div class="metric-card">
         <div class="metric-title">Total Assets</div>
-        <div class="metric-value">${metrics.total_assets}</div>
+        <div class="metric-value">${metrics?.total_assets || 0}</div>
       </div>
       <div class="metric-card">
         <div class="metric-title">Total Findings</div>
-        <div class="metric-value">${metrics.total_findings}</div>
+        <div class="metric-value">${metrics?.total_findings || 0}</div>
       </div>
       <div class="metric-card">
         <div class="metric-title" style="color: var(--color-critical);">Critical Findings</div>
-        <div class="metric-value" style="color: var(--color-critical);">${metrics.severity_counts.critical}</div>
+        <div class="metric-value" style="color: var(--color-critical);">${metrics?.severity_counts?.critical || 0}</div>
       </div>
       <div class="metric-card">
         <div class="metric-title" style="color: var(--color-high);">High Findings</div>
-        <div class="metric-value" style="color: var(--color-high);">${metrics.severity_counts.high}</div>
+        <div class="metric-value" style="color: var(--color-high);">${metrics?.severity_counts?.high || 0}</div>
       </div>
       <div class="metric-card">
         <div class="metric-title" style="color: #f59e0b;">At Quantum Risk</div>
-        <div class="metric-value" style="color: #f59e0b;">${metrics.assets_at_quantum_risk}</div>
+        <div class="metric-value" style="color: #f59e0b;">${metrics?.assets_at_quantum_risk || 0}</div>
       </div>
     </div>
 
@@ -226,6 +227,7 @@ function generateHtmlReport(summary) {
             <th>Algorithm</th>
             <th>Asset Type</th>
             <th>Severity</th>
+            <th>Confidence</th>
             <th>Mosca Status</th>
             <th>Risk Summary</th>
           </tr>
@@ -233,18 +235,20 @@ function generateHtmlReport(summary) {
         <tbody>
           ${
             topAssets.length === 0
-              ? '<tr><td colspan="6">No risky assets identified.</td></tr>'
+              ? '<tr><td colspan="7">No risky assets identified.</td></tr>'
               : topAssets
                   .map(
                     (a) => `
             <tr>
               <td><code>${escapeHtml(sanitizeReportText(a.asset_id))}</code></td>
-              <td><strong>${escapeHtml(a.algorithm)}</strong> ${a.key_size ? `<small>(${a.key_size}b)</small>` : ""}</td>
-              <td>${escapeHtml(a.asset_type)}</td>
-              <td><span class="badge badge-${escapeHtml(a.severity.toLowerCase())}">${escapeHtml(a.severity)}</span></td>
-              <td><span class="badge badge-${escapeHtml(a.mosca_status.toLowerCase())}">${escapeHtml(a.mosca_status)}</span></td>
-              <td><small>${escapeHtml(sanitizeReportText(a.explanation))}</small></td>
+              <td><strong>${escapeHtml(sanitizeReportText(a.algorithm))}</strong> ${a.key_size ? `<small>(${a.key_size}b)</small>` : ""}</td>
+              <td>${escapeHtml(sanitizeReportText(a.asset_type))}</td>
+              <td><span class="badge badge-${escapeHtml((a.risk_severity || a.severity || "info").toLowerCase())}">${escapeHtml(a.risk_severity || a.severity || "Info")}</span></td>
+              <td><span class="badge badge-${escapeHtml((a.risk_confidence || "high").toLowerCase())}">${escapeHtml(a.risk_confidence || "HIGH")}</span>${a.is_uncertain_detection ? ' <small style="color:#f87171;font-weight:600;">(Uncertain)</small>' : ''}</td>
+              <td><span class="badge badge-${escapeHtml((a.mosca_status || "safe").toLowerCase())}">${escapeHtml(a.mosca_status || "Safe")}</span></td>
+              <td><small>${escapeHtml(sanitizeReportText(a.explanation || ""))}</small></td>
             </tr>
+
           `,
                   )
                   .join("")
@@ -252,6 +256,76 @@ function generateHtmlReport(summary) {
         </tbody>
       </table>
     </div>
+
+    <!-- Enterprise Prioritization & "Why Now?" Action Strategy -->
+    ${
+      prioritization.business_unit_risk?.length > 0 || prioritization.remediation_effort?.quick_wins?.length > 0
+        ? `
+    <div class="section">
+      <div class="section-title">Enterprise Prioritization &amp; &ldquo;Why Now?&rdquo; Action Strategy</div>
+      <div class="subtitle" style="margin-bottom: 1.25rem;">
+        Actionable risk prioritization across Business Units, Internet Perimeter, PQC Exposure, and High-Leverage Quick Wins.
+      </div>
+
+      <!-- Quick Wins Banner if present -->
+      ${
+        prioritization.remediation_effort?.quick_wins?.length > 0
+          ? `
+      <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; border-radius: 4px; padding: 1rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <strong style="color: #34d399; font-size: 1rem;">&#x2714; ${prioritization.remediation_effort.quick_wins.length} High-Leverage Quick Win(s) Identified</strong>
+          <span class="badge badge-safe">IMMEDIATE ROI</span>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+          ${escapeHtml(prioritization.remediation_effort.why_now)}
+        </div>
+      </div>
+      `
+          : ""
+      }
+
+      <!-- Business Unit Prioritization Table -->
+      ${
+        prioritization.business_unit_risk?.length > 0
+          ? `
+      <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-main);">Business-Unit Risk &amp; "Why Now?" Reasoning</h3>
+      <table style="margin-bottom: 1.5rem;">
+        <thead>
+          <tr>
+            <th>Business Unit</th>
+            <th>Composite Score</th>
+            <th>Assets</th>
+            <th>Criticals</th>
+            <th>Internet Exposed</th>
+            <th>PQC Urgent</th>
+            <th>"Why Now?" Rationale</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${prioritization.business_unit_risk
+            .map(
+              (bu) => `
+            <tr>
+              <td><strong>${escapeHtml(bu.business_unit)}</strong></td>
+              <td><span class="badge ${bu.composite_risk_score >= 70 ? "badge-critical" : bu.composite_risk_score >= 40 ? "badge-medium" : "badge-safe"}">${bu.composite_risk_score}/100</span></td>
+              <td>${bu.total_assets}</td>
+              <td style="${bu.critical_count > 0 ? "color: var(--color-critical); font-weight: 700;" : ""}">${bu.critical_count}</td>
+              <td style="${bu.internet_facing_count > 0 ? "color: var(--color-high); font-weight: 700;" : ""}">${bu.internet_facing_count}</td>
+              <td style="${bu.pqc_urgent_count > 0 ? "color: #f59e0b; font-weight: 700;" : ""}">${bu.pqc_urgent_count}</td>
+              <td><small>${escapeHtml(bu.why_now)}</small></td>
+            </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+      `
+          : ""
+      }
+    </div>
+    `
+        : ""
+    }
 
     <!-- Mosca Analysis Table (X + Y > Z) -->
     <div class="section">
