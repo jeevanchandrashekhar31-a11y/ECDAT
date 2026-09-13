@@ -31,6 +31,14 @@ const EvidenceConfidence = Object.freeze({
   LOW: "low",
 });
 
+const RiskConfidence = Object.freeze({
+  CONFIRMED: "CONFIRMED",
+  HIGH: "HIGH",
+  MEDIUM: "MEDIUM",
+  LOW: "LOW",
+  HEURISTIC: "HEURISTIC",
+});
+
 const DataSensitivity = Object.freeze({
   PUBLIC: "public",
   INTERNAL: "internal",
@@ -55,12 +63,44 @@ const AssetType = Object.freeze({
   FILE: "file",
 });
 
+const RemediationEffort = Object.freeze({
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+  COMPLEX: "COMPLEX",
+});
+
+const AgilityDimensions = Object.freeze({
+  CENTRALIZED_ALGORITHM_CONFIGURATION: "centralized_algorithm_configuration",
+  REPLACEABILITY: "replaceability",
+  KEY_LIFECYCLE_MANAGEMENT: "key_lifecycle_management",
+  PROTOCOL_AGILITY: "protocol_agility",
+  CERTIFICATE_AUTOMATION: "certificate_automation",
+  PROVIDER_ABSTRACTION: "provider_abstraction",
+  DEPENDENCY_COUPLING: "dependency_coupling",
+  TEST_COVERAGE: "test_coverage",
+  PQC_HYBRID_READINESS: "pqc_hybrid_readiness",
+  ROLLBACK_CAPABILITY: "rollback_capability",
+});
+
+const AgilityMaturityTiers = Object.freeze({
+  OPTIMAL: "OPTIMAL",
+  HIGH: "HIGH",
+  MODERATE: "MODERATE",
+  LOW: "LOW",
+  RIGID: "RIGID",
+});
+
 module.exports = {
   Severities,
   MoscaStatus,
   QuantumRelevance,
   EvidenceConfidence,
+  RiskConfidence,
   DataSensitivity,
   BusinessCriticality,
   AssetType,
+  RemediationEffort,
+  AgilityDimensions,
+  AgilityMaturityTiers,
 };

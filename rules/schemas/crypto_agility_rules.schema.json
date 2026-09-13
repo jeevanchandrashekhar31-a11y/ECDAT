@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CryptoAgilityRulesSchema",
+  "description": "Schema for measurable cryptographic agility evaluation rules, weights, and indicators.",
+  "type": "object",
+  "required": ["version", "description", "default_weights", "maturity_tiers", "dimensions"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "default_weights": {
+      "type": "object",
+      "required": [
+        "centralized_algorithm_configuration",
+        "replaceability",
+        "key_lifecycle_management",
+        "protocol_agility",
+        "certificate_automation",
+        "provider_abstraction",
+        "dependency_coupling",
+        "test_coverage",
+        "pqc_hybrid_readiness",
+        "rollback_capability"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "centralized_algorithm_configuration": { "type": "number", "minimum": 0, "maximum": 100 },
+        "replaceability": { "type": "number", "minimum": 0, "maximum": 100 },
+        "key_lifecycle_management": { "type": "number", "minimum": 0, "maximum": 100 },
+        "protocol_agility": { "type": "number", "minimum": 0, "maximum": 100 },
+        "certificate_automation": { "type": "number", "minimum": 0, "maximum": 100 },
+        "provider_abstraction": { "type": "number", "minimum": 0, "maximum": 100 },
+        "dependency_coupling": { "type": "number", "minimum": 0, "maximum": 100 },
+        "test_coverage": { "type": "number", "minimum": 0, "maximum": 100 },
+        "pqc_hybrid_readiness": { "type": "number", "minimum": 0, "maximum": 100 },
+        "rollback_capability": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "maturity_tiers": {
+      "type": "object",
+      "required": ["OPTIMAL", "HIGH", "MODERATE", "LOW", "RIGID"],
+      "additionalProperties": false,
+      "properties": {
+        "OPTIMAL": { "$ref": "#/definitions/tierDefinition" },
+        "HIGH": { "$ref": "#/definitions/tierDefinition" },
+        "MODERATE": { "$ref": "#/definitions/tierDefinition" },
+        "LOW": { "$ref": "#/definitions/tierDefinition" },
+        "RIGID": { "$ref": "#/definitions/tierDefinition" }
+      }
+    },
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "positive_signals",
+          "negative_signals"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "centralized_algorithm_configuration",
+              "replaceability",
+              "key_lifecycle_management",
+              "protocol_agility",
+              "certificate_automation",
+              "provider_abstraction",
+              "dependency_coupling",
+              "test_coverage",
+              "pqc_hybrid_readiness",
+              "rollback_capability"
+            ]
+          },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "positive_signals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["signal", "points", "description"],
+              "additionalProperties": false,
+              "properties": {
+                "signal": { "type": "string" },
+                "points": { "type": "number", "minimum": 0, "maximum": 100 },
+                "description": { "type": "string" }
+              }
+            }
+          },
+          "negative_signals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["signal", "penalty", "description"],
+              "additionalProperties": false,
+              "properties": {
+                "signal": { "type": "string" },
+                "penalty": { "type": "number", "minimum": 0, "maximum": 100 },
+                "description": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "tierDefinition": {
+      "type": "object",
+      "required": ["min_score", "label", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "min_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "label": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

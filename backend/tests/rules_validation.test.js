@@ -12,6 +12,14 @@ test("ECDAT Rule Validation - All rule files validate against JSON Schemas", () 
     rules.crypto_library_catalog,
     "crypto_library_catalog rules loaded",
   );
+  assert.ok(
+    rules.crypto_dependency_mapping,
+    "crypto_dependency_mapping rules loaded",
+  );
+  assert.ok(
+    rules.crypto_vulnerability_catalog,
+    "crypto_vulnerability_catalog rules loaded",
+  );
 });
 
 test("ECDAT Rule Validation - algorithm_risk.json contains all required algorithms and protocols", () => {
@@ -154,3 +162,65 @@ test("ECDAT Rule Validation - pqc_recommendations.json provides context-aware gu
     );
   }
 });
+
+test("ECDAT Rule Validation - crypto_dependency_mapping.json defines 4 reachability levels and non-overstated reachability", () => {
+  const rules = loadAndValidateAllRules();
+  const mapping = rules.crypto_dependency_mapping;
+  assert.ok(mapping.version, "mapping has semantic version");
+  assert.ok(mapping.reachability_levels, "mapping has reachability_levels");
+  
+  const levels = mapping.reachability_levels;
+  assert.strictEqual(levels.CAPABILITY_PRESENT.reachable, false);
+  assert.strictEqual(levels.TRANSIENT_IMPORT.reachable, false);
+  assert.strictEqual(levels.DIRECT_API_CALL.reachable, true);
+  assert.strictEqual(levels.RUNTIME_CONFIRMED.reachable, true);
+
+  assert.ok(Array.isArray(mapping.packages));
+  assert.ok(mapping.packages.length >= 10);
+  for (const pkg of mapping.packages) {
+    assert.ok(pkg.package_id);
+    assert.ok(pkg.canonical_name);
+    assert.ok(Array.isArray(pkg.crypto_capabilities) && pkg.crypto_capabilities.length > 0);
+    assert.ok(Array.isArray(pkg.api_identifiers) && pkg.api_identifiers.length > 0);
+  }
+});
+
+test("ECDAT Rule Validation - crypto_library_fingerprints.json covers 10 target crypto libraries with multi-signal rules", () => {
+  const rules = loadAndValidateAllRules();
+  const fp = rules.crypto_library_fingerprints;
+  assert.ok(fp.version, "fingerprints has version");
+  assert.ok(Array.isArray(fp.libraries), "fingerprints has libraries");
+
+  const requiredIds = [
+    "openssl",
+    "boringssl",
+    "libressl",
+    "mbedtls",
+    "wolfssl",
+    "botan",
+    "libsodium",
+    "jca_jce",
+    "windows_cng",
+    "apple_security",
+  ];
+
+  const presentIds = fp.libraries.map((l) => l.id);
+  for (const req of requiredIds) {
+    assert.ok(presentIds.includes(req), `Expected fingerprints to include library '${req}'`);
+  }
+
+  for (const lib of fp.libraries) {
+    assert.ok(lib.name);
+    assert.ok(lib.category);
+    assert.ok(Array.isArray(lib.library_patterns) && lib.library_patterns.length > 0);
+    assert.ok(Array.isArray(lib.symbol_signatures) && lib.symbol_signatures.length > 0);
+    assert.ok(Array.isArray(lib.distinctive_strings) && lib.distinctive_strings.length > 0);
+    assert.ok(lib.disambiguation, `Disambiguation block required for ${lib.id}`);
+    assert.ok(
+      lib.thresholds.min_strings_without_symbols >= 2,
+      `Never fingerprint by one string alone for ${lib.id}`
+    );
+  }
+});
+
+

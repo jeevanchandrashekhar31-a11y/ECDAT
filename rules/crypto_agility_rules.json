@@ -1,0 +1,410 @@
+{
+  "version": "1.0.0",
+  "description": "Measurable architecture properties, weights, and scoring rules for Enterprise Crypto-Agility evaluation.",
+  "default_weights": {
+    "centralized_algorithm_configuration": 10,
+    "replaceability": 10,
+    "key_lifecycle_management": 10,
+    "protocol_agility": 10,
+    "certificate_automation": 10,
+    "provider_abstraction": 10,
+    "dependency_coupling": 10,
+    "test_coverage": 10,
+    "pqc_hybrid_readiness": 10,
+    "rollback_capability": 10
+  },
+  "maturity_tiers": {
+    "OPTIMAL": {
+      "min_score": 90,
+      "label": "Optimal Agility",
+      "description": "Fully automated, modular, PQC-ready architecture with automated rollback and zero-downtime deployment."
+    },
+    "HIGH": {
+      "min_score": 75,
+      "label": "High Agility",
+      "description": "Strong provider abstractions, automated rotation pipelines, and hybrid-capable protocols."
+    },
+    "MODERATE": {
+      "min_score": 50,
+      "label": "Moderate Agility",
+      "description": "Partial configuration centralization with manual migration and testing steps required."
+    },
+    "LOW": {
+      "min_score": 25,
+      "label": "Low Agility",
+      "description": "High coupling, scattered hardcoded algorithms, high migration friction and manual certificate renewal."
+    },
+    "RIGID": {
+      "min_score": 0,
+      "label": "Rigid / Brittle",
+      "description": "Monolithic hardcoded algorithms, zero abstraction, static keys, and severe modernization blockers."
+    }
+  },
+  "dimensions": [
+    {
+      "id": "centralized_algorithm_configuration",
+      "name": "Centralized Algorithm Configuration",
+      "description": "Degree to which cryptographic algorithms, key sizes, and cipher parameters are managed through centralized external configuration rather than hardcoded code literals.",
+      "positive_signals": [
+        {
+          "signal": "external_crypto_policy_file",
+          "points": 40,
+          "description": "Algorithms and ciphers loaded from dedicated policy configuration files (e.g. YAML, JSON, Consul, or Vault)."
+        },
+        {
+          "signal": "centralized_crypto_registry",
+          "points": 35,
+          "description": "Single central registry or module encapsulating algorithm parameters across the service."
+        },
+        {
+          "signal": "environment_variable_ciphers",
+          "points": 25,
+          "description": "Cipher suite selection configurable at deployment time via environment variables."
+        }
+      ],
+      "negative_signals": [
+        {
+          "signal": "hardcoded_algorithm_strings_inline",
+          "penalty": 40,
+          "description": "Raw algorithm name strings (e.g. 'RSA', 'AES-256-CBC') hardcoded directly in application business logic."
+        },
+        {
+          "signal": "scattered_cipher_definitions",
+          "penalty": 30,
+          "description": "Multiple discordant cipher definitions distributed across > 5 independent source files."
+        },
+        {
+          "signal": "magic_number_key_sizes",
+          "penalty": 20,
+          "description": "Hardcoded numeric constants used for key lengths or buffer allocations."
+        }
+      ]
+    },
+    {
+      "id": "replaceability",
+      "name": "Replaceability",
+      "description": "Ease of substituting cryptographic algorithms via modular design, interfaces, and strategy patterns without modifying caller code.",
+      "positive_signals": [
+        {
+          "signal": "interface_based_crypto_design",
+          "points": 40,
+          "description": "Application business logic consumes abstract interfaces or base classes rather than concrete cipher implementations."
+        },
+        {
+          "signal": "pluggable_algorithm_factory",
+          "points": 35,
+          "description": "Factory or dependency injection container manages cryptographic primitive instantiation."
+        },
+        {
+          "signal": "dynamic_payload_envelope",
+          "points": 25,
+          "description": "Cryptographic payloads include algorithm identifier metadata headers enabling multi-algorithm parsing."
+        }
+      ],
+      "negative_signals": [
+        {
+          "signal": "concrete_class_coupling",
+          "penalty": 40,
+          "description": "Direct instantiation of concrete crypto classes (e.g. new RSACryptoServiceProvider()) in controller/service layers."
+        },
+        {
+          "signal": "fixed_size_signature_buffer",
+          "penalty": 35,
+          "description": "Buffer sizes statically fixed to classical signature sizes (e.g. 256 or 512 bytes), which breaks on PQC signatures."
+        },
+        {
+          "signal": "algorithm_specific_serialization",
+          "penalty": 25,
+          "description": "Wire format or database schema tied to algorithm-specific binary representations."
+        }
+      ]
+    },
+    {
+      "id": "key_lifecycle_management",
+      "name": "Key Lifecycle Management",
+      "description": "Maturity of automated key generation, rotation, expiration tracking, and hardware/KMS integration.",
+      "positive_signals": [
+        {
+          "signal": "kms_hsm_integration",
+          "points": 40,
+          "description": "Private and master keys managed within certified cloud KMS or Hardware Security Modules (FIPS 140-2/3)."
+        },
+        {
+          "signal": "automated_key_rotation",
+          "points": 35,
+          "description": "Periodic automated rotation enabled with seamless dual-decryption / previous-key verification support."
+        },
+        {
+          "signal": "ephemeral_session_keys",
+          "points": 25,
+          "description": "Communication protocols enforce ephemeral forward secrecy (PFS) for every session."
+        }
+      ],
+      "negative_signals": [
+        {
+          "signal": "hardcoded_static_keys",
+          "penalty": 50,
+          "description": "Symmetric keys, private keys, or API secrets hardcoded in source code or static configuration."
+        },
+        {
+          "signal": "indefinite_key_lifetime",
+          "penalty": 30,
+          "description": "Keys configured without expiration dates or rotation tracking policies."
+        },
+        {
+          "signal": "stateful_hash_hazard",
+          "penalty": 40,
+          "description": "Stateful hash signatures (LMS/XMSS) utilized without non-volatile monotonic hardware counter protection."
+        }
+      ]
+    },
+    {
+      "id": "protocol_agility",
+      "name": "Protocol Agility",
+      "description": "Ability to negotiate modern cryptographic protocols and dynamically adapt cipher suite groups without recompilation.",
+      "positive_signals": [
+        {
+          "signal": "tls_1_3_dynamic_groups",
+          "points": 40,
+          "description": "TLS 1.3 enabled with runtime-configurable key exchange groups and modern ALPN negotiation."
+        },
+        {
+          "signal": "multi_protocol_negotiation",
+          "points": 35,
+          "description": "Graceful client-server protocol negotiation with strict minimum version enforcement."
+        },
+        {
+          "signal": "dynamic_extension_support",
+          "points": 25,
+          "description": "Support for standard protocol extensions (e.g. supported_groups, key_share, signature_algorithms)."
+        }
+      ],
+      "negative_signals": [
+        {
+          "signal": "pinned_legacy_protocol",
+          "penalty": 50,
+          "description": "Enforcement or hardcoding of legacy insecure protocols (TLS 1.0, TLS 1.1, SSLv3)."
+        },
+        {
+          "signal": "monolithic_static_cipher_list",
+          "penalty": 30,
+          "description": "Static cipher list hardcoded in application binary preventing group negotiation updates."
+        },
+        {
+          "signal": "disabled_alpn_negotiation",
+          "penalty": 20,
+          "description": "Protocol negotiation extensions disabled or bypassed."
+        }
+      ]
+    },
+    {
+      "id": "certificate_automation",
+      "name": "Certificate Automation",
+      "description": "Automation of certificate issuance, enrollment, renewal, validation, and revocation.",
+      "positive_signals": [
+        {
+          "signal": "acme_automated_renewal",
+          "points": 45,
+          "description": "ACME protocol or automated CA enrollment pipeline handling automated renewal."
+        },
+        {
+          "signal": "short_lived_certificates",
+          "points": 30,
+          "description": "Certificate lifetimes <= 90 days, reducing vulnerability exposure window."
+        },
+        {
+          "signal": "automated_revocation_monitoring",
+          "points": 25,
+          "description": "OCSP stapling and automated revocation checks active in production endpoints."
+        }
+      ],
+      "negative_signals": [
+        {
+          "signal": "manual_certificate_provisioning",
+          "penalty": 40,
+          "description": "Certificates manually copied or uploaded to servers without automation."
+        },
+        {
+          "signal": "expired_or_imminent_expiration",
+          "penalty": 45,
+          "description": "Active certificates found expired or expiring within 14 days without active renewal pipeline."
+        },
+        {
+          "signal": "unmanaged_self_signed_certificates",
+          "penalty": 30,
+          "description": "Self-signed certificates in production without enterprise PKI governance."
+        }
+      ]
+    },
+    {
+      "id": "provider_abstraction",
+      "name": "Provider Abstraction",
+      "description": "Decoupling from proprietary or vendor-specific cryptographic APIs through standardized provider architectures.",
+      "positive_signals": [
+        {
+          "signal": "standard_provider_framework",
+          "points": 45,
+          "description": "Uses standard provider architectures (Java JCA/JCE, WebCrypto API, OpenSSL 3.x Providers, Go standard crypto)."
+        },
+        {
+          "signal": "pkcs11_cng_hsm_abstraction",
+          "points": 35,
+          "description": "Hardware interactions abstracted via PKCS#11, Microsoft CNG, or cloud provider KMS abstractions."
+        },
+        {
+          "signal": "crypto_adapter_layer",
+          "points": 20,
+          "description": "Repository maintains an internal adapter layer shielding core code from external library changes."
+        }
+      ],
+      "negative_signals": [
+        {
+          "signal": "vendor_lock_in_api",
+          "penalty": 45,
+          "description": "Direct invocation of non-standard proprietary cryptographic SDKs or vendor-locked hardware APIs."
+        },
+        {
+          "signal": "low_level_raw_crypto_invocation",
+          "penalty": 35,
+          "description": "Direct access to low-level internal structs or unabstracted C memory pointers in application code."
+        }
+      ]
+    },
+    {
+      "id": "dependency_coupling",
+      "name": "Dependency Coupling",
+      "description": "Containment of cryptographic dependencies and minimization of blast radius across application code.",
+      "positive_signals": [
+        {
+          "signal": "isolated_crypto_service_module",
+          "points": 45,
+          "description": "All cryptographic operations encapsulated in a dedicated internal microservice or isolated package."
+        },
+        {
+          "signal": "low_blast_radius",
+          "points": 35,
+          "description": "Cryptographic dependencies consumed in <= 2 internal modules (blast radius <= 2)."
+        },
+        {
+          "signal": "pinned_audited_crypto_libraries",
+          "points": 20,
+          "description": "All crypto library dependencies pinned, vulnerability-scanned, and actively maintained."
+        }
+      ],
+      "negative_signals": [
+        {
+          "signal": "high_blast_radius_sprawl",
+          "penalty": 45,
+          "description": "Cryptographic library symbols imported and invoked directly in >= 5 disparate business logic modules."
+        },
+        {
+          "signal": "multiple_conflicting_crypto_libraries",
+          "penalty": 35,
+          "description": "Repository imports multiple overlapping crypto libraries (e.g. BouncyCastle + raw WebCrypto + forge)."
+        }
+      ]
+    },
+    {
+      "id": "test_coverage",
+      "name": "Test Coverage",
+      "description": "Completeness of automated cryptographic testing including CAVP/KAT vectors, downgrade resilience, and regression suites.",
+      "positive_signals": [
+        {
+          "signal": "known_answer_tests_kat",
+          "points": 40,
+          "description": "Cryptographic implementations verified against NIST CAVP / RFC Known Answer Tests (KAT)."
+        },
+        {
+          "signal": "downgrade_resilience_tests",
+          "points": 35,
+          "description": "Automated tests verify that client/server rejects cipher and protocol downgrade attacks."
+        },
+        {
+          "signal": "algorithm_swap_regression_tests",
+          "points": 25,
+          "description": "Integration tests verify end-to-end data processing when algorithm configuration is toggled."
+        }
+      ],
+      "negative_signals": [
+        {
+          "signal": "zero_crypto_test_coverage",
+          "penalty": 50,
+          "description": "No unit, integration, or regression tests covering cryptographic operations."
+        },
+        {
+          "signal": "mock_only_crypto_tests",
+          "penalty": 30,
+          "description": "Tests only mock cryptographic primitives and never execute actual encryption/signing logic."
+        }
+      ]
+    },
+    {
+      "id": "pqc_hybrid_readiness",
+      "name": "PQC / Hybrid Readiness",
+      "description": "Architectural preparedness for Post-Quantum Cryptography including hybrid key exchange, composite signatures, and buffer tolerances.",
+      "positive_signals": [
+        {
+          "signal": "pqc_capable_library_dependency",
+          "points": 40,
+          "description": "Dependencies include PQC-enabled stacks (OpenSSL 3.4+, liboqs, Bouncy Castle 1.78+, BoringSSL)."
+        },
+        {
+          "signal": "hybrid_key_exchange_support",
+          "points": 35,
+          "description": "Architecture supports hybrid groups (e.g. X25519MLKEM768) combining classical and quantum-safe key exchange."
+        },
+        {
+          "signal": "pqc_buffer_tolerance",
+          "points": 25,
+          "description": "Data structures, network MTUs, and serialization accommodate larger PQC keys and signatures (> 1500B)."
+        }
+      ],
+      "negative_signals": [
+        {
+          "signal": "pqc_intolerant_buffer_limits",
+          "penalty": 45,
+          "description": "Packet sizes or database schemas strictly capped at classical sizes, failing on PQC key shares."
+        },
+        {
+          "signal": "deprecated_crypto_stack_no_pqc_path",
+          "penalty": 40,
+          "description": "Core dependency on legacy crypto libraries that have ceased development without PQC plans."
+        }
+      ]
+    },
+    {
+      "id": "rollback_capability",
+      "name": "Rollback Capability",
+      "description": "Operational capability to perform zero-downtime, automated rollbacks of cryptographic changes during production failures.",
+      "positive_signals": [
+        {
+          "signal": "runtime_feature_flag_rollback",
+          "points": 40,
+          "description": "Algorithm and cipher suite selection controllable via dynamic feature flags or proxy toggles."
+        },
+        {
+          "signal": "dual_stack_fallback",
+          "points": 35,
+          "description": "Dual-stack verification or dual-decryption compatibility enabled during migration transitions."
+        },
+        {
+          "signal": "automated_telemetry_tripwires",
+          "points": 25,
+          "description": "Monitoring alerts (handshake error rate, P99 latency) trigger automated circuit breakers."
+        }
+      ],
+      "negative_signals": [
+        {
+          "signal": "irreversible_crypto_migration",
+          "penalty": 50,
+          "description": "One-way data re-encryption or key destruction without rollback failover capability."
+        },
+        {
+          "signal": "service_restart_required_for_rollback",
+          "penalty": 30,
+          "description": "Rollback requires full service redeployment or downtime rather than dynamic reconfiguration."
+        }
+      ]
+    }
+  ]
+}

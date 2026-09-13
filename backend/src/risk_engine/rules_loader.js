@@ -38,7 +38,38 @@ const RULE_FILES_CONFIG = [
     rulePath: "crypto_library_catalog.json",
     schemaPath: "schemas/crypto_library_catalog.schema.json",
   },
+  {
+    name: "crypto_dependency_mapping",
+    rulePath: "crypto_dependency_mapping.json",
+    schemaPath: "schemas/crypto_dependency_mapping.schema.json",
+  },
+  {
+    name: "crypto_vulnerability_catalog",
+    rulePath: "crypto_vulnerability_catalog.json",
+    schemaPath: "schemas/crypto_vulnerability_catalog.schema.json",
+  },
+  {
+    name: "crypto_library_fingerprints",
+    rulePath: "crypto_library_fingerprints.json",
+    schemaPath: "schemas/crypto_library_fingerprints.schema.json",
+  },
+  {
+    name: "pqc_algorithm_catalog",
+    rulePath: "pqc_algorithm_catalog.json",
+    schemaPath: "schemas/pqc_algorithm_catalog.schema.json",
+  },
+  {
+    name: "runtime_probes_catalog",
+    rulePath: "runtime_probes_catalog.json",
+    schemaPath: "schemas/runtime_probes_catalog.schema.json",
+  },
+  {
+    name: "crypto_agility_rules",
+    rulePath: "crypto_agility_rules.json",
+    schemaPath: "schemas/crypto_agility_rules.schema.json",
+  },
 ];
+
 
 let cachedRules = null;
 
