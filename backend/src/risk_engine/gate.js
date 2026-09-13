@@ -6,18 +6,42 @@
 
 const VALID_FAIL_ON = Object.freeze(["none", "critical", "high", "mosca-risk"]);
 
-function evaluateGate(summary, failOn = "none") {
+function evaluateGate(summary, failOn = "none", options = {}) {
   if (!VALID_FAIL_ON.includes(failOn)) {
     throw new Error(
       `Unsupported --fail-on value '${failOn}'. Choose from: ${VALID_FAIL_ON.join(", ")}`,
     );
   }
 
+  const minConfidence = (options.minConfidence || "any").toLowerCase();
   const metrics = summary?.metrics || {};
   const severity = metrics.severity_counts || {};
+  const matrix = metrics.confidence_matrix;
   const mosca = metrics.mosca_status_counts || {};
-  const critical = Number(severity.critical || 0);
-  const high = Number(severity.high || 0);
+
+  let critical = Number(severity.critical || 0);
+  let high = Number(severity.high || 0);
+  let uncertainCritical = 0;
+  let uncertainHigh = 0;
+
+  if (matrix && minConfidence !== "any") {
+    if (minConfidence === "confirmed") {
+      const confCrit = Number(matrix.critical?.confirmed || 0);
+      const confHigh = Number(matrix.high?.confirmed || 0);
+      uncertainCritical = critical - confCrit;
+      uncertainHigh = high - confHigh;
+      critical = confCrit;
+      high = confHigh;
+    } else if (minConfidence === "high") {
+      const confCrit = Number(matrix.critical?.confirmed || 0) + Number(matrix.critical?.high || 0);
+      const confHigh = Number(matrix.high?.confirmed || 0) + Number(matrix.high?.high || 0);
+      uncertainCritical = critical - confCrit;
+      uncertainHigh = high - confHigh;
+      critical = confCrit;
+      high = confHigh;
+    }
+  }
+
   const moscaRisk =
     Number(mosca.AT_RISK || 0) + Number(mosca.CRITICAL_URGENT || 0);
 
@@ -34,7 +58,18 @@ function evaluateGate(summary, failOn = "none") {
   if (matched && failOn === "mosca-risk")
     reason = `${moscaRisk} Mosca AT_RISK or CRITICAL_URGENT finding(s) detected.`;
 
-  return { failOn, matched, reason, counts: { critical, high, moscaRisk } };
+  if (!matched && (uncertainCritical > 0 || uncertainHigh > 0)) {
+    reason += ` (${uncertainCritical + uncertainHigh} uncertain finding(s) excluded from gate enforcement due to minConfidence=${minConfidence}).`;
+  }
+
+  return {
+    failOn,
+    matched,
+    reason,
+    minConfidence,
+    counts: { critical, high, moscaRisk, uncertainCritical, uncertainHigh },
+  };
 }
 
 module.exports = { VALID_FAIL_ON, evaluateGate };
+

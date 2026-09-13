@@ -53,10 +53,41 @@ function extractComponentCryptoDetails(component) {
   }
 
   // Extract from properties if available
+  let evidenceConfidence = null;
+  let reachability = null;
+  let businessUnit = null;
+  let isInternetExposed = null;
+  let application = null;
+  let dependencyBlastRadius = null;
+
+  if (component["bom-ref"]?.startsWith("net:") || algorithm.startsWith("TLS") || algorithm.startsWith("SSL") || algorithm.startsWith("SSH")) {
+    assetType = "network_session";
+    category = "protocol";
+  }
+
   const properties = component.properties || [];
   for (const prop of properties) {
     if (prop.name === "ecdat:evidence_type") {
       evidenceType = prop.value;
+    }
+    if (prop.name === "ecdat:confidence" || prop.name === "ecdat:evidence_confidence") {
+      evidenceConfidence = prop.value;
+    }
+    if (prop.name === "ecdat:reachability") {
+      reachability = prop.value;
+    }
+    if (prop.name === "ecdat:business_unit" || prop.name === "ecdat:bu") {
+      businessUnit = prop.value;
+    }
+    if (prop.name === "ecdat:internet_exposed") {
+      isInternetExposed = prop.value === "true";
+    }
+    if (prop.name === "ecdat:application" || prop.name === "ecdat:service") {
+      application = prop.value;
+    }
+    if (prop.name === "ecdat:dependency_blast_radius") {
+      const radius = parseInt(prop.value, 10);
+      if (!isNaN(radius)) dependencyBlastRadius = radius;
     }
     if (prop.name === "ecdat:isSelfSigned") {
       certificateProperties = certificateProperties || {};
@@ -81,6 +112,12 @@ function extractComponentCryptoDetails(component) {
     assetType,
     category,
     evidenceType,
+    evidenceConfidence,
+    reachability,
+    businessUnit,
+    isInternetExposed,
+    application,
+    dependencyBlastRadius,
     certificateProperties,
     protocolProperties,
   };
@@ -142,6 +179,8 @@ function annotateCbom(cbomData, options = {}) {
       assetType: details.assetType,
       category: details.category,
       evidenceType: details.evidenceType,
+      evidenceConfidence: details.evidenceConfidence,
+      reachability: details.reachability,
       policyProfile,
       scenario,
       certificateProperties: details.certificateProperties,
@@ -150,6 +189,11 @@ function annotateCbom(cbomData, options = {}) {
     });
 
     classification.bom_ref = comp["bom-ref"] || comp.name;
+    classification.business_unit = details.businessUnit;
+    classification.is_internet_facing = details.isInternetExposed;
+    classification.isInternetExposed = details.isInternetExposed;
+    classification.application = details.application || (comp["bom-ref"] && comp["bom-ref"].includes(":") ? comp["bom-ref"].split(":")[0] : comp.name);
+    classification.dependency_blast_radius = details.dependencyBlastRadius;
     classifiedResults.push(classification);
 
     // Attach to component.properties without overwriting scanner properties
@@ -164,6 +208,12 @@ function annotateCbom(cbomData, options = {}) {
       { name: "ecdat:risk:rule_version", value: ruleVersion },
       { name: "ecdat:risk:policy_profile", value: policyProfile },
       { name: "ecdat:risk:severity", value: classification.severity },
+      { name: "ecdat:risk:risk_severity", value: classification.risk_severity || classification.severity },
+      { name: "ecdat:risk:risk_confidence", value: classification.risk_confidence || "HIGH" },
+      { name: "ecdat:risk:confidence_score", value: String(classification.confidence_score ?? "") },
+      { name: "ecdat:risk:confidence_rationale", value: classification.confidence_rationale || "" },
+      { name: "ecdat:risk:is_uncertain_detection", value: String(classification.is_uncertain_detection) },
+      { name: "ecdat:risk:action_guidance", value: classification.action_guidance || "" },
       {
         name: "ecdat:risk:classical_risk",
         value: classification.classical_risk,
