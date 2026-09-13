@@ -8,11 +8,13 @@ const {
 const { calculateMosca } = require("./mosca_calculator");
 const { getRecommendationForFinding } = require("./recommendations");
 const { buildExplanation } = require("./explainability");
+const { calculateMultiFactorRisk } = require("./multi_factor");
 const {
   Severities,
   MoscaStatus,
   QuantumRelevance,
   EvidenceConfidence,
+  RiskConfidence,
   AssetType,
 } = require("./types");
 
@@ -315,6 +317,60 @@ function classifyFinding(input) {
     recommendation,
   });
 
+  // 10. Multi-Factor Risk Assessment (Phase 9.1)
+  const multiFactorResult = calculateMultiFactorRisk(
+    {
+      algorithm: normalizedAlgo.canonicalName,
+      keySize,
+      assetType,
+      protocol: input.protocolProperties?.type || input.protocol,
+      tlsVersion: input.protocolProperties?.version || input.tlsVersion,
+      cipherSuites: input.protocolProperties?.cipherSuites,
+      certificateProperties: input.certificateProperties,
+      policyProfile: profileName,
+      businessCriticality,
+      dataSensitivity,
+      reachability: input.reachability || input.reachabilityLevel,
+      isInternetExposed: input.isInternetExposed || profileName === "public_internet",
+      owner: input.owner,
+      compensatingControls: input.compensatingControls,
+      hasActiveCve: input.hasActiveCve,
+      dependencyBlastRadius: input.dependencyBlastRadius,
+    },
+    input.customWeights,
+  );
+
+  // 11. Separate Risk Severity from Risk Confidence (Phase 9.2)
+  let riskConfidence = RiskConfidence.HIGH;
+  let confidenceScore = 0.85;
+  let confidenceRationale = "Deterministic static or verified detection.";
+
+  const rawConf = String(input.evidenceConfidence || input.confidence || "").toUpperCase();
+  const evidenceType = String(input.evidenceType || "").toLowerCase();
+  const reachability = String(input.reachability || input.reachabilityLevel || "").toUpperCase();
+
+  if (reachability === "RUNTIME_CONFIRMED" || rawConf === "CONFIRMED") {
+    riskConfidence = RiskConfidence.CONFIRMED;
+    confidenceScore = 1.0;
+    confidenceRationale = "Active runtime execution or negotiated network handshake positively confirmed.";
+  } else if (rawConf === "LOW" || evidenceType.includes("regex") || evidenceType.includes("heuristic") || isPackageInventory) {
+    riskConfidence = RiskConfidence.LOW;
+    confidenceScore = 0.35;
+    confidenceRationale = isPackageInventory
+      ? "Library presence confirmed via package inventory only; does not prove active cryptographic invocation."
+      : "Single pattern or heuristic match; uncertain detection requiring manual security verification.";
+  } else if (rawConf === "MEDIUM" || reachability === "TRANSIENT_IMPORT" || evidenceType.includes("symbol")) {
+    riskConfidence = RiskConfidence.MEDIUM;
+    confidenceScore = 0.6;
+    confidenceRationale = "Binary symbol or transitive import identified without direct call-graph or live trace.";
+  } else if (evidenceType.includes("ast") || reachability === "DIRECT_API_CALL" || rawConf === "HIGH") {
+    riskConfidence = RiskConfidence.HIGH;
+    confidenceScore = 0.85;
+    confidenceRationale = "Direct call-graph or deterministic syntax tree match verified.";
+  }
+
+  const isUncertainDetection = riskConfidence === RiskConfidence.LOW || riskConfidence === RiskConfidence.HEURISTIC;
+
   return {
     algorithm: normalizedAlgo.canonicalName,
     key_size: keySize,
@@ -325,16 +381,28 @@ function classifyFinding(input) {
     classical_risk: classicalRisk,
     quantum_relevance: quantumRelevance,
     severity,
+    risk_severity: severity,
+    risk_confidence: riskConfidence,
+    confidence,
+    confidence_score: confidenceScore,
+    confidence_rationale: confidenceRationale,
+    is_uncertain_detection: isUncertainDetection,
+    action_guidance: isUncertainDetection
+      ? "Uncertain detection: Verify actively before treating as confirmed fact."
+      : "Verified detection: Proceed with remediation planning.",
     cicd_pass: cicdPass,
     policy_violations: policyViolations,
     mosca: moscaResult,
     recommendation,
     explanation: explanation.summary,
-    confidence,
     applied_rule_ids: appliedRuleIds,
+    multi_factor: multiFactorResult,
+    risk_score: multiFactorResult.score,
+    factor_breakdown: multiFactorResult.breakdown,
   };
 }
 
 module.exports = {
   classifyFinding,
+  calculateMultiFactorRisk,
 };
