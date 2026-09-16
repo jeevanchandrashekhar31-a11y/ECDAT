@@ -1,5 +1,5 @@
 {
-  "evaluation_timestamp": "2026-09-16T19:42:53.266845+00:00",
+  "evaluation_timestamp": "2026-09-16T21:32:02.992804+00:00",
   "corpus_standard": "Phase 22.3 Golden Corpus",
   "total_files": 25,
   "total_expected_findings": 71,
@@ -13,10 +13,10 @@
     "true_negatives": 3
   },
   "performance": {
-    "scan_time_seconds": 0.1046,
-    "wall_time_seconds": 0.1045,
-    "peak_memory_mb": 41.23,
-    "throughput_files_per_second": 238.95
+    "scan_time_seconds": 0.1038,
+    "wall_time_seconds": 0.1037,
+    "peak_memory_mb": 41.17,
+    "throughput_files_per_second": 240.9
   },
   "category_breakdown": {
     "01_secure_examples": {

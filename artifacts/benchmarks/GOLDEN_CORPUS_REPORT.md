@@ -1,7 +1,7 @@
 # ECDAT Golden Corpus Benchmark Report (Phase 22.3)
 
 **Evaluation Standard**: Phase 22.3 Golden Corpus  
-**Timestamp**: `2026-09-16T19:42:53.266845+00:00`  
+**Timestamp**: `2026-09-16T21:32:02.992804+00:00`  
 **Total Corpus Files**: `25`  
 **Total Expected Primitives**: `71`  
 
@@ -25,9 +25,9 @@
 
 | Resource Metric | Empirical Measurement | Unit |
 |---|---|---|
-| **Scan Wall Time** | `0.1046s` | Seconds |
-| **Peak Process Working Set (RAM)** | `41.23 MB` | Megabytes |
-| **Scanning Throughput** | `238.95 files/s` | Files per Second |
+| **Scan Wall Time** | `0.1038s` | Seconds |
+| **Peak Process Working Set (RAM)** | `41.17 MB` | Megabytes |
+| **Scanning Throughput** | `240.9 files/s` | Files per Second |
 
 ---
 
