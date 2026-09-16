@@ -1,0 +1,15 @@
+apiVersion: v2
+name: ecdat
+description: Enterprise Cryptographic Discovery and Agility Toolkit (ECDAT) Hardened Helm Chart
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - cryptography
+  - security
+  - cbom
+  - pqc
+  - hardening
+maintainers:
+  - name: ECDAT Security Architecture Team
+    email: security@ecdat.internal

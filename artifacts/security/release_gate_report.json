@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-09-16T21:14:47.047615+00:00",
+  "overall_status": "PASS",
+  "total_gates": 7,
+  "passed_gates": 7,
+  "failed_gates": 0,
+  "gates": [
+    {
+      "gate_name": "Vulnerability Release Gate",
+      "status": "PASS",
+      "message": "Gate PASSED: 0 critical blockers, 0 unaccepted highs (0 accepted highs, 19 tracked remediations, 0 tracked improvements, 0 tampering violations).",
+      "details": {}
+    },
+    {
+      "gate_name": "Secret Detection",
+      "status": "PASS",
+      "message": "Zero leaked secrets or credentials detected across tracked files.",
+      "details": {}
+    },
+    {
+      "gate_name": "Regression Policy Mandate",
+      "status": "PASS",
+      "message": "All 10 registered security bugs satisfy 5-point closure standard.",
+      "details": {}
+    },
+    {
+      "gate_name": "Critical Security Tests",
+      "status": "PASS",
+      "message": "All critical security and cryptographic test suites PASSED successfully.",
+      "details": {}
+    },
+    {
+      "gate_name": "Artifact Integrity Verification",
+      "status": "PASS",
+      "message": "Ed25519 digital signature and SHA-256/SHA-512 artifact checksums are VALID.",
+      "details": {}
+    },
+    {
+      "gate_name": "Silent Scanner Crash Detection",
+      "status": "PASS",
+      "message": "Scanner deterministically caught error with non-zero exit code (2); never conflates crashes with 0.",
+      "details": {}
+    },
+    {
+      "gate_name": "Required SBOM Verification",
+      "status": "PASS",
+      "message": "Required CycloneDX 1.6 (705 components) and SPDX 2.3 SBOMs are present, non-empty, and schema-valid.",
+      "details": {}
+    }
+  ]
+}

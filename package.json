@@ -11,6 +11,12 @@
     "dev:backend": "npm --prefix backend start",
     "dev:frontend": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
-    "test": "npm --prefix backend test"
+    "test": "npm --prefix backend test",
+    "sbom": "python scripts/generate_sbom.py",
+    "vuln-scan": "python scripts/scan_vulnerabilities.py",
+    "security:audit": "npm run vuln-scan",
+    "sign": "python scripts/sign_artifacts.py",
+    "provenance": "python scripts/generate_provenance.py",
+    "release-gate": "python scripts/release_gate.py"
   }
 }

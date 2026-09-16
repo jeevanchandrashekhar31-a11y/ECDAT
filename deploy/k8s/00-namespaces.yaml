@@ -1,0 +1,28 @@
+# 1. Control Plane Namespace (Enforces Restricted Pod Security Standards)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecdat-control-plane
+  labels:
+    app.kubernetes.io/part-of: ecdat
+    ecdat.io/tier: control-plane
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+---
+# 2. Runtime / eBPF Agent Namespace (Isolated from Control Plane)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecdat-runtime
+  labels:
+    app.kubernetes.io/part-of: ecdat
+    ecdat.io/tier: runtime-agent
+    # eBPF kernel instrumentation requires privileged capabilities; isolated from control plane
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged

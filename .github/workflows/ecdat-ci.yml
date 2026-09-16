@@ -1,0 +1,116 @@
+name: ECDAT CI/CD Pipeline & SARIF Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  ecdat-ci-scan:
+    name: ECDAT Cryptographic CI Scan & Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full commit history so PR diff-aware scanning can resolve base commits
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Install Backend Node Dependencies
+        run: |
+          npm install --prefix backend --no-audit --no-fund
+
+      - name: Prepare Artifact Directories
+        run: |
+          mkdir -p artifacts/ci
+
+      - name: Run ECDAT First-Class CI Scanner
+        id: ci_scanner
+        run: |
+          # Configure scan mode: PR diff-aware vs Full Repository
+          SCAN_ARGS="."
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "Executing Pull Request diff-aware scan against origin/${{ github.base_ref }}..."
+            SCAN_ARGS=". --pr-base origin/${{ github.base_ref }}"
+          else
+            echo "Executing Full Repository scan..."
+            SCAN_ARGS="."
+          fi
+
+          set +e
+          python -m scanners.ci_scanner $SCAN_ARGS \
+            -o artifacts/ci/cbom.json \
+            --output-sarif artifacts/ci/ecdat.sarif \
+            --fail-on critical
+          SCAN_EXIT_CODE=$?
+          set -e
+
+          echo "SCAN_EXIT_CODE=$SCAN_EXIT_CODE" >> $GITHUB_ENV
+          echo "Scanner finished with deterministic exit code: $SCAN_EXIT_CODE"
+
+          # Evaluate deterministic exit codes:
+          # 0 = pass
+          # 1 = policy/security failure
+          # 2 = scanner error (NEVER conflated with no vulnerabilities)
+          # 3 = invalid configuration
+          if [ $SCAN_EXIT_CODE -eq 0 ]; then
+            echo ">> CI SCAN STATUS: PASS (Exit code 0)"
+          elif [ $SCAN_EXIT_CODE -eq 1 ]; then
+            echo "::error::CI SCAN STATUS: POLICY / SECURITY FAILURE (Exit code 1)"
+            exit 1
+          elif [ $SCAN_EXIT_CODE -eq 2 ]; then
+            echo "::error::CI SCAN STATUS: SCANNER ERROR (Exit code 2). Do not conflate scanner failure with 'no vulnerabilities'."
+            exit 2
+          elif [ $SCAN_EXIT_CODE -eq 3 ]; then
+            echo "::error::CI SCAN STATUS: INVALID CONFIGURATION (Exit code 3)"
+            exit 3
+          else
+            echo "::error::CI SCAN STATUS: UNKNOWN EXIT CODE ($SCAN_EXIT_CODE)"
+            exit $SCAN_EXIT_CODE
+          fi
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: artifacts/ci/ecdat.sarif
+          category: ecdat-cryptographic-scan
+        continue-on-error: true
+
+      - name: Archive CBOM & CI Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ecdat-cbom-ci-${{ github.sha }}
+          path: |
+            artifacts/ci/cbom.json
+            artifacts/ci/ecdat.sarif
+          retention-days: 30

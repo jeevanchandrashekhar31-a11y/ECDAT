@@ -1,0 +1,167 @@
+# ECDAT Production Hardened Helm Values (Phase 24.2)
+
+global:
+  controlPlaneNamespace: "ecdat-control-plane"
+  runtimeNamespace: "ecdat-runtime"
+  imagePullPolicy: IfNotPresent
+
+# 1. Pod Security Standards
+podSecurityStandards:
+  controlPlane:
+    enforce: "restricted"
+    audit: "restricted"
+    warn: "restricted"
+  runtime:
+    enforce: "privileged"
+    audit: "privileged"
+    warn: "privileged"
+
+# 2. RBAC Configuration
+rbac:
+  create: true
+
+# 3. NetworkPolicies
+networkPolicies:
+  enabled: true
+  defaultDenyAll: true
+  allowDnsEgress: true
+
+# 4. Resource Quotas & Limits
+resourceQuotas:
+  enabled: true
+  controlPlane:
+    requestsCpu: "4"
+    requestsMemory: "8Gi"
+    limitsCpu: "8"
+    limitsMemory: "16Gi"
+    pods: "20"
+  runtime:
+    requestsCpu: "2"
+    requestsMemory: "2Gi"
+    limitsCpu: "4"
+    limitsMemory: "4Gi"
+    pods: "50"
+
+# 5. Backend Configuration
+backend:
+  replicaCount: 2
+  image:
+    repository: ecdat/backend
+    tag: latest
+  service:
+    port: 5000
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "512Mi"
+    requests:
+      cpu: "250m"
+      memory: "128Mi"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+
+# 6. Frontend Configuration
+frontend:
+  replicaCount: 2
+  image:
+    repository: ecdat/frontend
+    tag: latest
+  service:
+    port: 8080
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "128Mi"
+    requests:
+      cpu: "100m"
+      memory: "64Mi"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 101
+    runAsGroup: 101
+    fsGroup: 101
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+
+# 7. PostgreSQL Database Configuration
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    digest: "sha256:d8b2d131f4228943799cb3638421b8fbf4c68c6a0b271d47190d7ad824a7374b"
+  storage:
+    size: 10Gi
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 70
+    runAsGroup: 70
+    fsGroup: 70
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+
+# 8. Offline Scanner CronJob
+scanner:
+  enabled: true
+  schedule: "0 2 * * *"
+  image:
+    repository: ecdat/scanner
+    tag: latest
+  resources:
+    limits:
+      cpu: "1500m"
+      memory: "1024Mi"
+    requests:
+      cpu: "500m"
+      memory: "256Mi"
+
+# 9. Isolated Runtime eBPF Agent DaemonSet (Separated from Control Plane)
+ebpfAgent:
+  enabled: true
+  namespace: "ecdat-runtime"
+  image:
+    repository: ecdat/ebpf-agent
+    tag: latest
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+    requests:
+      cpu: "100m"
+      memory: "64Mi"
+  securityContext:
+    privileged: true
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: true
+    capabilities:
+      add:
+        - BPF
+        - PERFMON
+        - SYS_RESOURCE
+        - NET_ADMIN

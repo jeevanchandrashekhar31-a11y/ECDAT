@@ -48,24 +48,43 @@ function findPackageInKnowledgeBase(pkgIdentifier, mappingRules) {
   const purlExtracted = extractNameFromPurl(raw);
   const purlBase = purlExtracted ? purlExtracted.split("/").pop() : "";
 
+  // Pass 1: Exact matches on package_id or canonical_name
   for (const pkg of mappingRules.packages) {
     const pkgId = (pkg.package_id || "").toLowerCase();
     const can = (pkg.canonical_name || "").toLowerCase();
 
-    // Check package_id
     if (pkgId && (pkgId === raw.toLowerCase() || pkgId === normalized || pkgId === purlExtracted)) {
       return pkg;
     }
-    // Check canonical_name
-    if (can && (can === raw.toLowerCase() || can === normalized || can === purlExtracted || can === purlBase)) {
+    if (can && (can === raw.toLowerCase() || can === normalized || can === purlExtracted)) {
       return pkg;
     }
-    // Check aliases
+  }
+
+  // Pass 2: Exact matches on aliases
+  for (const pkg of mappingRules.packages) {
     if (Array.isArray(pkg.aliases)) {
       for (const alias of pkg.aliases) {
         const al = alias.toLowerCase();
-        if (al === raw.toLowerCase() || al === normalized || al === purlExtracted || al === purlBase) {
+        if (al === raw.toLowerCase() || al === normalized || al === purlExtracted) {
           return pkg;
+        }
+      }
+    }
+  }
+
+  // Pass 3: Fallback on purlBase
+  if (purlBase && purlBase !== raw.toLowerCase()) {
+    for (const pkg of mappingRules.packages) {
+      const can = (pkg.canonical_name || "").toLowerCase();
+      if (can === purlBase) {
+        return pkg;
+      }
+      if (Array.isArray(pkg.aliases)) {
+        for (const alias of pkg.aliases) {
+          if (alias.toLowerCase() === purlBase) {
+            return pkg;
+          }
         }
       }
     }
@@ -207,7 +226,7 @@ function correlateCryptoDependencies({
   dynamicFindings = [],
   rulesDir = null,
 }) {
-  const rules = getRules(rulesDir).crypto_dependency_mapping;
+  const rules = getRules(rulesDir || undefined).crypto_dependency_mapping;
 
   const correlatedPackages = [];
   const stats = {

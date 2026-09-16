@@ -1,0 +1,48 @@
+[
+  {
+    "subject": "CN=expired-legacy.internal.bank",
+    "issuer": "CN=Internal Root CA",
+    "not_valid_before": "2021-01-01T00:00:00Z",
+    "not_valid_after": "2022-01-01T00:00:00Z",
+    "is_expired": true,
+    "is_self_signed": false,
+    "algorithm": "RSA",
+    "key_size": 1024,
+    "signature_algorithm": "sha1WithRSAEncryption",
+    "trust_problems": [
+      "expired_certificate",
+      "weak_signature_algorithm_sha1",
+      "weak_rsa_key_size_1024"
+    ]
+  },
+  {
+    "subject": "CN=selfsigned-gateway.local",
+    "issuer": "CN=selfsigned-gateway.local",
+    "not_valid_before": "2024-01-01T00:00:00Z",
+    "not_valid_after": "2029-01-01T00:00:00Z",
+    "is_expired": false,
+    "is_self_signed": true,
+    "algorithm": "RSA",
+    "key_size": 2048,
+    "signature_algorithm": "sha256WithRSAEncryption",
+    "trust_problems": [
+      "self_signed_certificate"
+    ]
+  },
+  {
+    "subject": "CN=ancient-md5.legacy.corp",
+    "issuer": "CN=Ancient CA",
+    "not_valid_before": "2015-05-01T00:00:00Z",
+    "not_valid_after": "2018-05-01T00:00:00Z",
+    "is_expired": true,
+    "is_self_signed": false,
+    "algorithm": "RSA",
+    "key_size": 512,
+    "signature_algorithm": "md5WithRSAEncryption",
+    "trust_problems": [
+      "expired_certificate",
+      "weak_signature_algorithm_md5",
+      "weak_rsa_key_size_512"
+    ]
+  }
+]

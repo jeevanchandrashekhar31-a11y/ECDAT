@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ecdat.security/schemas/siem_security_event.schema.json",
+  "title": "ECDAT SIEM Security Event Schema",
+  "description": "Stable schema specification for structured ECDAT security events suitable for SIEM ingestion (ECS, CEF, Syslog, Splunk, Elastic, QRadar).",
+  "type": "object",
+  "required": [
+    "version",
+    "event_id",
+    "timestamp",
+    "actor",
+    "tenant",
+    "action",
+    "resource",
+    "result",
+    "request_id",
+    "risk_context"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Schema version (SemVer)."
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "description": "Unique identifier for the security event."
+    },
+    "event_type": {
+      "type": "string",
+      "description": "Classification category for the security event."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp of event generation."
+    },
+    "actor": {
+      "type": "object",
+      "required": ["id", "username", "role"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "username": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "role": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "ip": { "type": ["string", "null"] },
+        "ip_address": { "type": ["string", "null"] },
+        "user_agent": { "type": ["string", "null"] }
+      }
+    },
+    "tenant": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "name": { "type": ["string", "null"] }
+      }
+    },
+    "action": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "description": "Normalized security action code (e.g., AUTHENTICATION_ATTEMPT, CRYPTOGRAPHIC_SCAN, POLICY_MUTATION)."
+    },
+    "resource": {
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "id": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "name": { "type": ["string", "null"] },
+        "classification": {
+          "type": ["string", "null"],
+          "enum": ["PUBLIC", "INTERNAL", "RESTRICTED", "CONFIDENTIAL", null]
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["SUCCESS", "FAILURE", "DENIED", "LOCKED", "ERROR"]
+        },
+        "code": { "type": ["integer", "string", "null"] },
+        "message": { "type": ["string", "null"], "maxLength": 1024 }
+      }
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Correlation request identifier for distributed tracing."
+    },
+    "risk_context": {
+      "type": "object",
+      "required": ["severity"],
+      "additionalProperties": false,
+      "properties": {
+        "severity": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFORMATIONAL"]
+        },
+        "quantum_risk_level": {
+          "type": ["string", "null"],
+          "enum": [
+            "IMMEDIATE_HARVEST_NOW_DECRYPT_LATER",
+            "TRANSITION_RECOMMENDED",
+            "QUANTUM_SAFE",
+            "NOT_APPLICABLE",
+            null
+          ]
+        },
+        "quantum_risk": {
+          "type": ["boolean", "null"]
+        },
+        "cvss_score": {
+          "type": ["number", "null"],
+          "minimum": 0.0,
+          "maximum": 10.0
+        },
+        "risk_score": {
+          "type": ["number", "null"],
+          "minimum": 0.0,
+          "maximum": 100.0
+        },
+        "mosca_deadline_year": {
+          "type": ["integer", "null"]
+        },
+        "threat_category": {
+          "type": ["string", "null"],
+          "maxLength": 128
+        },
+        "compliance_impact": {
+          "type": ["array", "null"],
+          "items": { "type": "string" }
+        },
+        "policy_violated": {
+          "type": ["boolean", "null"]
+        },
+        "confidence": {
+          "type": ["number", "null"],
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Sanitized metadata payload guaranteed to be free of secrets and sensitive credentials."
+    },
+    "signature": {
+      "type": "string",
+      "description": "Cryptographic HMAC-SHA256 signature validating event authenticity."
+    }
+  }
+}

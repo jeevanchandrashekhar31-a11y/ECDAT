@@ -1,9 +1,15 @@
 import os
+import re
 import logging
 from pathlib import Path
 from typing import List, Set, Dict
 
 logger = logging.getLogger(__name__)
+
+WINDOWS_RESERVED_NAMES = re.compile(
+    r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$",
+    re.IGNORECASE
+)
 
 
 class FileDiscovery:
@@ -14,12 +20,14 @@ class FileDiscovery:
         exclude_dirs: Set[str],
         max_file_size_bytes: int,
         max_files: int = 10000,
+        max_depth: int = 25,
     ):
         self.root_dir = Path(root_dir).resolve()
         self.include_exts = {ext.lower() for ext in include_exts}
         self.exclude_dirs = exclude_dirs
         self.max_file_size_bytes = max_file_size_bytes
         self.max_files = max_files
+        self.max_depth = max_depth
         self.skipped_stats: Dict[str, int] = {
             "symlinks": 0,
             "outside_root": 0,
@@ -29,6 +37,8 @@ class FileDiscovery:
             "excluded_dir": 0,
             "unsupported_ext": 0,
             "file_limit": 0,
+            "max_depth_exceeded": 0,
+            "reserved_name": 0,
         }
 
     def _is_safe_path(self, path: Path) -> bool:
@@ -44,20 +54,58 @@ class FileDiscovery:
             raise ValueError(f"Root path {self.root_dir} is not a directory.")
 
         valid_files = []
+        visited_dirs: Set[str] = set()
 
         for dirpath, dirnames, filenames in os.walk(self.root_dir, followlinks=False):
             current_dir = Path(dirpath)
 
-            # Remove excluded dirs in-place to prevent os.walk from entering them
-            dirnames[:] = [d for d in dirnames if d not in self.exclude_dirs and not (current_dir / d).is_symlink()]
+            # Cycle / loop detection via resolved realpath
+            try:
+                resolved_dir = str(current_dir.resolve())
+                if resolved_dir in visited_dirs:
+                    dirnames[:] = []
+                    continue
+                visited_dirs.add(resolved_dir)
+            except Exception:
+                dirnames[:] = []
+                continue
+
+            # Check maximum traversal depth
+            try:
+                rel_parts = current_dir.relative_to(self.root_dir).parts
+                depth = len(rel_parts)
+                if depth > self.max_depth:
+                    self.skipped_stats["max_depth_exceeded"] += 1
+                    dirnames[:] = []  # Do not descend further into deeply nested directory bomb
+                    continue
+            except Exception:
+                dirnames[:] = []
+                continue
+
+            # Remove excluded dirs and symlinks in-place to prevent os.walk from entering them
+            dirnames[:] = [
+                d for d in dirnames
+                if d not in self.exclude_dirs and not (current_dir / d).is_symlink()
+            ]
 
             for d in list(dirnames):
                 if d in self.exclude_dirs:
                     self.skipped_stats["excluded_dir"] += 1
 
             for filename in filenames:
+                # Reject null bytes in filename
+                if "\x00" in filename:
+                    self.skipped_stats["unreadable"] += 1
+                    continue
+
+                # Filter Windows reserved device names (CON, PRN, AUX, NUL, etc.)
+                if WINDOWS_RESERVED_NAMES.match(filename):
+                    self.skipped_stats["reserved_name"] += 1
+                    continue
+
                 file_path = current_dir / filename
 
+                # Reject symlinks to prevent loops and root escape
                 if file_path.is_symlink():
                     self.skipped_stats["symlinks"] += 1
                     continue
@@ -79,14 +127,12 @@ class FileDiscovery:
                         self.skipped_stats["oversized"] += 1
                         continue
 
-                    # basic minified/generated check - could read first few bytes for binary
-                    # For now just checking size and readable
                     if not os.access(file_path, os.R_OK):
                         self.skipped_stats["unreadable"] += 1
                         continue
 
                     valid_files.append(file_path)
-                except Exception as e:
+                except Exception:
                     self.skipped_stats["unreadable"] += 1
 
         return valid_files

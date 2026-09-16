@@ -47,19 +47,27 @@ from cyclonedx.validation.xml import XmlValidator
 from cyclonedx.schema import SchemaVersion
 
 from scanners.cbom_mapping import serialize_cbom, validate_cbom_json, validate_cbom_detailed
+from scanners.static.sanitization import redact_secrets
 
 
 def import_cbom(data: Union[str, bytes, dict], format: str = "auto") -> Bom:
     """
     Imports a CBOM from JSON or XML format and parses it into a CycloneDX Bom object.
-    Validates structure and schema.
+    Validates structure and schema. Hardened against DoS, XML bombs, prototype pollution,
+    and secret leakage.
     """
     if isinstance(data, bytes):
-        raw_text = data.decode("utf-8")
+        raw_text = data.decode("utf-8", errors="replace")
     elif isinstance(data, dict):
         raw_text = json.dumps(data)
     else:
         raw_text = str(data)
+
+    if len(raw_text) > 50 * 1024 * 1024:
+        raise ValueError("CBOM payload exceeds maximum size limit (50 MB).")
+
+    if "PRIVATE KEY" in raw_text:
+        raise ValueError("CBOM payload contains raw private key material, which is strictly prohibited.")
 
     detected_format = format.lower()
     if detected_format == "auto":
@@ -72,7 +80,14 @@ def import_cbom(data: Union[str, bytes, dict], format: str = "auto") -> Bom:
             raise ValueError("Unable to determine CBOM format (expected JSON or XML).")
 
     if detected_format == "json":
-        parsed = json.loads(raw_text)
+        if "__proto__" in raw_text or '"prototype"' in raw_text or '"constructor"' in raw_text:
+            raise ValueError("Dangerous prototype pollution keys detected in CBOM JSON.")
+
+        try:
+            parsed = json.loads(raw_text)
+        except Exception as e:
+            raise ValueError(f"Malformed JSON syntax: {type(e).__name__}")
+
         if isinstance(parsed, list):
             parsed = {"bomFormat": "CycloneDX", "specVersion": "1.7", "components": parsed}
             raw_text = json.dumps(parsed)
@@ -82,9 +97,17 @@ def import_cbom(data: Union[str, bytes, dict], format: str = "auto") -> Bom:
             if "components" not in parsed:
                 raise ValueError(f"Invalid CycloneDX JSON: {err}")
 
-        return Bom.from_json(parsed)
+        try:
+            return Bom.from_json(parsed)
+        except Exception as e:
+            clean_err = redact_secrets(str(e))
+            raise ValueError(f"Failed to deserialize CycloneDX Bom: {type(e).__name__}: {clean_err}")
 
     elif detected_format == "xml":
+        upper_xml = raw_text.upper()
+        if "<!DOCTYPE" in upper_xml or "<!ENTITY" in upper_xml:
+            raise ValueError("XML entity expansion / DOCTYPE is forbidden for security.")
+
         try:
             elem = ElementTree.fromstring(raw_text)
         except Exception as e:

@@ -1,0 +1,288 @@
+{
+  "corpus_version": "1.0.0",
+  "standard": "Phase 22.3 Golden Corpus",
+  "description": "Permanent standardized cryptographic benchmark corpus with ground-truth expected findings for precision, recall, F1, scan time, and memory tracking.",
+  "categories": [
+    "01_secure_examples",
+    "02_weak_algorithms",
+    "03_weak_keys",
+    "04_tls_misconfigurations",
+    "05_certificate_problems",
+    "06_pqc_examples",
+    "07_hybrid_examples",
+    "08_wrapper_apis",
+    "09_aliases",
+    "10_dynamic_algorithms",
+    "11_negative_examples"
+  ],
+  "entries": [
+    {
+      "file_path": "01_secure_examples/secure_modern.py",
+      "category": "01_secure_examples",
+      "language": "python",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "AES-256-GCM", "finding_type": "symmetric_cipher", "status": "secure", "key_size": 256},
+        {"algorithm": "ChaCha20-Poly1305", "finding_type": "symmetric_cipher", "status": "secure", "key_size": 256},
+        {"algorithm": "SHA-384", "finding_type": "digest", "status": "secure"},
+        {"algorithm": "SHA-512", "finding_type": "digest", "status": "secure"},
+        {"algorithm": "Ed25519", "finding_type": "asymmetric", "status": "secure", "key_size": 256}
+      ]
+    },
+    {
+      "file_path": "01_secure_examples/secure_modern.js",
+      "category": "01_secure_examples",
+      "language": "javascript",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "AES-256-GCM", "finding_type": "symmetric_cipher", "status": "secure", "key_size": 256},
+        {"algorithm": "SHA-512", "finding_type": "digest", "status": "secure"},
+        {"algorithm": "Ed25519", "finding_type": "asymmetric", "status": "secure", "key_size": 256}
+      ]
+    },
+    {
+      "file_path": "01_secure_examples/secure_modern.go",
+      "category": "01_secure_examples",
+      "language": "go",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "AES", "finding_type": "symmetric_cipher", "status": "secure"},
+        {"algorithm": "SHA-512", "finding_type": "digest", "status": "secure"},
+        {"algorithm": "Ed25519", "finding_type": "asymmetric", "status": "secure", "key_size": 256}
+      ]
+    },
+    {
+      "file_path": "02_weak_algorithms/weak_crypto.py",
+      "category": "02_weak_algorithms",
+      "language": "python",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "MD5", "finding_type": "digest", "status": "weak", "is_weak": true},
+        {"algorithm": "SHA-1", "finding_type": "digest", "status": "weak", "is_weak": true},
+        {"algorithm": "DES", "finding_type": "symmetric_cipher", "status": "weak", "is_weak": true, "key_size": 56},
+        {"algorithm": "3DES", "finding_type": "symmetric_cipher", "status": "weak", "is_weak": true, "key_size": 112},
+        {"algorithm": "RC4", "finding_type": "stream_cipher", "status": "weak", "is_weak": true},
+        {"algorithm": "Blowfish", "finding_type": "symmetric_cipher", "status": "weak", "is_weak": true},
+        {"algorithm": "ECB", "finding_type": "mode", "status": "weak", "is_weak": true}
+      ]
+    },
+    {
+      "file_path": "02_weak_algorithms/weak_crypto.js",
+      "category": "02_weak_algorithms",
+      "language": "javascript",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "MD5", "finding_type": "digest", "status": "weak", "is_weak": true},
+        {"algorithm": "SHA-1", "finding_type": "digest", "status": "weak", "is_weak": true},
+        {"algorithm": "DES", "finding_type": "symmetric_cipher", "status": "weak", "is_weak": true},
+        {"algorithm": "3DES", "finding_type": "symmetric_cipher", "status": "weak", "is_weak": true},
+        {"algorithm": "RC4", "finding_type": "stream_cipher", "status": "weak", "is_weak": true}
+      ]
+    },
+    {
+      "file_path": "02_weak_algorithms/weak_crypto.c",
+      "category": "02_weak_algorithms",
+      "language": "c",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "MD5", "finding_type": "digest", "status": "weak", "is_weak": true},
+        {"algorithm": "SHA-1", "finding_type": "digest", "status": "weak", "is_weak": true},
+        {"algorithm": "DES", "finding_type": "symmetric_cipher", "status": "weak", "is_weak": true},
+        {"algorithm": "RC4", "finding_type": "stream_cipher", "status": "weak", "is_weak": true}
+      ]
+    },
+    {
+      "file_path": "03_weak_keys/weak_keys.py",
+      "category": "03_weak_keys",
+      "language": "python",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "RSA", "finding_type": "asymmetric", "status": "weak", "key_size": 512, "is_weak": true},
+        {"algorithm": "RSA", "finding_type": "asymmetric", "status": "weak", "key_size": 1024, "is_weak": true},
+        {"algorithm": "EC", "finding_type": "asymmetric", "status": "weak", "key_size": 160, "is_weak": true}
+      ]
+    },
+    {
+      "file_path": "03_weak_keys/weak_keys.java",
+      "category": "03_weak_keys",
+      "language": "java",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "RSA", "finding_type": "asymmetric", "status": "weak", "key_size": 1024, "is_weak": true},
+        {"algorithm": "RSA", "finding_type": "asymmetric", "status": "weak", "key_size": 512, "is_weak": true}
+      ]
+    },
+    {
+      "file_path": "04_tls_misconfigurations/tls_misconfig.py",
+      "category": "04_tls_misconfigurations",
+      "language": "python",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "TLSv1", "finding_type": "protocol", "status": "misconfig", "is_weak": true},
+        {"algorithm": "CERT_NONE", "finding_type": "trust", "status": "misconfig", "is_weak": true},
+        {"algorithm": "check_hostname=False", "finding_type": "trust", "status": "misconfig", "is_weak": true}
+      ]
+    },
+    {
+      "file_path": "04_tls_misconfigurations/tls_misconfig.js",
+      "category": "04_tls_misconfigurations",
+      "language": "javascript",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "TLSv1", "finding_type": "protocol", "status": "misconfig", "is_weak": true},
+        {"algorithm": "rejectUnauthorized: false", "finding_type": "trust", "status": "misconfig", "is_weak": true}
+      ]
+    },
+    {
+      "file_path": "05_certificate_problems/cert_problems.py",
+      "category": "05_certificate_problems",
+      "language": "python",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "RSA", "finding_type": "certificate", "status": "weak", "key_size": 1024},
+        {"algorithm": "SHA1", "finding_type": "signature_algorithm", "status": "weak", "is_weak": true}
+      ]
+    },
+    {
+      "file_path": "05_certificate_problems/cert_inventory.json",
+      "category": "05_certificate_problems",
+      "language": "json",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "RSA", "finding_type": "certificate", "status": "weak", "key_size": 1024},
+        {"algorithm": "RSA", "finding_type": "certificate", "status": "self_signed", "key_size": 2048},
+        {"algorithm": "RSA", "finding_type": "certificate", "status": "weak", "key_size": 512}
+      ]
+    },
+    {
+      "file_path": "06_pqc_examples/pqc_algorithms.py",
+      "category": "06_pqc_examples",
+      "language": "python",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "Kyber768", "finding_type": "pqc_kem", "status": "pqc", "is_pqc": true},
+        {"algorithm": "Dilithium3", "finding_type": "pqc_signature", "status": "pqc", "is_pqc": true},
+        {"algorithm": "SPHINCS+", "finding_type": "pqc_signature", "status": "pqc", "is_pqc": true},
+        {"algorithm": "Falcon-512", "finding_type": "pqc_signature", "status": "pqc", "is_pqc": true}
+      ]
+    },
+    {
+      "file_path": "06_pqc_examples/pqc_algorithms.c",
+      "category": "06_pqc_examples",
+      "language": "c",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "Kyber768", "finding_type": "pqc_kem", "status": "pqc", "is_pqc": true},
+        {"algorithm": "Dilithium3", "finding_type": "pqc_signature", "status": "pqc", "is_pqc": true},
+        {"algorithm": "SPHINCS+", "finding_type": "pqc_signature", "status": "pqc", "is_pqc": true}
+      ]
+    },
+    {
+      "file_path": "07_hybrid_examples/hybrid_crypto.py",
+      "category": "07_hybrid_examples",
+      "language": "python",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "X25519Kyber768Draft00", "finding_type": "hybrid_kem", "status": "hybrid", "is_hybrid": true},
+        {"algorithm": "ECDSA_P256_Dilithium3_Hybrid", "finding_type": "hybrid_signature", "status": "hybrid", "is_hybrid": true}
+      ]
+    },
+    {
+      "file_path": "07_hybrid_examples/hybrid_crypto.js",
+      "category": "07_hybrid_examples",
+      "language": "javascript",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "X25519Kyber768Draft00", "finding_type": "hybrid_kem", "status": "hybrid", "is_hybrid": true},
+        {"algorithm": "ECDSA_P256_Dilithium3_Hybrid", "finding_type": "hybrid_signature", "status": "hybrid", "is_hybrid": true},
+        {"algorithm": "SHA-256", "finding_type": "digest", "status": "secure"}
+      ]
+    },
+    {
+      "file_path": "08_wrapper_apis/wrapper_api.py",
+      "category": "08_wrapper_apis",
+      "language": "python",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "AES-GCM", "finding_type": "symmetric_cipher", "status": "secure"},
+        {"algorithm": "SHA-256", "finding_type": "digest", "status": "secure"},
+        {"algorithm": "SHA-384", "finding_type": "digest", "status": "secure"}
+      ]
+    },
+    {
+      "file_path": "08_wrapper_apis/wrapper_api.ts",
+      "category": "08_wrapper_apis",
+      "language": "typescript",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "AES-256-GCM", "finding_type": "symmetric_cipher", "status": "secure"},
+        {"algorithm": "SHA-256", "finding_type": "digest", "status": "secure"}
+      ]
+    },
+    {
+      "file_path": "09_aliases/aliases.py",
+      "category": "09_aliases",
+      "language": "python",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "Rijndael", "finding_type": "alias", "status": "alias"},
+        {"algorithm": "TripleDES", "finding_type": "alias", "status": "alias"},
+        {"algorithm": "DESede", "finding_type": "alias", "status": "alias"}
+      ]
+    },
+    {
+      "file_path": "09_aliases/aliases.java",
+      "category": "09_aliases",
+      "language": "java",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "AES", "finding_type": "symmetric_cipher", "status": "alias"},
+        {"algorithm": "DESede", "finding_type": "symmetric_cipher", "status": "alias"},
+        {"algorithm": "SHA256withRSA", "finding_type": "signature_algorithm", "status": "alias"},
+        {"algorithm": "HmacSHA256", "finding_type": "mac", "status": "alias"}
+      ]
+    },
+    {
+      "file_path": "10_dynamic_algorithms/dynamic_algos.py",
+      "category": "10_dynamic_algorithms",
+      "language": "python",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "DYNAMIC_HASH", "finding_type": "digest", "status": "dynamic"},
+        {"algorithm": "MD5", "finding_type": "digest", "status": "weak"},
+        {"algorithm": "SHA-256", "finding_type": "digest", "status": "secure"}
+      ]
+    },
+    {
+      "file_path": "10_dynamic_algorithms/dynamic_algos.js",
+      "category": "10_dynamic_algorithms",
+      "language": "javascript",
+      "is_negative": false,
+      "expected_findings": [
+        {"algorithm": "DYNAMIC_HASH", "finding_type": "digest", "status": "dynamic"},
+        {"algorithm": "AES-256-GCM", "finding_type": "symmetric_cipher", "status": "dynamic"}
+      ]
+    },
+    {
+      "file_path": "11_negative_examples/negative_clean.py",
+      "category": "11_negative_examples",
+      "language": "python",
+      "is_negative": true,
+      "expected_findings": []
+    },
+    {
+      "file_path": "11_negative_examples/negative_clean.js",
+      "category": "11_negative_examples",
+      "language": "javascript",
+      "is_negative": true,
+      "expected_findings": []
+    },
+    {
+      "file_path": "11_negative_examples/negative_clean.c",
+      "category": "11_negative_examples",
+      "language": "c",
+      "is_negative": true,
+      "expected_findings": []
+    }
+  ]
+}

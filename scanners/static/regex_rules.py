@@ -92,22 +92,39 @@ RULES = [
 ]
 
 
+MAX_LINE_LENGTH = 4096
+MAX_EVIDENCE_LENGTH = 250
+MAX_REGEX_FINDINGS_PER_FILE = 500
+
+
 def apply_regex_rules(content: str) -> list:
     matches = []
     lines = content.split("\n")
     for i, line in enumerate(lines):
         line_num = i + 1
+        # Truncate lines exceeding 4KB to prevent catastrophic regex backtracking (ReDoS)
+        scan_line = line[:MAX_LINE_LENGTH] if len(line) > MAX_LINE_LENGTH else line
+
         for rule in RULES:
-            for match in rule["pattern"].finditer(line):
+            for match in rule["pattern"].finditer(scan_line):
+                # Bounded evidence snippet around the match
+                start_idx = max(0, match.start() - 40)
+                end_idx = min(len(scan_line), match.end() + 120)
+                evidence = scan_line[start_idx:end_idx].strip()
+                if len(evidence) > MAX_EVIDENCE_LENGTH:
+                    evidence = evidence[:MAX_EVIDENCE_LENGTH] + "..."
+
                 matches.append(
                     {
                         "line_number": line_num,
                         "rule_id": rule["id"],
                         "algorithm": rule["algorithm"],
-                        "evidence": line.strip(),
+                        "evidence": evidence,
                         "confidence": rule["confidence"],
                         "finding_type": rule["finding_type"],
                         "severity": rule["severity"],
                     }
                 )
+                if len(matches) >= MAX_REGEX_FINDINGS_PER_FILE:
+                    return matches
     return matches

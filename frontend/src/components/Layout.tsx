@@ -12,8 +12,11 @@ import {
   ShieldCheck,
   RefreshCw,
   X,
+  Network,
+  AlertTriangle,
 } from 'lucide-react';
 import { api, getSessionApiKey, setSessionApiKey } from '../api/client';
+import { authManager } from '../security';
 import { StatusIndicator } from './StatusIndicator';
 import { CbomUploadModal } from './CbomUploadModal';
 import { ScanItem } from '../types';
@@ -31,6 +34,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [keyModalOpen, setKeyModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [savedKey, setSavedKey] = useState<string | null>(null);
+  const [securityAlert, setSecurityAlert] = useState<{ status: number; message: string } | null>(null);
+  const [currentRole, setCurrentRole] = useState<string>(authManager.getSession().role || 'Viewer');
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -63,6 +68,28 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const stored = getSessionApiKey();
     setSavedKey(stored);
     setApiKeyInput(stored || '');
+    setCurrentRole(authManager.getSession().role || 'Viewer');
+
+    const unsub401 = authManager.onUnauthorized((session, err) => {
+      setSecurityAlert({
+        status: 401,
+        message: err?.message || 'Session expired or unauthenticated. Please configure your API key.',
+      });
+      setCurrentRole(session.role || 'Viewer');
+    });
+
+    const unsub403 = authManager.onForbidden((session, err) => {
+      setSecurityAlert({
+        status: 403,
+        message: err?.message || 'Access denied (403 Forbidden). Insufficient permissions for requested operation.',
+      });
+      setCurrentRole(session.role || 'Viewer');
+    });
+
+    return () => {
+      unsub401();
+      unsub403();
+    };
   }, []);
 
   // Synchronize state when URL changes
@@ -182,6 +209,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </NavLink>
 
           <NavLink
+            to="/graph"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
+                isActive
+                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              }`
+            }
+          >
+            <Network size={17} />
+            <span>Crypto Graph</span>
+          </NavLink>
+
+          <NavLink
             to="/reports"
             className={({ isActive }) =>
               `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
@@ -262,6 +303,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* Right Header Actions */}
           <div className="flex items-center gap-3">
+            {/* RBAC Role Indicator */}
+            <div
+              className="px-2.5 py-1 rounded-lg text-2xs font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/50 flex items-center gap-1.5"
+              title="Active client-side RBAC authorization tier"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              <span>Role: {currentRole}</span>
+            </div>
+
             {/* API Key Modal Button */}
             <button
               onClick={() => setKeyModalOpen(true)}
@@ -280,6 +330,36 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <StatusIndicator online={engineOnline} version={engineVersion} />
           </div>
         </header>
+
+        {/* Security Alert Interceptor Banner */}
+        {securityAlert && (
+          <div className="bg-rose-950/90 border-b border-rose-500/60 px-6 py-2.5 flex items-center justify-between text-xs text-rose-200 animate-in slide-in-from-top duration-200">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1 rounded-md bg-rose-900/60 text-rose-400 border border-rose-700/50">
+                <AlertTriangle size={15} />
+              </div>
+              <span className="font-bold text-white tracking-wide">
+                Security Defense Alert ({securityAlert.status}):
+              </span>
+              <span className="text-rose-300">{securityAlert.message}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setKeyModalOpen(true)}
+                className="px-3 py-1 rounded bg-rose-900/80 hover:bg-rose-800 text-rose-100 font-semibold text-2xs transition-colors border border-rose-700"
+              >
+                Authenticate Now
+              </button>
+              <button
+                onClick={() => setSecurityAlert(null)}
+                className="p-1 text-rose-400 hover:text-white transition-colors"
+                title="Dismiss alert"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Routed Page Content */}
         <main className="flex-1 p-6 overflow-y-auto">

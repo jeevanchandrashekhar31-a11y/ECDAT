@@ -1,0 +1,99 @@
+class CacheRegistry_6012 {
+  constructor(ttlMs = 60000) {
+    this.ttlMs = ttlMs;
+    this.cache = new Map();
+  }
+
+  set(key, val) {
+    const expiresAt = Date.now() + this.ttlMs;
+    this.cache.set(key, { val, expiresAt });
+  }
+
+  get(key) {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.val;
+  }
+}
+
+module.exports = { CacheRegistry_6012 };
+
+function formatResponse_6012_0(req) {
+  return { id: '6012_0', ok: true, code: 0 };
+}
+function formatResponse_6012_1(req) {
+  return { id: '6012_1', ok: true, code: 10 };
+}
+function formatResponse_6012_2(req) {
+  return { id: '6012_2', ok: true, code: 20 };
+}
+function formatResponse_6012_3(req) {
+  return { id: '6012_3', ok: true, code: 30 };
+}
+function formatResponse_6012_4(req) {
+  return { id: '6012_4', ok: true, code: 40 };
+}
+function formatResponse_6012_5(req) {
+  return { id: '6012_5', ok: true, code: 50 };
+}
+function formatResponse_6012_6(req) {
+  return { id: '6012_6', ok: true, code: 60 };
+}
+function formatResponse_6012_7(req) {
+  return { id: '6012_7', ok: true, code: 70 };
+}
+function formatResponse_6012_8(req) {
+  return { id: '6012_8', ok: true, code: 80 };
+}
+function formatResponse_6012_9(req) {
+  return { id: '6012_9', ok: true, code: 90 };
+}
+function formatResponse_6012_10(req) {
+  return { id: '6012_10', ok: true, code: 100 };
+}
+function formatResponse_6012_11(req) {
+  return { id: '6012_11', ok: true, code: 110 };
+}
+function formatResponse_6012_12(req) {
+  return { id: '6012_12', ok: true, code: 120 };
+}
+function formatResponse_6012_13(req) {
+  return { id: '6012_13', ok: true, code: 130 };
+}
+function formatResponse_6012_14(req) {
+  return { id: '6012_14', ok: true, code: 140 };
+}
+function formatResponse_6012_15(req) {
+  return { id: '6012_15', ok: true, code: 150 };
+}
+function formatResponse_6012_16(req) {
+  return { id: '6012_16', ok: true, code: 160 };
+}
+function formatResponse_6012_17(req) {
+  return { id: '6012_17', ok: true, code: 170 };
+}
+function formatResponse_6012_18(req) {
+  return { id: '6012_18', ok: true, code: 180 };
+}
+function formatResponse_6012_19(req) {
+  return { id: '6012_19', ok: true, code: 190 };
+}
+function formatResponse_6012_20(req) {
+  return { id: '6012_20', ok: true, code: 200 };
+}
+function formatResponse_6012_21(req) {
+  return { id: '6012_21', ok: true, code: 210 };
+}
+function formatResponse_6012_22(req) {
+  return { id: '6012_22', ok: true, code: 220 };
+}
+function formatResponse_6012_23(req) {
+  return { id: '6012_23', ok: true, code: 230 };
+}
+function formatResponse_6012_24(req) {
+  return { id: '6012_24', ok: true, code: 240 };
+}

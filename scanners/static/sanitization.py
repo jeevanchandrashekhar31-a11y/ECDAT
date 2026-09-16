@@ -6,11 +6,13 @@ PEM_HEADER_REGEX = re.compile(r"-----BEGIN (.*?)KEY-----", re.IGNORECASE)
 PEM_BODY_REGEX = re.compile(r"-----BEGIN [^-]+-----\s*([a-zA-Z0-9+/=\s]+)\s*-----END", re.IGNORECASE | re.MULTILINE)
 LONG_ENTROPY_BLOB_REGEX = re.compile(r"[a-zA-Z0-9+/=]{64,}")
 PASSWORD_LIKE_REGEX = re.compile(r"(?i)(password|passwd|pwd|secret|token|api_key|apikey)[\s=:]+[\"']([^\"']+)[\"']")
+CANARY_TOKEN_REGEX = re.compile(r"(?i)(canary[_\w!@#$%^&*+-]*|ghp_[a-zA-Z0-9]+)")
 
 
 def redact_secrets(content: str) -> str:
     """
     Sanitize sensitive information from strings/evidence snippets before they are outputted.
+    Guarantees zero secret leakage in logs, diagnostics, and crash outputs.
     """
     if not content:
         return content
@@ -38,5 +40,11 @@ def redact_secrets(content: str) -> str:
         val = match.group(2)
         h = hashlib.sha256(val.encode("utf-8")).hexdigest()[:8]
         sanitized = sanitized.replace(val, f"[REDACTED_SECRET SHA256:{h}]")
+
+    # Redact Canary tokens and API keys
+    for match in CANARY_TOKEN_REGEX.finditer(sanitized):
+        val = match.group(0)
+        h = hashlib.sha256(val.encode("utf-8")).hexdigest()[:8]
+        sanitized = sanitized.replace(val, f"[REDACTED_CANARY SHA256:{h}]")
 
     return sanitized

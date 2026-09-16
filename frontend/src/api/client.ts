@@ -1,45 +1,58 @@
-import { DashboardSummary, AssetsResponse, AssetDetail, FindingsResponse, FindingItem, ScanItem, Metrics } from '../types';
+import { DashboardSummary, AssetsResponse, AssetDetail, FindingsResponse, FindingItem, ScanItem, Metrics, DashboardViewsResponse, CryptoGraphResponse } from '../types';
+import {
+  sessionAuthStorage,
+  purgeLocalStorageSecrets,
+  attachCsrfHeader,
+  authManager,
+  isSafeUrl,
+} from '../security';
+
+// Immediately audit and clear any unauthorized credentials placed in localStorage
+if (typeof window !== 'undefined') {
+  purgeLocalStorageSecrets();
+}
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 
-// Session key helper (never hardcoded in bundle)
-const STORAGE_KEY = 'ecdat_session_api_key';
-
+// Tab-scoped & In-Memory Session API Key Management
 export function getSessionApiKey(): string | null {
-  try {
-    return (
-      sessionStorage.getItem(STORAGE_KEY) ||
-      (import.meta.env.VITE_ECDAT_API_KEY as string) ||
-      'ecdat-demo-admin-key-2026'
-    );
-  } catch {
-    return 'ecdat-demo-admin-key-2026';
-  }
+  const existing = sessionAuthStorage.getApiKey();
+  if (existing) return existing;
+
+  const envKey = (import.meta.env.VITE_ECDAT_API_KEY as string) || 'ecdat-demo-admin-key-2026';
+  sessionAuthStorage.setApiKey(envKey);
+  return envKey;
 }
 
 export function setSessionApiKey(key: string): void {
-  try {
-    if (!key || key.trim() === '') {
-      sessionStorage.removeItem(STORAGE_KEY);
-    } else {
-      sessionStorage.setItem(STORAGE_KEY, key.trim());
-    }
-  } catch {
-    // ignore
-  }
+  sessionAuthStorage.setApiKey(key);
 }
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE}${endpoint}`;
-  const headers = new Headers(options.headers || {});
+  // Enforce safe URL and path handling
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  if (!isSafeUrl(cleanEndpoint, { allowRelative: true })) {
+    throw new Error(`[Security Violation] Blocked unsafe API request target: ${cleanEndpoint}`);
+  }
 
-  // Attach session API key if available
+  const url = `${API_BASE}${cleanEndpoint}`;
+  const headers = new Headers(options.headers || {});
+  const method = (options.method || 'GET').toUpperCase();
+
+  // 1. Double Submit Cookie CSRF Defense (mutating requests)
+  attachCsrfHeader(headers, method);
+
+  // 2. Strict API Authorization & Multi-Tenancy headers
+  authManager.attachAuthHeaders(headers);
+
+  // 3. Fall back to Session API key if no Authorization or X-API-Key was set
   const apiKey = getSessionApiKey();
-  if (apiKey && !headers.has('X-API-Key')) {
+  if (apiKey && !headers.has('X-API-Key') && !headers.has('Authorization')) {
     headers.set('X-API-Key', apiKey);
   }
 
   const response = await fetch(url, {
+    credentials: 'same-origin',
     ...options,
     headers,
   });
@@ -60,6 +73,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     } catch {
       // not json
     }
+
+    // Intercept 401 Unauthorized / 403 Forbidden
+    authManager.handleResponseStatus(response.status, errorMsg);
+
     const error = new Error(errorMsg);
     (error as unknown as { status: number }).status = response.status;
     throw error;
@@ -92,6 +109,42 @@ export const api = {
     if (scenario) params.append('scenario', scenario);
     const query = params.toString() ? `?${params.toString()}` : '';
     return request<DashboardSummary>(`/api/v1/dashboard/summary${query}`);
+  },
+
+  getDashboardViews: async (
+    scanId?: string,
+    policyProfile?: string,
+    scenario?: string
+  ): Promise<DashboardViewsResponse> => {
+    const params = new URLSearchParams();
+    if (scanId) params.append('scanId', scanId);
+    if (policyProfile) params.append('policyProfile', policyProfile);
+    if (scenario) params.append('scenario', scenario);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<DashboardViewsResponse>(`/api/v1/dashboard/views${query}`);
+  },
+
+  getCryptoGraph: async (params: {
+    scanId?: string;
+    severity?: string;
+    owner?: string;
+    environment?: string;
+    algorithm?: string;
+    pqcReadiness?: string;
+    exposure?: string;
+    search?: string;
+  } = {}): Promise<CryptoGraphResponse> => {
+    const q = new URLSearchParams();
+    if (params.scanId) q.append('scanId', params.scanId);
+    if (params.severity && params.severity !== 'ALL') q.append('severity', params.severity);
+    if (params.owner && params.owner !== 'ALL') q.append('owner', params.owner);
+    if (params.environment && params.environment !== 'ALL') q.append('environment', params.environment);
+    if (params.algorithm && params.algorithm !== 'ALL') q.append('algorithm', params.algorithm);
+    if (params.pqcReadiness && params.pqcReadiness !== 'ALL') q.append('pqcReadiness', params.pqcReadiness);
+    if (params.exposure && params.exposure !== 'ALL') q.append('exposure', params.exposure);
+    if (params.search && params.search.trim()) q.append('search', params.search.trim());
+    const query = q.toString() ? `?${q.toString()}` : '';
+    return request<CryptoGraphResponse>(`/api/v1/graph${query}`);
   },
 
   // Assets

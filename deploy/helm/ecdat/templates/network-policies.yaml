@@ -1,0 +1,157 @@
+{{- if .Values.networkPolicies.enabled }}
+# Default Deny-All Ingress and Egress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ecdat.fullname" . }}-default-deny-all
+  namespace: {{ .Values.global.controlPlaneNamespace }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+{{- if .Values.ebpfAgent.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ecdat.fullname" . }}-runtime-deny-all
+  namespace: {{ .Values.global.runtimeNamespace }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+{{- end }}
+# Allow CoreDNS Egress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ecdat.fullname" . }}-allow-dns
+  namespace: {{ .Values.global.controlPlaneNamespace }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# Backend NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ecdat.fullname" . }}-backend-netpol
+  namespace: {{ .Values.global.controlPlaneNamespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "ecdat.name" . }}-backend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ include "ecdat.name" . }}-frontend
+      ports:
+        - protocol: TCP
+          port: {{ .Values.backend.service.port }}
+    {{- if .Values.ebpfAgent.enabled }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              ecdat.io/tier: runtime-agent
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ include "ecdat.name" . }}-ebpf-agent
+      ports:
+        - protocol: TCP
+          port: {{ .Values.backend.service.port }}
+    {{- end }}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ include "ecdat.name" . }}-postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+---
+# Frontend NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ecdat.fullname" . }}-frontend-netpol
+  namespace: {{ .Values.global.controlPlaneNamespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "ecdat.name" . }}-frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.frontend.service.port }}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ include "ecdat.name" . }}-backend
+      ports:
+        - protocol: TCP
+          port: {{ .Values.backend.service.port }}
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+---
+# Postgres NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ecdat.fullname" . }}-postgres-netpol
+  namespace: {{ .Values.global.controlPlaneNamespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "ecdat.name" . }}-postgres
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ include "ecdat.name" . }}-backend
+      ports:
+        - protocol: TCP
+          port: 5432
+  egress: []
+{{- end }}

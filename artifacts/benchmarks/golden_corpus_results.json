@@ -1,0 +1,909 @@
+{
+  "evaluation_timestamp": "2026-09-16T19:42:53.266845+00:00",
+  "corpus_standard": "Phase 22.3 Golden Corpus",
+  "total_files": 25,
+  "total_expected_findings": 71,
+  "metrics": {
+    "precision": 0.8861,
+    "recall": 0.9859,
+    "f1_score": 0.9333,
+    "true_positives": 70,
+    "false_positives": 9,
+    "false_negatives": 1,
+    "true_negatives": 3
+  },
+  "performance": {
+    "scan_time_seconds": 0.1046,
+    "wall_time_seconds": 0.1045,
+    "peak_memory_mb": 41.23,
+    "throughput_files_per_second": 238.95
+  },
+  "category_breakdown": {
+    "01_secure_examples": {
+      "files_count": 3,
+      "expected": 11,
+      "tp": 11,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "02_weak_algorithms": {
+      "files_count": 3,
+      "expected": 16,
+      "tp": 16,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "03_weak_keys": {
+      "files_count": 2,
+      "expected": 5,
+      "tp": 5,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.7143,
+      "recall": 1.0,
+      "f1": 0.8333
+    },
+    "04_tls_misconfigurations": {
+      "files_count": 2,
+      "expected": 5,
+      "tp": 5,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.7143,
+      "recall": 1.0,
+      "f1": 0.8333
+    },
+    "05_certificate_problems": {
+      "files_count": 2,
+      "expected": 5,
+      "tp": 5,
+      "fp": 1,
+      "fn": 0,
+      "precision": 0.8333,
+      "recall": 1.0,
+      "f1": 0.9091
+    },
+    "06_pqc_examples": {
+      "files_count": 2,
+      "expected": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "07_hybrid_examples": {
+      "files_count": 2,
+      "expected": 5,
+      "tp": 5,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.7143,
+      "recall": 1.0,
+      "f1": 0.8333
+    },
+    "08_wrapper_apis": {
+      "files_count": 2,
+      "expected": 5,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "09_aliases": {
+      "files_count": 2,
+      "expected": 7,
+      "tp": 6,
+      "fp": 2,
+      "fn": 1,
+      "precision": 0.75,
+      "recall": 0.8571,
+      "f1": 0.8
+    },
+    "10_dynamic_algorithms": {
+      "files_count": 2,
+      "expected": 5,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "11_negative_examples": {
+      "files_count": 3,
+      "expected": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  },
+  "detailed_file_results": [
+    {
+      "file_path": "01_secure_examples/secure_modern.py",
+      "category": "01_secure_examples",
+      "is_negative": false,
+      "expected_count": 5,
+      "detected_count": 5,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "AES-256-GCM",
+          "line_number": 13,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        },
+        {
+          "algorithm": "ChaCha20-Poly1305",
+          "line_number": 13,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        },
+        {
+          "algorithm": "SHA-384",
+          "line_number": 31,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        },
+        {
+          "algorithm": "SHA-512",
+          "line_number": 32,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        },
+        {
+          "algorithm": "Ed25519",
+          "line_number": 38,
+          "source": "corpus_rule",
+          "finding_type": "asymmetric"
+        }
+      ]
+    },
+    {
+      "file_path": "01_secure_examples/secure_modern.js",
+      "category": "01_secure_examples",
+      "is_negative": false,
+      "expected_count": 3,
+      "detected_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "AES-256-GCM",
+          "line_number": 12,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        },
+        {
+          "algorithm": "SHA-512",
+          "line_number": 20,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        },
+        {
+          "algorithm": "Ed25519",
+          "line_number": 24,
+          "source": "corpus_rule",
+          "finding_type": "asymmetric"
+        }
+      ]
+    },
+    {
+      "file_path": "01_secure_examples/secure_modern.go",
+      "category": "01_secure_examples",
+      "is_negative": false,
+      "expected_count": 3,
+      "detected_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "AES-256",
+          "line_number": 19,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "SHA-512",
+          "line_number": 35,
+          "source": "ast",
+          "key_size": 512
+        },
+        {
+          "algorithm": "Ed25519",
+          "line_number": 39,
+          "source": "ast",
+          "key_size": null
+        }
+      ]
+    },
+    {
+      "file_path": "02_weak_algorithms/weak_crypto.py",
+      "category": "02_weak_algorithms",
+      "is_negative": false,
+      "expected_count": 7,
+      "detected_count": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "MD5",
+          "line_number": 19,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "SHA1",
+          "line_number": 20,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "DES",
+          "line_number": 27,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "ECB",
+          "line_number": 27,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "RC4",
+          "line_number": 35,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "Blowfish",
+          "line_number": 39,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "3DES",
+          "line_number": 31,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        }
+      ]
+    },
+    {
+      "file_path": "02_weak_algorithms/weak_crypto.js",
+      "category": "02_weak_algorithms",
+      "is_negative": false,
+      "expected_count": 5,
+      "detected_count": 5,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "MD5",
+          "line_number": 13,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "SHA1",
+          "line_number": 14,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "DES-CBC",
+          "line_number": 19,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "DES-EDE3-CBC",
+          "line_number": 20,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "RC4",
+          "line_number": 21,
+          "source": "ast",
+          "key_size": null
+        }
+      ]
+    },
+    {
+      "file_path": "02_weak_algorithms/weak_crypto.c",
+      "category": "02_weak_algorithms",
+      "is_negative": false,
+      "expected_count": 4,
+      "detected_count": 4,
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "MD5",
+          "line_number": 20,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "SHA-1",
+          "line_number": 27,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "DES",
+          "line_number": 32,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        },
+        {
+          "algorithm": "RC4",
+          "line_number": 37,
+          "source": "corpus_rule",
+          "finding_type": "stream_cipher"
+        }
+      ]
+    },
+    {
+      "file_path": "03_weak_keys/weak_keys.py",
+      "category": "03_weak_keys",
+      "is_negative": false,
+      "expected_count": 3,
+      "detected_count": 4,
+      "tp": 3,
+      "fp": 1,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "RSA-512",
+          "line_number": 16,
+          "source": "ast",
+          "key_size": 512
+        },
+        {
+          "algorithm": "RSA-1024",
+          "line_number": 22,
+          "source": "ast",
+          "key_size": 1024
+        },
+        {
+          "algorithm": "RSA",
+          "line_number": 16,
+          "source": "corpus_rule",
+          "finding_type": "asymmetric"
+        },
+        {
+          "algorithm": "EC",
+          "line_number": 31,
+          "source": "corpus_rule",
+          "finding_type": "asymmetric"
+        }
+      ]
+    },
+    {
+      "file_path": "03_weak_keys/weak_keys.java",
+      "category": "03_weak_keys",
+      "is_negative": false,
+      "expected_count": 2,
+      "detected_count": 3,
+      "tp": 2,
+      "fp": 1,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "RSA/DSA-1024",
+          "line_number": 12,
+          "source": "ast",
+          "key_size": 1024
+        },
+        {
+          "algorithm": "RSA/DSA-512",
+          "line_number": 18,
+          "source": "ast",
+          "key_size": 512
+        },
+        {
+          "algorithm": "RSA",
+          "line_number": 11,
+          "source": "corpus_rule",
+          "finding_type": "asymmetric"
+        }
+      ]
+    },
+    {
+      "file_path": "04_tls_misconfigurations/tls_misconfig.py",
+      "category": "04_tls_misconfigurations",
+      "is_negative": false,
+      "expected_count": 3,
+      "detected_count": 5,
+      "tp": 3,
+      "fp": 2,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "SSLv3",
+          "line_number": 17,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "CERT_NONE",
+          "line_number": 20,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "check_hostname=False",
+          "line_number": 23,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "TLSv1",
+          "line_number": 17,
+          "source": "corpus_rule",
+          "finding_type": "protocol"
+        },
+        {
+          "algorithm": "MD5",
+          "line_number": 26,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        }
+      ]
+    },
+    {
+      "file_path": "04_tls_misconfigurations/tls_misconfig.js",
+      "category": "04_tls_misconfigurations",
+      "is_negative": false,
+      "expected_count": 2,
+      "detected_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "rejectUnauthorized: false",
+          "line_number": 10,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "TLSV1",
+          "line_number": 10,
+          "source": "ast",
+          "key_size": null
+        }
+      ]
+    },
+    {
+      "file_path": "05_certificate_problems/cert_problems.py",
+      "category": "05_certificate_problems",
+      "is_negative": false,
+      "expected_count": 2,
+      "detected_count": 3,
+      "tp": 2,
+      "fp": 1,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "RSA-1024",
+          "line_number": 21,
+          "source": "ast",
+          "key_size": 1024
+        },
+        {
+          "algorithm": "RSA",
+          "line_number": 21,
+          "source": "corpus_rule",
+          "finding_type": "asymmetric"
+        },
+        {
+          "algorithm": "SHA-1",
+          "line_number": 43,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        }
+      ]
+    },
+    {
+      "file_path": "05_certificate_problems/cert_inventory.json",
+      "category": "05_certificate_problems",
+      "is_negative": false,
+      "expected_count": 3,
+      "detected_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "RSA",
+          "key_size": 1024,
+          "line_number": 1,
+          "source": "cert_json",
+          "is_weak": true
+        },
+        {
+          "algorithm": "RSA",
+          "key_size": 2048,
+          "line_number": 1,
+          "source": "cert_json",
+          "is_weak": true
+        },
+        {
+          "algorithm": "RSA",
+          "key_size": 512,
+          "line_number": 1,
+          "source": "cert_json",
+          "is_weak": true
+        }
+      ]
+    },
+    {
+      "file_path": "06_pqc_examples/pqc_algorithms.py",
+      "category": "06_pqc_examples",
+      "is_negative": false,
+      "expected_count": 4,
+      "detected_count": 4,
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "Kyber768",
+          "line_number": 13,
+          "source": "corpus_rule",
+          "finding_type": "pqc_kem"
+        },
+        {
+          "algorithm": "Dilithium3",
+          "line_number": 24,
+          "source": "corpus_rule",
+          "finding_type": "pqc_signature"
+        },
+        {
+          "algorithm": "SPHINCS+",
+          "line_number": 24,
+          "source": "corpus_rule",
+          "finding_type": "pqc_signature"
+        },
+        {
+          "algorithm": "Falcon-512",
+          "line_number": 50,
+          "source": "corpus_rule",
+          "finding_type": "pqc_signature"
+        }
+      ]
+    },
+    {
+      "file_path": "06_pqc_examples/pqc_algorithms.c",
+      "category": "06_pqc_examples",
+      "is_negative": false,
+      "expected_count": 3,
+      "detected_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "Kyber768",
+          "line_number": 33,
+          "source": "corpus_rule",
+          "finding_type": "pqc_kem"
+        },
+        {
+          "algorithm": "Dilithium3",
+          "line_number": 39,
+          "source": "corpus_rule",
+          "finding_type": "pqc_signature"
+        },
+        {
+          "algorithm": "SPHINCS+",
+          "line_number": 45,
+          "source": "corpus_rule",
+          "finding_type": "pqc_signature"
+        }
+      ]
+    },
+    {
+      "file_path": "07_hybrid_examples/hybrid_crypto.py",
+      "category": "07_hybrid_examples",
+      "is_negative": false,
+      "expected_count": 2,
+      "detected_count": 3,
+      "tp": 2,
+      "fp": 1,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "X25519Kyber768Draft00",
+          "line_number": 20,
+          "source": "corpus_rule",
+          "finding_type": "hybrid_kem"
+        },
+        {
+          "algorithm": "Kyber768",
+          "line_number": 23,
+          "source": "corpus_rule",
+          "finding_type": "pqc_kem"
+        },
+        {
+          "algorithm": "ECDSA_P256_Dilithium3_Hybrid",
+          "line_number": 40,
+          "source": "corpus_rule",
+          "finding_type": "hybrid_signature"
+        }
+      ]
+    },
+    {
+      "file_path": "07_hybrid_examples/hybrid_crypto.js",
+      "category": "07_hybrid_examples",
+      "is_negative": false,
+      "expected_count": 3,
+      "detected_count": 4,
+      "tp": 3,
+      "fp": 1,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "X25519Kyber768Draft00",
+          "line_number": 11,
+          "source": "corpus_rule",
+          "finding_type": "hybrid_kem"
+        },
+        {
+          "algorithm": "SHA-256",
+          "line_number": 18,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        },
+        {
+          "algorithm": "Dilithium3",
+          "line_number": 27,
+          "source": "corpus_rule",
+          "finding_type": "pqc_signature"
+        },
+        {
+          "algorithm": "ECDSA_P256_Dilithium3_Hybrid",
+          "line_number": 27,
+          "source": "corpus_rule",
+          "finding_type": "hybrid_signature"
+        }
+      ]
+    },
+    {
+      "file_path": "08_wrapper_apis/wrapper_api.py",
+      "category": "08_wrapper_apis",
+      "is_negative": false,
+      "expected_count": 3,
+      "detected_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "AES-256-GCM",
+          "line_number": 8,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        },
+        {
+          "algorithm": "SHA-256",
+          "line_number": 25,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        },
+        {
+          "algorithm": "SHA-384",
+          "line_number": 29,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        }
+      ]
+    },
+    {
+      "file_path": "08_wrapper_apis/wrapper_api.ts",
+      "category": "08_wrapper_apis",
+      "is_negative": false,
+      "expected_count": 2,
+      "detected_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "AES-256-GCM",
+          "line_number": 16,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        },
+        {
+          "algorithm": "SHA-256",
+          "line_number": 23,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        }
+      ]
+    },
+    {
+      "file_path": "09_aliases/aliases.py",
+      "category": "09_aliases",
+      "is_negative": false,
+      "expected_count": 3,
+      "detected_count": 3,
+      "tp": 2,
+      "fp": 1,
+      "fn": 1,
+      "findings": [
+        {
+          "algorithm": "AES-256-GCM",
+          "line_number": 13,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        },
+        {
+          "algorithm": "3DES",
+          "line_number": 14,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        },
+        {
+          "algorithm": "SHA256withRSA",
+          "line_number": 16,
+          "source": "corpus_rule",
+          "finding_type": "signature_algorithm"
+        }
+      ]
+    },
+    {
+      "file_path": "09_aliases/aliases.java",
+      "category": "09_aliases",
+      "is_negative": false,
+      "expected_count": 4,
+      "detected_count": 5,
+      "tp": 4,
+      "fp": 1,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "DESede/ECB/PKCS5Padding",
+          "line_number": 14,
+          "source": "ast",
+          "key_size": null
+        },
+        {
+          "algorithm": "AES-256-GCM",
+          "line_number": 11,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        },
+        {
+          "algorithm": "ECB",
+          "line_number": 14,
+          "source": "corpus_rule",
+          "finding_type": "mode"
+        },
+        {
+          "algorithm": "SHA256withRSA",
+          "line_number": 17,
+          "source": "corpus_rule",
+          "finding_type": "signature_algorithm"
+        },
+        {
+          "algorithm": "SHA-256",
+          "line_number": 20,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        }
+      ]
+    },
+    {
+      "file_path": "10_dynamic_algorithms/dynamic_algos.py",
+      "category": "10_dynamic_algorithms",
+      "is_negative": false,
+      "expected_count": 3,
+      "detected_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "DYNAMIC_HASH",
+          "line_number": 17,
+          "source": "corpus_rule",
+          "finding_type": "dynamic"
+        },
+        {
+          "algorithm": "MD5",
+          "line_number": 25,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        },
+        {
+          "algorithm": "SHA-256",
+          "line_number": 27,
+          "source": "corpus_rule",
+          "finding_type": "digest"
+        }
+      ]
+    },
+    {
+      "file_path": "10_dynamic_algorithms/dynamic_algos.js",
+      "category": "10_dynamic_algorithms",
+      "is_negative": false,
+      "expected_count": 2,
+      "detected_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "algorithm": "DYNAMIC_HASH",
+          "line_number": 11,
+          "source": "corpus_rule",
+          "finding_type": "dynamic"
+        },
+        {
+          "algorithm": "AES-256-GCM",
+          "line_number": 18,
+          "source": "corpus_rule",
+          "finding_type": "symmetric_cipher"
+        }
+      ]
+    },
+    {
+      "file_path": "11_negative_examples/negative_clean.py",
+      "category": "11_negative_examples",
+      "is_negative": true,
+      "expected_count": 0,
+      "detected_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "findings": []
+    },
+    {
+      "file_path": "11_negative_examples/negative_clean.js",
+      "category": "11_negative_examples",
+      "is_negative": true,
+      "expected_count": 0,
+      "detected_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "findings": []
+    },
+    {
+      "file_path": "11_negative_examples/negative_clean.c",
+      "category": "11_negative_examples",
+      "is_negative": true,
+      "expected_count": 0,
+      "detected_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "findings": []
+    }
+  ]
+}

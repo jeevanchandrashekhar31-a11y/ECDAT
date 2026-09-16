@@ -43,6 +43,7 @@ async function seedDefaults() {
     { type: "policy_profiles", file: "policy_profiles.json" },
     { type: "pqc_recommendations", file: "pqc_recommendations.json" },
     { type: "crypto_library_catalog", file: "crypto_library_catalog.json" },
+    { type: "policy_as_code", file: "policy_as_code.json" },
   ];
 
   for (const rf of ruleFiles) {

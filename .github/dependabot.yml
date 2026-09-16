@@ -1,0 +1,52 @@
+# ECDAT Automated Dependency Maintenance (OpenSSF Scorecard Best Practice)
+version: 2
+updates:
+  # 1. Python Scanner Engine & Core Dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps-python)"
+    labels:
+      - "dependencies"
+      - "python"
+      - "supply-chain"
+
+  # 2. Node.js Backend API & Risk Engine Dependencies
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps-backend)"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "supply-chain"
+
+  # 3. React Frontend Web Application Dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps-frontend)"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "supply-chain"
+
+  # 4. GitHub Actions Toolchain & Pinning
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci(actions)"
+    labels:
+      - "ci"
+      - "actions"

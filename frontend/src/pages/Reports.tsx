@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { ScanItem } from '../types';
+import { sanitizeUrl } from '../security';
 
 export const Reports: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -97,7 +98,7 @@ export const Reports: React.FC = () => {
   };
 
   const safeScanId = encodeURIComponent(activeScanId);
-  const htmlReportUrl = `/api/v1/reports/${safeScanId}/html`;
+  const htmlReportUrl = sanitizeUrl(`/api/v1/reports/${safeScanId}/html`);
 
   return (
     <div className="space-y-8 animate-fade-in">

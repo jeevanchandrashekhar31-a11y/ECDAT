@@ -1,0 +1,354 @@
+{
+  "$schema": "./schemas/compliance_catalog.schema.json",
+  "version": "1.0.0",
+  "last_updated": "2026-09-13",
+  "disclaimer": "DISCLAIMER: ECDAT provides evidence-based automated mapping of discovered cryptographic assets against published standards and guidance. ECDAT does not issue formal regulatory certification, accredited laboratory validation (e.g., NIST CMVP/CAVP), or statutory compliance attestation. Technical control verdicts represent automated evidence matches against documented criteria.",
+  "support_levels": [
+    "SUPPORTED CONTROL",
+    "PARTIAL SUPPORT",
+    "NOT SUPPORTED"
+  ],
+  "standards": [
+    {
+      "id": "nist_sp_800_53_r5",
+      "name": "NIST SP 800-53 Rev 5: Security and Privacy Controls for Information Systems and Organizations",
+      "version": "Rev 5",
+      "publisher": "National Institute of Standards and Technology (NIST)",
+      "description": "Comprehensive security and privacy control catalog for federal and enterprise information systems.",
+      "controls": [
+        {
+          "control_id": "SC-12",
+          "title": "Cryptographic Key Establishment and Management",
+          "description": "Establish and manage cryptographic keys for required cryptography employed in the system.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "System and Communications Protection",
+          "target_assets": ["key", "asymmetric_key", "certificate", "protocol"],
+          "evaluation_criteria": {
+            "min_rsa_bits": 2048,
+            "min_ecc_bits": 256,
+            "min_symmetric_bits": 128
+          },
+          "automated_evidence_sources": [
+            "AST key generation inspection",
+            "X.509 certificate public key inspection",
+            "KMS / HSM provider detection",
+            "TLS negotiated key exchange group"
+          ],
+          "manual_audit_guidance": "Verify manual key split-knowledge procedures and physical access to hardware security modules."
+        },
+        {
+          "control_id": "SC-13",
+          "title": "Cryptographic Protection",
+          "description": "Employ FIPS-validated cryptography and approved algorithms in accordance with applicable federal laws, executive orders, directives, and standards.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "System and Communications Protection",
+          "target_assets": ["algorithm", "cipher", "digest", "crypto_primitive"],
+          "evaluation_criteria": {
+            "prohibited_algorithms": ["MD5", "SHA-1", "DES", "3DES", "RC2", "RC4", "BLOWFISH"],
+            "allowed_algorithms": ["AES-128", "AES-256", "AES-GCM", "CHACHA20-POLY1305", "SHA-256", "SHA-384", "SHA-512", "SHA3", "ML-KEM", "ML-DSA"]
+          },
+          "automated_evidence_sources": [
+            "Source code cryptographic call inspection",
+            "Binary symbol and library package cataloging",
+            "Network TLS negotiated cipher suite"
+          ],
+          "manual_audit_guidance": "Verify formal CAVP/CMVP validation module certificate numbers with vendors."
+        },
+        {
+          "control_id": "SC-8",
+          "title": "Transmission Confidentiality and Integrity",
+          "description": "Protect the confidentiality and integrity of transmitted information using strong network encryption protocols.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "System and Communications Protection",
+          "target_assets": ["protocol", "network_endpoint"],
+          "evaluation_criteria": {
+            "prohibited_protocols": ["SSLv2", "SSLv3", "TLS 1.0", "TLS 1.1"],
+            "allowed_protocols": ["TLS 1.2", "TLS 1.3", "SSH 2.0", "IKEv2"]
+          },
+          "automated_evidence_sources": [
+            "Live TLS handshake probe",
+            "SSH banner exchange inspection",
+            "Network socket configuration audit"
+          ],
+          "manual_audit_guidance": "Inspect external network boundary firewall rules and VPN gateway administrative settings."
+        },
+        {
+          "control_id": "SC-28",
+          "title": "Protection of Information at Rest",
+          "description": "Protect the confidentiality and integrity of information at rest located on databases, storage volumes, and user devices.",
+          "support_level": "PARTIAL SUPPORT",
+          "category": "System and Communications Protection",
+          "target_assets": ["cipher", "database", "storage"],
+          "evaluation_criteria": {
+            "min_symmetric_bits": 128,
+            "prohibited_algorithms": ["DES", "3DES", "RC4", "ECB_MODE"]
+          },
+          "automated_evidence_sources": [
+            "Static analysis of database column encryption wrappers",
+            "File encryption API invocation detection"
+          ],
+          "manual_audit_guidance": "Verify disk-level LUKS/BitLocker encryption, cloud KMS customer-managed key configuration, and physical tape storage security."
+        },
+        {
+          "control_id": "IA-5",
+          "title": "Authenticator Management",
+          "description": "Manage information system authenticators including passwords, tokens, certificates, and biometrics.",
+          "support_level": "PARTIAL SUPPORT",
+          "category": "Identification and Authentication",
+          "target_assets": ["certificate", "digest"],
+          "evaluation_criteria": {
+            "prohibited_algorithms": ["MD5", "SHA-1"],
+            "allow_self_signed": false
+          },
+          "automated_evidence_sources": [
+            "Client certificate validation flags",
+            "Password hashing algorithm identification (e.g. bcrypt/argon2 vs MD5)"
+          ],
+          "manual_audit_guidance": "Conduct review of employee identity proofing procedures and multi-factor authentication enrollment policies."
+        },
+        {
+          "control_id": "PE-3",
+          "title": "Physical Access Control",
+          "description": "Enforce physical access authorizations to facilities containing hardware security modules, servers, and data centers.",
+          "support_level": "NOT SUPPORTED",
+          "category": "Physical and Environmental Protection",
+          "target_assets": [],
+          "automated_evidence_sources": [],
+          "manual_audit_guidance": "Audit facility badge access logs, biometric entry systems, security guard sign-in sheets, and physical server rack lock mechanisms. This control is out-of-scope for software discovery."
+        }
+      ]
+    },
+    {
+      "id": "nist_cnsa_2_0",
+      "name": "NIST CNSA 2.0: Commercial National Security Algorithm Suite 2.0",
+      "version": "2.0 (2026 Mandates)",
+      "publisher": "National Security Agency (NSA) / NIST",
+      "description": "Post-quantum cryptographic mandates for National Security Systems and high-assurance critical infrastructure.",
+      "controls": [
+        {
+          "control_id": "CNSA-KEM",
+          "title": "Post-Quantum General Encryption and Key Establishment",
+          "description": "Mandates ML-KEM (FIPS 203) for post-quantum key encapsulation and hybrid key exchange in transit.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "Post-Quantum Cryptography",
+          "target_assets": ["asymmetric_key", "key_exchange", "protocol"],
+          "evaluation_criteria": {
+            "require_pqc": true,
+            "allowed_algorithms": ["ML-KEM-768", "ML-KEM-1024", "X25519+ML-KEM-768", "P256+ML-KEM-768"]
+          },
+          "automated_evidence_sources": [
+            "Detection of FIPS 203 ML-KEM parameters in library calls",
+            "TLS 1.3 hybrid key exchange group negotiation"
+          ],
+          "manual_audit_guidance": "Verify that firmware and embedded cryptographic modules support post-quantum key sizes."
+        },
+        {
+          "control_id": "CNSA-SIG",
+          "title": "Post-Quantum Digital Signatures",
+          "description": "Mandates ML-DSA (FIPS 204) or SLH-DSA (FIPS 205) for software/firmware signing, PKI, and digital signatures.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "Post-Quantum Cryptography",
+          "target_assets": ["signature", "certificate", "asymmetric_key"],
+          "evaluation_criteria": {
+            "require_pqc": true,
+            "allowed_algorithms": ["ML-DSA-65", "ML-DSA-87", "SLH-DSA-SHA2-128s", "SLH-DSA-SHAKE-128s"]
+          },
+          "automated_evidence_sources": [
+            "Certificate signature algorithm inspection",
+            "Code signing verification manifest extraction"
+          ],
+          "manual_audit_guidance": "Inspect offline root CA signing procedures and hardware tokens for PQC signature support."
+        },
+        {
+          "control_id": "CNSA-SYM",
+          "title": "Symmetric Block Encryption Strength",
+          "description": "Mandates AES-256 for symmetric data protection to defend against Grover's quantum search algorithm.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "Post-Quantum Cryptography",
+          "target_assets": ["cipher", "key"],
+          "evaluation_criteria": {
+            "min_symmetric_bits": 256,
+            "allowed_algorithms": ["AES-256", "AES-256-GCM", "AES-256-CBC"]
+          },
+          "automated_evidence_sources": [
+            "Symmetric cipher key length parameter inspection",
+            "TLS cipher suite bit strength derivation"
+          ],
+          "manual_audit_guidance": "Confirm that storage systems and hardware encryptors utilize 256-bit symmetric keys."
+        },
+        {
+          "control_id": "CNSA-HASH",
+          "title": "Cryptographic Hashing Strength",
+          "description": "Mandates SHA-384 or SHA-512 for quantum-safe collision resistance.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "Post-Quantum Cryptography",
+          "target_assets": ["digest"],
+          "evaluation_criteria": {
+            "allowed_algorithms": ["SHA-384", "SHA-512", "SHA3-384", "SHA3-512"],
+            "prohibited_algorithms": ["MD5", "SHA-1", "SHA-224", "SHA-256"]
+          },
+          "automated_evidence_sources": [
+            "Message digest API call analysis",
+            "Certificate signature digest algorithm extraction"
+          ],
+          "manual_audit_guidance": "Review legacy integration points for hash algorithm compatibility."
+        }
+      ]
+    },
+    {
+      "id": "pci_dss_v4",
+      "name": "PCI DSS v4.0: Payment Card Industry Data Security Standard",
+      "version": "v4.0",
+      "publisher": "PCI Security Standards Council",
+      "description": "Information security standard for entities that store, process, or transmit cardholder data.",
+      "controls": [
+        {
+          "control_id": "Req 3.5.1",
+          "title": "Protect Cryptographic Keys Against Disclosure and Misuse",
+          "description": "Cryptographic keys used for cardholder data encryption must be protected against unauthorized access and disclosure.",
+          "support_level": "PARTIAL SUPPORT",
+          "category": "Protect Account Data",
+          "target_assets": ["key", "asymmetric_key"],
+          "automated_evidence_sources": [
+            "Hardcoded private key detection in source code and binaries",
+            "Secret sanitization validation"
+          ],
+          "manual_audit_guidance": "Manually verify dual control and split knowledge procedures for manual key handling and KMS access permissions."
+        },
+        {
+          "control_id": "Req 3.6.1",
+          "title": "Key Management Procedures for Strong Cryptography",
+          "description": "Implement key management procedures including key generation, distribution, secure storage, and scheduled rotation.",
+          "support_level": "PARTIAL SUPPORT",
+          "category": "Protect Account Data",
+          "target_assets": ["key", "certificate"],
+          "evaluation_criteria": {
+            "min_rsa_bits": 2048,
+            "min_symmetric_bits": 128
+          },
+          "automated_evidence_sources": [
+            "Key length compliance checks",
+            "Certificate validity and rotation period verification"
+          ],
+          "manual_audit_guidance": "Review written key management policies, annual key custodian sign-off, and key retirement records."
+        },
+        {
+          "control_id": "Req 4.2.1",
+          "title": "Strong Cryptography for Cardholder Data in Transit",
+          "description": "Protect cardholder data during transmission over open, public networks using strong cryptography and secure protocols.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "Protect Cardholder Data in Transit",
+          "target_assets": ["protocol", "network_endpoint"],
+          "evaluation_criteria": {
+            "prohibited_protocols": ["SSLv2", "SSLv3", "TLS 1.0", "TLS 1.1"],
+            "allowed_protocols": ["TLS 1.2", "TLS 1.3"]
+          },
+          "automated_evidence_sources": [
+            "Perimeter TLS endpoint protocol version extraction",
+            "Deprecated cipher suite detection"
+          ],
+          "manual_audit_guidance": "Verify network perimeter architectural diagrams and wireless payment gateway encryption posture."
+        },
+        {
+          "control_id": "Req 9.1",
+          "title": "Physical Security Controls to Cardholder Data Environment",
+          "description": "Appropriate facility entry controls are in place to limit and monitor physical access to systems in the CDE.",
+          "support_level": "NOT SUPPORTED",
+          "category": "Physical Security",
+          "target_assets": [],
+          "automated_evidence_sources": [],
+          "manual_audit_guidance": "Inspect video surveillance, physical locks, visitor access logs, and security alarms at payment data centers. This control is out-of-scope for software discovery."
+        }
+      ]
+    },
+    {
+      "id": "nist_sp_800_131a_r2",
+      "name": "NIST SP 800-131A Rev 2: Transitioning the Use of Cryptographic Algorithms and Key Lengths",
+      "version": "Rev 2",
+      "publisher": "NIST",
+      "description": "Guidance on transitional schedules for cryptographic algorithms and minimum key lengths.",
+      "controls": [
+        {
+          "control_id": "Table 2",
+          "title": "Symmetric Algorithm Strength Transitions",
+          "description": "Disallows 2TDEA and 3DES; requires AES (128, 192, 256 bits).",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "Algorithm Transitions",
+          "target_assets": ["cipher"],
+          "evaluation_criteria": {
+            "min_symmetric_bits": 128,
+            "prohibited_algorithms": ["DES", "3DES", "TDEA", "RC4"]
+          },
+          "automated_evidence_sources": ["Static and runtime symmetric cipher identification"],
+          "manual_audit_guidance": "Review legacy batch processing encryption routines."
+        },
+        {
+          "control_id": "Table 3",
+          "title": "Asymmetric Algorithm Key Length Transitions",
+          "description": "Disallows RSA < 2048, ECC < 224, DSA < 2048; approves RSA >= 2048, ECC >= 224, DH >= 2048.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "Algorithm Transitions",
+          "target_assets": ["asymmetric_key", "key", "certificate"],
+          "evaluation_criteria": {
+            "min_rsa_bits": 2048,
+            "min_ecc_bits": 224,
+            "min_dh_bits": 2048
+          },
+          "automated_evidence_sources": ["Certificate and private key bit size extraction"],
+          "manual_audit_guidance": "Verify hardware token key length capabilities."
+        },
+        {
+          "control_id": "Table 8",
+          "title": "Secure Hash Algorithm Digital Signature Transition",
+          "description": "Disallows SHA-1 for digital signature generation; requires SHA-2 or SHA-3.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "Algorithm Transitions",
+          "target_assets": ["digest", "certificate"],
+          "evaluation_criteria": {
+            "prohibited_algorithms": ["MD5", "SHA-1"]
+          },
+          "automated_evidence_sources": ["X.509 signature algorithm field extraction"],
+          "manual_audit_guidance": "Verify digital signature verification policies on legacy archive documents."
+        }
+      ]
+    },
+    {
+      "id": "iso_iec_27001_2022",
+      "name": "ISO/IEC 27001:2022 Information Security Management Systems",
+      "version": "2022",
+      "publisher": "ISO/IEC",
+      "description": "International standard for managing information security risks.",
+      "controls": [
+        {
+          "control_id": "A.8.24",
+          "title": "Use of Cryptography",
+          "description": "Rules for the effective use of cryptography, including cryptographic key management, shall be defined and implemented.",
+          "support_level": "SUPPORTED CONTROL",
+          "category": "Technological Controls",
+          "target_assets": ["algorithm", "key", "protocol", "certificate"],
+          "evaluation_criteria": {
+            "min_rsa_bits": 2048,
+            "min_symmetric_bits": 128,
+            "prohibited_algorithms": ["MD5", "SHA-1", "DES", "3DES", "RC4"],
+            "prohibited_protocols": ["SSLv2", "SSLv3", "TLS 1.0", "TLS 1.1"]
+          },
+          "automated_evidence_sources": [
+            "Automated policy-as-code evaluation against ISO cryptographic profile",
+            "Inventory of active algorithms and key lengths"
+          ],
+          "manual_audit_guidance": "Review documented organization-wide cryptographic policy manual."
+        },
+        {
+          "control_id": "A.5.1",
+          "title": "Policies for Information Security",
+          "description": "Information security policy and topic-specific policies shall be defined, approved by management, published, communicated to and acknowledged by relevant personnel.",
+          "support_level": "NOT SUPPORTED",
+          "category": "Organizational Controls",
+          "target_assets": [],
+          "automated_evidence_sources": [],
+          "manual_audit_guidance": "Review corporate policy repository, management board minutes, and employee training acknowledgement records. This control is out-of-scope for software discovery."
+        }
+      ]
+    }
+  ]
+}

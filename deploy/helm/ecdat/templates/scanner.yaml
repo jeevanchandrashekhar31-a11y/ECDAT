@@ -1,0 +1,55 @@
+{{- if .Values.scanner.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "ecdat.fullname" . }}-scanner
+  namespace: {{ .Values.global.controlPlaneNamespace }}
+  labels:
+    {{- include "ecdat.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "ecdat.name" . }}-scanner
+spec:
+  schedule: {{ .Values.scanner.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: {{ include "ecdat.name" . }}-scanner
+            ecdat.io/tier: control-plane
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ include "ecdat.fullname" . }}-scanner
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          hostNetwork: false
+          hostPID: false
+          hostIPC: false
+          containers:
+            - name: scanner
+              image: "{{ .Values.scanner.image.repository }}:{{ .Values.scanner.image.tag }}"
+              imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                privileged: false
+                capabilities:
+                  drop:
+                    - ALL
+              command: ["python", "-m", "scanners.static.main", "/workspace", "--output", "/tmp/cbom.json"]
+              resources:
+                {{- toYaml .Values.scanner.resources | nindent 16 }}
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir:
+                medium: Memory
+                sizeLimit: 128Mi
+{{- end }}

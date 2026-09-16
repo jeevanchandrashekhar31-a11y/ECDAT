@@ -47,6 +47,15 @@ function extractApiKey(req) {
     }
   }
 
+  // 3. Cookie: ecdat_access_token (secure HTTP-only cookie auth)
+  if (req.headers && req.headers.cookie) {
+    const { parseCookies, ACCESS_COOKIE_NAME } = require("./cookie_csrf");
+    const cookies = parseCookies(req.headers.cookie);
+    if (cookies[ACCESS_COOKIE_NAME]) {
+      return cookies[ACCESS_COOKIE_NAME];
+    }
+  }
+
   return null;
 }
 
@@ -81,19 +90,87 @@ function apiKeyAuthMiddleware(req, res, next) {
     "/api/v1/cbom/pqc-report",
   ];
 
+  const publicAuthPaths = [
+    "/api/v1/auth/oidc/login",
+    "/api/v1/auth/oidc/callback",
+    "/api/v1/auth/ldap/login",
+    "/api/v1/auth/local/register",
+    "/api/v1/auth/local/login",
+    "/api/v1/auth/mfa/setup",
+    "/api/v1/auth/mfa/enable",
+    "/api/v1/auth/mfa/verify",
+    "/api/v1/auth/cookie/login",
+    "/api/v1/auth/csrf-token",
+    "/api/v1/auth/rbac/catalog",
+    "/api/v1/auth/token/refresh",
+    "/api/v1/auth/token/revoke",
+    "/api/v1/auth/logout",
+    "/api/v1/auth/logout-all",
+    "/auth/oidc/login",
+    "/auth/oidc/callback",
+    "/auth/ldap/login",
+    "/auth/local/register",
+    "/auth/local/login",
+    "/auth/mfa/setup",
+    "/auth/mfa/enable",
+    "/auth/mfa/verify",
+    "/auth/cookie/login",
+    "/auth/csrf-token",
+    "/auth/rbac/catalog",
+    "/auth/token/refresh",
+    "/auth/token/revoke",
+    "/auth/logout",
+    "/auth/logout-all",
+  ];
+
   const rawPath = req.originalUrl || req.path || "";
   const pathOnly = (req.path || "").toLowerCase();
   const originalPathOnly = (rawPath.split("?")[0] || "").toLowerCase();
 
-  // Scanner pipeline and health routes are public demonstration endpoints
+  const providedKey = extractApiKey(req);
+
+  // Helper to verify token or API key
+  const verifyCredentials = (tokenOrKey) => {
+    // 1. Try API Key match
+    if (configuredKey && safeCompare(tokenOrKey, configuredKey)) {
+      return { authenticated: true, mode: "api_key", role: "admin", roles: ["admin"] };
+    }
+
+    // 2. Try short-lived JWT token verification
+    try {
+      const { defaultTokenService } = require("../identity/token_service");
+      const tokenPayload = defaultTokenService.verifyToken(tokenOrKey, "access");
+      const roles = tokenPayload.roles || ["viewer"];
+      return {
+        authenticated: true,
+        mode: "jwt",
+        role: roles[0] || "viewer",
+        roles,
+        user: tokenPayload,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  // Scanner pipeline, health routes, and auth endpoints are public
   if (
     demoPipelinePaths.includes(pathOnly) ||
     demoPipelinePaths.includes(originalPathOnly) ||
+    publicAuthPaths.includes(pathOnly) ||
+    publicAuthPaths.includes(originalPathOnly) ||
     pathOnly.startsWith("/scan/") ||
     pathOnly.startsWith("/api/v1/scan/") ||
     originalPathOnly.startsWith("/scan/") ||
     originalPathOnly.startsWith("/api/v1/scan/")
   ) {
+    if (providedKey) {
+      const authResult = verifyCredentials(providedKey);
+      if (authResult) {
+        req.auth = authResult;
+        if (authResult.user) req.user = authResult.user;
+      }
+    }
     return next();
   }
 
@@ -101,8 +178,6 @@ function apiKeyAuthMiddleware(req, res, next) {
   const isWriteRoute = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
   const isProtectedRead =
     config.REQUIRE_AUTH_FOR_READS && ["GET", "HEAD"].includes(method);
-
-  const providedKey = extractApiKey(req);
 
   if (isWriteRoute || isProtectedRead) {
     if (!providedKey) {
@@ -113,20 +188,28 @@ function apiKeyAuthMiddleware(req, res, next) {
       });
     }
 
-    if (!safeCompare(providedKey, configuredKey)) {
+    const authResult = verifyCredentials(providedKey);
+    if (!authResult) {
       return res.status(403).json({
         error: "Forbidden",
         message: "Invalid API key.",
       });
     }
 
-    req.auth = { authenticated: true, role: "admin" };
+    req.auth = authResult;
+    if (authResult.user) req.user = authResult.user;
   } else {
     // Optional / public read routes
-    if (providedKey && safeCompare(providedKey, configuredKey)) {
-      req.auth = { authenticated: true, role: "admin" };
+    if (providedKey) {
+      const authResult = verifyCredentials(providedKey);
+      if (authResult) {
+        req.auth = authResult;
+        if (authResult.user) req.user = authResult.user;
+      } else {
+        req.auth = { authenticated: false, role: "anonymous", roles: [] };
+      }
     } else {
-      req.auth = { authenticated: false, role: "anonymous" };
+      req.auth = { authenticated: false, role: "anonymous", roles: [] };
     }
   }
 
@@ -134,12 +217,10 @@ function apiKeyAuthMiddleware(req, res, next) {
 }
 
 /**
- * Explicit route guard to mandate API key regardless of global settings.
+ * Explicit route guard to mandate API key or JWT token regardless of global settings.
  */
 function requireApiKey(req, res, next) {
   const configuredKey = config.ECDAT_API_KEY;
-  if (!configuredKey) return next();
-
   const providedKey = extractApiKey(req);
   if (!providedKey) {
     return res.status(401).json({
@@ -149,20 +230,47 @@ function requireApiKey(req, res, next) {
     });
   }
 
-  if (!safeCompare(providedKey, configuredKey)) {
+  if (configuredKey && safeCompare(providedKey, configuredKey)) {
+    req.auth = { authenticated: true, role: "admin", roles: ["admin"] };
+    return next();
+  }
+
+  try {
+    const { defaultTokenService } = require("../identity/token_service");
+    const payload = defaultTokenService.verifyToken(providedKey, "access");
+    req.auth = { authenticated: true, role: payload.roles[0] || "viewer", roles: payload.roles, user: payload };
+    req.user = payload;
+    return next();
+  } catch {
     return res.status(403).json({
       error: "Forbidden",
       message: "Invalid API key.",
     });
   }
+}
 
-  req.auth = { authenticated: true, role: "admin" };
-  next();
+/**
+ * RBAC role authorization middleware.
+ */
+function requireRole(allowedRoles = []) {
+  const required = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+  return (req, res, next) => {
+    const userRoles = (req.auth && req.auth.roles) || (req.auth && [req.auth.role]) || ["anonymous"];
+    const hasRole = userRoles.some((r) => r === "admin" || required.includes(r));
+    if (!hasRole) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: `Access denied. Requires one of roles: ${required.join(", ")}`,
+      });
+    }
+    next();
+  };
 }
 
 module.exports = {
   apiKeyAuthMiddleware,
   requireApiKey,
+  requireRole,
   safeCompare,
   extractApiKey,
 };

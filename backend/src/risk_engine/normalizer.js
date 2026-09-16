@@ -187,6 +187,7 @@ function normalizeAlgorithm(rawName, explicitKeySize = null) {
   if (
     clean.includes("3des") ||
     clean.includes("triple-des") ||
+    clean.includes("tripledes") ||
     clean.includes("des-ede3")
   ) {
     return {

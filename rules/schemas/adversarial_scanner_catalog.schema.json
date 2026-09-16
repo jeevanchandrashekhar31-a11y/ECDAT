@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ECDAT Adversarial Scanner Assessment Catalog Schema",
+  "description": "Schema enforcing the 5-point adversarial scanner assessment mandate: attack_input, affected_component, impact, mitigation, and regression_test.",
+  "type": "object",
+  "required": [
+    "catalog_version",
+    "assessment_phase",
+    "objective",
+    "total_attack_scenarios",
+    "scenarios"
+  ],
+  "properties": {
+    "catalog_version": { "type": "string" },
+    "assessment_phase": { "type": "string" },
+    "objective": { "type": "string" },
+    "total_attack_scenarios": { "type": "integer", "minimum": 1 },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "cwe_id",
+          "attack_input",
+          "affected_component",
+          "impact",
+          "mitigation",
+          "regression_test"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ADV-SCAN-\\d{3,}$"
+          },
+          "name": { "type": "string", "minLength": 5 },
+          "cwe_id": { "type": "string", "pattern": "^CWE-\\d+$" },
+          "attack_input": {
+            "type": "object",
+            "required": ["input_type", "payload_description", "adversarial_properties"],
+            "properties": {
+              "input_type": { "type": "string" },
+              "payload_description": { "type": "string", "minLength": 10 },
+              "adversarial_properties": { "type": "array", "items": { "type": "string" } },
+              "sample_artifact_or_pattern": { "type": "string" }
+            },
+            "additionalProperties": true
+          },
+          "affected_component": {
+            "type": "object",
+            "required": ["module_path", "component_name", "subsystem"],
+            "properties": {
+              "module_path": { "type": "string" },
+              "component_name": { "type": "string" },
+              "subsystem": { "type": "string" }
+            },
+            "additionalProperties": true
+          },
+          "impact": {
+            "type": "object",
+            "required": ["severity", "failure_mode", "risk_description"],
+            "properties": {
+              "severity": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"]
+              },
+              "failure_mode": { "type": "string" },
+              "risk_description": { "type": "string", "minLength": 10 }
+            },
+            "additionalProperties": true
+          },
+          "mitigation": {
+            "type": "object",
+            "required": ["defensive_strategy", "enforcing_function_or_guard", "architectural_invariants"],
+            "properties": {
+              "defensive_strategy": { "type": "string", "minLength": 10 },
+              "enforcing_function_or_guard": { "type": "string" },
+              "architectural_invariants": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": true
+          },
+          "regression_test": {
+            "type": "object",
+            "required": ["runner", "test_file", "test_name", "deterministic_assertion"],
+            "properties": {
+              "runner": {
+                "type": "string",
+                "enum": ["pytest", "node_test"]
+              },
+              "test_file": { "type": "string" },
+              "test_name": { "type": "string" },
+              "deterministic_assertion": { "type": "string", "minLength": 10 }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

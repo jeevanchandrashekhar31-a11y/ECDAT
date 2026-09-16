@@ -1,0 +1,195 @@
+{
+  "$schema": "./schemas/policy_as_code.schema.json",
+  "id": "ecdat:policy:enterprise-master-v1",
+  "name": "ECDAT Enterprise Master Cryptographic & Post-Quantum Policy",
+  "version": "1.0.0",
+  "description": "Comprehensive enterprise cryptographic governance policy defining mandatory controls across algorithms, key sizes, protocols, certificates, PQC readiness, environments, and business units with deadline-based enforcement.",
+  "author": "ECDAT Cryptographic Governance Board",
+  "last_updated": "2026-09-13",
+  "default_action": "ALLOW",
+  "precedence": ["BLOCK", "WARN", "EXCEPTION", "ALLOW"],
+  "strict_enforcement": false,
+  "global_scope": {
+    "environments": ["production", "staging", "development", "sandbox", "dmz", "public_internet", "internal_enterprise"],
+    "applications": ["*"],
+    "business_units": ["*"]
+  },
+  "rules": [
+    {
+      "id": "RULE-ALG-BROKEN-001",
+      "name": "Prohibit Cryptographically Broken Hash and Cipher Algorithms",
+      "description": "MD5, SHA-1, DES, 3DES, RC2, RC4, and Blowfish are mathematically vulnerable and strictly prohibited across all environments.",
+      "category": "algorithm",
+      "action": "BLOCK",
+      "severity": "CRITICAL",
+      "remediation_guidance": "Migrate collision-vulnerable hashes to SHA-256/SHA-384/SHA-3 and legacy ciphers to AES-256-GCM or ChaCha20-Poly1305.",
+      "scope": {
+        "environments": ["production", "staging", "development", "sandbox", "dmz", "public_internet", "internal_enterprise"],
+        "asset_types": ["algorithm", "crypto_primitive", "cipher", "digest"]
+      },
+      "algorithms": {
+        "prohibited": ["MD5", "MD4", "MD2", "SHA-1", "SHA1", "DES", "3DES", "DES-EDE3", "RC2", "RC4", "BLOWFISH"],
+        "min_classical_security_bits": 112
+      }
+    },
+    {
+      "id": "RULE-KEY-RSA-001",
+      "name": "Minimum RSA Key Size Enforcement (Production)",
+      "description": "RSA keys with fewer than 2048 bits are vulnerable to factorization and strictly blocked in production.",
+      "category": "key_size",
+      "action": "BLOCK",
+      "severity": "CRITICAL",
+      "remediation_guidance": "Rotate RSA keys to a minimum of 2048 bits immediately, or ideally 3072/4096 bits or transition to Ed25519 / ML-DSA.",
+      "scope": {
+        "environments": ["production", "dmz", "public_internet"],
+        "asset_types": ["key", "certificate", "key_pair", "asymmetric_key"]
+      },
+      "key_sizes": {
+        "min_rsa_bits": 2048
+      }
+    },
+    {
+      "id": "RULE-KEY-BFSI-002",
+      "name": "BFSI & High Assurance Key Strength Policy",
+      "description": "Regulated BFSI applications require minimum RSA-3072 and ECC-256 bits.",
+      "category": "key_size",
+      "action": "BLOCK",
+      "severity": "HIGH",
+      "remediation_guidance": "Upgrade cryptographic keys in BFSI applications to RSA-3072+ or ECC P-256/P-384/X25519.",
+      "scope": {
+        "business_units": ["BFSI", "retail_banking", "payments", "core_banking"],
+        "environments": ["production", "staging"]
+      },
+      "key_sizes": {
+        "min_rsa_bits": 3072,
+        "min_ecc_bits": 256,
+        "min_dh_bits": 3072,
+        "min_symmetric_bits": 128,
+        "allowed_curves": ["secp256r1", "secp384r1", "prime256v1", "x25519", "ed25519"],
+        "prohibited_curves": ["secp160r1", "secp192r1", "prime192v1"]
+      }
+    },
+    {
+      "id": "RULE-PROTO-TLS-001",
+      "name": "Prohibit Insecure Protocol Versions",
+      "description": "SSLv2, SSLv3, TLS 1.0, and TLS 1.1 are deprecated by RFC 8996 and prohibited in production.",
+      "category": "protocol",
+      "action": "BLOCK",
+      "severity": "CRITICAL",
+      "remediation_guidance": "Disable legacy protocol versions in TLS terminator and require TLS 1.2 or TLS 1.3.",
+      "scope": {
+        "environments": ["production", "staging", "dmz", "public_internet"],
+        "asset_types": ["protocol", "network_endpoint", "endpoint"]
+      },
+      "protocols": {
+        "prohibited_versions": ["SSLv2", "SSLv3", "TLS 1.0", "TLS 1.1", "SSH 1.0", "SSH 1.5"],
+        "allowed_versions": ["TLS 1.2", "TLS 1.3", "SSH 2.0", "IKEv2"],
+        "prohibited_cipher_suites": ["*CBC*", "*RC4*", "*NULL*", "*EXPORT*", "*DES*"]
+      }
+    },
+    {
+      "id": "RULE-CERT-SELFSIGNED-001",
+      "name": "Prohibit Self-Signed Certificates in Production",
+      "description": "Self-signed X.509 certificates break chain of trust and are blocked in production environments.",
+      "category": "certificate",
+      "action": "BLOCK",
+      "severity": "HIGH",
+      "remediation_guidance": "Replace self-signed certificates with certificates issued by an authorized enterprise or public CA.",
+      "scope": {
+        "environments": ["production", "public_internet", "dmz"],
+        "asset_types": ["certificate"]
+      },
+      "certificates": {
+        "allow_self_signed": false,
+        "max_validity_days": 398,
+        "require_ct_logs": true,
+        "prohibited_signature_algorithms": ["SHA-1", "MD5", "MD2", "SHA1withRSA"],
+        "warn_expiry_days": 30
+      }
+    },
+    {
+      "id": "RULE-PQC-CNSA-DEADLINE-001",
+      "name": "NIST CNSA 2.0 Quantum Resistance Mandate with Phased Deadlines",
+      "description": "Mandates adoption of post-quantum cryptography (FIPS 203 ML-KEM, FIPS 204 ML-DSA, FIPS 205 SLH-DSA) with warning phase transitioning to hard blocking by 2030.",
+      "category": "pqc_requirement",
+      "action": "WARN",
+      "severity": "HIGH",
+      "remediation_guidance": "Implement hybrid post-quantum key exchange (X25519+ML-KEM-768) and prepare firmware/software signing for ML-DSA-65/87.",
+      "scope": {
+        "environments": ["production", "staging", "public_internet", "dmz"],
+        "asset_types": ["asymmetric_key", "key_exchange", "signature", "key", "certificate", "public_key"]
+      },
+      "pqc_requirements": {
+        "require_pqc": true,
+        "require_hybrid": true,
+        "allowed_pqc_algorithms": ["ML-KEM-768", "ML-KEM-1024", "ML-DSA-65", "ML-DSA-87", "SLH-DSA-SHA2-128s", "SLH-DSA-SHAKE-128s"],
+        "prohibited_classical_asymmetric": false,
+        "max_mosca_gap_years": 0.0
+      },
+      "deadlines": {
+        "deprecation_date": "2026-01-01",
+        "enforcement_date": "2030-01-01",
+        "grace_period_days": 90
+      }
+    },
+    {
+      "id": "RULE-APP-CRITICAL-AUTH-001",
+      "name": "High-Assurance Authentication Service Security",
+      "description": "Core identity and authentication applications require AES-256 and FIPS approval.",
+      "category": "application",
+      "action": "BLOCK",
+      "severity": "HIGH",
+      "remediation_guidance": "Upgrade cryptographic modules in identity provider to AES-256-GCM and FIPS-validated implementations.",
+      "scope": {
+        "applications": ["auth-service", "iam-gateway", "identity-provider", "keycloak"],
+        "environments": ["production"]
+      },
+      "algorithms": {
+        "min_classical_security_bits": 128,
+        "require_fips_approved": true
+      },
+      "key_sizes": {
+        "min_symmetric_bits": 256
+      }
+    }
+  ],
+  "exceptions": [
+    {
+      "id": "EXC-2026-LEGACY-MAINFRAME-001",
+      "rule_id": "*",
+      "asset_id": "legacy-mainframe-connector",
+      "environment": "production",
+      "application": "core-banking",
+      "business_unit": "retail_banking",
+      "reason": "Legacy IBM mainframe connector relies on RSA-1024 firmware cert scheduled for hardware decommissioning in Q4 2026.",
+      "approved_by": "CISO Office / Alex Chen",
+      "approval_date": "2026-01-15",
+      "valid_from": "2026-01-15",
+      "expires_at": "2026-12-31",
+      "compensating_controls": [
+        "Network-isolated management VLAN (VLAN 992)",
+        "mTLS termination at perimeter proxy",
+        "Dedicated packet inspection and rate limiting"
+      ],
+      "status": "APPROVED"
+    },
+    {
+      "id": "EXC-2025-EXPIRED-TEST-002",
+      "rule_id": "RULE-ALG-BROKEN-001",
+      "asset_id": "historical-checksum-archive",
+      "environment": "production",
+      "application": "doc-archive",
+      "business_unit": "operations",
+      "reason": "Temporary exception for MD5 checksum validation of historical unalterable read-only records.",
+      "approved_by": "Security Architecture / Taylor Reed",
+      "approval_date": "2025-01-01",
+      "valid_from": "2025-01-01",
+      "expires_at": "2025-12-31",
+      "compensating_controls": [
+        "Read-only storage bucket",
+        "Dual SHA-256 digest validation sidecar"
+      ],
+      "status": "EXPIRED"
+    }
+  ]
+}

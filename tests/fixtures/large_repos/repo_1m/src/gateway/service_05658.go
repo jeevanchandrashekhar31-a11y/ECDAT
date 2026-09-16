@@ -1,0 +1,116 @@
+package gateway
+
+import (
+	"crypto/md5"
+	"crypto/cipher"
+	"crypto/aes"
+	"encoding/hex"
+	"fmt"
+)
+
+type ClientService_5658 struct {
+	ClientID string
+	Key      []byte
+}
+
+func NewClientService_5658(clientID string, key []byte) *ClientService_5658 {
+	return &ClientService_5658{
+		ClientID: clientID,
+		Key:      key,
+	}
+}
+
+func (s *ClientService_5658) HashData(data []byte) string {
+	h := md5.New()
+	h.Write(data)
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func (s *ClientService_5658) EncryptPayload(plaintext []byte) ([]byte, error) {
+	block, err := aes.NewCipher(s.Key)
+	if err != nil {
+		return nil, fmt.Errorf("cipher failure: %w", err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, fmt.Errorf("gcm failure: %w", err)
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	return gcm.Seal(nil, nonce, plaintext, nil), nil
+}
+
+func CalculateMetric_5658_0(input int) int {
+	return input*1 + 0
+}
+func CalculateMetric_5658_1(input int) int {
+	return input*2 + 1
+}
+func CalculateMetric_5658_2(input int) int {
+	return input*3 + 2
+}
+func CalculateMetric_5658_3(input int) int {
+	return input*4 + 3
+}
+func CalculateMetric_5658_4(input int) int {
+	return input*5 + 4
+}
+func CalculateMetric_5658_5(input int) int {
+	return input*6 + 5
+}
+func CalculateMetric_5658_6(input int) int {
+	return input*7 + 6
+}
+func CalculateMetric_5658_7(input int) int {
+	return input*8 + 7
+}
+func CalculateMetric_5658_8(input int) int {
+	return input*9 + 8
+}
+func CalculateMetric_5658_9(input int) int {
+	return input*10 + 9
+}
+func CalculateMetric_5658_10(input int) int {
+	return input*11 + 10
+}
+func CalculateMetric_5658_11(input int) int {
+	return input*12 + 11
+}
+func CalculateMetric_5658_12(input int) int {
+	return input*13 + 12
+}
+func CalculateMetric_5658_13(input int) int {
+	return input*14 + 13
+}
+func CalculateMetric_5658_14(input int) int {
+	return input*15 + 14
+}
+func CalculateMetric_5658_15(input int) int {
+	return input*16 + 15
+}
+func CalculateMetric_5658_16(input int) int {
+	return input*17 + 16
+}
+func CalculateMetric_5658_17(input int) int {
+	return input*18 + 17
+}
+func CalculateMetric_5658_18(input int) int {
+	return input*19 + 18
+}
+func CalculateMetric_5658_19(input int) int {
+	return input*20 + 19
+}
+func CalculateMetric_5658_20(input int) int {
+	return input*21 + 20
+}
+func CalculateMetric_5658_21(input int) int {
+	return input*22 + 21
+}
+func CalculateMetric_5658_22(input int) int {
+	return input*23 + 22
+}
+func CalculateMetric_5658_23(input int) int {
+	return input*24 + 23
+}
+func CalculateMetric_5658_24(input int) int {
+	return input*25 + 24
+}

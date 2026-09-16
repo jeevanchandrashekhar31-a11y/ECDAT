@@ -18,6 +18,9 @@ optional LLM provider is an external trust boundary.
 | API abuse | Write authentication, rate limit, body limits, safe request IDs, CORS allowlist. | Single shared API key and process-local limiter are prototype constraints. |
 | Stored/reflected XSS | CBOM validation, React text rendering, escaped/sanitized static HTML, report iframe without scripts. | New UI code must preserve the no-unsafe-HTML rule. |
 | SQL injection or partial writes | Knex parameterized query APIs and transactions. | Raw SQL additions require review; database access controls are deployment-specific. |
+| XML Entity Injection / XXE | Pre-parse rejection of DOCTYPE/ENTITY declarations and payload size limits. | Malicious XML bombs are rejected before DOM parsing. |
+| Prototype Pollution | Object prototype freeze protection and explicit rejection of __proto__ / constructor keys. | Untrusted JSON cannot mutate JavaScript runtime prototypes. |
+| Private Key / Secret Leakage in Errors | CANARY_TOKEN_REGEX and multi-token secret redaction across all crash traces and exceptions. | Zero canary tokens or raw private keys in diagnostic outputs. |
 
 ## Security invariants
 
@@ -27,3 +30,7 @@ optional LLM provider is an external trust boundary.
 - Production startup requires an API key and explicit CORS origins.
 - User-controlled asset/component strings are rendered as text, never injected
   as HTML in the frontend.
+- **Regression Policy Invariant (Phase 22.4)**: Every previously fixed security
+  vulnerability gets a permanent automated regression test. Never close a security
+  bug without: (1) root cause, (2) fix, (3) test, (4) threat model update, (5) release note.
+

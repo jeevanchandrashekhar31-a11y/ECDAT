@@ -534,6 +534,140 @@ class DependencyVulnerabilityCorrelation {
   }
 }
 
+// =====================================================================
+// 15. DeveloperFeedback (Phase 13.2)
+// =====================================================================
+class DeveloperFeedback {
+  constructor({
+    location,
+    evidence = "",
+    confidence = ConfidenceLevel.HIGH,
+    severity = SeverityLevel.INFORMATIONAL,
+    whyItMatters,
+    safeFix,
+    references = [],
+    suppressionWorkflow,
+    verificationCommand,
+    isSuppressed = false,
+    suppressionReason = null,
+  }) {
+    if (!whyItMatters) throw new Error("DeveloperFeedback requires whyItMatters");
+    this.location = Object.freeze(typeof location === "object" && location !== null ? { ...location } : { formatted: String(location || "unknown") });
+    this.evidence = String(evidence);
+    this.confidence = String(confidence);
+    this.severity = String(severity);
+    this.whyItMatters = String(whyItMatters);
+    this.safeFix = Object.freeze(typeof safeFix === "object" && safeFix !== null ? { ...safeFix } : { summary: String(safeFix || "") });
+    this.references = Object.freeze([...(references || [])]);
+    this.suppressionWorkflow = Object.freeze(typeof suppressionWorkflow === "object" && suppressionWorkflow !== null ? { ...suppressionWorkflow } : { guidance: String(suppressionWorkflow || "") });
+    this.verificationCommand = String(verificationCommand || "");
+    this.isSuppressed = Boolean(isSuppressed);
+    this.suppressionReason = suppressionReason ? String(suppressionReason) : null;
+    Object.freeze(this);
+  }
+}
+
+class SarifReport {
+  constructor({
+    $schema = "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+    version = "2.1.0",
+    runs = [],
+  } = {}) {
+    this.$schema = String($schema);
+    this.version = String(version);
+    this.runs = Object.freeze([...runs]);
+    Object.freeze(this);
+  }
+}
+
+class TicketRequest {
+  constructor({
+    assetId,
+    asset_id,
+    findingId,
+    finding_id,
+    severity,
+    owner,
+    evidenceLink,
+    evidence_link,
+    remediation,
+    cbomRef,
+    cbom_ref,
+    riskScore,
+    risk_score,
+    title,
+    description,
+    metadata = {},
+  }) {
+    const finalAssetId = assetId || asset_id;
+    const finalFindingId = findingId || finding_id;
+    const finalEvidenceLink = evidenceLink || evidence_link;
+    const finalCbomRef = cbomRef || cbom_ref;
+    const finalRiskScore = riskScore !== undefined ? riskScore : risk_score;
+
+    if (!finalAssetId) throw new Error("TicketRequest requires asset ID ('assetId' or 'asset_id')");
+    if (!finalFindingId) throw new Error("TicketRequest requires finding ID ('findingId' or 'finding_id')");
+    if (!severity) throw new Error("TicketRequest requires severity");
+    if (!owner) throw new Error("TicketRequest requires owner");
+    if (!finalEvidenceLink) throw new Error("TicketRequest requires evidence link ('evidenceLink' or 'evidence_link')");
+    if (!remediation) throw new Error("TicketRequest requires remediation");
+    if (!finalCbomRef) throw new Error("TicketRequest requires CBOM reference ('cbomRef' or 'cbom_ref')");
+    if (finalRiskScore === undefined || finalRiskScore === null) {
+      throw new Error("TicketRequest requires risk score ('riskScore' or 'risk_score')");
+    }
+
+    this.assetId = String(finalAssetId);
+    this.findingId = String(finalFindingId);
+    this.severity = String(severity).toUpperCase();
+    this.owner = String(owner);
+    this.evidenceLink = String(finalEvidenceLink);
+    this.remediation = String(remediation);
+    this.cbomRef = String(finalCbomRef);
+    this.riskScore = Number(finalRiskScore);
+    this.title = title ? String(title) : `[${this.severity}] Cryptographic Finding ${this.findingId} on ${this.assetId}`;
+    this.description = description ? String(description) : "";
+    this.metadata = Object.freeze(typeof metadata === "object" && metadata !== null ? { ...metadata } : {});
+    Object.freeze(this);
+  }
+
+  toJSON() {
+    return {
+      asset_id: this.assetId,
+      finding_id: this.findingId,
+      severity: this.severity,
+      owner: this.owner,
+      evidence_link: this.evidenceLink,
+      remediation: this.remediation,
+      cbom_ref: this.cbomRef,
+      risk_score: this.riskScore,
+      title: this.title,
+      description: this.description,
+      metadata: this.metadata,
+    };
+  }
+}
+
+class TicketResponse {
+  constructor({
+    success = true,
+    ticketId,
+    ticketUrl = "",
+    connectorType,
+    status = "OPEN",
+    createdAt = new Date().toISOString(),
+    rawResponse = {},
+  }) {
+    this.success = Boolean(success);
+    this.ticketId = String(ticketId || "");
+    this.ticketUrl = String(ticketUrl || "");
+    this.connectorType = String(connectorType || "unknown");
+    this.status = String(status);
+    this.createdAt = String(createdAt);
+    this.rawResponse = Object.freeze(typeof rawResponse === "object" && rawResponse !== null ? { ...rawResponse } : {});
+    Object.freeze(this);
+  }
+}
+
 module.exports = {
   ScanType,
   ScanStatus,
@@ -548,6 +682,10 @@ module.exports = {
   CryptoImpactType,
   ExploitabilityStatus,
   DependencyVulnerabilityCorrelation,
+  DeveloperFeedback,
+  SarifReport,
+  TicketRequest,
+  TicketResponse,
   Evidence,
   Observation,
   Finding,

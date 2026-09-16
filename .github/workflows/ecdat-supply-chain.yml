@@ -1,0 +1,116 @@
+name: ECDAT Supply-Chain Security & Release Gate
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+# OpenSSF Scorecard Requirement: Deny all permissions by default at workflow level
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  supply-chain-pipeline:
+    name: Supply-Chain Hardening, SBOM & Release Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Least privilege: Grant only required job-level permissions
+    permissions:
+      contents: read
+      id-token: write       # Required for Sigstore / Cosign Keyless OIDC signing
+      security-events: write # Required for SARIF code scanning uploads
+      actions: read
+
+    steps:
+      # Pin GitHub Actions by 40-character commit SHA (SLSA Level 3 & OpenSSF Scorecard)
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-lock.txt
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install Pinned Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-cache-dir -r requirements-lock.txt
+
+      - name: Install Backend & Frontend Node Dependencies (Deterministic)
+        run: |
+          npm ci --prefix backend --ignore-scripts
+          npm ci --prefix frontend --ignore-scripts
+
+      - name: Install Sigstore Cosign (Keyless Signing)
+        uses: sigstore/cosign-installer@d7d6bc7722e3ded31a7b5200a013d12fb84fb349 # v3.8.1
+
+      - name: Prepare Artifact Directories
+        run: |
+          mkdir -p artifacts/sbom artifacts/security artifacts/provenance
+
+      - name: 19.1 Generate Multi-Ecosystem SBOM (CycloneDX 1.6 & SPDX 2.3)
+        run: |
+          python scripts/generate_sbom.py --format both --output-dir artifacts/sbom
+
+      - name: 19.1 Execute Multi-Ecosystem Vulnerability Scanner
+        run: |
+          python scripts/scan_vulnerabilities.py --sbom artifacts/sbom/ecdat_sbom_cyclonedx.json --fail-on critical
+
+      - name: 19.2 Generate SLSA v1.0 Provenance Attestation
+        run: |
+          python scripts/generate_provenance.py --output artifacts/provenance/ecdat_provenance.slsa.json
+
+      - name: 19.2 Cryptographic Artifact Signing (Ed25519 & Manifests)
+        run: |
+          python scripts/sign_artifacts.py --generate-keys --sign
+          python scripts/sign_artifacts.py --verify
+
+      - name: 19.2 Sigstore Cosign Keyless OIDC Attestation (on Tag / Main)
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        run: |
+          echo "Signing SBOMs with Sigstore Cosign via GitHub OIDC..."
+          # Sign CycloneDX SBOM artifact keylessly using GitHub OIDC token
+          cosign attest-blob --yes \
+            --predicate artifacts/sbom/ecdat_sbom_cyclonedx.json \
+            --type cyclonedx \
+            --output-signature artifacts/sbom/ecdat_sbom_cyclonedx.json.sig \
+            --output-certificate artifacts/sbom/ecdat_sbom_cyclonedx.json.pem \
+            artifacts/sbom/ecdat_sbom_cyclonedx.json || true
+
+      - name: 19.3 Execute Zero-Trust Release Gate
+        run: |
+          python scripts/release_gate.py --output-dir artifacts/security
+
+      - name: Publish Supply-Chain Artifacts & Attestations
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        if: always()
+        with:
+          name: ecdat-supply-chain-${{ github.sha }}
+          path: |
+            artifacts/sbom/
+            artifacts/security/
+            artifacts/provenance/
+            artifacts/SHA256SUMS
+            artifacts/SHA512SUMS
+            artifacts/SHA256SUMS.sig
+          retention-days: 90

@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecdat-backend
+  namespace: ecdat-control-plane
+  labels:
+    app.kubernetes.io/name: ecdat-backend
+    app.kubernetes.io/part-of: ecdat
+spec:
+  ports:
+    - port: 5000
+      targetPort: 5000
+      name: http
+  selector:
+    app.kubernetes.io/name: ecdat-backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecdat-backend
+  namespace: ecdat-control-plane
+  labels:
+    app.kubernetes.io/name: ecdat-backend
+    app.kubernetes.io/part-of: ecdat
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ecdat-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ecdat-backend
+        ecdat.io/tier: control-plane
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/backend: runtime/default
+    spec:
+      serviceAccountName: ecdat-backend-sa
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      hostNetwork: false
+      hostPID: false
+      hostIPC: false
+      containers:
+        - name: backend
+          image: ecdat/backend:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            privileged: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "5000"
+            - name: TMPDIR
+              value: "/tmp"
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: ecdat-db-credentials
+                  key: database
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ecdat-db-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ecdat-db-credentials
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@ecdat-postgres:5432/$(POSTGRES_DB)"
+            - name: ECDAT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ecdat-secrets
+                  key: api-key
+          ports:
+            - containerPort: 5000
+              name: http
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+            requests:
+              cpu: "250m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi

@@ -108,6 +108,10 @@ const config = {
   ),
   DEFAULT_SCENARIO: getEnv("DEFAULT_SCENARIO", "baseline"),
   ECDAT_API_KEY: resolveSecret(rawApiKey),
+  DATA_ENCRYPTION_KEY: resolveSecret(getEnv("DATA_ENCRYPTION_KEY", undefined)),
+  DATABASE_SSL: getEnv("DATABASE_SSL", nodeEnv === "production" ? "true" : "false") === "true",
+  DATABASE_SSL_REJECT_UNAUTHORIZED: getEnv("DATABASE_SSL_REJECT_UNAUTHORIZED", "true") === "true",
+  DATABASE_SSL_CA_PATH: getEnv("DATABASE_SSL_CA_PATH", undefined),
   REQUIRE_AUTH_FOR_READS: getEnv("REQUIRE_AUTH_FOR_READS", "false") === "true",
   REQUIRE_DATABASE_HEALTH:
     getEnv("REQUIRE_DATABASE_HEALTH", "false") === "true",

@@ -1,0 +1,391 @@
+{
+  "registry_version": "1.0.0",
+  "policy_name": "ECDAT Mandatory Security Regression & Bug Closure Policy (Phase 22.4)",
+  "enforcement_mandate": "Never close a security bug without: (1) Root cause, (2) Fix, (3) Permanent test, (4) Threat model update, (5) Release note if applicable.",
+  "regressions": [
+    {
+      "id": "SEC-REG-001",
+      "cve_or_ghsa_id": "GHSA-ecdat-cbom-xxe",
+      "title": "Billion Laughs XML Bomb & XXE Entity Resolution in CBOM Parser",
+      "severity": "critical",
+      "status": "closed_verified",
+      "affected_component": "scanners/cbom_io.py",
+      "root_cause": {
+        "technical_summary": "Unvalidated XML entity expansion in CycloneDX XML parser allowed recursive entity expansion (Billion Laughs) and local file inclusion via external entity references.",
+        "cwe_id": "CWE-611",
+        "flaw_type": "Improper Restriction of XML External Entity Reference",
+        "vulnerable_code_location": "scanners/cbom_io.py:parse_cbom_file"
+      },
+      "fix": {
+        "fix_summary": "Implemented pre-parse regex rejection of DOCTYPE / ENTITY declarations and strict XML payload bounds, safely rejecting malicious entities prior to parser evaluation.",
+        "mitigation_strategy": "Defense-in-depth: Disable all DTD evaluation and reject XML payloads containing <!ENTITY or <!DOCTYPE before DOM construction.",
+        "modified_files": [
+          "scanners/cbom_io.py",
+          "scanners/static/sanitization.py"
+        ]
+      },
+      "test": {
+        "test_file": "tests/test_security_regressions.py",
+        "test_name": "test_regression_sec_reg_001_xml_bomb_rejection",
+        "assertion_type": "rejects_xml_bomb_without_uncontrolled_recursion_or_memory_blowup",
+        "automated": true
+      },
+      "threat_model_update": {
+        "stride_category": ["Denial of Service", "Information Disclosure"],
+        "threat_model_section": "Resource exhaustion",
+        "residual_risk_impact": "XML DTD is strictly prohibited; all CBOM ingestion strictly enforces DTD rejection.",
+        "threat_model_doc_updated": true
+      },
+      "release_note": {
+        "applicable": true,
+        "advisory_summary": "Security Fix: Hardened CBOM parser against recursive XML entity expansion and unauthorized entity resolution.",
+        "version_fixed": "Phase 22.2"
+      }
+    },
+    {
+      "id": "SEC-REG-002",
+      "cve_or_ghsa_id": "GHSA-ecdat-canary-leak",
+      "title": "Raw Canary Secrets and Private Keys Echoed in Crash Diagnostics",
+      "severity": "critical",
+      "status": "closed_verified",
+      "affected_component": "scanners/static/sanitization.py",
+      "root_cause": {
+        "technical_summary": "Exception handlers in static and parser sanitizers occasionally included raw error snippets containing canary private keys or API tokens when formatting crash traces.",
+        "cwe_id": "CWE-209",
+        "flaw_type": "Generation of Error Message Containing Sensitive Information",
+        "vulnerable_code_location": "scanners/static/sanitization.py:redact_secrets"
+      },
+      "fix": {
+        "fix_summary": "Added CANARY_TOKEN_REGEX and strict regex-based multi-token redactors to sanitize all parser errors and crash outputs before writing logs or exceptions.",
+        "mitigation_strategy": "Zero-leakage invariant: All error messages, debug logs, and crash outputs pass through comprehensive token redaction replacing secrets with [REDACTED_SECRET].",
+        "modified_files": [
+          "scanners/static/sanitization.py",
+          "scanners/cbom_io.py"
+        ]
+      },
+      "test": {
+        "test_file": "tests/test_security_regressions.py",
+        "test_name": "test_regression_sec_reg_002_canary_secret_sanitization",
+        "assertion_type": "asserts_canary_tokens_never_present_in_error_message",
+        "automated": true
+      },
+      "threat_model_update": {
+        "stride_category": ["Information Disclosure"],
+        "threat_model_section": "Secret disclosure",
+        "residual_risk_impact": "Crash diagnostics sanitized unconditionally; verified by automated canary token injection tests.",
+        "threat_model_doc_updated": true
+      },
+      "release_note": {
+        "applicable": true,
+        "advisory_summary": "Security Fix: Redacted sensitive key tokens and credentials from parser error reports and diagnostic traces.",
+        "version_fixed": "Phase 22.2"
+      }
+    },
+    {
+      "id": "SEC-REG-003",
+      "cve_or_ghsa_id": "GHSA-ecdat-prototype-pollution",
+      "title": "Prototype Pollution via Malicious CBOM & Policy JSON Payloads",
+      "severity": "high",
+      "status": "closed_verified",
+      "affected_component": "backend/src/policy/policy_engine.js",
+      "root_cause": {
+        "technical_summary": "Deep merge operations on untrusted CBOM components and policy documents did not filter __proto__, constructor, or prototype properties, permitting object prototype modification.",
+        "cwe_id": "CWE-1321",
+        "flaw_type": "Improperly Controlled Modification of Object Prototype Attributes",
+        "vulnerable_code_location": "backend/src/policy/policy_engine.js:validatePolicy"
+      },
+      "fix": {
+        "fix_summary": "Implemented freeze prototype protection and explicit guards rejecting objects containing __proto__ or constructor keys.",
+        "mitigation_strategy": "Safe JSON normalization: Strip prototype-polluting keys and disallow direct assignment to object prototypes across all parser paths.",
+        "modified_files": [
+          "backend/src/policy/policy_engine.js",
+          "scanners/cbom_io.py"
+        ]
+      },
+      "test": {
+        "test_file": "tests/test_security_regressions.py",
+        "test_name": "test_regression_sec_reg_003_prototype_pollution_blocked",
+        "assertion_type": "asserts_object_prototype_unmodified_after_polluting_payload",
+        "automated": true
+      },
+      "threat_model_update": {
+        "stride_category": ["Tampering", "Elevation of Privilege"],
+        "threat_model_section": "Resource exhaustion",
+        "residual_risk_impact": "Object.prototype pollution eliminated in both Node.js backend and Python parser engines.",
+        "threat_model_doc_updated": true
+      },
+      "release_note": {
+        "applicable": true,
+        "advisory_summary": "Security Fix: Prevented prototype pollution vulnerabilities during CBOM JSON ingestion and policy evaluation.",
+        "version_fixed": "Phase 22.2"
+      }
+    },
+    {
+      "id": "SEC-REG-004",
+      "cve_or_ghsa_id": "GHSA-ecdat-redos-backtracking",
+      "title": "Catastrophic ReDoS Backtracking in Cryptographic Regex Rule Matcher",
+      "severity": "high",
+      "status": "closed_verified",
+      "affected_component": "scanners/static/regex_rules.py",
+      "root_cause": {
+        "technical_summary": "Adversarial source files containing lines exceeding 500,000 characters caused exponential regex backtracking in unbounded evidence extraction routines.",
+        "cwe_id": "CWE-1333",
+        "flaw_type": "Inefficient Regular Expression Complexity (ReDoS)",
+        "vulnerable_code_location": "scanners/static/regex_rules.py:apply_regex_rules"
+      },
+      "fix": {
+        "fix_summary": "Enforced strict MAX_LINE_LENGTH (4,096 chars) truncation and bounded MAX_EVIDENCE_LENGTH (250 chars) with finding quota limits.",
+        "mitigation_strategy": "Bounded static scanning: Hard limits on line lengths and finding counts prevent unbounded CPU consumption during regex evaluation.",
+        "modified_files": [
+          "scanners/static/regex_rules.py"
+        ]
+      },
+      "test": {
+        "test_file": "tests/test_security_regressions.py",
+        "test_name": "test_regression_sec_reg_004_redos_line_bounded",
+        "assertion_type": "asserts_execution_time_under_3_seconds_on_500k_char_line",
+        "automated": true
+      },
+      "threat_model_update": {
+        "stride_category": ["Denial of Service"],
+        "threat_model_section": "Resource exhaustion",
+        "residual_risk_impact": "All source scanning routines operate with strictly bounded line length limits.",
+        "threat_model_doc_updated": true
+      },
+      "release_note": {
+        "applicable": true,
+        "advisory_summary": "Performance & Security: Added strict bounds on line processing to prevent regular expression denial-of-service on adversarial inputs.",
+        "version_fixed": "Phase 21.3"
+      }
+    },
+    {
+      "id": "SEC-REG-005",
+      "cve_or_ghsa_id": "GHSA-ecdat-pcap-stack-overflow",
+      "title": "Uncontrolled Recursion and Memory Exhaustion in Network PCAP Parser",
+      "severity": "high",
+      "status": "closed_verified",
+      "affected_component": "scanners/network/pcap_parser.py",
+      "root_cause": {
+        "technical_summary": "Deeply nested packet encapsulation or circular packet offsets caused uncontrolled stack recursion and unbounded memory allocation in network packet analysis.",
+        "cwe_id": "CWE-674",
+        "flaw_type": "Uncontrolled Recursion",
+        "vulnerable_code_location": "scanners/network/pcap_parser.py:parse_bytes"
+      },
+      "fix": {
+        "fix_summary": "Added iterative packet traversal with bounded depth guards (max_depth=32), bounded packet size limits (10MB), and sanitized packet banner extraction.",
+        "mitigation_strategy": "Recursion bounded by explicit counters; packet parsing halts safely on unknown or circular encapsulation structures.",
+        "modified_files": [
+          "scanners/network/pcap_parser.py"
+        ]
+      },
+      "test": {
+        "test_file": "tests/test_security_regressions.py",
+        "test_name": "test_regression_sec_reg_005_pcap_deep_recursion_bounded",
+        "assertion_type": "asserts_pcap_parser_handles_deep_nesting_without_recursion_error",
+        "automated": true
+      },
+      "threat_model_update": {
+        "stride_category": ["Denial of Service"],
+        "threat_model_section": "Resource exhaustion",
+        "residual_risk_impact": "Network packet processing is strictly bounded by size and nesting depth.",
+        "threat_model_doc_updated": true
+      },
+      "release_note": {
+        "applicable": true,
+        "advisory_summary": "Security Fix: Hardened network packet parser against deep encapsulation recursion and unbounded memory usage.",
+        "version_fixed": "Phase 22.2"
+      }
+    },
+    {
+      "id": "SEC-REG-006",
+      "cve_or_ghsa_id": "GHSA-ecdat-cert-private-key",
+      "title": "Private Key Ingestion in Certificate Parser",
+      "severity": "critical",
+      "status": "closed_verified",
+      "affected_component": "scanners/network/cert_parser.py",
+      "root_cause": {
+        "technical_summary": "SafeCertParser accepted raw PEM inputs without verifying that private key material was excluded, risking inadvertent ingestion and persistence of private keys.",
+        "cwe_id": "CWE-312",
+        "flaw_type": "Cleartext Storage of Sensitive Information",
+        "vulnerable_code_location": "scanners/network/cert_parser.py:parse_cert_bytes"
+      },
+      "fix": {
+        "fix_summary": "Implemented immediate validation and rejection of any PEM certificate containing PRIVATE KEY headers, throwing SafeParserError before deserialization.",
+        "mitigation_strategy": "Strict key type gating: Certificate parser accepts only X.509 public certificates and unconditionally rejects private key blocks.",
+        "modified_files": [
+          "scanners/network/cert_parser.py"
+        ]
+      },
+      "test": {
+        "test_file": "tests/test_security_regressions.py",
+        "test_name": "test_regression_sec_reg_006_cert_parser_private_key_rejection",
+        "assertion_type": "asserts_private_key_pem_rejected_with_safe_error",
+        "automated": true
+      },
+      "threat_model_update": {
+        "stride_category": ["Information Disclosure"],
+        "threat_model_section": "Secret disclosure",
+        "residual_risk_impact": "Private keys cannot be ingested into certificate asset inventories under any circumstances.",
+        "threat_model_doc_updated": true
+      },
+      "release_note": {
+        "applicable": true,
+        "advisory_summary": "Security Fix: Enforced strict rejection of private key PEM data in certificate inventory parsers.",
+        "version_fixed": "Phase 22.2"
+      }
+    },
+    {
+      "id": "SEC-REG-007",
+      "cve_or_ghsa_id": "GHSA-ecdat-zip-slip",
+      "title": "Path Traversal & Zip Slip in Archive Decompression",
+      "severity": "critical",
+      "status": "closed_verified",
+      "affected_component": "scanners/filesystem/safe_extractor.py",
+      "root_cause": {
+        "technical_summary": "Tar and Zip archive members containing relative paths (e.g., ../../etc/passwd) could write files outside target extraction directories.",
+        "cwe_id": "CWE-22",
+        "flaw_type": "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')",
+        "vulnerable_code_location": "scanners/filesystem/safe_extractor.py:extract_archive"
+      },
+      "fix": {
+        "fix_summary": "Implemented canonical path resolution verifying that every extracted entry resolves strictly within the target directory boundary, rejecting symlink escapes.",
+        "mitigation_strategy": "Target directory containment: Validate resolved path starts with target root path before any disk write.",
+        "modified_files": [
+          "scanners/filesystem/safe_extractor.py"
+        ]
+      },
+      "test": {
+        "test_file": "tests/test_security_regressions.py",
+        "test_name": "test_regression_sec_reg_007_zip_slip_path_traversal_blocked",
+        "assertion_type": "asserts_zip_slip_members_raise_security_exception",
+        "automated": true
+      },
+      "threat_model_update": {
+        "stride_category": ["Tampering", "Elevation of Privilege"],
+        "threat_model_section": "Path traversal or symlink escape",
+        "residual_risk_impact": "Archive extraction is restricted to verified, non-escaping child paths.",
+        "threat_model_doc_updated": true
+      },
+      "release_note": {
+        "applicable": true,
+        "advisory_summary": "Security Fix: Mitigated Zip Slip directory traversal vulnerability during archive scanning.",
+        "version_fixed": "Phase 18.1"
+      }
+    },
+    {
+      "id": "SEC-REG-008",
+      "cve_or_ghsa_id": "GHSA-ecdat-tenant-isolation",
+      "title": "Cross-Tenant Cryptographic Asset Access & Isolation Leakage",
+      "severity": "high",
+      "status": "closed_verified",
+      "affected_component": "backend/src/tenancy/tenant_context.js",
+      "root_cause": {
+        "technical_summary": "Tenant context was not enforced uniformly across all database lookup queries, potentially allowing authenticated requests to read cryptographic findings belonging to another tenant.",
+        "cwe_id": "CWE-639",
+        "flaw_type": "Authorization Bypass Through User-Controlled Key",
+        "vulnerable_code_location": "backend/src/tenancy/tenant_context.js:getTenantFilter"
+      },
+      "fix": {
+        "fix_summary": "Implemented mandatory tenant context middleware and database query scoping requiring tenant_id on all query operations.",
+        "mitigation_strategy": "Multi-tenant row-level security: Enforce tenant_id parameterization across all Knex query builders.",
+        "modified_files": [
+          "backend/src/tenancy/tenant_context.js",
+          "backend/src/db/secure_query.js"
+        ]
+      },
+      "test": {
+        "test_file": "tests/test_security_regressions.py",
+        "test_name": "test_regression_sec_reg_008_cross_tenant_idor_blocked",
+        "assertion_type": "asserts_tenant_a_cannot_access_tenant_b_assets",
+        "automated": true
+      },
+      "threat_model_update": {
+        "stride_category": ["Information Disclosure", "Elevation of Privilege"],
+        "threat_model_section": "API abuse",
+        "residual_risk_impact": "Tenancy isolation verified by multi-tenant automated boundary tests.",
+        "threat_model_doc_updated": true
+      },
+      "release_note": {
+        "applicable": true,
+        "advisory_summary": "Security Fix: Strengthened multi-tenant boundary checks preventing cross-tenant cryptographic data access.",
+        "version_fixed": "Phase 20.1"
+      }
+    },
+    {
+      "id": "SEC-REG-009",
+      "cve_or_ghsa_id": "GHSA-ecdat-policy-leak",
+      "title": "Policy Engine Schema Error Message Secret Leakage",
+      "severity": "medium",
+      "status": "closed_verified",
+      "affected_component": "scanners/policy_engine.py",
+      "root_cause": {
+        "technical_summary": "jsonschema validation error exceptions included raw string contents of invalid fields, which could expose canary credentials embedded in malformed policies.",
+        "cwe_id": "CWE-209",
+        "flaw_type": "Generation of Error Message Containing Sensitive Information",
+        "vulnerable_code_location": "scanners/policy_engine.py:evaluate_policy"
+      },
+      "fix": {
+        "fix_summary": "Wrapped policy engine validation exceptions in redact_secrets, ensuring no secret tokens appear in policy validation failure diagnostics.",
+        "mitigation_strategy": "Sanitize all jsonschema.ValidationError instances with redact_secrets prior to returning policy verdicts.",
+        "modified_files": [
+          "scanners/policy_engine.py"
+        ]
+      },
+      "test": {
+        "test_file": "tests/test_security_regressions.py",
+        "test_name": "test_regression_sec_reg_009_policy_validation_error_redaction",
+        "assertion_type": "asserts_policy_validation_error_redacts_tokens",
+        "automated": true
+      },
+      "threat_model_update": {
+        "stride_category": ["Information Disclosure"],
+        "threat_model_section": "Secret disclosure",
+        "residual_risk_impact": "Policy schema error messages are fully sanitized against credential exposure.",
+        "threat_model_doc_updated": true
+      },
+      "release_note": {
+        "applicable": true,
+        "advisory_summary": "Security Fix: Sanitized error outputs in policy engine to prevent accidental credential leakage in audit logs.",
+        "version_fixed": "Phase 22.2"
+      }
+    },
+    {
+      "id": "SEC-REG-010",
+      "cve_or_ghsa_id": "GHSA-ecdat-jwt-none",
+      "title": "JWT Algorithm Confusion & 'none' Algorithm Bypass",
+      "severity": "critical",
+      "status": "closed_verified",
+      "affected_component": "backend/src/middleware/auth.js",
+      "root_cause": {
+        "technical_summary": "JWT verification did not explicitly restrict allowed algorithms, allowing token headers specifying algorithm 'none' or public-key-to-HMAC confusion to forge authentication claims.",
+        "cwe_id": "CWE-327",
+        "flaw_type": "Use of a Broken or Risky Cryptographic Algorithm",
+        "vulnerable_code_location": "backend/src/middleware/auth.js:authenticateToken"
+      },
+      "fix": {
+        "fix_summary": "Hardcoded allowed algorithm list strictly to ['HS256', 'RS256'] and explicitly rejected tokens specifying 'none' or mismatched key types.",
+        "mitigation_strategy": "Strict JWT algorithm pinning: Disallow unsigned tokens and enforce signature verification with configured algorithm.",
+        "modified_files": [
+          "backend/src/middleware/auth.js"
+        ]
+      },
+      "test": {
+        "test_file": "tests/test_security_regressions.py",
+        "test_name": "test_regression_sec_reg_010_jwt_algorithm_pinning_and_none_rejection",
+        "assertion_type": "asserts_jwt_with_none_algorithm_returns_401",
+        "automated": true
+      },
+      "threat_model_update": {
+        "stride_category": ["Spoofing", "Elevation of Privilege"],
+        "threat_model_section": "API abuse",
+        "residual_risk_impact": "JWT verification explicitly pins expected algorithms and blocks unsigned tokens.",
+        "threat_model_doc_updated": true
+      },
+      "release_note": {
+        "applicable": true,
+        "advisory_summary": "Security Fix: Enforced strict cryptographic algorithm pinning for JWT authentication tokens.",
+        "version_fixed": "Phase 19.2"
+      }
+    }
+  ]
+}

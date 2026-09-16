@@ -1,0 +1,215 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ECDATPolicyAsCode",
+  "description": "JSON Schema for ECDAT Enterprise Policy-as-Code and Governance (Phase 11)",
+  "type": "object",
+  "required": ["version", "id", "name", "rules"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+(:[a-zA-Z0-9_.-]+)*$"
+    },
+    "name": { "type": "string", "minLength": 3, "maxLength": 128 },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?$"
+    },
+    "description": { "type": "string" },
+    "author": { "type": "string" },
+    "last_updated": { "type": "string" },
+    "default_action": {
+      "type": "string",
+      "enum": ["ALLOW", "WARN", "BLOCK"],
+      "default": "ALLOW"
+    },
+    "precedence": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["BLOCK", "WARN", "EXCEPTION", "ALLOW"]
+      },
+      "default": ["BLOCK", "WARN", "EXCEPTION", "ALLOW"]
+    },
+    "strict_enforcement": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, BLOCK actions cannot be bypassed by exceptions in production"
+    },
+    "global_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "environments": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "applications": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "business_units": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "category", "action"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": [
+              "algorithm",
+              "key_size",
+              "protocol",
+              "certificate",
+              "pqc_requirement",
+              "environment",
+              "application",
+              "business_unit",
+              "custom"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": ["BLOCK", "WARN", "ALLOW"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
+            "default": "HIGH"
+          },
+          "remediation_guidance": { "type": "string" },
+          "scope": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "environments": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "applications": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "business_units": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "asset_types": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "algorithms": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "allowed": { "type": "array", "items": { "type": "string" } },
+              "prohibited": { "type": "array", "items": { "type": "string" } },
+              "deprecated": { "type": "array", "items": { "type": "string" } },
+              "min_classical_security_bits": { "type": "integer", "minimum": 0 },
+              "require_quantum_resistant": { "type": "boolean" },
+              "require_fips_approved": { "type": "boolean" }
+            }
+          },
+          "key_sizes": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "min_rsa_bits": { "type": "integer", "minimum": 0 },
+              "min_ecc_bits": { "type": "integer", "minimum": 0 },
+              "min_dh_bits": { "type": "integer", "minimum": 0 },
+              "min_symmetric_bits": { "type": "integer", "minimum": 0 },
+              "allowed_curves": { "type": "array", "items": { "type": "string" } },
+              "prohibited_curves": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "protocols": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "allowed_versions": { "type": "array", "items": { "type": "string" } },
+              "prohibited_versions": { "type": "array", "items": { "type": "string" } },
+              "allowed_cipher_suites": { "type": "array", "items": { "type": "string" } },
+              "prohibited_cipher_suites": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "certificates": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "allow_self_signed": { "type": "boolean" },
+              "max_validity_days": { "type": "integer", "minimum": 1 },
+              "require_ct_logs": { "type": "boolean" },
+              "allowed_signature_algorithms": { "type": "array", "items": { "type": "string" } },
+              "prohibited_signature_algorithms": { "type": "array", "items": { "type": "string" } },
+              "warn_expiry_days": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "pqc_requirements": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "require_pqc": { "type": "boolean" },
+              "require_hybrid": { "type": "boolean" },
+              "allowed_pqc_algorithms": { "type": "array", "items": { "type": "string" } },
+              "prohibited_classical_asymmetric": { "type": "boolean" },
+              "max_mosca_gap_years": { "type": "number" }
+            }
+          },
+          "deadlines": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "deprecation_date": { "type": "string" },
+              "enforcement_date": { "type": "string" },
+              "grace_period_days": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "reason", "approved_by", "valid_from", "expires_at", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "rule_id": { "type": "string", "default": "*" },
+          "asset_id": { "type": "string", "default": "*" },
+          "environment": { "type": "string", "default": "*" },
+          "application": { "type": "string", "default": "*" },
+          "business_unit": { "type": "string", "default": "*" },
+          "reason": { "type": "string", "minLength": 5 },
+          "approved_by": { "type": "string", "minLength": 2 },
+          "approval_date": { "type": "string" },
+          "valid_from": { "type": "string" },
+          "expires_at": { "type": "string" },
+          "compensating_controls": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": []
+          },
+          "status": {
+            "type": "string",
+            "enum": ["APPROVED", "PENDING", "REJECTED", "EXPIRED"],
+            "default": "APPROVED"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ecdat-scanner
+  namespace: ecdat-control-plane
+  labels:
+    app.kubernetes.io/name: ecdat-scanner
+    app.kubernetes.io/part-of: ecdat
+spec:
+  schedule: "0 2 * * *" # Daily at 02:00 UTC
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: ecdat-scanner
+            ecdat.io/tier: control-plane
+          annotations:
+            container.apparmor.security.beta.kubernetes.io/scanner: runtime/default
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: ecdat-scanner-sa
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          hostNetwork: false
+          hostPID: false
+          hostIPC: false
+          containers:
+            - name: scanner
+              image: ecdat/scanner:latest
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                privileged: false
+                capabilities:
+                  drop:
+                    - ALL
+              command: ["python", "-m", "scanners.static.main", "/workspace", "--output", "/tmp/cbom.json"]
+              resources:
+                limits:
+                  cpu: "1500m"
+                  memory: "1024Mi"
+                requests:
+                  cpu: "500m"
+                  memory: "256Mi"
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+                - name: workspace
+                  mountPath: /workspace
+                  readOnly: true
+          volumes:
+            - name: tmp
+              emptyDir:
+                medium: Memory
+                sizeLimit: 128Mi
+            - name: workspace
+              emptyDir: {}

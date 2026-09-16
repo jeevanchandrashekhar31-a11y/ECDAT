@@ -37,6 +37,7 @@ def main():
     )
     parser.add_argument("--max-file-size-mb", type=int, default=5, help="Maximum file size to scan in MB")
     parser.add_argument("--max-files", type=int, default=10000, help="Maximum eligible files to scan (1-10000)")
+    parser.add_argument("--max-depth", type=int, default=25, help="Maximum directory traversal depth (default: 25)")
     parser.add_argument(
         "--rules", default="rules/static_rules.json", help="Path to external rules JSON (Placeholder for future)"
     )
@@ -61,12 +62,21 @@ def main():
         parser.error("--max-file-size-mb must be between 1 and 100")
     if not 1 <= args.max_files <= 10000:
         parser.error("--max-files must be between 1 and 10000")
+    if not 1 <= args.max_depth <= 100:
+        parser.error("--max-depth must be between 1 and 100")
 
     include_exts = set(args.include_ext.split(","))
     exclude_dirs = set(args.exclude_dir.split(","))
     max_size_bytes = args.max_file_size_mb * 1024 * 1024
 
-    discovery = FileDiscovery(args.target_dir, include_exts, exclude_dirs, max_size_bytes, args.max_files)
+    discovery = FileDiscovery(
+        args.target_dir,
+        include_exts,
+        exclude_dirs,
+        max_size_bytes,
+        max_files=args.max_files,
+        max_depth=args.max_depth,
+    )
 
     try:
         files_to_scan = discovery.discover_files()
@@ -142,7 +152,9 @@ def main():
             if key_algo not in final_file_findings:
                 final_file_findings[key_algo] = sf
 
-        findings.extend(list(final_file_findings.values()))
+        # Cap findings per file to 500 to prevent memory blowup on generated-code explosions
+        file_results = list(final_file_findings.values())[:500]
+        findings.extend(file_results)
 
     print(f"Found {len(findings)} potential cryptographic usage sites.")
 

@@ -67,6 +67,8 @@ function createCorsMiddleware() {
       "Authorization",
       "X-Request-Id",
       "X-API-Key",
+      "X-CSRF-Token",
+      "X-Tenant-Id",
     ],
   });
 }

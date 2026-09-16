@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "description": "ECDAT Documented Severity Overrides & Cryptographic Evidence Ledger",
+  "overrides": [
+    {
+      "finding_id": "GHSA-82fw-gwwq-j7x9",
+      "package": "vitest",
+      "base_severity": "HIGH",
+      "overridden_severity": "LOW",
+      "evidence_type": "reachability_analysis",
+      "evidence_document_uri": "docs/security/evidence/vitest_reachability_evidence.md",
+      "evidence_sha256": "8f3700b4ca51ade15727e124fa9d58884e8382fcf302b1cf127c544ab82749e1",
+      "justification": "Dependency is strictly in devDependencies and excluded from runtime containers via npm ci --omit=dev; vulnerable redirect method is unreachable in production.",
+      "approved_by": "ECDAT Security Architecture Team",
+      "approved_at": "2026-09-15T00:00:00Z",
+      "expires_at": "2027-12-31T23:59:59Z"
+    }
+  ]
+}

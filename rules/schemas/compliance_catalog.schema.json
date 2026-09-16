@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ECDATComplianceCatalog",
+  "description": "JSON Schema for ECDAT Evidence-Based Compliance Mapping Catalog (Phase 11.3)",
+  "type": "object",
+  "required": ["version", "standards"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "last_updated": { "type": "string" },
+    "disclaimer": { "type": "string" },
+    "support_levels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["SUPPORTED CONTROL", "PARTIAL SUPPORT", "NOT SUPPORTED"]
+      }
+    },
+    "standards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "version", "publisher", "controls"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "publisher": { "type": "string" },
+          "description": { "type": "string" },
+          "controls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["control_id", "title", "support_level", "description"],
+              "additionalProperties": false,
+              "properties": {
+                "control_id": { "type": "string" },
+                "title": { "type": "string" },
+                "description": { "type": "string" },
+                "support_level": {
+                  "type": "string",
+                  "enum": ["SUPPORTED CONTROL", "PARTIAL SUPPORT", "NOT SUPPORTED"]
+                },
+                "category": { "type": "string" },
+                "target_assets": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "evaluation_criteria": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "prohibited_algorithms": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "allowed_algorithms": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "min_rsa_bits": { "type": "integer" },
+                    "min_ecc_bits": { "type": "integer" },
+                    "min_dh_bits": { "type": "integer" },
+                    "min_dsa_bits": { "type": "integer" },
+                    "min_symmetric_bits": { "type": "integer" },
+                    "allowed_protocols": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "prohibited_protocols": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "require_pqc": { "type": "boolean" },
+                    "require_ct_logs": { "type": "boolean" },
+                    "allow_self_signed": { "type": "boolean" },
+                    "max_validity_days": { "type": "integer" }
+                  }
+                },
+                "automated_evidence_sources": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "manual_audit_guidance": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

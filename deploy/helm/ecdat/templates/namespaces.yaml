@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.global.controlPlaneNamespace }}
+  labels:
+    {{- include "ecdat.labels" . | nindent 4 }}
+    ecdat.io/tier: control-plane
+    pod-security.kubernetes.io/enforce: {{ .Values.podSecurityStandards.controlPlane.enforce }}
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: {{ .Values.podSecurityStandards.controlPlane.audit }}
+    pod-security.kubernetes.io/warn: {{ .Values.podSecurityStandards.controlPlane.warn }}
+---
+{{- if .Values.ebpfAgent.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.global.runtimeNamespace }}
+  labels:
+    {{- include "ecdat.labels" . | nindent 4 }}
+    ecdat.io/tier: runtime-agent
+    pod-security.kubernetes.io/enforce: {{ .Values.podSecurityStandards.runtime.enforce }}
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: {{ .Values.podSecurityStandards.runtime.audit }}
+    pod-security.kubernetes.io/warn: {{ .Values.podSecurityStandards.runtime.warn }}
+{{- end }}

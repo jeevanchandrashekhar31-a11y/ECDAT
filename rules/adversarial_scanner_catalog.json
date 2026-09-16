@@ -1,0 +1,608 @@
+{
+  "catalog_version": "1.0.0",
+  "assessment_phase": "Phase 23.2 Adversarial Scanner Assessment",
+  "objective": "Attempt to make ECDAT fail using hostile scan inputs for defensive validation and record attack input, affected component, impact, mitigation, and permanent regression test.",
+  "total_attack_scenarios": 15,
+  "scenarios": [
+    {
+      "id": "ADV-SCAN-001",
+      "name": "Zip Slip Archive Directory Traversal Attack",
+      "cwe_id": "CWE-22",
+      "attack_input": {
+        "input_type": "Hostile ZIP Archive",
+        "payload_description": "Crafted ZIP archive containing relative path traversal entries (e.g. '../../etc/cron.d/evil' and '..\\..\\windows\\system32\\calc.exe') and null byte terminations.",
+        "adversarial_properties": [
+          "Parent directory escape markers (../ and ..\\)",
+          "Null byte injection in entry name (evil.sh\\0.txt)",
+          "Absolute file paths (/etc/shadow, C:\\boot.ini)"
+        ],
+        "sample_artifact_or_pattern": "archive_zipslip_traversal.zip"
+      },
+      "affected_component": {
+        "module_path": "scanners.common.archive_guard",
+        "component_name": "ArchiveSecurityGuard",
+        "subsystem": "Archive Ingestion & Decompression"
+      },
+      "impact": {
+        "severity": "critical",
+        "failure_mode": "Arbitrary File Overwrite & Remote Code Execution",
+        "risk_description": "If unmitigated, extraction of hostile archives allows writing outside the sandboxed extraction root, overwriting critical binaries, configurations, or system cron jobs."
+      },
+      "mitigation": {
+        "defensive_strategy": "Pre-extraction canonical path containment check using Path.resolve() and strict root boundary validation with null-byte rejection.",
+        "enforcing_function_or_guard": "ArchiveSecurityGuard._validate_path_containment",
+        "architectural_invariants": [
+          "Zero extraction outside isolated temporary destination folder",
+          "PathTraversalError raised deterministically before file handle creation",
+          "Immediate abort on null byte in member name"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_001_zip_slip_traversal_defended",
+        "deterministic_assertion": "Asserts PathTraversalError is raised and zero bytes are written outside target extract directory."
+      }
+    },
+    {
+      "id": "ADV-SCAN-002",
+      "name": "Decompression Bomb / Zip Bomb Denial of Service",
+      "cwe_id": "CWE-409",
+      "attack_input": {
+        "input_type": "Compressed Archive Bomb",
+        "payload_description": "Highly compressed zip bomb containing repeating zeroes with a compression ratio exceeding 1000:1 (e.g. 10 KB file expanding to > 50 GB).",
+        "adversarial_properties": [
+          "Excessive compression ratio (> 100:1)",
+          "Gigantic uncompressed size headers (> 100 MB)",
+          "Recursive / nested zip archive bombs"
+        ],
+        "sample_artifact_or_pattern": "archive_decompression_bomb.zip"
+      },
+      "affected_component": {
+        "module_path": "scanners.common.archive_guard",
+        "component_name": "ArchiveSecurityGuard",
+        "subsystem": "Archive Ingestion & Decompression"
+      },
+      "impact": {
+        "severity": "high",
+        "failure_mode": "Uncontrolled Resource Consumption & Disk/Memory Exhaustion",
+        "risk_description": "Decompression bombs rapidly exhaust available disk space and virtual memory, causing host kernel panic or denial of service to the scanning worker."
+      },
+      "mitigation": {
+        "defensive_strategy": "Strict pre-read ratio calculation, individual member size limits (25MB), total uncompressed byte limits (100MB), and file count caps (1,000 files).",
+        "enforcing_function_or_guard": "ArchiveSecurityGuard._prevalidate_zip_archive",
+        "architectural_invariants": [
+          "Max compression ratio capped at 100.0:1",
+          "Max uncompressed bytes strictly clamped to 100 MB",
+          "DecompressionBombError raised prior to disk allocation"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_002_decompression_bomb_defended",
+        "deterministic_assertion": "Asserts DecompressionBombError is raised when compression ratio or uncompressed size limits are exceeded."
+      }
+    },
+    {
+      "id": "ADV-SCAN-003",
+      "name": "Billion Laughs XML Entity Expansion Bomb in CBOM/SBOM",
+      "cwe_id": "CWE-611",
+      "attack_input": {
+        "input_type": "Adversarial XML Document",
+        "payload_description": "CycloneDX XML document containing recursive exponential entity declarations (lol1 expands to 10 lol, lol2 to 10 lol1, ..., lol9 to 10 lol8) generating gigabytes in memory.",
+        "adversarial_properties": [
+          "Nested XML DTD entity expansion",
+          "Exponential memory blowup (&lol9;)",
+          "External system entity (XXE) URI injection (file:///etc/passwd)"
+        ],
+        "sample_artifact_or_pattern": "cbom_billion_laughs.xml"
+      },
+      "affected_component": {
+        "module_path": "scanners.cbom_io",
+        "component_name": "read_cbom_file",
+        "subsystem": "CBOM XML Parser & Normalizer"
+      },
+      "impact": {
+        "severity": "high",
+        "failure_mode": "Parser Crash / Memory Blowup / Server Hang",
+        "risk_description": "Unrestricted XML entity parsing triggers uncontrolled memory growth leading to process termination (OOM kill) and potential local file disclosure via XXE."
+      },
+      "mitigation": {
+        "defensive_strategy": "Strict enforcement of defusedxml library with DTD entity resolution and external entity loading disabled at the parser layer.",
+        "enforcing_function_or_guard": "defusedxml.minidom.parseString / defusedxml.ElementTree",
+        "architectural_invariants": [
+          "Standard xml.dom.minidom and xml.etree.ElementTree are completely forbidden",
+          "Entity expansion raises DefusedXmlException and aborts safely",
+          "External network/file entity loading is permanently disabled"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_003_billion_laughs_xml_bomb_defended",
+        "deterministic_assertion": "Asserts defusedxml catches entity expansion and raises DefusedXmlException without memory growth."
+      }
+    },
+    {
+      "id": "ADV-SCAN-004",
+      "name": "ReDoS Catastrophic Backtracking Cryptographic Pattern",
+      "cwe_id": "CWE-1333",
+      "attack_input": {
+        "input_type": "Adversarial Source Code File",
+        "payload_description": "Crafted source code containing long repeating strings with trailing non-matching characters (e.g. 50,000 characters of 'a' followed by '!') designed to trigger polynomial or exponential backtracking.",
+        "adversarial_properties": [
+          "Repeated overlapping capture groups",
+          "Nested quantifiers in regular expressions",
+          "Long non-matching string suffixes"
+        ],
+        "sample_artifact_or_pattern": "adversarial_redos_trigger.py"
+      },
+      "affected_component": {
+        "module_path": "scanners.static.regex_rules",
+        "component_name": "apply_regex_rules",
+        "subsystem": "Static Cryptographic Rule Matcher"
+      },
+      "impact": {
+        "severity": "medium",
+        "failure_mode": "CPU Thread Starvation & Worker Hang",
+        "risk_description": "Catastrophic regex backtracking monopolizes 100% CPU on worker threads, causing scan timeouts and stalling scanner pipelines."
+      },
+      "mitigation": {
+        "defensive_strategy": "Pre-line length truncation (MAX_LINE_LENGTH = 10,000 chars), non-backtracking regex compilation, and bounded match timeouts.",
+        "enforcing_function_or_guard": "scanners.static.regex_rules.apply_regex_rules",
+        "architectural_invariants": [
+          "Lines longer than MAX_LINE_LENGTH are truncated or segmented before regex scanning",
+          "Regex execution time is bounded and deterministic (< 100ms)",
+          "Non-backtracking atomic groups and possessive patterns applied"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_004_redos_backtracking_defended",
+        "deterministic_assertion": "Asserts regex evaluation of 50,000-char repeating adversarial string completes in under 50ms."
+      }
+    },
+    {
+      "id": "ADV-SCAN-005",
+      "name": "Deeply Nested CBOM/SBOM Recursion Bomb (>64 levels)",
+      "cwe_id": "CWE-674",
+      "attack_input": {
+        "input_type": "Adversarial JSON Payload",
+        "payload_description": "JSON CBOM payload with 100+ levels of recursively nested sub-components designed to exhaust call stack limits during deserialization or traversal.",
+        "adversarial_properties": [
+          "Recursive object nesting beyond call stack frames (> 64 levels)",
+          "Deeply nested arrays of cryptographic dependencies",
+          "Circular self-referential graph pointers"
+        ],
+        "sample_artifact_or_pattern": "deeply_nested_cbom.json"
+      },
+      "affected_component": {
+        "module_path": "backend.src.services.cbom_validation",
+        "component_name": "validateCbomStructure",
+        "subsystem": "Backend CBOM Ingestion Pipeline"
+      },
+      "impact": {
+        "severity": "high",
+        "failure_mode": "Call Stack Overflow & Process Termination",
+        "risk_description": "Recursive tree traversal without recursion depth limits crashes Node.js with 'RangeError: Maximum call stack size exceeded'."
+      },
+      "mitigation": {
+        "defensive_strategy": "Iterative stack traversal with strict MAX_NESTING_DEPTH = 64 check and visited reference tracking.",
+        "enforcing_function_or_guard": "validateCbomStructure.checkDepthAndKeys",
+        "architectural_invariants": [
+          "Nesting depth strictly capped at 64 levels",
+          "Depth violations return structured error response without crashing",
+          "Cycle detection prevents infinite loop traversal"
+        ]
+      },
+      "regression_test": {
+        "runner": "node_test",
+        "test_file": "backend/tests/security/adversarial_scanner_assessment.test.js",
+        "test_name": "test_adv_scan_005_deep_json_recursion_defended",
+        "deterministic_assertion": "Asserts validateCbomStructure detects 70-level object and returns validation error containing 'exceeds 64 levels'."
+      }
+    },
+    {
+      "id": "ADV-SCAN-006",
+      "name": "Embedded Private Key Trap in Public Certificate Files",
+      "cwe_id": "CWE-312",
+      "attack_input": {
+        "input_type": "Hostile PEM Bundle",
+        "payload_description": "Public certificate file containing embedded RSA/EC/ED25519 private key blocks (-----BEGIN PRIVATE KEY-----) concatenated into certificate fields or diagnostic extensions.",
+        "adversarial_properties": [
+          "Embedded private key block in cert bundle",
+          "Encrypted private key concatenated with public cert",
+          "Hostile attempt to make scanner ingest or display private key material"
+        ],
+        "sample_artifact_or_pattern": "cert_with_embedded_private_key.pem"
+      },
+      "affected_component": {
+        "module_path": "scanners.network.cert_parser",
+        "component_name": "CertificateParser",
+        "subsystem": "Network & Local Certificate Scanner"
+      },
+      "impact": {
+        "severity": "high",
+        "failure_mode": "Private Key Ingestion & Leakage in Inventory/BOM",
+        "risk_description": "Ingesting private keys into CBOM inventory leads to secret persistence, report exposure, and violation of the zero-secret invariant."
+      },
+      "mitigation": {
+        "defensive_strategy": "Pre-parse private key detection, immediate zeroization, stripping of private key blocks, and logging of security warnings.",
+        "enforcing_function_or_guard": "CertificateParser._scrub_private_keys",
+        "architectural_invariants": [
+          "Private key blocks are never stored in CBOM certificates",
+          "Detection triggers sanitization without crashing the scanner",
+          "Scanner inventories only public metadata (subject, issuer, algorithm, key size)"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_006_private_key_trap_in_cert_defended",
+        "deterministic_assertion": "Asserts certificate parser scrubs private key block and does not include it in certificate inventory."
+      }
+    },
+    {
+      "id": "ADV-SCAN-007",
+      "name": "Truncated & Malformed ASN.1 DER Certificate Payload",
+      "cwe_id": "CWE-1287",
+      "attack_input": {
+        "input_type": "Malformed Binary Certificate",
+        "payload_description": "Truncated X.509 DER byte stream with invalid ASN.1 length headers (e.g. declared length 0xFFFF with 10 bytes payload) designed to trigger parser buffer overreads.",
+        "adversarial_properties": [
+          "ASN.1 length byte mismatch",
+          "Premature EOF in DER sequence",
+          "Invalid ASN.1 OID encoding"
+        ],
+        "sample_artifact_or_pattern": "malformed_asn1_cert.der"
+      },
+      "affected_component": {
+        "module_path": "scanners.network.cert_parser",
+        "component_name": "CertificateParser",
+        "subsystem": "Certificate Parsing Subsystem"
+      },
+      "impact": {
+        "severity": "medium",
+        "failure_mode": "Parser Crash / Unhandled Cryptography Exception",
+        "risk_description": "Malformed ASN.1 structures can crash unhardened parsers or abort scanner pipelines unexpectedly."
+      },
+      "mitigation": {
+        "defensive_strategy": "Defensive try-except wrapper around pyca/cryptography x509 loader returning structured error diagnostic without scanner abort.",
+        "enforcing_function_or_guard": "CertificateParser.parse_der_bytes",
+        "architectural_invariants": [
+          "Malformed certificates are recorded as scan errors with non-fatal status",
+          "Buffer boundaries strictly checked before slicing bytes",
+          "No unhandled exceptions bubble up to CI runner"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_007_truncated_asn1_cert_defended",
+        "deterministic_assertion": "Asserts parse_der_bytes gracefully returns parsing error without crashing."
+      }
+    },
+    {
+      "id": "ADV-SCAN-008",
+      "name": "Deeply Encapsulated PCAP Packet Loop / Recursion Attack",
+      "cwe_id": "CWE-674",
+      "attack_input": {
+        "input_type": "Hostile PCAP Capture",
+        "payload_description": "Crafted PCAP capture file containing packets with 100+ nested tunnel encapsulations (e.g. GRE inside IP inside GRE inside IP...) or malformed header length fields.",
+        "adversarial_properties": [
+          "Extreme encapsulation depth (> 16 tunnel layers)",
+          "Cyclic tunnel encapsulation headers",
+          "Oversized packet length declaring 4GB payload"
+        ],
+        "sample_artifact_or_pattern": "recursive_tunnels.pcap"
+      },
+      "affected_component": {
+        "module_path": "scanners.network.pcap_parser",
+        "component_name": "SafePcapParser",
+        "subsystem": "PCAP Network Traffic Scanner"
+      },
+      "impact": {
+        "severity": "medium",
+        "failure_mode": "Recursion Limit Exceeded / CPU Lockup",
+        "risk_description": "Deep packet parsing loops lead to Python RecursionError or unbounded CPU consumption processing fake tunnels."
+      },
+      "mitigation": {
+        "defensive_strategy": "Hard limit on packet encapsulation depth (MAX_ENCAPSULATION_DEPTH = 8) and strict per-packet memory bounds.",
+        "enforcing_function_or_guard": "SafePcapParser._dissect_packet_layers",
+        "architectural_invariants": [
+          "Layer parsing terminates at depth 8 with safe warning",
+          "Malformed lengths drop the packet and continue scanning",
+          "Zero memory allocation based on untrusted packet length headers"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_008_deep_pcap_encapsulation_defended",
+        "deterministic_assertion": "Asserts SafePcapParser caps layer parsing at max depth and processes remaining packets safely."
+      }
+    },
+    {
+      "id": "ADV-SCAN-009",
+      "name": "Generated Code Explosion (500,000-character Single Line)",
+      "cwe_id": "CWE-400",
+      "attack_input": {
+        "input_type": "Hostile Minified Source Code",
+        "payload_description": "Single-line JavaScript/Python file with 500,000 characters without newlines, packing thousands of concatenated crypto calls and strings.",
+        "adversarial_properties": [
+          "Gigantic single-line length (500 KB on 1 line)",
+          "Multiple regex matches on single line",
+          "Excessive snippet extract memory expansion"
+        ],
+        "sample_artifact_or_pattern": "explosion_single_line.js"
+      },
+      "affected_component": {
+        "module_path": "scanners.static.discovery",
+        "component_name": "FileDiscovery / regex_rules",
+        "subsystem": "Static File Ingestion & Evidence Extractor"
+      },
+      "impact": {
+        "severity": "medium",
+        "failure_mode": "Evidence Buffer Bloat & Line Splitter OOM",
+        "risk_description": "Extracting evidence snippets from 500,000-character lines bloats CBOM findings and report sizes into megabytes per finding."
+      },
+      "mitigation": {
+        "defensive_strategy": "MAX_EVIDENCE_LENGTH clamp (200 characters) and line truncation before regex scanning.",
+        "enforcing_function_or_guard": "scanners.static.regex_rules.apply_regex_rules",
+        "architectural_invariants": [
+          "Evidence snippets are strictly clamped to MAX_EVIDENCE_LENGTH",
+          "Line processing memory is bounded by character limits",
+          "Findings contain clean truncated evidence markers"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_009_generated_code_explosion_defended",
+        "deterministic_assertion": "Asserts findings on 500,000-character line clamp evidence snippets to <= 200 characters."
+      }
+    },
+    {
+      "id": "ADV-SCAN-010",
+      "name": "Circular Symlink Loops & Self-Referential Directories",
+      "cwe_id": "CWE-59",
+      "attack_input": {
+        "input_type": "Hostile Filesystem Structure",
+        "payload_description": "Directory structure containing circular symbolic links (e.g. link_a -> link_b -> link_a and parent_dir/loop -> parent_dir) designed to induce infinite traversal loops.",
+        "adversarial_properties": [
+          "Circular directory symlinks",
+          "Deeply recursive relative link chains",
+          "Links pointing outside project workspace"
+        ],
+        "sample_artifact_or_pattern": "circular_symlink_dir"
+      },
+      "affected_component": {
+        "module_path": "scanners.static.discovery",
+        "component_name": "FileDiscovery",
+        "subsystem": "Filesystem Discovery Engine"
+      },
+      "impact": {
+        "severity": "medium",
+        "failure_mode": "Infinite Loop & Unbounded Directory Crawl",
+        "risk_description": "Scanner follows circular symlinks indefinitely until disk recursion limit or process memory exhausts."
+      },
+      "mitigation": {
+        "defensive_strategy": "Visited realpath / inode tracking and strict exclusion of unresolved symlinks pointing outside scan root.",
+        "enforcing_function_or_guard": "FileDiscovery.discover_files",
+        "architectural_invariants": [
+          "Every directory realpath is tracked in a visited set",
+          "Symlinks are never traversed circularly",
+          "Links escaping the root directory are automatically pruned"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_010_symlink_loops_defended",
+        "deterministic_assertion": "Asserts FileDiscovery terminates cleanly in visited circular directories without infinite looping."
+      }
+    },
+    {
+      "id": "ADV-SCAN-011",
+      "name": "Corrupted & Truncated ELF/PE Binary Header",
+      "cwe_id": "CWE-1287",
+      "attack_input": {
+        "input_type": "Corrupted Binary Artifact",
+        "payload_description": "Binary file starting with valid ELF magic bytes (\\x7fELF) but followed by corrupted section headers, negative table offsets, and truncated string tables.",
+        "adversarial_properties": [
+          "Valid magic bytes with corrupted section offsets",
+          "Out-of-bounds section header table pointer",
+          "Truncated symbol string table"
+        ],
+        "sample_artifact_or_pattern": "corrupted_elf_header.bin"
+      },
+      "affected_component": {
+        "module_path": "scanners.binary_container.container_analyzer",
+        "component_name": "BinaryContainerAnalyzer",
+        "subsystem": "Binary & Container Parser"
+      },
+      "impact": {
+        "severity": "medium",
+        "failure_mode": "Unhandled Struct Unpack Error / Parser Crash",
+        "risk_description": "Corrupted binary headers cause unhandled struct.error or EOFError, failing container and binary analysis pipelines."
+      },
+      "mitigation": {
+        "defensive_strategy": "Pre-validation of section header bounds, safe struct unpack guards, and non-fatal corruption reporting.",
+        "enforcing_function_or_guard": "scanners.binary_container.parsers.elf_parser.parse_elf_safely",
+        "architectural_invariants": [
+          "Binary parsing operates within bounded memory buffers",
+          "Invalid headers return structured parsing error and continue",
+          "Zero unhandled unpack exceptions in binary scanner"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_011_corrupted_binary_header_defended",
+        "deterministic_assertion": "Asserts binary analyzer catches corrupted ELF header and returns graceful error status without crash."
+      }
+    },
+    {
+      "id": "ADV-SCAN-012",
+      "name": "Circular Dependency Graph Explosion in SBOM / Manifests",
+      "cwe_id": "CWE-835",
+      "attack_input": {
+        "input_type": "Poisoned Dependency Manifest",
+        "payload_description": "Package manifest (e.g. package.json or pom.xml) defining circular cyclic dependency chains (pkg-A -> pkg-B -> pkg-C -> pkg-A).",
+        "adversarial_properties": [
+          "Cyclic dependency graph loops",
+          "Infinite dependency resolution graph",
+          "Dependency chain depth > 100"
+        ],
+        "sample_artifact_or_pattern": "cyclic_dependency_manifest.json"
+      },
+      "affected_component": {
+        "module_path": "scanners.sca.sbom_ingestion",
+        "component_name": "build_dependency_tree",
+        "subsystem": "SCA & Dependency Resolution Engine"
+      },
+      "impact": {
+        "severity": "medium",
+        "failure_mode": "Infinite Loop & Stack Overflow during Graph Traversal",
+        "risk_description": "Traversing dependency graphs without cycle detection causes infinite loops during transitive vulnerability propagation."
+      },
+      "mitigation": {
+        "defensive_strategy": "Cycle detection using visited set during graph walk and depth-bounded transitive resolution.",
+        "enforcing_function_or_guard": "scanners.sca.sbom_ingestion.resolve_dependencies_safe",
+        "architectural_invariants": [
+          "Visited package IDs tracked along resolution path",
+          "Detected cycles flagged and pruned from traversal",
+          "Dependency depth strictly capped at maximum 30 levels"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_012_circular_dependency_graph_defended",
+        "deterministic_assertion": "Asserts dependency graph resolver prunes circular package references without hanging."
+      }
+    },
+    {
+      "id": "ADV-SCAN-013",
+      "name": "Canary Token & Secret Bait in Code Diagnostics",
+      "cwe_id": "CWE-209",
+      "attack_input": {
+        "input_type": "Hostile Source Code with Secret Bait",
+        "payload_description": "Source code repository containing deliberate canary tokens, AWS API keys, and fake passwords designed to be echoed into error traces or scan diagnostics.",
+        "adversarial_properties": [
+          "Embedded canary tokens in comments and code",
+          "High-entropy secret strings triggering error handlers",
+          "Hostile exception messages containing auth tokens"
+        ],
+        "sample_artifact_or_pattern": "secret_bait_repo"
+      },
+      "affected_component": {
+        "module_path": "scanners.static.sanitization",
+        "component_name": "redact_secrets",
+        "subsystem": "Log & Error Sanitization Pipeline"
+      },
+      "impact": {
+        "severity": "high",
+        "failure_mode": "Secret Exfiltration via CI Logs / Diagnostics",
+        "risk_description": "Echoing untrusted code snippets directly into unredacted CI build logs can expose credentials or canary trigger alerts."
+      },
+      "mitigation": {
+        "defensive_strategy": "Automated regex redaction of canary tokens, API keys, and PEM blocks before writing to logs, SARIF, or reports.",
+        "enforcing_function_or_guard": "scanners.static.sanitization.redact_secrets",
+        "architectural_invariants": [
+          "Zero unredacted canary tokens or private keys in diagnostic output",
+          "Redacted values replaced with cryptographic hash fingerprints [REDACTED_CANARY SHA256:8chars]",
+          "Sanitization applied to both stdout/stderr and serialized JSON reports"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_013_canary_secret_bait_defended",
+        "deterministic_assertion": "Asserts redact_secrets scrubs canary tokens and private keys from diagnostic logs."
+      }
+    },
+    {
+      "id": "ADV-SCAN-014",
+      "name": "Hostile Broken AST Remediation Patch Injection",
+      "cwe_id": "CWE-710",
+      "attack_input": {
+        "input_type": "Poisoned Code Snippet for Remediation",
+        "payload_description": "Malformed Python source code designed to confuse the AST patch generator (e.g. unclosed parentheses, mixed tabs/spaces, invalid indentation).",
+        "adversarial_properties": [
+          "Malformed Python syntax in patch target",
+          "Indentation error bomb",
+          "Self-referential or empty code payload"
+        ],
+        "sample_artifact_or_pattern": "broken_syntax_target.py"
+      },
+      "affected_component": {
+        "module_path": "scanners.patch_generator",
+        "component_name": "SafePatchGenerator",
+        "subsystem": "Automated Remediation Engine"
+      },
+      "impact": {
+        "severity": "medium",
+        "failure_mode": "Generation of Malformed Patches / Broken Build",
+        "risk_description": "Generating patches on invalid syntax could corrupt source files or introduce syntax errors into target repositories."
+      },
+      "mitigation": {
+        "defensive_strategy": "Pre-generation syntax parsing and post-generation syntax validation lifecycle rejecting any invalid transformation.",
+        "enforcing_function_or_guard": "scanners.patch_generator.validate_syntax",
+        "architectural_invariants": [
+          "Patches are validated using ast.parse() before generation",
+          "Syntax validation failure blocks patch emission with clean error",
+          "Zero unverified patches applied to disk"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_014_broken_syntax_patch_defended",
+        "deterministic_assertion": "Asserts SafePatchGenerator and validate_syntax reject malformed syntax and return valid: False."
+      }
+    },
+    {
+      "id": "ADV-SCAN-015",
+      "name": "Silent Crash / Non-Zero Exit Code Masking in CI",
+      "cwe_id": "CWE-392",
+      "attack_input": {
+        "input_type": "Catastrophic Failure Injection",
+        "payload_description": "Corrupted configuration or simulated catastrophic scanner failure designed to test whether the CI scanner pipeline accurately preserves non-zero exit codes.",
+        "adversarial_properties": [
+          "Simulated scanner runner crash",
+          "Uncaught exception in scanner subprocess",
+          "Hostile attempt to bypass release gate via exit code 0"
+        ],
+        "sample_artifact_or_pattern": "crash_simulation"
+      },
+      "affected_component": {
+        "module_path": "scanners.ci_scanner",
+        "component_name": "CIScannerRunner",
+        "subsystem": "CI/CD Gate & Subprocess Pipeline"
+      },
+      "impact": {
+        "severity": "critical",
+        "failure_mode": "Silent Failure / False Positive Release Approval",
+        "risk_description": "If a scanner crash is masked or swallowed with exit code 0, broken or compromised code will pass release gates undetected."
+      },
+      "mitigation": {
+        "defensive_strategy": "Deterministic exit code preservation and Gate 5 silent crash interception (exit code 2 on internal crash).",
+        "enforcing_function_or_guard": "scripts.release_gate.ReleaseGateAuditor.check_scanner_crash_gate",
+        "architectural_invariants": [
+          "Scanner crashes NEVER exit with 0",
+          "Internal runner errors exit with code 2",
+          "Release gate strictly fails if scanner encounters unhandled fatal exception"
+        ]
+      },
+      "regression_test": {
+        "runner": "pytest",
+        "test_file": "tests/redteam/test_adversarial_scanner_assessment.py",
+        "test_name": "test_adv_scan_015_silent_crash_conflation_defended",
+        "deterministic_assertion": "Asserts scanner crash is never conflated with clean pass (exit code 2 strictly distinct from 0)."
+      }
+    }
+  ]
+}

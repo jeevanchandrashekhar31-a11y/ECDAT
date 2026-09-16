@@ -2,8 +2,55 @@ const express = require("express");
 const { getScanById, getLatestScan } = require("../services/cbom_ingestion");
 const { db, isDbConnected } = require("../db/connection");
 const { getRules, calculateMosca } = require("../risk_engine");
+const { getEnterpriseDashboardViews } = require("../services/dashboard_views_service");
 
 const router = express.Router();
+
+/**
+ * GET /api/v1/dashboard/views
+ * Enterprise dashboard endpoint returning all 13 specialized views with deep evidence links.
+ */
+router.get("/views", async (req, res, next) => {
+  try {
+    const scanId = req.query.scanId || req.query.scan_id;
+    const policyProfile = req.query.policyProfile || req.query.policy_profile;
+    const scenario = req.query.scenario;
+    const data = await getEnterpriseDashboardViews({
+      scanId,
+      policyProfile,
+      scenario,
+    });
+    res.status(200).json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+const { buildCryptoRelationshipGraph } = require("../services/crypto_graph_service");
+
+/**
+ * GET /api/v1/dashboard/graph
+ * Interactive relationship visualization endpoint:
+ * Application -> Service -> Certificate -> Protocol -> Algorithm -> Data
+ */
+router.get("/graph", async (req, res, next) => {
+  try {
+    const filters = {
+      scanId: req.query.scanId || req.query.scan_id,
+      severity: req.query.severity,
+      owner: req.query.owner,
+      environment: req.query.environment,
+      algorithm: req.query.algorithm,
+      pqcReadiness: req.query.pqcReadiness || req.query.pqc_readiness,
+      exposure: req.query.exposure,
+      search: req.query.search || req.query.q,
+    };
+    const data = await buildCryptoRelationshipGraph(filters);
+    res.status(200).json(data);
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * GET /api/v1/dashboard/summary

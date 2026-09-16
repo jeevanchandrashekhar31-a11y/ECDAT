@@ -1,0 +1,260 @@
+{
+  "$schema": "https://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:7f1b9b23-6e84-4829-9e12-cb03986a4e21",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-09-17T02:50:00Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "author": "ECDAT Engineering",
+          "name": "ecdat-cbom-engine",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    "authors": [
+      {
+        "name": "ECDAT Cryptographic Discovery and Assessment Platform"
+      }
+    ],
+    "component": {
+      "bom-ref": "pkg:generic/ecdat-enterprise-app@1.0.0",
+      "type": "application",
+      "name": "Enterprise Payments & Cryptographic Gateway",
+      "version": "1.0.0",
+      "description": "Production reference banking gateway demonstrating comprehensive CycloneDX 1.6 Cryptographic Bill of Materials",
+      "purl": "pkg:generic/ecdat-enterprise-app@1.0.0"
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "crypto-asset-tls-endpoint-443",
+      "type": "cryptographic-asset",
+      "name": "TLS 1.3 Production Listener",
+      "version": "1.3.0",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "type": "tls",
+          "version": "1.3",
+          "cipherSuites": [
+            {
+              "name": "TLS_AES_256_GCM_SHA384",
+              "algorithms": ["crypto-alg-aes-256-gcm", "crypto-alg-sha384"]
+            },
+            {
+              "name": "TLS_CHACHA20_POLY1305_SHA256",
+              "algorithms": ["crypto-alg-chacha20-poly1305", "crypto-alg-sha256"]
+            }
+          ],
+          "ikev2TransformTypes": {}
+        },
+        "oid": "1.3.6.1.5.5.7.3.1"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "edge-proxy.internal.net:443"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto-alg-ml-kem-768",
+      "type": "cryptographic-asset",
+      "name": "ML-KEM-768",
+      "version": "FIPS-203",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "kem",
+          "parameterSetIdentifier": "ML-KEM-768",
+          "curve": "Lattice-Module-LWE",
+          "executionEnvironment": "software-ring",
+          "implementationPlatform": "x86_64_avx2",
+          "certificationLevel": ["none"],
+          "mode": "encapsulation",
+          "cryptoFunctions": ["key-encapsulation"]
+        },
+        "oid": "2.16.840.1.101.3.4.4.2"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "backend/src/crypto/hybrid_kem.js",
+            "line": 48,
+            "symbol": "crypto.kem.encapsulate('ML-KEM-768')"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto-alg-ml-dsa-65",
+      "type": "cryptographic-asset",
+      "name": "ML-DSA-65",
+      "version": "FIPS-204",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "signature",
+          "parameterSetIdentifier": "ML-DSA-65",
+          "curve": "Lattice-Module-LWE",
+          "executionEnvironment": "software-ring",
+          "implementationPlatform": "portable-c",
+          "certificationLevel": ["none"],
+          "mode": "deterministic",
+          "cryptoFunctions": ["digital-signature"]
+        },
+        "oid": "2.16.840.1.101.3.4.3.18"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "backend/src/security/pqc_signer.js",
+            "line": 82,
+            "symbol": "ml_dsa_sign(key, digest)"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto-alg-rsa-2048-legacy",
+      "type": "cryptographic-asset",
+      "name": "RSA-2048",
+      "version": "PKCS#1-v1.5",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "asymmetric",
+          "parameterSetIdentifier": "2048",
+          "executionEnvironment": "software-plain",
+          "implementationPlatform": "node-crypto",
+          "certificationLevel": ["fips-140-2"],
+          "mode": "sign-verify",
+          "cryptoFunctions": ["digital-signature", "key-establishment"]
+        },
+        "oid": "1.2.840.113549.1.1.1"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "services/auth_token_generator.js",
+            "line": 114,
+            "symbol": "crypto.createSign('RSA-SHA256')"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto-alg-aes-256-gcm",
+      "type": "cryptographic-asset",
+      "name": "AES-256-GCM",
+      "version": "NIST SP 800-38D",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "symmetric",
+          "parameterSetIdentifier": "256",
+          "executionEnvironment": "hardware-aes-ni",
+          "implementationPlatform": "openssl-3.2",
+          "certificationLevel": ["fips-140-3"],
+          "mode": "gcm",
+          "cryptoFunctions": ["authenticated-encryption"]
+        },
+        "oid": "2.16.840.1.101.3.4.1.46"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "db/vault_encryptor.py",
+            "line": 34,
+            "symbol": "AESGCM(key).encrypt(nonce, data)"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto-alg-sha256",
+      "type": "cryptographic-asset",
+      "name": "SHA-256",
+      "version": "FIPS 180-4",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "hash",
+          "parameterSetIdentifier": "256",
+          "executionEnvironment": "software-plain",
+          "implementationPlatform": "native",
+          "certificationLevel": ["fips-140-3"],
+          "mode": "hash",
+          "cryptoFunctions": ["digest"]
+        },
+        "oid": "2.16.840.1.101.3.4.2.1"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "backend/src/audit/integrity.js",
+            "line": 21,
+            "symbol": "crypto.createHash('sha256')"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto-cert-prod-edge-leaf",
+      "type": "cryptographic-asset",
+      "name": "api.enterprise-payments.internal",
+      "cryptoProperties": {
+        "assetType": "certificate",
+        "certificateProperties": {
+          "subjectName": "CN=api.enterprise-payments.internal, O=Enterprise Payments Corp, C=US",
+          "issuerName": "CN=Enterprise Root CA G2, O=Enterprise PKI Corp, C=US",
+          "notValidBefore": "2025-01-01T00:00:00Z",
+          "notValidAfter": "2027-01-01T00:00:00Z",
+          "signatureAlgorithmRef": "crypto-alg-rsa-2048-legacy",
+          "subjectPublicKeyRef": "crypto-alg-rsa-2048-legacy",
+          "certificateFormat": "X.509"
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "/etc/ssl/certs/api-gateway.crt"
+          }
+        ]
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:generic/ecdat-enterprise-app@1.0.0",
+      "dependsOn": [
+        "crypto-asset-tls-endpoint-443",
+        "crypto-alg-ml-kem-768",
+        "crypto-alg-ml-dsa-65",
+        "crypto-alg-rsa-2048-legacy",
+        "crypto-alg-aes-256-gcm",
+        "crypto-cert-prod-edge-leaf"
+      ]
+    },
+    {
+      "ref": "crypto-asset-tls-endpoint-443",
+      "dependsOn": [
+        "crypto-cert-prod-edge-leaf",
+        "crypto-alg-aes-256-gcm",
+        "crypto-alg-ml-kem-768"
+      ]
+    },
+    {
+      "ref": "crypto-cert-prod-edge-leaf",
+      "dependsOn": [
+        "crypto-alg-rsa-2048-legacy"
+      ]
+    }
+  ]
+}

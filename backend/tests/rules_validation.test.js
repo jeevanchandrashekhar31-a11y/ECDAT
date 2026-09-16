@@ -20,6 +20,7 @@ test("ECDAT Rule Validation - All rule files validate against JSON Schemas", () 
     rules.crypto_vulnerability_catalog,
     "crypto_vulnerability_catalog rules loaded",
   );
+  assert.ok(rules.policy_as_code, "policy_as_code rules loaded");
 });
 
 test("ECDAT Rule Validation - algorithm_risk.json contains all required algorithms and protocols", () => {

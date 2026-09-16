@@ -1,0 +1,29 @@
+{{- if .Values.resourceQuotas.enabled }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "ecdat.fullname" . }}-control-plane-quota
+  namespace: {{ .Values.global.controlPlaneNamespace }}
+spec:
+  hard:
+    requests.cpu: {{ .Values.resourceQuotas.controlPlane.requestsCpu | quote }}
+    requests.memory: {{ .Values.resourceQuotas.controlPlane.requestsMemory | quote }}
+    limits.cpu: {{ .Values.resourceQuotas.controlPlane.limitsCpu | quote }}
+    limits.memory: {{ .Values.resourceQuotas.controlPlane.limitsMemory | quote }}
+    pods: {{ .Values.resourceQuotas.controlPlane.pods | quote }}
+---
+{{- if .Values.ebpfAgent.enabled }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "ecdat.fullname" . }}-runtime-quota
+  namespace: {{ .Values.global.runtimeNamespace }}
+spec:
+  hard:
+    requests.cpu: {{ .Values.resourceQuotas.runtime.requestsCpu | quote }}
+    requests.memory: {{ .Values.resourceQuotas.runtime.requestsMemory | quote }}
+    limits.cpu: {{ .Values.resourceQuotas.runtime.limitsCpu | quote }}
+    limits.memory: {{ .Values.resourceQuotas.runtime.limitsMemory | quote }}
+    pods: {{ .Values.resourceQuotas.runtime.pods | quote }}
+{{- end }}
+{{- end }}

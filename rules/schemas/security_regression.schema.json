@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ECDAT Security Regression Registry Schema",
+  "description": "Schema enforcing the 5-point security bug closure policy: Root Cause, Fix, Permanent Test, Threat Model Update, and Release Note.",
+  "type": "object",
+  "required": ["registry_version", "policy_name", "enforcement_mandate", "regressions"],
+  "properties": {
+    "registry_version": { "type": "string" },
+    "policy_name": { "type": "string" },
+    "enforcement_mandate": { "type": "string" },
+    "regressions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "severity",
+          "status",
+          "affected_component",
+          "root_cause",
+          "fix",
+          "test",
+          "threat_model_update",
+          "release_note"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^SEC-REG-\\d{3,}$"
+          },
+          "cve_or_ghsa_id": {
+            "type": ["string", "null"]
+          },
+          "title": { "type": "string", "minLength": 5 },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["closed_verified", "in_remediation", "open"]
+          },
+          "affected_component": { "type": "string", "minLength": 3 },
+          "root_cause": {
+            "type": "object",
+            "required": ["technical_summary", "cwe_id", "flaw_type", "vulnerable_code_location"],
+            "properties": {
+              "technical_summary": { "type": "string", "minLength": 10 },
+              "cwe_id": { "type": "string", "pattern": "^CWE-\\d+$" },
+              "flaw_type": { "type": "string" },
+              "vulnerable_code_location": { "type": "string" }
+            },
+            "additionalProperties": true
+          },
+          "fix": {
+            "type": "object",
+            "required": ["fix_summary", "mitigation_strategy", "modified_files"],
+            "properties": {
+              "fix_summary": { "type": "string", "minLength": 10 },
+              "mitigation_strategy": { "type": "string", "minLength": 10 },
+              "modified_files": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string" }
+              }
+            },
+            "additionalProperties": true
+          },
+          "test": {
+            "type": "object",
+            "required": ["test_file", "test_name", "assertion_type", "automated"],
+            "properties": {
+              "test_file": { "type": "string", "minLength": 3 },
+              "test_name": { "type": "string", "minLength": 3 },
+              "assertion_type": { "type": "string" },
+              "automated": { "type": "boolean" }
+            },
+            "additionalProperties": true
+          },
+          "threat_model_update": {
+            "type": "object",
+            "required": ["stride_category", "threat_model_section", "residual_risk_impact", "threat_model_doc_updated"],
+            "properties": {
+              "stride_category": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "Spoofing",
+                    "Tampering",
+                    "Repudiation",
+                    "Information Disclosure",
+                    "Denial of Service",
+                    "Elevation of Privilege"
+                  ]
+                }
+              },
+              "threat_model_section": { "type": "string", "minLength": 3 },
+              "residual_risk_impact": { "type": "string", "minLength": 10 },
+              "threat_model_doc_updated": { "type": "boolean" }
+            },
+            "additionalProperties": true
+          },
+          "release_note": {
+            "type": "object",
+            "required": ["applicable", "advisory_summary", "version_fixed"],
+            "properties": {
+              "applicable": { "type": "boolean" },
+              "advisory_summary": { "type": "string", "minLength": 10 },
+              "version_fixed": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

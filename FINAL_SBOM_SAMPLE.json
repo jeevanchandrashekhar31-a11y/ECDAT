@@ -1,0 +1,326 @@
+{
+  "$schema": "https://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:ecda7001-9876-4321-b001-0123456789ab",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-09-17T02:50:00Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "author": "ECDAT Engineering",
+          "name": "ecdat-sbom-generator",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    "authors": [
+      {
+        "name": "ECDAT Security & Engineering Team"
+      }
+    ],
+    "component": {
+      "bom-ref": "pkg:generic/ecdat@1.0.0",
+      "type": "application",
+      "name": "ECDAT",
+      "version": "1.0.0",
+      "description": "Enterprise Cryptographic Discovery and Assessment Tool",
+      "purl": "pkg:generic/ecdat@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/jeevanchandrashekhar31-a11y/ECDAT"
+        },
+        {
+          "type": "documentation",
+          "url": "https://github.com/jeevanchandrashekhar31-a11y/ECDAT#readme"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:generic/ecdat-scanners@1.0.0",
+      "type": "framework",
+      "name": "ecdat-scanners",
+      "version": "1.0.0",
+      "description": "ECDAT Python Cryptographic Static, Network & Container Discovery Engine",
+      "purl": "pkg:generic/ecdat-scanners@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:generic/ecdat-backend@1.0.0",
+      "type": "framework",
+      "name": "ecdat-backend",
+      "version": "1.0.0",
+      "description": "ECDAT Node.js Express REST API & Risk Engine Subsystem",
+      "purl": "pkg:generic/ecdat-backend@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:generic/ecdat-frontend@1.0.0",
+      "type": "framework",
+      "name": "ecdat-frontend",
+      "version": "1.0.0",
+      "description": "ECDAT React 18 + Vite Web Application Dashboard Subsystem",
+      "purl": "pkg:generic/ecdat-frontend@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:pypi/cryptography@44.0.2#python",
+      "type": "library",
+      "name": "cryptography",
+      "version": "44.0.2",
+      "scope": "required",
+      "purl": "pkg:pypi/cryptography@44.0.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/pyca/cryptography"
+        },
+        {
+          "type": "package-manager",
+          "url": "https://pypi.org/project/cryptography/"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ecdat:ecosystem",
+          "value": "Python"
+        },
+        {
+          "name": "ecdat:dependency_type",
+          "value": "direct"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:pypi/cyclonedx-python-lib@8.6.0#python",
+      "type": "library",
+      "name": "cyclonedx-python-lib",
+      "version": "8.6.0",
+      "scope": "required",
+      "purl": "pkg:pypi/cyclonedx-python-lib@8.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/CycloneDX/cyclonedx-python-lib"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ecdat:ecosystem",
+          "value": "Python"
+        },
+        {
+          "name": "ecdat:dependency_type",
+          "value": "direct"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:pypi/tree-sitter@0.24.0#python",
+      "type": "library",
+      "name": "tree-sitter",
+      "version": "0.24.0",
+      "scope": "required",
+      "purl": "pkg:pypi/tree-sitter@0.24.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "ecdat:ecosystem",
+          "value": "Python"
+        },
+        {
+          "name": "ecdat:dependency_type",
+          "value": "direct"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/express@4.21.2#node.js_backend",
+      "type": "library",
+      "name": "express",
+      "version": "4.21.2",
+      "scope": "required",
+      "purl": "pkg:npm/express@4.21.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "b2f69904bb5b67e0e4b85775de6f6d53"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ecdat:ecosystem",
+          "value": "Node.js Backend"
+        },
+        {
+          "name": "ecdat:dependency_type",
+          "value": "direct"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/knex@3.1.0#node.js_backend",
+      "type": "library",
+      "name": "knex",
+      "version": "3.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/knex@3.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "ecdat:ecosystem",
+          "value": "Node.js Backend"
+        },
+        {
+          "name": "ecdat:dependency_type",
+          "value": "direct"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/react@18.3.1#react_frontend",
+      "type": "library",
+      "name": "react",
+      "version": "18.3.1",
+      "scope": "required",
+      "purl": "pkg:npm/react@18.3.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "ecdat:ecosystem",
+          "value": "React Frontend"
+        },
+        {
+          "name": "ecdat:dependency_type",
+          "value": "direct"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/lucide-react@0.475.0#react_frontend",
+      "type": "library",
+      "name": "lucide-react",
+      "version": "0.475.0",
+      "scope": "required",
+      "purl": "pkg:npm/lucide-react@0.475.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "ecdat:ecosystem",
+          "value": "React Frontend"
+        },
+        {
+          "name": "ecdat:dependency_type",
+          "value": "direct"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:generic/ecdat@1.0.0",
+      "dependsOn": [
+        "pkg:generic/ecdat-scanners@1.0.0",
+        "pkg:generic/ecdat-backend@1.0.0",
+        "pkg:generic/ecdat-frontend@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:generic/ecdat-scanners@1.0.0",
+      "dependsOn": [
+        "pkg:pypi/cryptography@44.0.2#python",
+        "pkg:pypi/cyclonedx-python-lib@8.6.0#python",
+        "pkg:pypi/tree-sitter@0.24.0#python"
+      ]
+    },
+    {
+      "ref": "pkg:generic/ecdat-backend@1.0.0",
+      "dependsOn": [
+        "pkg:npm/express@4.21.2#node.js_backend",
+        "pkg:npm/knex@3.1.0#node.js_backend"
+      ]
+    },
+    {
+      "ref": "pkg:generic/ecdat-frontend@1.0.0",
+      "dependsOn": [
+        "pkg:npm/react@18.3.1#react_frontend",
+        "pkg:npm/lucide-react@0.475.0#react_frontend"
+      ]
+    }
+  ]
+}

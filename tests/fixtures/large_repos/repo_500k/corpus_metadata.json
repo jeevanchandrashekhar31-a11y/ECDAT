@@ -1,0 +1,13 @@
+{
+  "target_loc_requested": 500000,
+  "actual_loc": 500028,
+  "total_files": 4156,
+  "language_distribution": {
+    "python": 831,
+    "c": 832,
+    "javascript": 831,
+    "go": 831,
+    "java": 831
+  },
+  "target_dir": "C:\\Users\\Jeevan c\\Documents\\ECDAT\\tests\\fixtures\\large_repos\\repo_500k"
+}

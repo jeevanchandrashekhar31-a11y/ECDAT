@@ -10,6 +10,8 @@ const {
 } = require("./cbom_validation");
 const { db, isDbConnected } = require("../db/connection");
 const config = require("../config");
+const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
+const { defaultMetricsCollector } = require("../metrics");
 
 // In-memory scan store fallback
 const inMemoryScansStore = new Map();
@@ -306,6 +308,41 @@ async function ingestCbom(rawInputData, options = {}) {
 
   // Cache in-memory
   inMemoryScansStore.set(scanId, scanRecord);
+
+  // Record audit log & operational metrics
+  try {
+    defaultAuditService.logEvent({
+      category: AUDIT_CATEGORIES.SCAN,
+      action: AUDIT_ACTIONS.SCAN_COMPLETE,
+      actor: { id: "scanner-pipeline", username: "scanner", role: "system" },
+      tenantId: options.tenantId || "default",
+      target: scanId,
+      status: AUDIT_STATUSES.SUCCESS,
+      details: {
+        scanId,
+        scannerType,
+        totalAssets: summary.metrics?.total_assets,
+        totalFindings: summary.metrics?.total_findings,
+      },
+    }).catch(() => {});
+
+    if (Array.isArray(classifiedResults)) {
+      for (const finding of classifiedResults) {
+        defaultMetricsCollector.recordFinding({
+          severity: finding.severity || finding.risk_level,
+          quantumRisk:
+            finding.quantum_safe === false || finding.mosca_status === "AT_RISK"
+              ? "quantum_vulnerable"
+              : "quantum_safe",
+          riskScore: finding.risk_score || finding.normalized_score,
+          moscaHorizon: finding.mosca_horizon || "Y2K_IMMEDIATE",
+          algorithmId: finding.algorithm,
+        });
+      }
+    }
+  } catch (_metricsErr) {
+    // Non-blocking telemetry
+  }
 
   // 6. Persist Transactionally to PostgreSQL
   try {

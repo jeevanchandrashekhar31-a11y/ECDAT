@@ -103,6 +103,12 @@ function sanitizeConfigForLogging(config) {
   return sanitized;
 }
 
+const {
+  validateProductionSecurity,
+  MissingMandatorySecurityConfigError,
+  UnsafeDevelopmentDefaultDetectedError,
+} = require("./production_guard");
+
 /**
  * Validates configuration constraints, failing hard on insecure production settings.
  *
@@ -124,7 +130,7 @@ function validateConfig(config) {
     }
 
     // 2. Database credentials cannot be the default development credentials
-    if (config.DATABASE_URL.includes("postgres:postgres") || config.DATABASE_URL.includes("localhost:5432/ecdat")) {
+    if (!config.DATABASE_URL || config.DATABASE_URL.includes("postgres:postgres") || config.DATABASE_URL.includes("localhost:5432/ecdat")) {
       violations.push("Production DATABASE_URL cannot use default development credentials (postgres:postgres@localhost).");
     }
 
@@ -137,6 +143,27 @@ function validateConfig(config) {
     // 4. Require authentication for reads must be enforced in production
     if (!config.REQUIRE_AUTH_FOR_READS) {
       violations.push("Production must enforce REQUIRE_AUTH_FOR_READS=true to prevent unauthorized data exposure.");
+    }
+
+    // 5. Data Encryption Key in production cannot be dev fallback
+    if (config.DATA_ENCRYPTION_KEY && config.DATA_ENCRYPTION_KEY.includes("ecdat-dev-master-encryption-key")) {
+      violations.push("Production DATA_ENCRYPTION_KEY cannot use default development key.");
+    }
+
+    // 6. Enforce TLS for database data in transit
+    if (config.DATABASE_SSL === false && process.env.ALLOW_INSECURE_DB_IN_PRODUCTION !== "true") {
+      violations.push("Production requires TLS in transit for database connections (DATABASE_SSL=true).");
+    }
+
+    // Run extended production guard validation if available
+    try {
+      validateProductionSecurity(config);
+    } catch (guardErr) {
+      if (guardErr instanceof InsecureProductionConfigError) {
+        for (const v of guardErr.violations) {
+          if (!violations.includes(v)) violations.push(v);
+        }
+      }
     }
   }
 
@@ -152,8 +179,12 @@ function validateConfig(config) {
 
 module.exports = {
   InsecureProductionConfigError,
+  MissingMandatorySecurityConfigError,
+  UnsafeDevelopmentDefaultDetectedError,
   resolveSecret,
   sanitizeCredentialUrl,
   sanitizeConfigForLogging,
   validateConfig,
+  validateProductionSecurity,
 };
+

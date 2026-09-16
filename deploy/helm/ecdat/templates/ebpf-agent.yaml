@@ -1,0 +1,73 @@
+{{- if .Values.ebpfAgent.enabled }}
+# Isolated eBPF DaemonSet in Runtime Namespace
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "ecdat.fullname" . }}-ebpf-agent
+  namespace: {{ .Values.global.runtimeNamespace }}
+  labels:
+    {{- include "ecdat.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "ecdat.name" . }}-ebpf-agent
+    ecdat.io/tier: runtime-agent
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "ecdat.name" . }}-ebpf-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "ecdat.name" . }}-ebpf-agent
+        ecdat.io/tier: runtime-agent
+    spec:
+      serviceAccountName: {{ include "ecdat.fullname" . }}-ebpf-agent
+      hostPID: true
+      hostNetwork: false
+      hostIPC: false
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: ebpf-agent
+          image: "{{ .Values.ebpfAgent.image.repository }}:{{ .Values.ebpfAgent.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            {{- toYaml .Values.ebpfAgent.securityContext | nindent 12 }}
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: CONTROL_PLANE_INGEST_URL
+              value: "http://{{ include "ecdat.fullname" . }}-backend.{{ .Values.global.controlPlaneNamespace }}.svc.cluster.local:{{ .Values.backend.service.port }}/api/v1/telemetry/ebpf"
+          resources:
+            {{- toYaml .Values.ebpfAgent.resources | nindent 12 }}
+          volumeMounts:
+            - name: bpf-fs
+              mountPath: /sys/fs/bpf
+              mountPropagation: Bidirectional
+            - name: debugfs
+              mountPath: /sys/kernel/debug
+              readOnly: true
+            - name: kernel-modules
+              mountPath: /lib/modules
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: bpf-fs
+          hostPath:
+            path: /sys/fs/bpf
+            type: DirectoryOrCreate
+        - name: debugfs
+          hostPath:
+            path: /sys/kernel/debug
+            type: Directory
+        - name: kernel-modules
+          hostPath:
+            path: /lib/modules
+            type: Directory
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
+{{- end }}

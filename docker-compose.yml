@@ -3,7 +3,8 @@ name: ecdat
 services:
   # 1. PostgreSQL Database Service
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:d8b2d131f4228943799cb3638421b8fbf4c68c6a0b271d47190d7ad824a7374b
+    user: "70:70"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-ecdat}
       POSTGRES_USER: ${POSTGRES_USER:-ecdat_app}
@@ -12,6 +13,21 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - data
+    privileged: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=docker/security/seccomp-profile.json
+    pids_limit: 100
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -25,6 +41,10 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M,noexec,nosuid,nodev
     environment:
       NODE_ENV: production
       PORT: 5000
@@ -43,12 +63,28 @@ services:
       - data
     ports:
       - "127.0.0.1:${BACKEND_PORT:-5000}:5000"
+    privileged: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=docker/security/seccomp-profile.json
+      - apparmor=ecdat-profile
+    pids_limit: 150
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:5000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 20s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
     restart: unless-stopped
 
   # 3. React Vite & Nginx Frontend
@@ -56,19 +92,41 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    user: "101:101"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32M,noexec,nosuid,nodev
+      - /var/cache/nginx:size=32M,noexec,nosuid,nodev
+      - /var/run:size=8M,noexec,nosuid,nodev
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - edge
     ports:
-      - "127.0.0.1:${FRONTEND_PORT:-8080}:80"
+      - "127.0.0.1:${FRONTEND_PORT:-8080}:8080"
+    privileged: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=docker/security/seccomp-profile.json
+      - apparmor=ecdat-profile
+    pids_limit: 50
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
       interval: 10s
       timeout: 3s
-      retries: 10
-      start_period: 10s
+      retries: 5
+      start_period: 5s
     restart: unless-stopped
 
   # 4. Automated Demo Seeding Service (Imports CBOM once Backend is Healthy)
@@ -76,6 +134,10 @@ services:
     build:
       context: .
       dockerfile: docker/scanner.Dockerfile
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32M,noexec,nosuid,nodev
     command: ["python", "/opt/ecdat/docker/demo_import.py"]
     environment:
       ECDAT_API_URL: http://backend:5000/api/v1/cboms
@@ -85,6 +147,18 @@ services:
         condition: service_healthy
     networks:
       - edge
+    privileged: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=docker/security/seccomp-profile.json
+    pids_limit: 50
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
     restart: "no"
 
   # 5. Optional Offline Scanner Utility (On-demand via --profile tools)
@@ -92,12 +166,32 @@ services:
     build:
       context: .
       dockerfile: docker/scanner.Dockerfile
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:size=128M,noexec,nosuid,nodev
     profiles: ["tools"]
     command: ["python", "-m", "scanners.static.main", "/workspace", "--output", "/output/docker_static_cbom.json", "--fail-on", "none"]
     volumes:
       - ./:/workspace:ro
       - ./artifacts:/output
+    # Enforce complete air-gapped isolation: zero host networking, zero bridge
     network_mode: none
+    privileged: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=docker/security/seccomp-profile.json
+    pids_limit: 100
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1024M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     restart: "no"
 
 volumes:

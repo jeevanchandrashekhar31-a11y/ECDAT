@@ -1,0 +1,197 @@
+# 1. Default Deny-All Ingress & Egress for Control Plane
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: ecdat-control-plane
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# 2. Default Deny-All Ingress & Egress for Runtime Agent Namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: runtime-default-deny-all
+  namespace: ecdat-runtime
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# 3. Allow DNS Egress for Control Plane Pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: ecdat-control-plane
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# 4. Frontend NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-networkpolicy
+  namespace: ecdat-control-plane
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ecdat-frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector: {} # From ingress-nginx / gateway controller
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # Allow communication to Backend API only
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ecdat-backend
+      ports:
+        - protocol: TCP
+          port: 5000
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+---
+# 5. Backend NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-networkpolicy
+  namespace: ecdat-control-plane
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ecdat-backend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from Frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ecdat-frontend
+      ports:
+        - protocol: TCP
+          port: 5000
+    # Allow from eBPF Runtime Agent across namespace boundary
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              ecdat.io/tier: runtime-agent
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ecdat-ebpf-agent
+      ports:
+        - protocol: TCP
+          port: 5000
+  egress:
+    # Allow connection to PostgreSQL database only
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ecdat-postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+---
+# 6. PostgreSQL Database NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-networkpolicy
+  namespace: ecdat-control-plane
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ecdat-postgres
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow ingress strictly from Backend API
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ecdat-backend
+      ports:
+        - protocol: TCP
+          port: 5432
+  # Zero egress: Database cannot initiate outbound network requests
+  egress: []
+---
+# 7. Runtime eBPF Agent NetworkPolicy (in ecdat-runtime)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ebpf-agent-networkpolicy
+  namespace: ecdat-runtime
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ecdat-ebpf-agent
+  policyTypes:
+    - Ingress
+    - Egress
+  # Zero ingress: Agent never accepts inbound connections
+  ingress: []
+  egress:
+    # Egress only to Control Plane Backend API
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              ecdat.io/tier: control-plane
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ecdat-backend
+      ports:
+        - protocol: TCP
+          port: 5000
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53

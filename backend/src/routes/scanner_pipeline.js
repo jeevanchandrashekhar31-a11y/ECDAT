@@ -133,11 +133,11 @@ function runGitClone(repoUrl, targetDir, timeoutMs = 60000) {
 }
 
 /**
- * Extracts a zip archive to a target directory using Python's built-in zipfile module
+ * Safely extracts an archive to a target directory using ECDAT's hardened ArchiveSecurityGuard
  */
 async function extractZipArchive(zipFilePath, targetDir) {
   fs.mkdirSync(targetDir, { recursive: true });
-  await runPythonCommand(['-m', 'zipfile', '-e', zipFilePath, targetDir], 45000);
+  await runPythonCommand(['-m', 'scanners.common.archive_guard', 'extract', zipFilePath, targetDir], 45000);
 }
 
 /**

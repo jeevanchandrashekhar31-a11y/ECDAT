@@ -58,6 +58,40 @@ const {
   createEnterpriseMigrationPlan,
 } = require("./migration_planner");
 
+const {
+  RemediationPlanner,
+  getDefaultRemediationPlanner,
+  planFindingRemediation,
+  planRemediations,
+  deriveWhyItMatters,
+  deriveRecommendedRemediation,
+  buildMigrationOptions,
+  deriveExpectedImpact,
+  deriveDependencies,
+  deriveTestingPlan,
+  deriveRollbackPlan,
+  deriveConfidence,
+} = require("./remediation_planner");
+
+const {
+  SafePatchGenerator,
+  getDefaultPatchGenerator,
+  generatePatch,
+  executePreApplicationLifecycle,
+  validateSyntax,
+  createUnifiedDiff,
+} = require("./patch_generator");
+
+const {
+  ApprovalState,
+  SENSITIVE_APPROVAL_CATEGORIES,
+  ApprovalWorkflowError,
+  ApprovalWorkflowEngine,
+  getDefaultApprovalEngine,
+  normalizeCategory,
+  requiresExplicitApproval,
+} = require("./approval_workflow");
+
 module.exports = {
   buildRemediationPlan,
   getRecommendationForFinding,
@@ -73,4 +107,29 @@ module.exports = {
   defineRescanVerification,
   planAssetMigration,
   createEnterpriseMigrationPlan,
+  RemediationPlanner,
+  getDefaultRemediationPlanner,
+  planFindingRemediation,
+  planRemediations,
+  deriveWhyItMatters,
+  deriveRecommendedRemediation,
+  buildMigrationOptions,
+  deriveExpectedImpact,
+  deriveDependencies,
+  deriveTestingPlan,
+  deriveRollbackPlan,
+  deriveConfidence,
+  SafePatchGenerator,
+  getDefaultPatchGenerator,
+  generatePatch,
+  executePreApplicationLifecycle,
+  validateSyntax,
+  createUnifiedDiff,
+  ApprovalState,
+  SENSITIVE_APPROVAL_CATEGORIES,
+  ApprovalWorkflowError,
+  ApprovalWorkflowEngine,
+  getDefaultApprovalEngine,
+  normalizeCategory,
+  requiresExplicitApproval,
 };

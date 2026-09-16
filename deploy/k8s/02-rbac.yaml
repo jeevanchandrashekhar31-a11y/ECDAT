@@ -1,0 +1,113 @@
+# 1. Service Accounts
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecdat-backend-sa
+  namespace: ecdat-control-plane
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecdat-frontend-sa
+  namespace: ecdat-control-plane
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecdat-scanner-sa
+  namespace: ecdat-control-plane
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecdat-ebpf-agent-sa
+  namespace: ecdat-runtime
+automountServiceAccountToken: true
+---
+# 2. Control Plane Roles & RoleBindings (Least Privilege - Zero Wildcards)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ecdat-backend-role
+  namespace: ecdat-control-plane
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["ecdat-secrets", "ecdat-db-credentials"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ecdat-backend-rolebinding
+  namespace: ecdat-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: ecdat-backend-sa
+    namespace: ecdat-control-plane
+roleRef:
+  kind: Role
+  name: ecdat-backend-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ecdat-scanner-role
+  namespace: ecdat-control-plane
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ecdat-scanner-rolebinding
+  namespace: ecdat-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: ecdat-scanner-sa
+    namespace: ecdat-control-plane
+roleRef:
+  kind: Role
+  name: ecdat-scanner-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# 3. Runtime eBPF Agent ClusterRole (Read-Only Node/Pod Metadata Enrichment)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ecdat-ebpf-agent-clusterrole
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ecdat-ebpf-agent-clusterrolebinding
+subjects:
+  - kind: ServiceAccount
+    name: ecdat-ebpf-agent-sa
+    namespace: ecdat-runtime
+roleRef:
+  kind: ClusterRole
+  name: ecdat-ebpf-agent-clusterrole
+  apiGroup: rbac.authorization.k8s.io

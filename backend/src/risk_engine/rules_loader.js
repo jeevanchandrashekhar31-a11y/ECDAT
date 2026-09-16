@@ -68,6 +68,16 @@ const RULE_FILES_CONFIG = [
     rulePath: "crypto_agility_rules.json",
     schemaPath: "schemas/crypto_agility_rules.schema.json",
   },
+  {
+    name: "policy_as_code",
+    rulePath: "policy_as_code.json",
+    schemaPath: "schemas/policy_as_code.schema.json",
+  },
+  {
+    name: "compliance_catalog",
+    rulePath: "compliance_catalog.json",
+    schemaPath: "schemas/compliance_catalog.schema.json",
+  },
 ];
 
 

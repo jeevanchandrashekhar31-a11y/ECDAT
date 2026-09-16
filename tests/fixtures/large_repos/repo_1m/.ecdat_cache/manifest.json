@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-09-16T07:23:21.250768+00:00",
+  "fingerprints": {
+    "engine_version": "2.1.0-perf",
+    "engine_fingerprint": "68edf852b647b268728ffd9b129330cd9df32c3c4802f099f8ed20461b12c3e0",
+    "policy_fingerprint": "ea11e8234624d1539086ac490ff2f1e0a310be34073c531826d2b298dcfd8fc6",
+    "config_fingerprint": "96c096345dd24c9cfceed041fd0136196c926efb7d2d60a5a948b78ac77aaa53",
+    "dependency_fingerprint": "73bfa66e45038f9fefb0f29d20e3555e268c3484d2c5f57c4944e2e5886d93f3",
+    "environment_digest": "f77e26d53c297d8148809645c7d4b52763634fac7a6861a28dcf125ec43675ba",
+    "dependency_files_tracked": [
+      "go.mod",
+      "package-lock.json",
+      "package.json",
+      "requirements.lock",
+      "requirements.txt"
+    ],
+    "policy_files_tracked": [
+      "rules/compliance_catalog.json",
+      "rules/policy_as_code.json",
+      "rules/policy_profiles.json",
+      "rules/security_exceptions.json"
+    ]
+  },
+  "total_entries": 0,
+  "entries": {}
+}

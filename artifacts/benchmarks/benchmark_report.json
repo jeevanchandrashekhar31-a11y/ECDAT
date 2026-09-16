@@ -1,0 +1,682 @@
+{
+  "benchmark_metadata": {
+    "timestamp": "2026-09-16T03:14:09.975246+00:00",
+    "platform": "win32",
+    "python_version": "3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]",
+    "cpu_cores_available": 12,
+    "target_sizes": [
+      100000,
+      500000,
+      1000000
+    ],
+    "concurrency_levels": [
+      1,
+      2,
+      4,
+      8
+    ]
+  },
+  "corpora": {
+    "100k": {
+      "target_loc_requested": 100000,
+      "actual_loc": 100059,
+      "total_files": 832,
+      "language_distribution": {
+        "python": 166,
+        "c": 167,
+        "javascript": 167,
+        "go": 166,
+        "java": 166
+      },
+      "target_dir": "C:\\Users\\Jeevan c\\Documents\\ECDAT\\tests\\fixtures\\large_repos\\repo_100k"
+    },
+    "500k": {
+      "target_loc_requested": 500000,
+      "actual_loc": 500028,
+      "total_files": 4156,
+      "language_distribution": {
+        "python": 831,
+        "c": 832,
+        "javascript": 831,
+        "go": 831,
+        "java": 831
+      },
+      "target_dir": "C:\\Users\\Jeevan c\\Documents\\ECDAT\\tests\\fixtures\\large_repos\\repo_500k"
+    },
+    "1m": {
+      "target_loc_requested": 1000000,
+      "actual_loc": 1000128,
+      "total_files": 8315,
+      "language_distribution": {
+        "python": 1663,
+        "c": 1663,
+        "javascript": 1663,
+        "go": 1663,
+        "java": 1663
+      },
+      "target_dir": "C:\\Users\\Jeevan c\\Documents\\ECDAT\\tests\\fixtures\\large_repos\\repo_1m"
+    }
+  },
+  "concurrency_scaling": {
+    "100k": {
+      "workers_1": {
+        "wall_time_seconds": 8.3409,
+        "cpu_time_seconds": 8.1562,
+        "cpu_utilization_pct": 97.79,
+        "peak_ram_mb": 64.36,
+        "current_ram_mb": 64.34,
+        "heap_peak_mb": 8.71,
+        "disk_read_kb": 2466.49,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 3.59,
+        "cache_disk_mb": 1.19,
+        "throughput_loc_per_sec": 11996.23,
+        "throughput_files_per_sec": 99.75,
+        "concurrency_workers": 1,
+        "total_loc": 100059,
+        "total_files": 832,
+        "sample_timestamp": "2026-09-16T03:14:18.458372+00:00",
+        "speedup_factor": 1.0,
+        "parallel_efficiency_pct": 100.0,
+        "findings_count": 1079
+      },
+      "workers_2": {
+        "wall_time_seconds": 10.1708,
+        "cpu_time_seconds": 10.25,
+        "cpu_utilization_pct": 100.78,
+        "peak_ram_mb": 65.78,
+        "current_ram_mb": 65.53,
+        "heap_peak_mb": 8.63,
+        "disk_read_kb": 2466.49,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 3.59,
+        "cache_disk_mb": 1.19,
+        "throughput_loc_per_sec": 9837.9,
+        "throughput_files_per_sec": 81.8,
+        "concurrency_workers": 2,
+        "total_loc": 100059,
+        "total_files": 832,
+        "sample_timestamp": "2026-09-16T03:14:28.793878+00:00",
+        "speedup_factor": 0.82,
+        "parallel_efficiency_pct": 41.0,
+        "findings_count": 1079
+      },
+      "workers_4": {
+        "wall_time_seconds": 11.5581,
+        "cpu_time_seconds": 11.6562,
+        "cpu_utilization_pct": 100.85,
+        "peak_ram_mb": 80.92,
+        "current_ram_mb": 79.4,
+        "heap_peak_mb": 15.5,
+        "disk_read_kb": 2466.49,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 3.59,
+        "cache_disk_mb": 1.19,
+        "throughput_loc_per_sec": 8657.06,
+        "throughput_files_per_sec": 71.98,
+        "concurrency_workers": 4,
+        "total_loc": 100059,
+        "total_files": 832,
+        "sample_timestamp": "2026-09-16T03:14:40.562488+00:00",
+        "speedup_factor": 0.72,
+        "parallel_efficiency_pct": 18.0,
+        "findings_count": 1079
+      },
+      "workers_8": {
+        "wall_time_seconds": 11.2048,
+        "cpu_time_seconds": 11.6562,
+        "cpu_utilization_pct": 104.03,
+        "peak_ram_mb": 80.92,
+        "current_ram_mb": 78.9,
+        "heap_peak_mb": 14.39,
+        "disk_read_kb": 2466.49,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 3.59,
+        "cache_disk_mb": 1.19,
+        "throughput_loc_per_sec": 8929.98,
+        "throughput_files_per_sec": 74.25,
+        "concurrency_workers": 8,
+        "total_loc": 100059,
+        "total_files": 832,
+        "sample_timestamp": "2026-09-16T03:14:51.964060+00:00",
+        "speedup_factor": 0.74,
+        "parallel_efficiency_pct": 9.3,
+        "findings_count": 1079
+      }
+    },
+    "500k": {
+      "workers_1": {
+        "wall_time_seconds": 48.9787,
+        "cpu_time_seconds": 48.3125,
+        "cpu_utilization_pct": 98.64,
+        "peak_ram_mb": 123.5,
+        "current_ram_mb": 123.47,
+        "heap_peak_mb": 33.13,
+        "disk_read_kb": 12447.21,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 12.13,
+        "cache_disk_mb": 0.0,
+        "throughput_loc_per_sec": 10209.1,
+        "throughput_files_per_sec": 84.85,
+        "concurrency_workers": 1,
+        "total_loc": 500028,
+        "total_files": 4156,
+        "sample_timestamp": "2026-09-16T03:16:02.443061+00:00",
+        "speedup_factor": 1.0,
+        "parallel_efficiency_pct": 100.0,
+        "findings_count": 5458
+      },
+      "workers_2": {
+        "wall_time_seconds": 45.2046,
+        "cpu_time_seconds": 45.6719,
+        "cpu_utilization_pct": 101.03,
+        "peak_ram_mb": 136.0,
+        "current_ram_mb": 131.88,
+        "heap_peak_mb": 40.06,
+        "disk_read_kb": 12447.21,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 12.13,
+        "cache_disk_mb": 0.0,
+        "throughput_loc_per_sec": 11061.43,
+        "throughput_files_per_sec": 91.94,
+        "concurrency_workers": 2,
+        "total_loc": 500028,
+        "total_files": 4156,
+        "sample_timestamp": "2026-09-16T03:16:47.899907+00:00",
+        "speedup_factor": 1.08,
+        "parallel_efficiency_pct": 54.2,
+        "findings_count": 5458
+      },
+      "workers_4": {
+        "wall_time_seconds": 47.3276,
+        "cpu_time_seconds": 48.1562,
+        "cpu_utilization_pct": 101.75,
+        "peak_ram_mb": 153.61,
+        "current_ram_mb": 153.44,
+        "heap_peak_mb": 53.46,
+        "disk_read_kb": 12447.21,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 12.13,
+        "cache_disk_mb": 0.0,
+        "throughput_loc_per_sec": 10565.26,
+        "throughput_files_per_sec": 87.81,
+        "concurrency_workers": 4,
+        "total_loc": 500028,
+        "total_files": 4156,
+        "sample_timestamp": "2026-09-16T03:17:35.517339+00:00",
+        "speedup_factor": 1.03,
+        "parallel_efficiency_pct": 25.9,
+        "findings_count": 5458
+      },
+      "workers_8": {
+        "wall_time_seconds": 46.2964,
+        "cpu_time_seconds": 46.8594,
+        "cpu_utilization_pct": 101.22,
+        "peak_ram_mb": 153.92,
+        "current_ram_mb": 147.96,
+        "heap_peak_mb": 48.46,
+        "disk_read_kb": 12447.21,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 12.13,
+        "cache_disk_mb": 0.0,
+        "throughput_loc_per_sec": 10800.58,
+        "throughput_files_per_sec": 89.77,
+        "concurrency_workers": 8,
+        "total_loc": 500028,
+        "total_files": 4156,
+        "sample_timestamp": "2026-09-16T03:18:22.085584+00:00",
+        "speedup_factor": 1.06,
+        "parallel_efficiency_pct": 13.2,
+        "findings_count": 5458
+      }
+    },
+    "1m": {
+      "workers_1": {
+        "wall_time_seconds": 98.293,
+        "cpu_time_seconds": 96.2812,
+        "cpu_utilization_pct": 97.95,
+        "peak_ram_mb": 268.51,
+        "current_ram_mb": 252.02,
+        "heap_peak_mb": 106.16,
+        "disk_read_kb": 24935.46,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 24.29,
+        "cache_disk_mb": 0.0,
+        "throughput_loc_per_sec": 10174.96,
+        "throughput_files_per_sec": 84.59,
+        "concurrency_workers": 1,
+        "total_loc": 1000128,
+        "total_files": 8315,
+        "sample_timestamp": "2026-09-16T03:21:25.490991+00:00",
+        "speedup_factor": 1.0,
+        "parallel_efficiency_pct": 100.0,
+        "findings_count": 10979
+      },
+      "workers_2": {
+        "wall_time_seconds": 93.9371,
+        "cpu_time_seconds": 94.5781,
+        "cpu_utilization_pct": 100.68,
+        "peak_ram_mb": 302.0,
+        "current_ram_mb": 290.77,
+        "heap_peak_mb": 112.36,
+        "disk_read_kb": 24935.46,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 24.29,
+        "cache_disk_mb": 0.0,
+        "throughput_loc_per_sec": 10646.79,
+        "throughput_files_per_sec": 88.52,
+        "concurrency_workers": 2,
+        "total_loc": 1000128,
+        "total_files": 8315,
+        "sample_timestamp": "2026-09-16T03:23:00.070239+00:00",
+        "speedup_factor": 1.05,
+        "parallel_efficiency_pct": 52.3,
+        "findings_count": 10979
+      },
+      "workers_4": {
+        "wall_time_seconds": 92.4138,
+        "cpu_time_seconds": 93.2188,
+        "cpu_utilization_pct": 100.87,
+        "peak_ram_mb": 302.0,
+        "current_ram_mb": 297.38,
+        "heap_peak_mb": 116.5,
+        "disk_read_kb": 24935.46,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 24.29,
+        "cache_disk_mb": 0.0,
+        "throughput_loc_per_sec": 10822.28,
+        "throughput_files_per_sec": 89.98,
+        "concurrency_workers": 4,
+        "total_loc": 1000128,
+        "total_files": 8315,
+        "sample_timestamp": "2026-09-16T03:24:33.038467+00:00",
+        "speedup_factor": 1.06,
+        "parallel_efficiency_pct": 26.6,
+        "findings_count": 10979
+      },
+      "workers_8": {
+        "wall_time_seconds": 154.7111,
+        "cpu_time_seconds": 154.7188,
+        "cpu_utilization_pct": 100.0,
+        "peak_ram_mb": 302.0,
+        "current_ram_mb": 286.68,
+        "heap_peak_mb": 105.28,
+        "disk_read_kb": 24935.46,
+        "disk_write_kb": 0.0,
+        "target_disk_mb": 24.29,
+        "cache_disk_mb": 0.0,
+        "throughput_loc_per_sec": 6464.49,
+        "throughput_files_per_sec": 53.75,
+        "concurrency_workers": 8,
+        "total_loc": 1000128,
+        "total_files": 8315,
+        "sample_timestamp": "2026-09-16T03:27:09.048509+00:00",
+        "speedup_factor": 0.64,
+        "parallel_efficiency_pct": 7.9,
+        "findings_count": 10979
+      }
+    }
+  },
+  "cache_effectiveness": {
+    "100k": {
+      "cold_run": {
+        "wall_time_seconds": 10.9752,
+        "cpu_time_seconds": 11.25,
+        "cpu_utilization_pct": 102.5,
+        "peak_ram_mb": 80.92,
+        "current_ram_mb": 78.57,
+        "heap_peak_mb": 12.82,
+        "disk_read_kb": 2466.49,
+        "disk_write_kb": 1214.62,
+        "target_disk_mb": 3.59,
+        "cache_disk_mb": 1.19,
+        "throughput_loc_per_sec": 9116.82,
+        "throughput_files_per_sec": 75.81,
+        "concurrency_workers": 4,
+        "total_loc": 100059,
+        "total_files": 832,
+        "sample_timestamp": "2026-09-16T03:15:04.076771+00:00",
+        "cache_stats": {
+          "hits": 0,
+          "misses": 832,
+          "invalidations": 0,
+          "total_entries": 832,
+          "cache_size_bytes": 1243767,
+          "hit_ratio_pct": 0.0,
+          "stale_reasons": []
+        }
+      },
+      "warm_run": {
+        "wall_time_seconds": 0.7855,
+        "cpu_time_seconds": 0.9062,
+        "cpu_utilization_pct": 115.37,
+        "peak_ram_mb": 80.97,
+        "current_ram_mb": 80.56,
+        "heap_peak_mb": 7.98,
+        "disk_read_kb": 2460.17,
+        "disk_write_kb": 732.73,
+        "target_disk_mb": 3.59,
+        "cache_disk_mb": 1.19,
+        "throughput_loc_per_sec": 127377.16,
+        "throughput_files_per_sec": 1059.15,
+        "concurrency_workers": 4,
+        "total_loc": 100059,
+        "total_files": 832,
+        "sample_timestamp": "2026-09-16T03:15:05.107478+00:00",
+        "cache_stats": {
+          "hits": 832,
+          "misses": 0,
+          "invalidations": 0,
+          "total_entries": 832,
+          "cache_size_bytes": 1243767,
+          "hit_ratio_pct": 100.0,
+          "stale_reasons": []
+        },
+        "speedup_over_cold": 13.97
+      },
+      "incremental_90pct_run": {
+        "wall_time_seconds": 2.0682,
+        "cpu_time_seconds": 2.1875,
+        "cpu_utilization_pct": 105.77,
+        "peak_ram_mb": 84.63,
+        "current_ram_mb": 84.52,
+        "heap_peak_mb": 11.09,
+        "disk_read_kb": 2464.78,
+        "disk_write_kb": 796.45,
+        "target_disk_mb": 3.66,
+        "cache_disk_mb": 1.25,
+        "throughput_loc_per_sec": 48460.66,
+        "throughput_files_per_sec": 402.29,
+        "concurrency_workers": 4,
+        "total_loc": 100225,
+        "total_files": 832,
+        "sample_timestamp": "2026-09-16T03:15:07.475989+00:00",
+        "cache_stats": {
+          "hits": 749,
+          "misses": 83,
+          "invalidations": 0,
+          "total_entries": 915,
+          "cache_size_bytes": 1309019,
+          "hit_ratio_pct": 90.02,
+          "stale_reasons": []
+        },
+        "speedup_over_cold": 5.31
+      },
+      "stale_invalidation": {
+        "hits": 0,
+        "misses": 0,
+        "invalidations": 1,
+        "total_entries": 0,
+        "cache_size_bytes": 1017,
+        "hit_ratio_pct": 0.0,
+        "stale_reasons": [
+          "Scanner configuration parameters changed"
+        ]
+      }
+    },
+    "500k": {
+      "cold_run": {
+        "wall_time_seconds": 53.9186,
+        "cpu_time_seconds": 55.2188,
+        "cpu_utilization_pct": 102.41,
+        "peak_ram_mb": 162.01,
+        "current_ram_mb": 157.25,
+        "heap_peak_mb": 53.19,
+        "disk_read_kb": 12447.21,
+        "disk_write_kb": 6104.92,
+        "target_disk_mb": 18.09,
+        "cache_disk_mb": 5.96,
+        "throughput_loc_per_sec": 9273.75,
+        "throughput_files_per_sec": 77.08,
+        "concurrency_workers": 4,
+        "total_loc": 500028,
+        "total_files": 4156,
+        "sample_timestamp": "2026-09-16T03:19:16.778343+00:00",
+        "cache_stats": {
+          "hits": 0,
+          "misses": 4156,
+          "invalidations": 0,
+          "total_entries": 4156,
+          "cache_size_bytes": 6251437,
+          "hit_ratio_pct": 0.0,
+          "stale_reasons": []
+        }
+      },
+      "warm_run": {
+        "wall_time_seconds": 4.4061,
+        "cpu_time_seconds": 4.7031,
+        "cpu_utilization_pct": 106.74,
+        "peak_ram_mb": 168.04,
+        "current_ram_mb": 157.72,
+        "heap_peak_mb": 33.74,
+        "disk_read_kb": 12415.56,
+        "disk_write_kb": 3681.55,
+        "target_disk_mb": 18.09,
+        "cache_disk_mb": 5.96,
+        "throughput_loc_per_sec": 113485.62,
+        "throughput_files_per_sec": 943.24,
+        "concurrency_workers": 4,
+        "total_loc": 500028,
+        "total_files": 4156,
+        "sample_timestamp": "2026-09-16T03:19:22.089564+00:00",
+        "cache_stats": {
+          "hits": 4156,
+          "misses": 0,
+          "invalidations": 0,
+          "total_entries": 4156,
+          "cache_size_bytes": 6251437,
+          "hit_ratio_pct": 100.0,
+          "stale_reasons": []
+        },
+        "speedup_over_cold": 12.24
+      },
+      "incremental_90pct_run": {
+        "wall_time_seconds": 10.5294,
+        "cpu_time_seconds": 10.9844,
+        "cpu_utilization_pct": 104.32,
+        "peak_ram_mb": 168.49,
+        "current_ram_mb": 161.43,
+        "heap_peak_mb": 42.23,
+        "disk_read_kb": 12438.54,
+        "disk_write_kb": 4005.93,
+        "target_disk_mb": 18.43,
+        "cache_disk_mb": 6.28,
+        "throughput_loc_per_sec": 47567.37,
+        "throughput_files_per_sec": 394.7,
+        "concurrency_workers": 4,
+        "total_loc": 500858,
+        "total_files": 4156,
+        "sample_timestamp": "2026-09-16T03:19:33.880421+00:00",
+        "cache_stats": {
+          "hits": 3741,
+          "misses": 415,
+          "invalidations": 0,
+          "total_entries": 4571,
+          "cache_size_bytes": 6583607,
+          "hit_ratio_pct": 90.01,
+          "stale_reasons": []
+        },
+        "speedup_over_cold": 5.12
+      },
+      "stale_invalidation": {
+        "hits": 0,
+        "misses": 0,
+        "invalidations": 1,
+        "total_entries": 0,
+        "cache_size_bytes": 1017,
+        "hit_ratio_pct": 0.0,
+        "stale_reasons": [
+          "Scanner configuration parameters changed"
+        ]
+      }
+    },
+    "1m": {
+      "cold_run": {
+        "wall_time_seconds": 14069.7652,
+        "cpu_time_seconds": 287.1406,
+        "cpu_utilization_pct": 2.04,
+        "peak_ram_mb": 302.0,
+        "current_ram_mb": 280.28,
+        "heap_peak_mb": 96.7,
+        "disk_read_kb": 24935.46,
+        "disk_write_kb": 12252.87,
+        "target_disk_mb": 36.26,
+        "cache_disk_mb": 11.97,
+        "throughput_loc_per_sec": 71.08,
+        "throughput_files_per_sec": 0.59,
+        "concurrency_workers": 4,
+        "total_loc": 1000128,
+        "total_files": 8315,
+        "sample_timestamp": "2026-09-16T07:21:43.898726+00:00",
+        "cache_stats": {
+          "hits": 0,
+          "misses": 8315,
+          "invalidations": 0,
+          "total_entries": 8315,
+          "cache_size_bytes": 12546940,
+          "hit_ratio_pct": 0.0,
+          "stale_reasons": []
+        }
+      },
+      "warm_run": {
+        "wall_time_seconds": 22.6923,
+        "cpu_time_seconds": 25.0781,
+        "cpu_utilization_pct": 110.51,
+        "peak_ram_mb": 302.0,
+        "current_ram_mb": 275.25,
+        "heap_peak_mb": 75.38,
+        "disk_read_kb": 24872.12,
+        "disk_write_kb": 7388.68,
+        "target_disk_mb": 36.26,
+        "cache_disk_mb": 11.97,
+        "throughput_loc_per_sec": 44073.43,
+        "throughput_files_per_sec": 366.42,
+        "concurrency_workers": 4,
+        "total_loc": 1000128,
+        "total_files": 8315,
+        "sample_timestamp": "2026-09-16T07:22:12.173798+00:00",
+        "cache_stats": {
+          "hits": 8315,
+          "misses": 0,
+          "invalidations": 0,
+          "total_entries": 8315,
+          "cache_size_bytes": 12546940,
+          "hit_ratio_pct": 100.0,
+          "stale_reasons": []
+        },
+        "speedup_over_cold": 620.02
+      },
+      "incremental_90pct_run": {
+        "wall_time_seconds": 55.9476,
+        "cpu_time_seconds": 56.125,
+        "cpu_utilization_pct": 100.32,
+        "peak_ram_mb": 302.0,
+        "current_ram_mb": 281.2,
+        "heap_peak_mb": 82.49,
+        "disk_read_kb": 24918.16,
+        "disk_write_kb": 8036.93,
+        "target_disk_mb": 36.93,
+        "cache_disk_mb": 12.6,
+        "throughput_loc_per_sec": 17905.86,
+        "throughput_files_per_sec": 148.62,
+        "concurrency_workers": 4,
+        "total_loc": 1001790,
+        "total_files": 8315,
+        "sample_timestamp": "2026-09-16T07:23:15.888290+00:00",
+        "cache_stats": {
+          "hits": 7484,
+          "misses": 831,
+          "invalidations": 0,
+          "total_entries": 9146,
+          "cache_size_bytes": 13210756,
+          "hit_ratio_pct": 90.01,
+          "stale_reasons": []
+        },
+        "speedup_over_cold": 251.48
+      },
+      "stale_invalidation": {
+        "hits": 0,
+        "misses": 0,
+        "invalidations": 1,
+        "total_entries": 0,
+        "cache_size_bytes": 1017,
+        "hit_ratio_pct": 0.0,
+        "stale_reasons": [
+          "Scanner configuration parameters changed"
+        ]
+      }
+    }
+  },
+  "failure_isolation": {
+    "composite_status": "partial",
+    "total_findings_preserved": 3,
+    "total_errors_recorded": 1,
+    "engines": {
+      "static_ast_engine": {
+        "engine_name": "static_ast_engine",
+        "status": "success",
+        "findings_count": 2,
+        "findings": [
+          {
+            "file": "src/core/auth.py",
+            "algorithm": "AES-256-GCM",
+            "severity": "Medium"
+          },
+          {
+            "file": "src/crypto/cipher.c",
+            "algorithm": "RSA-2048",
+            "severity": "High"
+          }
+        ],
+        "errors": [],
+        "targets_scanned": 15,
+        "targets_failed": 0,
+        "duration_seconds": 0.0001,
+        "isolated_failure": false
+      },
+      "secret_detector_engine": {
+        "engine_name": "secret_detector_engine",
+        "status": "success",
+        "findings_count": 1,
+        "findings": [
+          {
+            "file": "src/network/api.js",
+            "algorithm": "HARDCODED_KEY",
+            "severity": "Critical"
+          }
+        ],
+        "errors": [],
+        "targets_scanned": 15,
+        "targets_failed": 0,
+        "duration_seconds": 0.0,
+        "isolated_failure": false
+      },
+      "dependency_sca_engine": {
+        "engine_name": "dependency_sca_engine",
+        "status": "failed",
+        "findings_count": 0,
+        "findings": [],
+        "errors": [
+          {
+            "error": "ScannerFailureError",
+            "category": "scanner_failure",
+            "code": "ERR_SCANNER_EXECUTION_FAILURE",
+            "message": "Dependency SCA engine crashed: Malformed manifest parser fault",
+            "fatal": true,
+            "details": {
+              "manifest": "package.json",
+              "exit_code": 139
+            },
+            "timestamp": "2026-09-16T07:23:21.320354+00:00"
+          }
+        ],
+        "targets_scanned": 0,
+        "targets_failed": 1,
+        "duration_seconds": 0.0094,
+        "isolated_failure": true
+      }
+    },
+    "anti_masking_verified": true,
+    "non_corruption_verified": true
+  }
+}

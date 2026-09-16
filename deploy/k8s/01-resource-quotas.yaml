@@ -1,0 +1,54 @@
+# ResourceQuota for Control Plane
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ecdat-control-plane-quota
+  namespace: ecdat-control-plane
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: "8Gi"
+    limits.cpu: "8"
+    limits.memory: "16Gi"
+    pods: "20"
+    services: "10"
+    services.loadbalancers: "1"
+    configmaps: "30"
+    secrets: "20"
+    persistentvolumeclaims: "5"
+---
+# LimitRange for Control Plane: Enforces Default and Maximum Resource Limits
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ecdat-control-plane-limits
+  namespace: ecdat-control-plane
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      max:
+        cpu: "2000m"
+        memory: "2Gi"
+      min:
+        cpu: "50m"
+        memory: "32Mi"
+---
+# ResourceQuota for Runtime Agent Namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ecdat-runtime-quota
+  namespace: ecdat-runtime
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: "2Gi"
+    limits.cpu: "4"
+    limits.memory: "4Gi"
+    pods: "50" # DaemonSet scale across nodes

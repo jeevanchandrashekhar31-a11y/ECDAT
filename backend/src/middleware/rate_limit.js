@@ -1,10 +1,23 @@
-/** A small dependency-free fixed-window limiter for authenticated upload routes. */
-function createRateLimitMiddleware({ windowMs = 60_000, max = 60 } = {}) {
+/**
+ * Tiered Rate Limiting Middleware — Phase 15.1
+ *
+ * Implements defenses against rate abuse, credential stuffing, and resource exhaustion.
+ * - Global rate limiter (general API endpoints)
+ * - Sensitive Auth rate limiter (login, refresh, token generation)
+ * - Upload rate limiter (file/CBOM uploads)
+ */
+
+function createRateLimitMiddleware({
+  windowMs = 60_000,
+  max = 60,
+  message = "Rate limit exceeded. Please retry later.",
+  keyGenerator = (req) => req.ip || req.socket?.remoteAddress || "unknown",
+} = {}) {
   const buckets = new Map();
 
   return (req, res, next) => {
     const now = Date.now();
-    const key = req.ip || req.socket?.remoteAddress || "unknown";
+    const key = keyGenerator(req);
     const bucket = buckets.get(key);
     const current =
       !bucket || now >= bucket.resetAt
@@ -13,6 +26,7 @@ function createRateLimitMiddleware({ windowMs = 60_000, max = 60 } = {}) {
 
     current.count += 1;
     buckets.set(key, current);
+
     res.setHeader("RateLimit-Limit", String(max));
     res.setHeader(
       "RateLimit-Remaining",
@@ -27,12 +41,12 @@ function createRateLimitMiddleware({ windowMs = 60_000, max = 60 } = {}) {
       );
       return res.status(429).json({
         error: "TooManyRequests",
-        message: "Upload rate limit exceeded. Retry later.",
+        message,
         requestId: req.id,
       });
     }
 
-    // Bound memory even on a spray of unique source addresses.
+    // Bound memory on a spray of unique addresses
     if (buckets.size > 10_000) {
       for (const [bucketKey, value] of buckets) {
         if (now >= value.resetAt) buckets.delete(bucketKey);
@@ -42,4 +56,30 @@ function createRateLimitMiddleware({ windowMs = 60_000, max = 60 } = {}) {
   };
 }
 
-module.exports = { createRateLimitMiddleware };
+// Global API rate limiter: 300 req/min
+const globalRateLimiter = createRateLimitMiddleware({
+  windowMs: 60_000,
+  max: 300,
+  message: "Global API rate limit exceeded.",
+});
+
+// Sensitive Auth rate limiter: 15 req/min (prevent brute-force & credential stuffing)
+const authRateLimiter = createRateLimitMiddleware({
+  windowMs: 60_000,
+  max: 15,
+  message: "Authentication rate limit exceeded. Please wait before retrying.",
+});
+
+// Upload rate limiter
+const uploadRateLimiter = createRateLimitMiddleware({
+  windowMs: 60_000,
+  max: 60,
+  message: "Upload rate limit exceeded. Retry later.",
+});
+
+module.exports = {
+  createRateLimitMiddleware,
+  globalRateLimiter,
+  authRateLimiter,
+  uploadRateLimiter,
+};

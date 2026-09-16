@@ -6,6 +6,7 @@ import { Assets } from './pages/Assets';
 import { AssetDetail } from './pages/AssetDetail';
 import { Reports } from './pages/Reports';
 import { Roadmap } from './pages/Roadmap';
+import { CryptoGraph } from './pages/CryptoGraph';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -69,6 +70,7 @@ export const App: React.FC = () => {
             <Route path="/assets" element={<Assets />} />
             <Route path="/assets/:assetId" element={<AssetDetail />} />
             <Route path="/roadmap" element={<Roadmap />} />
+            <Route path="/graph" element={<CryptoGraph />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
