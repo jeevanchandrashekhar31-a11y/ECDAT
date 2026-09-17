@@ -44,7 +44,7 @@ jsonschema-specifications==2025.9.1
 license-expression==30.4.4
 nassl==5.4.0
 packageurl-python==0.17.6
-packaging==25.0
+packaging==26.3
 pluggy==1.6.0
 py-serializable==2.1.0
 pycparser==3.0
