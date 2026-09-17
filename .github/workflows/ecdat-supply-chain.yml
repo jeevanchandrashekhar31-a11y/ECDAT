@@ -62,7 +62,7 @@ jobs:
           npm ci --prefix frontend --ignore-scripts
 
       - name: Install Sigstore Cosign (Keyless Signing)
-        uses: sigstore/cosign-installer@d7d6bc7722e3ded31a7b5200a013d12fb84fb349 # v3.8.1
+        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.8.1
 
       - name: Prepare Artifact Directories
         run: |

@@ -28,6 +28,17 @@ def redact_secrets(content: str) -> str:
         redacted_full = full_match.replace(body, redacted_body)
         sanitized = sanitized.replace(full_match, redacted_full)
 
+    # Redact standalone private key headers that lack a full PEM body but signal private key material
+    if (
+        re.search(r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----", sanitized)
+        and "[REDACTED_" not in sanitized
+    ):
+        sanitized = re.sub(
+            r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----",
+            r"\g<0> [REDACTED_PRIVATE_KEY]",
+            sanitized,
+        )
+
     # Redact Long entropy blobs (possible base64 keys)
     for match in LONG_ENTROPY_BLOB_REGEX.finditer(sanitized):
         val = match.group(0)

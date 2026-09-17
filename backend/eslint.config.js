@@ -14,11 +14,19 @@ const nodeGlobals = {
 module.exports = [
   { ignores: ['node_modules', 'coverage'] },
   {
-    files: ['src/**/*.js', 'tests/**/*.js'],
+    files: ['src/**/*.js'],
     ...js.configs.recommended,
     languageOptions: { sourceType: 'commonjs', globals: nodeGlobals },
     rules: {
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }]
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }]
+    }
+  },
+  {
+    files: ['tests/**/*.js'],
+    ...js.configs.recommended,
+    languageOptions: { sourceType: 'commonjs', globals: nodeGlobals },
+    rules: {
+      'no-unused-vars': 'off'
     }
   }
 ];

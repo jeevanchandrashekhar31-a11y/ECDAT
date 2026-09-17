@@ -27,6 +27,7 @@ export function isSafeUrl(rawUrl: unknown, options: SafeUrlOptions = {}): boolea
   if (!trimmed) return false;
 
   // 1. Defend against control characters, NULL bytes, and non-printable characters
+  // eslint-disable-next-line no-control-regex
   if (/[\x00-\x1F\x7F]/.test(trimmed)) {
     return false;
   }

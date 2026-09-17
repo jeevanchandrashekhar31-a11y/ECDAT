@@ -189,7 +189,7 @@ const mockGraphResponse: CryptoGraphResponse = {
 describe('Phase 17.2 — Crypto Graph Visualization UI', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (api.getCryptoGraph as any).mockResolvedValue(mockGraphResponse);
+    vi.mocked(api.getCryptoGraph).mockResolvedValue(mockGraphResponse as unknown as Awaited<ReturnType<typeof api.getCryptoGraph>>);
   });
 
   it('renders graph header, topology filters, and all 6 pipeline tiers', async () => {

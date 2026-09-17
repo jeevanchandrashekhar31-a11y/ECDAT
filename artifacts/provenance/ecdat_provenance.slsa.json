@@ -4,31 +4,31 @@
     {
       "name": "artifacts/sbom/ecdat_sbom_cyclonedx.json",
       "digest": {
-        "sha256": "5b27f520d1d83cb33ad125e3d734087ca659c5baf523eced5ff49357ac7efabc"
+        "sha256": "8020a57e9e2309214b61bb0fc902c422538633aafdec7a2c37615472c3c8d91a"
       }
     },
     {
       "name": "artifacts/sbom/ecdat_sbom_spdx.json",
       "digest": {
-        "sha256": "f8171ca5c47c43444e6caff6fd33305350575794201154d28dfee5a3eed0f8a9"
+        "sha256": "d24c367dc0f4ed103e607b81391508557a9979bfbbc38f67821a33569807305b"
       }
     },
     {
       "name": "artifacts/security/ecdat_vulnerability_report.json",
       "digest": {
-        "sha256": "54f96d9bd68168701a843492ccdb620bc69cf43362fcad6ee33069449103e132"
+        "sha256": "e5ab0ac0390304b3203d3f327a588eab8b46886cbf738a8b7a48f6a16d5b5754"
       }
     },
     {
       "name": "artifacts/security/VULNERABILITY_REPORT.md",
       "digest": {
-        "sha256": "55780a58eb1bdd082288730bf47adfca055011162c92f4b211d9ed3b00448a7e"
+        "sha256": "9c7de46b2c3b2427c9beee564d4d9f0fe8c4fc8de87bcc5eebbb564f1d042dca"
       }
     },
     {
       "name": "artifacts/SHA256SUMS",
       "digest": {
-        "sha256": "c68dee1bb7f15bff17ae7bd8503f1db2bdf97fefcb5637262676a3ff2053ed96"
+        "sha256": "b5ac31b2a418f7135be4b57046dde7dd775b2f50b575de8709bd90ee41f07330"
       }
     }
   ],
@@ -45,7 +45,7 @@
         "source": {
           "uri": "git+https://github.com/jeevanchandrashekhar31-a11y/ECDAT.git",
           "digest": {
-            "sha1": "1ddef6ca6ebdce1016a05f5d0b52fcf15b409d01"
+            "sha1": "c4e68f88030c81d965d1852a45d6934b5178c01d"
           }
         }
       },
@@ -121,9 +121,9 @@
         }
       },
       "metadata": {
-        "invocationId": "b76c29f5-7acd-44cd-b311-7326ffb57863",
-        "startedOn": "2026-09-17T01:11:43.046610+00:00",
-        "finishedOn": "2026-09-17T01:11:43.046610+00:00"
+        "invocationId": "0e023f18-9012-4d62-9906-ac04f12d1055",
+        "startedOn": "2026-09-17T02:12:02.384482+00:00",
+        "finishedOn": "2026-09-17T02:12:02.384482+00:00"
       },
       "byproducts": [
         {

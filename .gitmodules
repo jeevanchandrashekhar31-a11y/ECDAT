@@ -1,0 +1,7 @@
+[submodule "examples/real_target/examples/real_target/wolfssl"]
+	path = examples/real_target/examples/real_target/wolfssl
+	url = https://github.com/wolfSSL/wolfssl.git
+
+[submodule "testing/examples/real_targets/mbedtls"]
+	path = testing/examples/real_targets/mbedtls
+	url = https://github.com/Mbed-TLS/mbedtls.git

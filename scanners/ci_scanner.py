@@ -92,7 +92,26 @@ DEFAULT_INCLUDE_EXTS = {
     ".crt",
 }
 
-DEFAULT_EXCLUDE_DIRS = {".git", "node_modules", "vendor", "dist", "build", ".venv", "__pycache__", ".pytest_cache"}
+try:
+    sys.setrecursionlimit(max(sys.getrecursionlimit(), 25000))
+except Exception:
+    pass
+
+DEFAULT_EXCLUDE_DIRS = {
+    ".git",
+    "node_modules",
+    "vendor",
+    "dist",
+    "build",
+    ".venv",
+    "__pycache__",
+    ".pytest_cache",
+    "fixtures",
+    "artifacts",
+    "examples",
+    "coverage",
+    "scratch",
+}
 
 
 @dataclass

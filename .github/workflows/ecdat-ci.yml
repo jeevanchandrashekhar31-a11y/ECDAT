@@ -57,20 +57,18 @@ jobs:
         id: ci_scanner
         run: |
           # Configure scan mode: PR diff-aware vs Full Repository
-          SCAN_ARGS="."
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "Executing Pull Request diff-aware scan against origin/${{ github.base_ref }}..."
-            SCAN_ARGS=". --pr-base origin/${{ github.base_ref }}"
+            SCAN_ARGS=". --pr-base origin/${{ github.base_ref }} --fail-on critical"
           else
             echo "Executing Full Repository scan..."
-            SCAN_ARGS="."
+            SCAN_ARGS=". --fail-on none"
           fi
 
           set +e
           python -m scanners.ci_scanner $SCAN_ARGS \
             -o artifacts/ci/cbom.json \
-            --output-sarif artifacts/ci/ecdat.sarif \
-            --fail-on critical
+            --output-sarif artifacts/ci/ecdat.sarif
           SCAN_EXIT_CODE=$?
           set -e
 

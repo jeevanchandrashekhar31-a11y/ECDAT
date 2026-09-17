@@ -192,7 +192,9 @@ export const sessionAuthStorage = {
           memoryTokenStore.setToken('api_key', item, 60 * 60 * 1000, 'ApiKey');
           return item;
         }
-      } catch {}
+      } catch {
+        // sessionStorage inaccessible or restricted
+      }
     }
 
     return null;
@@ -204,7 +206,9 @@ export const sessionAuthStorage = {
       if (typeof window !== 'undefined' && window.sessionStorage) {
         try {
           window.sessionStorage.removeItem('ecdat_session_api_key');
-        } catch {}
+        } catch {
+          // sessionStorage inaccessible or restricted
+        }
       }
       return;
     }
@@ -214,7 +218,9 @@ export const sessionAuthStorage = {
     if (typeof window !== 'undefined' && window.sessionStorage) {
       try {
         window.sessionStorage.setItem('ecdat_session_api_key', trimmed);
-      } catch {}
+      } catch {
+        // sessionStorage inaccessible or restricted
+      }
     }
   },
 
@@ -223,7 +229,9 @@ export const sessionAuthStorage = {
     if (typeof window !== 'undefined' && window.sessionStorage) {
       try {
         window.sessionStorage.removeItem('ecdat_session_api_key');
-      } catch {}
+      } catch {
+        // sessionStorage inaccessible or restricted
+      }
     }
     purgeLocalStorageSecrets();
   },

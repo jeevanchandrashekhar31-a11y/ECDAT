@@ -95,6 +95,7 @@ export function sanitizePlainText(input: string): string {
   if (!input || typeof input !== 'string') return '';
   // Strip NULL bytes and control characters (except tab, LF, CR)
   return input
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     // Neutralize Unicode direction override characters (prevents Trojan Source attacks)
     .replace(/[\u202A-\u202E\u2066-\u2069]/g, '')
