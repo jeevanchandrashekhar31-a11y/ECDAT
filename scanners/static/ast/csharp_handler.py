@@ -65,11 +65,36 @@ class CSharpCryptoRuleProvider(CryptoRuleProvider):
             CryptoDetectionRule("CS_WEAK_HASH_SHA1", "SHA-1", "SHA1.Create()", "weak_hash", "high", "high"),
             CryptoDetectionRule("CS_WEAK_CIPHER_DES", "DES", "DES.Create()", "weak_cipher", "critical", "high"),
             CryptoDetectionRule("CS_WEAK_CIPHER_3DES", "3DES", "TripleDES.Create()", "weak_cipher", "critical", "high"),
-            CryptoDetectionRule("CS_INSECURE_CIPHER_MODE_ECB", "ECB", "CipherMode.ECB", "insecure_cipher_mode", "critical", "high"),
-            CryptoDetectionRule("CS_WEAK_RSA_KEY_SIZE", "RSA-Weak", "RSA.Create(1024)", "weak_asymmetric_key", "critical", "high"),
-            CryptoDetectionRule("CS_DISABLED_CERT_VALIDATION", "ServerCertificateValidationCallback => true", "ServerCertificateValidationCallback = ... => true", "disabled_certificate_validation", "critical", "high"),
-            CryptoDetectionRule("CS_INSECURE_TLS_VERSION", "TLSv1.0", "SecurityProtocolType.Tls", "insecure_tls_protocol", "critical", "high"),
-            CryptoDetectionRule("CS_WEAK_CERT_SIGNATURE_ALGO", "MD5WithRSA", "CertificateRequest(..., HashAlgorithmName.MD5)", "weak_signature_algorithm", "critical", "high"),
+            CryptoDetectionRule(
+                "CS_INSECURE_CIPHER_MODE_ECB", "ECB", "CipherMode.ECB", "insecure_cipher_mode", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "CS_WEAK_RSA_KEY_SIZE", "RSA-Weak", "RSA.Create(1024)", "weak_asymmetric_key", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "CS_DISABLED_CERT_VALIDATION",
+                "ServerCertificateValidationCallback => true",
+                "ServerCertificateValidationCallback = ... => true",
+                "disabled_certificate_validation",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "CS_INSECURE_TLS_VERSION",
+                "TLSv1.0",
+                "SecurityProtocolType.Tls",
+                "insecure_tls_protocol",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "CS_WEAK_CERT_SIGNATURE_ALGO",
+                "MD5WithRSA",
+                "CertificateRequest(..., HashAlgorithmName.MD5)",
+                "weak_signature_algorithm",
+                "critical",
+                "high",
+            ),
         ]
 
 

@@ -21,7 +21,10 @@ from scanners.static.results import StaticFinding
 
 # Map crate names to their primary cryptographic capability categories
 RUST_CRATE_CAPABILITY_MAP: Dict[str, Dict[str, str]] = {
-    "ring": {"capability": "General Cryptographic Primitives (AEAD, Digest, Key Exchange, Signatures)", "category": "crypto_library"},
+    "ring": {
+        "capability": "General Cryptographic Primitives (AEAD, Digest, Key Exchange, Signatures)",
+        "category": "crypto_library",
+    },
     "rustls": {"capability": "TLS Protocol Implementation", "category": "tls_library"},
     "webpki": {"capability": "X.509 Certificate Validation", "category": "certificate_library"},
     "md-5": {"capability": "MD5 Hash Algorithm (Broken)", "category": "weak_hash"},
@@ -148,67 +151,188 @@ class RustCryptoDetector:
         # 1. RustCrypto: MD5 & SHA-1 (Broken/Weak)
         if "Md5::new()" in call_text or "md5::compute(" in call_text or "Md5::digest(" in call_text:
             self.observed_crates.add("md5")
-            self._add_finding(lineno, "RUST_WEAK_HASH_MD5", "MD5", "weak_hash", "critical", "OBSERVED", "md5", "Broken MD5 hash algorithm called via RustCrypto")
+            self._add_finding(
+                lineno,
+                "RUST_WEAK_HASH_MD5",
+                "MD5",
+                "weak_hash",
+                "critical",
+                "OBSERVED",
+                "md5",
+                "Broken MD5 hash algorithm called via RustCrypto",
+            )
             return
         if "Sha1::new()" in call_text or "sha1::compute(" in call_text or "Sha1::digest(" in call_text:
             self.observed_crates.add("sha1")
-            self._add_finding(lineno, "RUST_WEAK_HASH_SHA1", "SHA-1", "weak_hash", "high", "OBSERVED", "sha1", "Deprecated SHA-1 hash algorithm called via RustCrypto")
+            self._add_finding(
+                lineno,
+                "RUST_WEAK_HASH_SHA1",
+                "SHA-1",
+                "weak_hash",
+                "high",
+                "OBSERVED",
+                "sha1",
+                "Deprecated SHA-1 hash algorithm called via RustCrypto",
+            )
             return
 
         # 2. RustCrypto: Secure Hashes (SHA-2, SHA-3)
         if "Sha256::new()" in call_text or "Sha256::digest(" in call_text or "Sha512::new()" in call_text:
             self.observed_crates.add("sha2")
             algo = "SHA-512" if "512" in call_text else "SHA-256"
-            self._add_finding(lineno, "RUST_HASH_SHA2", algo, "cryptographic_hash", "low", "OBSERVED", "sha2", f"Secure {algo} hash algorithm called")
+            self._add_finding(
+                lineno,
+                "RUST_HASH_SHA2",
+                algo,
+                "cryptographic_hash",
+                "low",
+                "OBSERVED",
+                "sha2",
+                f"Secure {algo} hash algorithm called",
+            )
             return
 
         # 3. RustCrypto: Ciphers (DES, Blowfish vs AES)
         if "Des::new(" in call_text or "DesEde3::new(" in call_text:
             self.observed_crates.add("des")
-            self._add_finding(lineno, "RUST_WEAK_CIPHER_DES", "DES", "weak_cipher", "critical", "OBSERVED", "des", "Insecure DES block cipher initialized")
+            self._add_finding(
+                lineno,
+                "RUST_WEAK_CIPHER_DES",
+                "DES",
+                "weak_cipher",
+                "critical",
+                "OBSERVED",
+                "des",
+                "Insecure DES block cipher initialized",
+            )
             return
         if "Blowfish::new(" in call_text:
             self.observed_crates.add("blowfish")
-            self._add_finding(lineno, "RUST_WEAK_CIPHER_BLOWFISH", "Blowfish", "weak_cipher", "critical", "OBSERVED", "blowfish", "Insecure Blowfish block cipher initialized (Sweet32 vulnerability)")
+            self._add_finding(
+                lineno,
+                "RUST_WEAK_CIPHER_BLOWFISH",
+                "Blowfish",
+                "weak_cipher",
+                "critical",
+                "OBSERVED",
+                "blowfish",
+                "Insecure Blowfish block cipher initialized (Sweet32 vulnerability)",
+            )
             return
         if "Aes256Gcm::new(" in call_text or "Aes128Gcm::new(" in call_text:
             self.observed_crates.add("aes-gcm")
             algo = "AES-256-GCM" if "256" in call_text else "AES-128-GCM"
-            self._add_finding(lineno, "RUST_AEAD_AES_GCM", algo, "symmetric_cipher", "low", "OBSERVED", "aes-gcm", f"Modern authenticated {algo} AEAD initialized")
+            self._add_finding(
+                lineno,
+                "RUST_AEAD_AES_GCM",
+                algo,
+                "symmetric_cipher",
+                "low",
+                "OBSERVED",
+                "aes-gcm",
+                f"Modern authenticated {algo} AEAD initialized",
+            )
             return
 
         # 4. ring: digest, aead, signature, agreement
         if "digest::digest(" in call_text or "ring::digest::" in call_text:
             self.observed_crates.add("ring")
             if "SHA1_FOR_LEGACY_USE_ONLY" in call_text:
-                self._add_finding(lineno, "RUST_RING_WEAK_SHA1", "SHA-1", "weak_hash", "high", "OBSERVED", "ring", "ring SHA1_FOR_LEGACY_USE_ONLY used")
+                self._add_finding(
+                    lineno,
+                    "RUST_RING_WEAK_SHA1",
+                    "SHA-1",
+                    "weak_hash",
+                    "high",
+                    "OBSERVED",
+                    "ring",
+                    "ring SHA1_FOR_LEGACY_USE_ONLY used",
+                )
             else:
-                self._add_finding(lineno, "RUST_RING_DIGEST", "SHA-256", "cryptographic_hash", "low", "OBSERVED", "ring", "ring secure cryptographic digest invoked")
+                self._add_finding(
+                    lineno,
+                    "RUST_RING_DIGEST",
+                    "SHA-256",
+                    "cryptographic_hash",
+                    "low",
+                    "OBSERVED",
+                    "ring",
+                    "ring secure cryptographic digest invoked",
+                )
             return
         if "aead::SealingKey::new(" in call_text or "ring::aead::" in call_text:
             self.observed_crates.add("ring")
-            self._add_finding(lineno, "RUST_RING_AEAD", "AEAD", "symmetric_cipher", "low", "OBSERVED", "ring", "ring authenticated encryption (AEAD) invoked")
+            self._add_finding(
+                lineno,
+                "RUST_RING_AEAD",
+                "AEAD",
+                "symmetric_cipher",
+                "low",
+                "OBSERVED",
+                "ring",
+                "ring authenticated encryption (AEAD) invoked",
+            )
             return
 
         # 5. rustls: ClientConfig, ServerConfig, DangerousClientConfig (ServerCertVerifier)
-        if "set_certificate_verifier(" in call_text or "DangerousClientConfig" in call_text or "NoServerAuth" in call_text:
+        if (
+            "set_certificate_verifier(" in call_text
+            or "DangerousClientConfig" in call_text
+            or "NoServerAuth" in call_text
+        ):
             self.observed_crates.add("rustls")
             if any(w in call_text for w in ("NoServerAuth", "DummyVerifier", "danger().set_certificate_verifier")):
-                self._add_finding(lineno, "RUST_RUSTLS_DISABLED_CERT_VALIDATION", "TLS", "disabled_certificate_validation", "critical", "OBSERVED", "rustls", "rustls custom certificate verifier disables verification")
+                self._add_finding(
+                    lineno,
+                    "RUST_RUSTLS_DISABLED_CERT_VALIDATION",
+                    "TLS",
+                    "disabled_certificate_validation",
+                    "critical",
+                    "OBSERVED",
+                    "rustls",
+                    "rustls custom certificate verifier disables verification",
+                )
                 return
         if "ClientConfig::builder(" in call_text or "ServerConfig::builder(" in call_text:
             self.observed_crates.add("rustls")
-            self._add_finding(lineno, "RUST_RUSTLS_CONFIG", "TLS", "tls_protocol", "low", "OBSERVED", "rustls", "rustls secure TLS configuration builder initialized")
+            self._add_finding(
+                lineno,
+                "RUST_RUSTLS_CONFIG",
+                "TLS",
+                "tls_protocol",
+                "low",
+                "OBSERVED",
+                "rustls",
+                "rustls secure TLS configuration builder initialized",
+            )
             return
 
         # 6. Dalek Crates: ed25519-dalek & x25519-dalek
         if "SigningKey::generate(" in call_text or "ed25519_dalek::" in call_text:
             self.observed_crates.add("ed25519-dalek")
-            self._add_finding(lineno, "RUST_ED25519_KEY", "Ed25519", "asymmetric_key", "medium", "OBSERVED", "ed25519-dalek", "ed25519-dalek digital signature operation")
+            self._add_finding(
+                lineno,
+                "RUST_ED25519_KEY",
+                "Ed25519",
+                "asymmetric_key",
+                "medium",
+                "OBSERVED",
+                "ed25519-dalek",
+                "ed25519-dalek digital signature operation",
+            )
             return
         if "EphemeralSecret::random(" in call_text or "x25519_dalek::" in call_text:
             self.observed_crates.add("x25519-dalek")
-            self._add_finding(lineno, "RUST_X25519_KEX", "X25519", "asymmetric_key", "medium", "OBSERVED", "x25519-dalek", "x25519-dalek Diffie-Hellman key exchange")
+            self._add_finding(
+                lineno,
+                "RUST_X25519_KEX",
+                "X25519",
+                "asymmetric_key",
+                "medium",
+                "OBSERVED",
+                "x25519-dalek",
+                "x25519-dalek Diffie-Hellman key exchange",
+            )
             return
 
     def _record_present_dependencies(self):
@@ -223,7 +347,11 @@ class RustCryptoDetector:
 
             # If crate is in Cargo.toml dependencies but has not been observed/invoked in source code
             if crate not in self.observed_crates and crate.replace("-", "_") not in self.observed_crates:
-                rel_path = str(self.file_path.relative_to(self.root_dir)).replace("\\", "/") if self.root_dir in self.file_path.parents or self.file_path == self.root_dir else str(self.file_path).replace("\\", "/")
+                rel_path = (
+                    str(self.file_path.relative_to(self.root_dir)).replace("\\", "/")
+                    if self.root_dir in self.file_path.parents or self.file_path == self.root_dir
+                    else str(self.file_path).replace("\\", "/")
+                )
                 capability = info["capability"]
 
                 finding = StaticFinding(
@@ -241,12 +369,26 @@ class RustCryptoDetector:
                 )
                 self.findings.append(finding)
 
-    def _add_finding(self, line_number: int, rule_id: str, algorithm: str, finding_type: str, severity: str, reachability: str, crate: str, reason: str):
+    def _add_finding(
+        self,
+        line_number: int,
+        rule_id: str,
+        algorithm: str,
+        finding_type: str,
+        severity: str,
+        reachability: str,
+        crate: str,
+        reason: str,
+    ):
         evidence_line = ""
         if 1 <= line_number <= len(self.lines):
             evidence_line = self.lines[line_number - 1].strip()
 
-        rel_path = str(self.file_path.relative_to(self.root_dir)).replace("\\", "/") if self.root_dir in self.file_path.parents or self.file_path == self.root_dir else str(self.file_path).replace("\\", "/")
+        rel_path = (
+            str(self.file_path.relative_to(self.root_dir)).replace("\\", "/")
+            if self.root_dir in self.file_path.parents or self.file_path == self.root_dir
+            else str(self.file_path).replace("\\", "/")
+        )
 
         dep_info = f"@{self.cargo_toml_deps.get(crate, 'unknown')}" if crate in self.cargo_toml_deps else ""
         cap_desc = RUST_CRATE_CAPABILITY_MAP.get(crate, {}).get("capability", "Cryptographic API")

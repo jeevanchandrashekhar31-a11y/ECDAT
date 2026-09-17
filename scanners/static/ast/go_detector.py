@@ -85,7 +85,7 @@ class GoCryptoDetector:
                             if len(parts) >= 2:
                                 deps[parts[0]] = parts[1]
                         elif line.startswith("require "):
-                            parts = line[len("require "):].strip().split()
+                            parts = line[len("require ") :].strip().split()
                             if len(parts) >= 2:
                                 deps[parts[0]] = parts[1]
                     if deps:
@@ -165,6 +165,7 @@ class GoCryptoDetector:
 
     def _collect_constants_and_vars(self, root: tree_sitter.Node):
         """Walks AST to record declared constants and package-level variables."""
+
         def walk_consts(n: tree_sitter.Node):
             if n.type == "const_spec" or n.type == "var_spec":
                 name = None
@@ -505,7 +506,9 @@ class GoCryptoDetector:
             )
             return
 
-        if any(w in import_path for w in ("cast5", "tea", "xtea")) or (pkg_alias in ("cast5", "tea", "xtea") and "Cipher" in func_name):
+        if any(w in import_path for w in ("cast5", "tea", "xtea")) or (
+            pkg_alias in ("cast5", "tea", "xtea") and "Cipher" in func_name
+        ):
             legacy_name = "CAST5" if "cast5" in import_path else "TEA"
             self._add_finding(
                 lineno,
@@ -681,7 +684,11 @@ class GoCryptoDetector:
         if 1 <= line_number <= len(self.lines):
             evidence_line = self.lines[line_number - 1].strip()
 
-        rel_path = str(self.file_path.relative_to(self.root_dir)).replace("\\", "/") if self.root_dir in self.file_path.parents or self.file_path == self.root_dir else str(self.file_path).replace("\\", "/")
+        rel_path = (
+            str(self.file_path.relative_to(self.root_dir)).replace("\\", "/")
+            if self.root_dir in self.file_path.parents or self.file_path == self.root_dir
+            else str(self.file_path).replace("\\", "/")
+        )
 
         finding = StaticFinding(
             file_path=rel_path,

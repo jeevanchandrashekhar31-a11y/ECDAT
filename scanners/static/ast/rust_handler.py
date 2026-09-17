@@ -64,9 +64,25 @@ class RustCryptoRuleProvider(CryptoRuleProvider):
             CryptoDetectionRule("RUST_WEAK_HASH_MD5", "MD5", "Md5::new()", "weak_hash", "critical", "high"),
             CryptoDetectionRule("RUST_WEAK_HASH_SHA1", "SHA-1", "Sha1::new()", "weak_hash", "high", "high"),
             CryptoDetectionRule("RUST_WEAK_CIPHER_DES", "DES", "Des::new()", "weak_cipher", "critical", "high"),
-            CryptoDetectionRule("RUST_WEAK_CIPHER_BLOWFISH", "Blowfish", "Blowfish::new()", "weak_cipher", "critical", "high"),
-            CryptoDetectionRule("RUST_RUSTLS_DISABLED_CERT_VALIDATION", "danger().set_certificate_verifier", "set_certificate_verifier(NoServerAuth)", "disabled_certificate_validation", "critical", "high"),
-            CryptoDetectionRule("RUST_CRATE_PRESENT_ONLY", "Dependency", "Cargo.toml dependency present without observed execution", "dependency_present", "info", "high"),
+            CryptoDetectionRule(
+                "RUST_WEAK_CIPHER_BLOWFISH", "Blowfish", "Blowfish::new()", "weak_cipher", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "RUST_RUSTLS_DISABLED_CERT_VALIDATION",
+                "danger().set_certificate_verifier",
+                "set_certificate_verifier(NoServerAuth)",
+                "disabled_certificate_validation",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "RUST_CRATE_PRESENT_ONLY",
+                "Dependency",
+                "Cargo.toml dependency present without observed execution",
+                "dependency_present",
+                "info",
+                "high",
+            ),
         ]
 
 

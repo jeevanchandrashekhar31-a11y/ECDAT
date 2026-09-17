@@ -42,7 +42,7 @@ class SafePeParser:
             return False
         e_lfanew = struct.unpack_from("<I", data, 0x3C)[0]
         if e_lfanew + 4 <= len(data):
-            return data[e_lfanew:e_lfanew + 4] == b"PE\x00\x00"
+            return data[e_lfanew : e_lfanew + 4] == b"PE\x00\x00"
         return False
 
     def parse(self, data: bytes, file_path: str, options: Optional[ParserOptions] = None) -> BinaryMetadata:
@@ -54,15 +54,14 @@ class SafePeParser:
 
         # 1. DOS Header & PE offset
         e_lfanew = struct.unpack_from("<I", data, 0x3C)[0]
-        if e_lfanew + 24 > len(data) or data[e_lfanew:e_lfanew + 4] != b"PE\x00\x00":
+        if e_lfanew + 24 > len(data) or data[e_lfanew : e_lfanew + 4] != b"PE\x00\x00":
             raise ValueError("Invalid PE signature.")
 
         # 2. COFF File Header (20 bytes at e_lfanew + 4)
         coff_offset = e_lfanew + 4
-        (
-            machine, num_sections, time_date_stamp,
-            ptr_sym_tab, num_symbols, size_opt_header, characteristics
-        ) = struct.unpack_from("<HHIIIHH", data, coff_offset)
+        (machine, num_sections, time_date_stamp, ptr_sym_tab, num_symbols, size_opt_header, characteristics) = (
+            struct.unpack_from("<HHIIIHH", data, coff_offset)
+        )
 
         arch_name = PE_MACHINES.get(machine, f"machine_{hex(machine)}")
 
@@ -105,12 +104,10 @@ class SafePeParser:
         if num_sections > 0 and sections_offset + (num_sections * 40) <= len(data):
             for i in range(min(num_sections, 96)):
                 sec_off = sections_offset + (i * 40)
-                sec_name_raw, virt_size, virt_addr, raw_size, raw_ptr = struct.unpack_from(
-                    "<8sIIII", data, sec_off
-                )
+                sec_name_raw, virt_size, virt_addr, raw_size, raw_ptr = struct.unpack_from("<8sIIII", data, sec_off)
                 sec_name = sec_name_raw.split(b"\x00")[0].decode("ascii", errors="ignore")
 
-                sec_bytes = data[raw_ptr:raw_ptr + raw_size] if raw_ptr + raw_size <= len(data) else b""
+                sec_bytes = data[raw_ptr : raw_ptr + raw_size] if raw_ptr + raw_size <= len(data) else b""
                 entropy = calculate_entropy(sec_bytes) if sec_bytes else 0.0
 
                 sec_meta = SectionMetadata(
@@ -123,13 +120,15 @@ class SafePeParser:
                     entropy=entropy,
                 )
                 sections.append(sec_meta)
-                raw_sections.append({
-                    "name": sec_name,
-                    "va": virt_addr,
-                    "vsize": virt_size,
-                    "raw_size": raw_size,
-                    "raw_ptr": raw_ptr,
-                })
+                raw_sections.append(
+                    {
+                        "name": sec_name,
+                        "va": virt_addr,
+                        "vsize": virt_size,
+                        "raw_size": raw_size,
+                        "raw_ptr": raw_ptr,
+                    }
+                )
 
         # Helper to convert RVA to File Offset
         def rva_to_offset(rva: int) -> Optional[int]:
@@ -212,7 +211,7 @@ class SafePeParser:
         if options.extract_certificates and security_file_offset > 0 and security_size > 8:
             if security_file_offset + 8 <= len(data):
                 dw_length, w_revision, w_cert_type = struct.unpack_from("<IIH", data, security_file_offset)
-                cert_data = data[security_file_offset + 8:security_file_offset + dw_length]
+                cert_data = data[security_file_offset + 8 : security_file_offset + dw_length]
                 if cert_data:
                     cert_sha256 = hashlib.sha256(cert_data).hexdigest()
                     # Parse subject or heuristic from certificate blob

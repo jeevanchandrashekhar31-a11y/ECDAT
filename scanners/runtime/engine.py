@@ -44,6 +44,7 @@ class RuntimeCapabilityStatus(str, Enum):
 
 class SensitiveDataExposureError(ValueError):
     """Raised when an attempt is made to record or emit sensitive payloads in runtime observations."""
+
     pass
 
 
@@ -77,7 +78,9 @@ def assert_metadata_only(data: Dict[str, Any], context: str = "runtime_event") -
     """
     for key, val in data.items():
         k_lower = key.lower()
-        if k_lower in FORBIDDEN_PAYLOAD_KEYS or any(f in k_lower for f in ["private_key", "plaintext", "password", "token", "payload"]):
+        if k_lower in FORBIDDEN_PAYLOAD_KEYS or any(
+            f in k_lower for f in ["private_key", "plaintext", "password", "token", "payload"]
+        ):
             raise SensitiveDataExposureError(
                 f"Security Invariant Violation in {context}: Forbidden sensitive field '{key}' detected. "
                 "Runtime discovery MUST capture metadata only (process, library, operation, parameters)."
@@ -97,6 +100,7 @@ class RuntimeCryptoEvent:
     """
     Structured metadata-only observation of a cryptographic operation at runtime.
     """
+
     process_id: int
     process_name: str
     library_name: str
@@ -291,9 +295,14 @@ class RuntimeObservationSubsystem:
         proc_ref = f"proc:{event.process_id}:{event.process_name}"
         lib_ref = f"lib:{event.library_name.lower()}"
         fn_ref = f"fn:{event.library_name.lower()}:{event.function_name}"
-        
+
         # Derive primary crypto asset from operation and parameters
-        algo_name = event.parameters.get("cipher_name") or event.parameters.get("digest_name") or event.parameters.get("algorithm") or "unknown_algorithm"
+        algo_name = (
+            event.parameters.get("cipher_name")
+            or event.parameters.get("digest_name")
+            or event.parameters.get("algorithm")
+            or "unknown_algorithm"
+        )
         key_size = event.parameters.get("key_length") or event.parameters.get("key_size_bits")
         asset_id = f"runtime:asset:{algo_name}"
         if key_size:

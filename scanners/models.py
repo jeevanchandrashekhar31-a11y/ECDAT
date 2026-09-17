@@ -88,7 +88,6 @@ class CodeCryptoFinding(BaseModel):
     secret_type: Optional[str] = None
 
 
-
 class BinaryContainerFinding(BaseModel):
     """
     Represents a cryptographic finding from a compiled binary or container image scan.

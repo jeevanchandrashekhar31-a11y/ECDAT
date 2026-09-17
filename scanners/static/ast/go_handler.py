@@ -63,14 +63,53 @@ class GoCryptoRuleProvider(CryptoRuleProvider):
         return [
             CryptoDetectionRule("GO_WEAK_HASH_MD5", "MD5", "md5.New()", "weak_hash", "critical", "high"),
             CryptoDetectionRule("GO_WEAK_HASH_SHA1", "SHA-1", "sha1.New()", "weak_hash", "high", "high"),
-            CryptoDetectionRule("GO_WEAK_HMAC_MD5", "HMAC-MD5", "hmac.New(md5.New, key)", "weak_hash", "critical", "high"),
-            CryptoDetectionRule("GO_WEAK_RSA_KEY_SIZE", "RSA-Weak", "rsa.GenerateKey(rand, 1024)", "weak_asymmetric_key", "critical", "high"),
-            CryptoDetectionRule("GO_WEAK_ECC_CURVE", "ECDSA-P224", "ecdsa.GenerateKey(elliptic.P224(), rand)", "weak_asymmetric_key", "high", "high"),
-            CryptoDetectionRule("GO_DISABLED_CERT_VALIDATION", "InsecureSkipVerify: true", "tls.Config{ InsecureSkipVerify: true }", "disabled_certificate_validation", "critical", "high"),
-            CryptoDetectionRule("GO_INSECURE_TLS_VERSION", "TLSv1.0", "tls.Config{ MinVersion: tls.VersionTLS10 }", "insecure_tls_protocol", "critical", "high"),
-            CryptoDetectionRule("GO_WEAK_CIPHER_BLOWFISH", "Blowfish", "blowfish.NewCipher(key)", "weak_cipher", "critical", "high"),
+            CryptoDetectionRule(
+                "GO_WEAK_HMAC_MD5", "HMAC-MD5", "hmac.New(md5.New, key)", "weak_hash", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "GO_WEAK_RSA_KEY_SIZE",
+                "RSA-Weak",
+                "rsa.GenerateKey(rand, 1024)",
+                "weak_asymmetric_key",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "GO_WEAK_ECC_CURVE",
+                "ECDSA-P224",
+                "ecdsa.GenerateKey(elliptic.P224(), rand)",
+                "weak_asymmetric_key",
+                "high",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "GO_DISABLED_CERT_VALIDATION",
+                "InsecureSkipVerify: true",
+                "tls.Config{ InsecureSkipVerify: true }",
+                "disabled_certificate_validation",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "GO_INSECURE_TLS_VERSION",
+                "TLSv1.0",
+                "tls.Config{ MinVersion: tls.VersionTLS10 }",
+                "insecure_tls_protocol",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "GO_WEAK_CIPHER_BLOWFISH", "Blowfish", "blowfish.NewCipher(key)", "weak_cipher", "critical", "high"
+            ),
             CryptoDetectionRule("GO_WEAK_CIPHER_DES", "DES", "des.NewCipher(key)", "weak_cipher", "critical", "high"),
-            CryptoDetectionRule("GO_WEAK_CERT_SIGNATURE_ALGO", "MD5WithRSA", "x509.CreateCertificate(..., MD5WithRSA)", "weak_signature_algorithm", "critical", "high"),
+            CryptoDetectionRule(
+                "GO_WEAK_CERT_SIGNATURE_ALGO",
+                "MD5WithRSA",
+                "x509.CreateCertificate(..., MD5WithRSA)",
+                "weak_signature_algorithm",
+                "critical",
+                "high",
+            ),
         ]
 
 

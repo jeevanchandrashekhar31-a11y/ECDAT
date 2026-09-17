@@ -25,7 +25,9 @@ class JavaKotlinCryptoDetector:
     WEAK_MAC_ALGOS = {"HMACMD5", "HMACSHA1"}
     INSECURE_SSL_PROTOCOLS = {"SSL", "SSLV2", "SSLV3", "TLSV1", "TLSV1.0", "TLSV1.1"}
 
-    def __init__(self, file_path: Path, root_dir: Path, source_bytes: bytes, language_name: str, language: tree_sitter.Language):
+    def __init__(
+        self, file_path: Path, root_dir: Path, source_bytes: bytes, language_name: str, language: tree_sitter.Language
+    ):
         self.file_path = file_path
         self.root_dir = root_dir
         self.source_bytes = source_bytes
@@ -191,7 +193,9 @@ class JavaKotlinCryptoDetector:
 
             # Check insecure mode (ECB)
             if mode == "ECB" or (mode is None and any(base_algo == weak for weak in ("DES", "AES", "BLOWFISH"))):
-                self._add_finding(lineno, "JAVA_INSECURE_CIPHER_MODE_ECB", f"{clean_algo} [ECB]", "insecure_cipher_mode", "critical")
+                self._add_finding(
+                    lineno, "JAVA_INSECURE_CIPHER_MODE_ECB", f"{clean_algo} [ECB]", "insecure_cipher_mode", "critical"
+                )
 
         # 2. MessageDigest
         elif class_name == "MessageDigest":
@@ -202,12 +206,20 @@ class JavaKotlinCryptoDetector:
         # 3. Mac
         elif class_name == "Mac":
             if any(weak in algo_upper for weak in ("MD5", "SHA1")):
-                self._add_finding(lineno, "JAVA_WEAK_MAC", clean_algo, "weak_hash", "critical" if "MD5" in algo_upper else "high")
+                self._add_finding(
+                    lineno, "JAVA_WEAK_MAC", clean_algo, "weak_hash", "critical" if "MD5" in algo_upper else "high"
+                )
 
         # 4. Signature
         elif class_name == "Signature":
             if any(algo_upper.startswith(weak) for weak in ("MD5WITH", "SHA1WITH", "MD2WITH")):
-                self._add_finding(lineno, "JAVA_WEAK_SIGNATURE", clean_algo, "weak_signature_algorithm", "critical" if "MD" in algo_upper else "high")
+                self._add_finding(
+                    lineno,
+                    "JAVA_WEAK_SIGNATURE",
+                    clean_algo,
+                    "weak_signature_algorithm",
+                    "critical" if "MD" in algo_upper else "high",
+                )
 
         # 5. KeyGenerator
         elif class_name == "KeyGenerator":

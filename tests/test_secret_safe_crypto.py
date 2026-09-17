@@ -166,7 +166,6 @@ def test_raw_secrets_never_appear_in_ui_and_reports():
     raw_html_snippet = f"<div>Asset evidence: {SAMPLE_RSA_KEY}</div>"
     clean_html = sanitize_report_mock(raw_html_snippet)
 
-
     assert "MIIEowIBAAKCAQEA" not in clean_html
     assert SAMPLE_RSA_KEY not in clean_html
     assert "[REDACTED_PRIVATE_KEY]" in clean_html
@@ -174,6 +173,7 @@ def test_raw_secrets_never_appear_in_ui_and_reports():
 
 def sanitize_report_mock(str_val: str) -> str:
     import re
+
     pat = re.compile(
         r"-----BEGIN (?:[A-Z0-9_-]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z0-9_-]+ )?PRIVATE KEY-----",
         re.IGNORECASE,

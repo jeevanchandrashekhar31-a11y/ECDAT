@@ -60,12 +60,20 @@ def _create_test_cert(
         not_before = now - timedelta(days=1)
         not_after = now + timedelta(days=365)
 
-    subject = cryptography.x509.Name([
-        cryptography.x509.NameAttribute(cryptography.x509.NameOID.COMMON_NAME, "test.internal"),
-    ])
-    issuer = subject if self_signed else cryptography.x509.Name([
-        cryptography.x509.NameAttribute(cryptography.x509.NameOID.COMMON_NAME, "Test Internal CA"),
-    ])
+    subject = cryptography.x509.Name(
+        [
+            cryptography.x509.NameAttribute(cryptography.x509.NameOID.COMMON_NAME, "test.internal"),
+        ]
+    )
+    issuer = (
+        subject
+        if self_signed
+        else cryptography.x509.Name(
+            [
+                cryptography.x509.NameAttribute(cryptography.x509.NameOID.COMMON_NAME, "Test Internal CA"),
+            ]
+        )
+    )
 
     cert = (
         cryptography.x509.CertificateBuilder()
@@ -76,10 +84,12 @@ def _create_test_cert(
         .not_valid_before(not_before)
         .not_valid_after(not_after)
         .add_extension(
-            cryptography.x509.SubjectAlternativeName([
-                cryptography.x509.DNSName("test.internal"),
-                cryptography.x509.DNSName("api.test.internal"),
-            ]),
+            cryptography.x509.SubjectAlternativeName(
+                [
+                    cryptography.x509.DNSName("test.internal"),
+                    cryptography.x509.DNSName("api.test.internal"),
+                ]
+            ),
             critical=False,
         )
         .sign(private_key, hash_algo)
@@ -90,6 +100,7 @@ def _create_test_cert(
 # ==============================================================================
 # 1. SCOPE AUTHORIZATION & AUDIT TRAIL TESTS
 # ==============================================================================
+
 
 def test_scope_authorization_exact_and_wildcard(tmp_path):
     audit_file = tmp_path / "audit.jsonl"
@@ -148,7 +159,6 @@ def test_scope_authorization_cidr_subnet(tmp_path):
         authorizer.authorize("203.0.113.1:443", "203.0.113.1", 443, "203.0.113.1")
 
 
-
 def test_scope_expiration_and_missing_scope(tmp_path):
     audit_file = tmp_path / "audit_exp.jsonl"
     logger = AuditLogger(audit_file_path=str(audit_file))
@@ -193,6 +203,7 @@ def test_target_scope_file_io(tmp_path):
 # ==============================================================================
 # 2. SECURITY CONTROLS & SSRF / REBINDING GUARD TESTS
 # ==============================================================================
+
 
 def test_dns_rebinding_ssrf_blocking():
     # Loopback
@@ -244,6 +255,7 @@ def test_rate_limiter_throttling():
 # 3. CERTIFICATE PARSING & TRUST INTELLIGENCE TESTS
 # ==============================================================================
 
+
 def test_parse_cert_intelligence_valid_and_expired():
     # 1. Valid certificate
     cert_valid = _create_test_cert(key_size=2048, expired=False)
@@ -291,10 +303,10 @@ def test_parse_cert_not_yet_valid_and_weak_hash():
     assert parsed_legacy["signature_algorithm"] == "sha1WithRSAEncryption"
 
 
-
 # ==============================================================================
 # 4. CRYPTO INTELLIGENCE & WEAK ALGORITHMS & QUANTUM TESTS
 # ==============================================================================
+
 
 def test_extract_key_exchanges_and_weak_algorithms():
     tls_versions = ["TLSv1.0", "TLSv1.2", "TLSv1.3"]
@@ -342,12 +354,14 @@ def test_enrich_finding_intelligence():
         port=443,
         tls_versions=["TLSv1.3"],
         cipher_suites=["TLS_AES_128_GCM_SHA256"],
-        cert_chain=[{
-            "algo_family": "RSA",
-            "key_size": 2048,
-            "signature_algorithm": "sha256WithRSAEncryption",
-            "trust_problems": ["self_signed_certificate"],
-        }],
+        cert_chain=[
+            {
+                "algo_family": "RSA",
+                "key_size": 2048,
+                "signature_algorithm": "sha256WithRSAEncryption",
+                "trust_problems": ["self_signed_certificate"],
+            }
+        ],
     )
     enriched = enrich_finding_intelligence(finding)
 
@@ -362,6 +376,7 @@ def test_enrich_finding_intelligence():
 # ==============================================================================
 # 5. CBOM MAPPING & VALIDATION
 # ==============================================================================
+
 
 def test_cbom_mapping_and_schema_validation():
     finding = NetworkCryptoFinding(
@@ -379,20 +394,22 @@ def test_cbom_mapping_and_schema_validation():
         quantum_vulnerabilities=["shor_vulnerable_key_exchange", "shor_vulnerable_signature_and_identity"],
         authorization_id="scope-test-123",
         audit_id="audit-987654",
-        cert_chain=[{
-            "subjectName": "CN=secure.example.com",
-            "issuerName": "CN=secure.example.com",
-            "notValidBefore": "2026-01-01T00:00:00+00:00",
-            "notValidAfter": "2027-01-01T00:00:00+00:00",
-            "isExpired": False,
-            "isSelfSigned": True,
-            "algo_family": "RSA",
-            "key_size": 2048,
-            "signature_algorithm": "sha256WithRSAEncryption",
-            "trust_problems": ["self_signed_certificate"],
-            "quantum_vulnerabilities": ["shor_vulnerable_asymmetric_key"],
-            "fingerprint_sha256": "abcdef1234567890",
-        }],
+        cert_chain=[
+            {
+                "subjectName": "CN=secure.example.com",
+                "issuerName": "CN=secure.example.com",
+                "notValidBefore": "2026-01-01T00:00:00+00:00",
+                "notValidAfter": "2027-01-01T00:00:00+00:00",
+                "isExpired": False,
+                "isSelfSigned": True,
+                "algo_family": "RSA",
+                "key_size": 2048,
+                "signature_algorithm": "sha256WithRSAEncryption",
+                "trust_problems": ["self_signed_certificate"],
+                "quantum_vulnerabilities": ["shor_vulnerable_asymmetric_key"],
+                "fingerprint_sha256": "abcdef1234567890",
+            }
+        ],
     )
 
     bom = network_finding_to_cbom(finding)

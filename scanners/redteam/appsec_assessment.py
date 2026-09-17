@@ -138,7 +138,7 @@ class AppSecAssessmentEngine:
             "Bearer invalid-garbage-token",
             "Bearer " + ("A" * 500),
         ]
-        
+
         # Test defense logic: token validation must reject alg=none
         all_rejected = True
         for token in forged_tokens:
@@ -324,7 +324,7 @@ class AppSecAssessmentEngine:
             cwe="CWE-78",
             blocked=all_detected,
             payload="Shell metacharacters (; | && ` $()) with command execution",
-            defense="Input inspection for command injection patterns and avoidance of shell=True / exec.",
+            defense="Input inspection for command injection patterns and avoidance of shell invocation / exec.",
             details={"tested_count": len(adversarial_inputs), "failures": failures},
         )
 
@@ -345,12 +345,8 @@ class AppSecAssessmentEngine:
         ]
         proto_payload = {"__proto__": {"polluted": True}}
 
-        sql_detected = all(
-            inspect_for_injection({"param": s}) is not None for s in sql_payloads
-        )
-        nosql_detected = all(
-            inspect_for_injection(n) is not None for n in nosql_payloads
-        )
+        sql_detected = all(inspect_for_injection({"param": s}) is not None for s in sql_payloads)
+        nosql_detected = all(inspect_for_injection(n) is not None for n in nosql_payloads)
         proto_detected = inspect_for_injection(proto_payload) is not None
 
         all_blocked = sql_detected and nosql_detected and proto_detected
@@ -414,8 +410,8 @@ class AppSecAssessmentEngine:
         forged_header_token = "attacker_token_xyz"
 
         # Check: Tokens match -> allowed; Tokens mismatch -> blocked
-        match_success = (header_token == client_cookie.split("=")[1])
-        mismatch_blocked = (forged_header_token != client_cookie.split("=")[1])
+        match_success = header_token == client_cookie.split("=")[1]
+        mismatch_blocked = forged_header_token != client_cookie.split("=")[1]
 
         blocked = match_success and mismatch_blocked
 
@@ -563,8 +559,10 @@ class AppSecAssessmentEngine:
         canary = "canary_token_secret_test_999"
         private_key_pem = "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgDEADBEEF12345678DEADBEEF12345678\n-----END PRIVATE KEY-----"
         password_assignment = 'api_key = "super_secret_api_key_12345"'
-        
-        raw_error_message = f"Database query failed for canary {canary} and {password_assignment} and private key:\n{private_key_pem}"
+
+        raw_error_message = (
+            f"Database query failed for canary {canary} and {password_assignment} and private key:\n{private_key_pem}"
+        )
         sanitized = redact_secrets(raw_error_message)
 
         canary_scrubbed = canary not in sanitized
@@ -616,7 +614,7 @@ class AppSecAssessmentEngine:
             return None
 
         result = execute_scoped_query(tenant_b_query["tenant_id"], tenant_a_data)
-        isolated = (result is None)
+        isolated = result is None
 
         return self.record_finding(
             vector_id="APPSEC-15",
@@ -681,7 +679,7 @@ class AppSecAssessmentEngine:
         # 1. Syntax validation rejects broken code
         broken_code = "def vulnerable_crypto(\n    hashlib.md5(data"
         val = validate_syntax(broken_code, file_type="python")
-        syntax_reg_caught = (val["valid"] is False)
+        syntax_reg_caught = val["valid"] is False
 
         # 2. Patch generation must upgrade to secure algorithm, not another weak one
         source = "import hashlib\nh = hashlib.md5(data).hexdigest()\n"

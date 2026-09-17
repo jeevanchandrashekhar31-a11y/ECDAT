@@ -55,14 +55,17 @@ class LibraryFingerprinter:
         else:
             self.rules_data = {"libraries": [], "scoring_weights": {}}
 
-        self.scoring = self.rules_data.get("scoring_weights", {
-            "library_match": 35,
-            "symbol_match": 25,
-            "string_match": 10,
-            "high_confidence_threshold": 50,
-            "medium_confidence_threshold": 30,
-            "low_confidence_threshold": 20,
-        })
+        self.scoring = self.rules_data.get(
+            "scoring_weights",
+            {
+                "library_match": 35,
+                "symbol_match": 25,
+                "string_match": 10,
+                "high_confidence_threshold": 50,
+                "medium_confidence_threshold": 30,
+                "low_confidence_threshold": 20,
+            },
+        )
         self.libraries = self.rules_data.get("libraries", [])
 
     def fingerprint(
@@ -253,8 +256,7 @@ class LibraryFingerprinter:
             if "openssl" in matches:
                 openssl_ev = matches["openssl"]
                 has_exclusive_openssl = any(
-                    s in openssl_ev.matched_symbols
-                    for s in ["OSSL_PROVIDER_load", "OpenSSL_version"]
+                    s in openssl_ev.matched_symbols for s in ["OSSL_PROVIDER_load", "OpenSSL_version"]
                 )
                 if not has_exclusive_openssl:
                     openssl_ev.confidence = "inconclusive"

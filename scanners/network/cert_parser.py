@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from cryptography.hazmat.primitives.asymmetric import rsa, ec, dsa, ed25519, ed448
 from cryptography.hazmat.primitives import hashes
 import cryptography.x509
+import re
 
 
 def get_key_info(public_key) -> Tuple[str, Optional[int]]:
@@ -66,7 +67,9 @@ def parse_cert(cert) -> Dict[str, Any]:
     sig_hash = None
     try:
         if hasattr(cert, "signature_algorithm_oid"):
-            sig_algo = getattr(cert.signature_algorithm_oid, "_name", None) or cert.signature_algorithm_oid.dotted_string
+            sig_algo = (
+                getattr(cert.signature_algorithm_oid, "_name", None) or cert.signature_algorithm_oid.dotted_string
+            )
     except Exception:
         pass
 
@@ -80,6 +83,7 @@ def parse_cert(cert) -> Dict[str, Any]:
     sans: List[str] = []
     try:
         from cryptography.x509.oid import ExtensionOID
+
         san_ext = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
         for name in san_ext.value:
             sans.append(str(name.value))
@@ -146,11 +150,13 @@ def parse_cert(cert) -> Dict[str, Any]:
 
 class CertSecurityError(Exception):
     """Raised when certificate input contains security violations or private keys."""
+
     pass
 
 
 class CertParsingError(Exception):
     """Raised when certificate input cannot be parsed or is corrupted."""
+
     pass
 
 
@@ -161,7 +167,7 @@ class SafeCertParser:
     """
 
     MAX_CERT_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB maximum certificate payload
-    MAX_CHAIN_LENGTH = 20                   # Maximum certificates in a single PEM bundle
+    MAX_CHAIN_LENGTH = 20  # Maximum certificates in a single PEM bundle
 
     @classmethod
     def parse_bytes(cls, data: bytes, format: str = "auto") -> Dict[str, Any]:
@@ -198,10 +204,7 @@ class SafeCertParser:
                 # Find all PEM certificates
                 certs = []
                 pem_text = data.decode("utf-8", errors="replace")
-                pem_blocks = re.findall(
-                    r"-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----",
-                    pem_text
-                )
+                pem_blocks = re.findall(r"-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----", pem_text)
                 if not pem_blocks:
                     raise CertParsingError("No valid PEM certificate boundaries found.")
 
@@ -245,5 +248,3 @@ class SafeCertParser:
 def parse_cert_bytes(data: bytes, format: str = "auto") -> Dict[str, Any]:
     """Convenience helper for SafeCertParser.parse_bytes."""
     return SafeCertParser.parse_bytes(data, format=format)
-
-

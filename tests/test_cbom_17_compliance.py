@@ -117,7 +117,9 @@ def test_official_cdx17_protocol_asset_compliance(v17_validator):
         name="TLS 1.3",
         bom_ref="net:protocol/tls1.3@api.corp:443",
         crypto_properties=crypto_props,
-        evidence=ComponentEvidence(occurrences=[Occurrence(location="api.corp:443", additional_context="TLS handshake")]),
+        evidence=ComponentEvidence(
+            occurrences=[Occurrence(location="api.corp:443", additional_context="TLS handshake")]
+        ),
     )
     bom.components.add(comp)
 
@@ -192,7 +194,7 @@ def test_cbom_dependencies_and_provenance(v17_validator):
     """Dependencies and tool provenance are properly attached to CBOM."""
     app_comp = Component(type=ComponentType.APPLICATION, name="BankGateway", bom_ref="app:gateway")
     algo_comp = Component(type=ComponentType.CRYPTOGRAPHIC_ASSET, name="ML-KEM-768", bom_ref="algo:ml-kem-768")
-    
+
     bom = Bom()
     bom.components.add(app_comp)
     bom.components.add(algo_comp)
@@ -244,13 +246,15 @@ def test_scanner_generators_produce_valid_cdx17(v17_validator):
         protocol="tls",
         tls_versions=["TLSv1.2", "TLSv1.3"],
         cipher_suites=["TLS_AES_256_GCM_SHA384"],
-        cert_chain=[{
-            "subjectName": "CN=secure.bank.com",
-            "issuerName": "CN=Root CA",
-            "notValidBefore": "2025-01-01T00:00:00",
-            "notValidAfter": "2026-01-01T00:00:00",
-            "fingerprint_sha256": "abcdef1234567890",
-        }],
+        cert_chain=[
+            {
+                "subjectName": "CN=secure.bank.com",
+                "issuerName": "CN=Root CA",
+                "notValidBefore": "2025-01-01T00:00:00",
+                "notValidAfter": "2026-01-01T00:00:00",
+                "fingerprint_sha256": "abcdef1234567890",
+            }
+        ],
         key_sizes={"RSA": 2048},
         bom_ref="net:target/bank.com:443",
     )
@@ -262,21 +266,23 @@ def test_scanner_generators_produce_valid_cdx17(v17_validator):
 
 def test_reject_invented_unsupported_properties():
     """Schema validation strictly rejects invented properties inside cryptoProperties."""
-    invalid_doc = json.dumps({
-        "bomFormat": "CycloneDX",
-        "specVersion": "1.7",
-        "components": [
-            {
-                "type": "cryptographic-asset",
-                "name": "InvalidAsset",
-                "bom-ref": "invalid:ref",
-                "cryptoProperties": {
-                    "assetType": "algorithm",
-                    "inventedProperty": "illegal_value",  # additionalProperties: false
-                },
-            }
-        ],
-    })
+    invalid_doc = json.dumps(
+        {
+            "bomFormat": "CycloneDX",
+            "specVersion": "1.7",
+            "components": [
+                {
+                    "type": "cryptographic-asset",
+                    "name": "InvalidAsset",
+                    "bom-ref": "invalid:ref",
+                    "cryptoProperties": {
+                        "assetType": "algorithm",
+                        "inventedProperty": "illegal_value",  # additionalProperties: false
+                    },
+                }
+            ],
+        }
+    )
     is_valid, err = validate_cbom_detailed(invalid_doc)
     assert is_valid is False
     assert "inventedProperty" in str(err) or "additionalProperties" in str(err)

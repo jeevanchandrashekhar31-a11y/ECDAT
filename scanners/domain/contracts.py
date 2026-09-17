@@ -53,7 +53,7 @@ class AssetType(str, Enum):
     SIGNING_KEY = "signing_key"
     STORED_ENCRYPTED_DATA = "stored_encrypted_data"
     DATA_ASSET = "data_asset"
-    
+
     # Software & system layers
     APPLICATION = "application"
     SERVICE = "service"
@@ -62,7 +62,7 @@ class AssetType(str, Enum):
     FUNCTION = "function"
     DEPENDENCY = "dependency"
     CRYPTO_LIBRARY = "crypto_library"
-    
+
     # Network, host, & runtime boundaries
     PROTOCOL = "protocol"
     PROTOCOL_SESSION = "protocol_session"
@@ -71,7 +71,7 @@ class AssetType(str, Enum):
     CONTAINER = "container"
     HOST = "host"
     RUNTIME_PROCESS = "runtime_process"
-    
+
     # Governance, operations, & risk
     OWNER = "owner"
     ENVIRONMENT = "environment"
@@ -107,6 +107,7 @@ class RelationshipType(str, Enum):
 
 class EvidenceSource(str, Enum):
     """Source of cryptographic observation or finding (Phase 5.3)."""
+
     STATIC_CONFIGURATION = "static_configuration"
     NETWORK_HANDSHAKE = "network_handshake"
     RUNTIME = "runtime"

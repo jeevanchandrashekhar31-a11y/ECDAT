@@ -147,7 +147,11 @@ def test_full_correlation_pipeline(classifier):
     ]
 
     static_findings = [
-        {"target_package": "crypto-js", "api": "CryptoJS.AES.encrypt", "code_snippet": "CryptoJS.AES.encrypt(msg, key)"},
+        {
+            "target_package": "crypto-js",
+            "api": "CryptoJS.AES.encrypt",
+            "code_snippet": "CryptoJS.AES.encrypt(msg, key)",
+        },
         {"target_package": "ring", "code_snippet": "use ring::aead;"},
     ]
 

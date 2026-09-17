@@ -30,7 +30,12 @@ class TestKmsKeyMetadataAndSecurityInvariants:
             state="Enabled",
             owner="123456789012",
             rotation={"enabled": True, "period_days": 365, "version": "1"},
-            usage={"key_usage": "ENCRYPT_DECRYPT", "operations": ["encrypt", "decrypt"], "origin": "AWS_KMS", "is_exportable": False},
+            usage={
+                "key_usage": "ENCRYPT_DECRYPT",
+                "operations": ["encrypt", "decrypt"],
+                "origin": "AWS_KMS",
+                "is_exportable": False,
+            },
             provider="aws_kms",
             description="Production Database Encryption Key",
         )
@@ -71,18 +76,21 @@ class TestKmsKeyMetadataAndSecurityInvariants:
         with pytest.raises(ValueError, match="owner"):
             KmsKeyMetadata(key_id="k1", algorithm="AES", size=256, state="Enabled", owner="")
 
-    @pytest.mark.parametrize("forbidden_field", [
-        "privateKey",
-        "private_key",
-        "d",
-        "p",
-        "q",
-        "raw_key",
-        "secret_bytes",
-        "seed",
-        "key_material",
-        "master_key",
-    ])
+    @pytest.mark.parametrize(
+        "forbidden_field",
+        [
+            "privateKey",
+            "private_key",
+            "d",
+            "p",
+            "q",
+            "raw_key",
+            "secret_bytes",
+            "seed",
+            "key_material",
+            "master_key",
+        ],
+    )
     def test_critical_invariant_never_extract_private_key_material(self, forbidden_field):
         """Security invariant: attempting to include protected private key material raises ProtectedKeyMaterialError."""
         bad_raw_metadata = {
@@ -130,7 +138,12 @@ class TestKmsKeyMetadataAndSecurityInvariants:
             state="ENABLED",
             owner="project-p1",
             rotation={"enabled": True, "period_days": 90, "version": "2"},
-            usage={"key_usage": "ASYMMETRIC_SIGN", "operations": ["sign", "verify"], "origin": "GCP_KMS", "is_exportable": False},
+            usage={
+                "key_usage": "ASYMMETRIC_SIGN",
+                "operations": ["sign", "verify"],
+                "origin": "GCP_KMS",
+                "is_exportable": False,
+            },
             provider="gcp_kms",
         )
 
@@ -151,8 +164,10 @@ class TestKmsConnectorsLeastPrivilegeAndDiscovery:
         class DummyConnector(BaseKmsConnector):
             def get_least_privilege_role_definition(self):
                 return {}
+
             def list_keys(self):
                 return []
+
             def describe_key(self, kid):
                 pass
 
@@ -217,7 +232,7 @@ class TestKmsConnectorsLeastPrivilegeAndDiscovery:
             "projects/gcp-proj/locations/us-central1/keyRings/ring1/cryptoKeys/key1": {
                 "name": "projects/gcp-proj/locations/us-central1/keyRings/ring1/cryptoKeys/key1",
                 "purpose": "ENCRYPT_DECRYPT",
-                "rotationPeriod": "7776000s", # 90 days
+                "rotationPeriod": "7776000s",  # 90 days
                 "primary": {
                     "name": "projects/gcp-proj/locations/us-central1/keyRings/ring1/cryptoKeys/key1/cryptoKeyVersions/1",
                     "algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION",
@@ -292,7 +307,7 @@ class TestKmsConnectorsLeastPrivilegeAndDiscovery:
             "payment-token-key": {
                 "type": "aes256-gcm96",
                 "latest_version": 3,
-                "auto_rotate_period": 2592000, # 30 days
+                "auto_rotate_period": 2592000,  # 30 days
                 "deletion_allowed": False,
                 "supports_encryption": True,
                 "exportable": False,
@@ -423,7 +438,7 @@ class TestKmsConnectorsLeastPrivilegeAndDiscovery:
         assert summary["total_keys"] == 2
         assert summary["by_provider"]["aws_kms"] == 1
         assert summary["by_provider"]["hashicorp_vault"] == 1
-        assert summary["metrics"]["unrotated_count"] == 1 # k1 is not rotated
+        assert summary["metrics"]["unrotated_count"] == 1  # k1 is not rotated
 
         # CBOM generation check
         cbom = service.to_cbom(res["keys"])

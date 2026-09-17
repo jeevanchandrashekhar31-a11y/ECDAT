@@ -126,9 +126,15 @@ class SshScanner:
 
                     # Quantum vulnerabilities
                     q_vulns = []
-                    if any("diffie-hellman" in k.lower() or "curve25519" in k.lower() or "ecdh" in k.lower() for k in caps.get("kex", [])):
+                    if any(
+                        "diffie-hellman" in k.lower() or "curve25519" in k.lower() or "ecdh" in k.lower()
+                        for k in caps.get("kex", [])
+                    ):
                         q_vulns.append("shor_vulnerable_key_exchange")
-                    if any("rsa" in hk.lower() or "ecdsa" in hk.lower() or "ed25519" in hk.lower() or "dss" in hk.lower() for hk in caps.get("host_key", [])):
+                    if any(
+                        "rsa" in hk.lower() or "ecdsa" in hk.lower() or "ed25519" in hk.lower() or "dss" in hk.lower()
+                        for hk in caps.get("host_key", [])
+                    ):
                         q_vulns.append("shor_vulnerable_host_key")
                     if any("128" in enc for enc in caps.get("encryption", [])):
                         q_vulns.append("grover_sensitive_symmetric_cipher")

@@ -45,8 +45,13 @@ KNOWN_CRYPTO_LIBRARIES: Dict[str, Dict[str, Any]] = {
     "Windows CNG / CryptoAPI": {
         "lib_patterns": [r"bcrypt\.dll", r"crypt32\.dll", r"ncrypt\.dll", r"advapi32\.dll"],
         "symbol_prefixes": [
-            "BCrypt", "NCrypt", "CryptAcquireContext", "CryptGenKey", "CryptEncrypt",
-            "CertOpenSystemStore", "CertFindCertificateInStore"
+            "BCrypt",
+            "NCrypt",
+            "CryptAcquireContext",
+            "CryptGenKey",
+            "CryptEncrypt",
+            "CertOpenSystemStore",
+            "CertFindCertificateInStore",
         ],
         "string_keywords": ["Microsoft Software Key Storage Provider", "Microsoft Enhanced Cryptographic Provider"],
     },
@@ -100,4 +105,3 @@ def detect_crypto_indicators(
         )
 
     return indicators
-

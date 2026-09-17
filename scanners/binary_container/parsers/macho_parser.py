@@ -91,7 +91,7 @@ class SafeMachoParser:
                 if arch_off + 20 > len(data):
                     break
                 cputype, cpusubtype, offset, size, align = struct.unpack(
-                    fat_prefix + "IIIII", data[arch_off:arch_off + 20]
+                    fat_prefix + "IIIII", data[arch_off : arch_off + 20]
                 )
                 if cputype == CPU_TYPE_X86_64 or cputype == CPU_TYPE_ARM64:
                     best_slice = (offset, size)
@@ -106,7 +106,7 @@ class SafeMachoParser:
             else:
                 raise ValueError("No valid slices found in Fat Mach-O binary.")
 
-        slice_data = data[slice_offset:slice_offset + slice_size]
+        slice_data = data[slice_offset : slice_offset + slice_size]
         magic = struct.unpack(">I", slice_data[:4])[0]
 
         if magic in (MH_MAGIC, MH_MAGIC_64):
@@ -145,11 +145,11 @@ class SafeMachoParser:
         for _ in range(min(ncmds, 256)):
             if cmd_offset + 8 > len(slice_data):
                 break
-            cmd, cmdsize = struct.unpack(prefix + "II", slice_data[cmd_offset:cmd_offset + 8])
+            cmd, cmdsize = struct.unpack(prefix + "II", slice_data[cmd_offset : cmd_offset + 8])
             if cmdsize < 8 or cmd_offset + cmdsize > len(slice_data):
                 break
 
-            cmd_bytes = slice_data[cmd_offset:cmd_offset + cmdsize]
+            cmd_bytes = slice_data[cmd_offset : cmd_offset + cmdsize]
 
             # A. Segment & Section extraction
             if cmd == LC_SEGMENT:
@@ -162,11 +162,13 @@ class SafeMachoParser:
                     for _ in range(min(nsects, 64)):
                         if sec_cursor + 68 > len(cmd_bytes):
                             break
-                        sectname, segname_s, s_addr, s_size, s_offset, s_align, s_reloff, s_nreloc, s_flags = struct.unpack(
-                            prefix + "16s16sIIIIIII", cmd_bytes[sec_cursor:sec_cursor + 68]
+                        sectname, segname_s, s_addr, s_size, s_offset, s_align, s_reloff, s_nreloc, s_flags = (
+                            struct.unpack(prefix + "16s16sIIIIIII", cmd_bytes[sec_cursor : sec_cursor + 68])
                         )
                         s_name = sectname.split(b"\x00")[0].decode("ascii", errors="ignore")
-                        sec_bytes = slice_data[s_offset:s_offset + s_size] if s_offset + s_size <= len(slice_data) else b""
+                        sec_bytes = (
+                            slice_data[s_offset : s_offset + s_size] if s_offset + s_size <= len(slice_data) else b""
+                        )
                         sections.append(
                             SectionMetadata(
                                 name=s_name,
@@ -189,11 +191,13 @@ class SafeMachoParser:
                     for _ in range(min(nsects, 64)):
                         if sec_cursor + 80 > len(cmd_bytes):
                             break
-                        sectname, segname_s, s_addr, s_size, s_offset, s_align, s_reloff, s_nreloc, s_flags, _, _, _ = struct.unpack(
-                            prefix + "16s16sQQIIIIIIII", cmd_bytes[sec_cursor:sec_cursor + 80]
+                        sectname, segname_s, s_addr, s_size, s_offset, s_align, s_reloff, s_nreloc, s_flags, _, _, _ = (
+                            struct.unpack(prefix + "16s16sQQIIIIIIII", cmd_bytes[sec_cursor : sec_cursor + 80])
                         )
                         s_name = sectname.split(b"\x00")[0].decode("ascii", errors="ignore")
-                        sec_bytes = slice_data[s_offset:s_offset + s_size] if s_offset + s_size <= len(slice_data) else b""
+                        sec_bytes = (
+                            slice_data[s_offset : s_offset + s_size] if s_offset + s_size <= len(slice_data) else b""
+                        )
                         sections.append(
                             SectionMetadata(
                                 name=s_name,
@@ -221,7 +225,7 @@ class SafeMachoParser:
                 if len(cmd_bytes) >= 24:
                     symoff, nsyms, stroff, strsize = struct.unpack(prefix + "IIII", cmd_bytes[8:24])
                     if symoff < len(slice_data) and stroff < len(slice_data):
-                        str_table = slice_data[stroff:stroff + strsize]
+                        str_table = slice_data[stroff : stroff + strsize]
                         ent_size = 12 if bit_width == 32 else 16
                         num_syms = min(nsyms, 5000)
 
@@ -231,11 +235,11 @@ class SafeMachoParser:
                                 break
                             if bit_width == 32:
                                 n_strx, n_type, n_sect, n_desc, n_value = struct.unpack(
-                                    prefix + "IBBH I", slice_data[soff:soff + 12]
+                                    prefix + "IBBH I", slice_data[soff : soff + 12]
                                 )
                             else:
                                 n_strx, n_type, n_sect, n_desc, n_value = struct.unpack(
-                                    prefix + "IBBH Q", slice_data[soff:soff + 16]
+                                    prefix + "IBBH Q", slice_data[soff : soff + 16]
                                 )
 
                             if n_strx < len(str_table):
@@ -256,7 +260,7 @@ class SafeMachoParser:
                 if len(cmd_bytes) >= 16:
                     dataoff, datasize = struct.unpack(prefix + "II", cmd_bytes[8:16])
                     if dataoff + datasize <= len(slice_data):
-                        sig_bytes = slice_data[dataoff:dataoff + datasize]
+                        sig_bytes = slice_data[dataoff : dataoff + datasize]
                         certificates.append(
                             CertificateMetadata(
                                 subject="Apple Code Signature Blob",

@@ -6,10 +6,7 @@ from typing import List, Set, Dict
 
 logger = logging.getLogger(__name__)
 
-WINDOWS_RESERVED_NAMES = re.compile(
-    r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$",
-    re.IGNORECASE
-)
+WINDOWS_RESERVED_NAMES = re.compile(r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$", re.IGNORECASE)
 
 
 class FileDiscovery:
@@ -83,10 +80,7 @@ class FileDiscovery:
                 continue
 
             # Remove excluded dirs and symlinks in-place to prevent os.walk from entering them
-            dirnames[:] = [
-                d for d in dirnames
-                if d not in self.exclude_dirs and not (current_dir / d).is_symlink()
-            ]
+            dirnames[:] = [d for d in dirnames if d not in self.exclude_dirs and not (current_dir / d).is_symlink()]
 
             for d in list(dirnames):
                 if d in self.exclude_dirs:

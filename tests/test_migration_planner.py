@@ -30,11 +30,9 @@ def test_step1_identify_why_risky():
     assert "Shor's algorithm" in rsa1024_risk["quantum_vulnerability"]
 
     # Internet exposed with Mosca deficit
-    ecdh_risk = identify_why_risky({
-        "algorithm": "ECDH",
-        "is_internet_facing": True,
-        "mosca": {"status": "CRITICAL_URGENT"}
-    })
+    ecdh_risk = identify_why_risky(
+        {"algorithm": "ECDH", "is_internet_facing": True, "mosca": {"status": "CRITICAL_URGENT"}}
+    )
     assert "Shor's algorithm" in ecdh_risk["quantum_vulnerability"]
     assert "Harvest-Now-Decrypt-Later" in ecdh_risk["environmental_exposure"]
     assert "Critical Mosca deficit" in ecdh_risk["mosca_urgency"]
@@ -181,15 +179,13 @@ def test_create_enterprise_migration_plan_lifecycle():
             "algorithm": "MD5",
             "asset_type": "hash",
             "is_internet_facing": False,
-        }
+        },
     ]
 
     plan = create_enterprise_migration_plan(inventory)
 
     # Supported lifecycle phases
-    assert plan["lifecycle_phases_supported"] == [
-        "DISCOVER", "ASSESS", "PLAN", "SIMULATE", "REMEDIATE", "VERIFY"
-    ]
+    assert plan["lifecycle_phases_supported"] == ["DISCOVER", "ASSESS", "PLAN", "SIMULATE", "REMEDIATE", "VERIFY"]
 
     # DISCOVER
     assert plan["discover_phase"]["discovered_assets_count"] == 3

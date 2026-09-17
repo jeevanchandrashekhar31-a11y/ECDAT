@@ -54,7 +54,7 @@ def extract_bounded_strings(
 ) -> Tuple[List[str], List[str]]:
     """
     Safely extracts ASCII and UTF-16LE printable strings within hard byte and count bounds.
-    
+
     Returns:
         (all_extracted_strings, crypto_filtered_strings)
     """

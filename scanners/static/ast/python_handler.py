@@ -47,7 +47,9 @@ class PythonASTNormalizer(ASTNormalizer):
                 callee_sym = resolver.resolve_symbol(node.func)
                 line_no = node.lineno
                 snippet = source_lines[line_no - 1].strip() if 1 <= line_no <= len(source_lines) else ""
-                calls.append(NormalizedCallNode(callee=callee_sym, arguments=node.args, line_number=line_no, raw_snippet=snippet))
+                calls.append(
+                    NormalizedCallNode(callee=callee_sym, arguments=node.args, line_number=line_no, raw_snippet=snippet)
+                )
         return calls
 
     def extract_assignments(self, tree: Any, source_bytes: bytes) -> List[NormalizedAssignmentNode]:
@@ -72,6 +74,7 @@ class PythonASTNormalizer(ASTNormalizer):
 class PythonDataFlowProvider(DataFlowProvider):
     def __init__(self):
         from scanners.static.ast.dataflow_interprocedural import BoundedDataFlowEngine
+
         self.engine = BoundedDataFlowEngine()
 
     def resolve_constant(self, var_name: str, assignments: List[NormalizedAssignmentNode]) -> Optional[Any]:
@@ -97,20 +100,53 @@ class PythonDataFlowProvider(DataFlowProvider):
         return self.engine.trace_configuration_flow(config_key, target_init_func)
 
 
-
 class PythonCryptoRuleProvider(CryptoRuleProvider):
     def get_rules(self) -> List[CryptoDetectionRule]:
         return [
             CryptoDetectionRule("PY_HASHLIB_MD5", "MD5", "hashlib.md5", "weak_hash", "critical", "high"),
             CryptoDetectionRule("PY_HASHLIB_SHA1", "SHA1", "hashlib.sha1", "weak_hash", "high", "high"),
             CryptoDetectionRule("PY_HMAC_MD5", "MD5", "hmac.new(..., md5)", "weak_hash", "critical", "high"),
-            CryptoDetectionRule("PY_WEAK_RSA_KEY_SIZE", "RSA-Weak", "rsa.generate_private_key", "weak_asymmetric_key", "critical", "high"),
-            CryptoDetectionRule("PY_CIPHER_DES", "DES", "ciphers.algorithms.TripleDES", "weak_cipher", "critical", "high"),
-            CryptoDetectionRule("PY_INSECURE_MODE_ECB", "ECB", "ciphers.modes.ECB", "insecure_cipher_mode", "critical", "high"),
-            CryptoDetectionRule("PY_DISABLED_CERT_VALIDATION", "TLS_NO_VERIFY", "requests.get(verify=False)", "disabled_certificate_validation", "critical", "high"),
-            CryptoDetectionRule("PY_INSECURE_RANDOMNESS", "PRNG", "random.randint", "insecure_randomness", "high", "high"),
-            CryptoDetectionRule("PY_JWT_VERIFY_FALSE", "JWT", "jwt.decode(verify=False)", "insecure_jwt_verification", "critical", "high"),
-            CryptoDetectionRule("PY_HARDCODED_PRIVATE_KEY", "Hardcoded-Key", "PEM Private Key Literal", "hardcoded_private_key", "critical", "high"),
+            CryptoDetectionRule(
+                "PY_WEAK_RSA_KEY_SIZE",
+                "RSA-Weak",
+                "rsa.generate_private_key",
+                "weak_asymmetric_key",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "PY_CIPHER_DES", "DES", "ciphers.algorithms.TripleDES", "weak_cipher", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "PY_INSECURE_MODE_ECB", "ECB", "ciphers.modes.ECB", "insecure_cipher_mode", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "PY_DISABLED_CERT_VALIDATION",
+                "TLS_NO_VERIFY",
+                "requests.get(verify=False)",
+                "disabled_certificate_validation",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "PY_INSECURE_RANDOMNESS", "PRNG", "random.randint", "insecure_randomness", "high", "high"
+            ),
+            CryptoDetectionRule(
+                "PY_JWT_VERIFY_FALSE",
+                "JWT",
+                "jwt.decode(verify=False)",
+                "insecure_jwt_verification",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "PY_HARDCODED_PRIVATE_KEY",
+                "Hardcoded-Key",
+                "PEM Private Key Literal",
+                "hardcoded_private_key",
+                "critical",
+                "high",
+            ),
         ]
 
 

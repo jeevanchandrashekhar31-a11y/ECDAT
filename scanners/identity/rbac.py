@@ -34,27 +34,22 @@ ROLE_ALIASES: Dict[str, str] = {
     "platformadmin": Roles.PLATFORM_ADMIN,
     "admin": Roles.PLATFORM_ADMIN,
     "superuser": Roles.PLATFORM_ADMIN,
-
     "security administrator": Roles.SECURITY_ADMIN,
     "security_admin": Roles.SECURITY_ADMIN,
     "security-admin": Roles.SECURITY_ADMIN,
     "securityadmin": Roles.SECURITY_ADMIN,
     "secops": Roles.SECURITY_ADMIN,
     "security_engineer": Roles.SECURITY_ADMIN,
-
     "analyst": Roles.ANALYST,
     "threat_analyst": Roles.ANALYST,
     "crypto_analyst": Roles.ANALYST,
-
     "developer": Roles.DEVELOPER,
     "dev": Roles.DEVELOPER,
     "engineer": Roles.DEVELOPER,
     "devops": Roles.DEVELOPER,
-
     "auditor": Roles.AUDITOR,
     "compliance": Roles.AUDITOR,
     "compliance_officer": Roles.AUDITOR,
-
     "viewer": Roles.VIEWER,
     "read_only": Roles.VIEWER,
     "reader": Roles.VIEWER,
@@ -117,7 +112,6 @@ class Permissions:
 ROLE_PERMISSIONS: Dict[str, Set[str]] = {
     # 1. Platform Administrator: Superuser access across all platform operations
     Roles.PLATFORM_ADMIN: {"*"},
-
     # 2. Security Administrator: Full authority over policy, remediation approvals, audit, compliance
     Roles.SECURITY_ADMIN: {
         Permissions.POLICY_READ,
@@ -151,7 +145,6 @@ ROLE_PERMISSIONS: Dict[str, Set[str]] = {
         Permissions.KMS_SYNC,
         Permissions.USERS_MANAGE,
     },
-
     # 3. Analyst: Threat modeling, PQC risk analysis, remediation proposal, report export
     Roles.ANALYST: {
         Permissions.ASSETS_READ,
@@ -173,7 +166,6 @@ ROLE_PERMISSIONS: Dict[str, Set[str]] = {
         Permissions.TICKETING_CREATE,
         Permissions.KMS_READ,
     },
-
     # 4. Developer: Code scans, patch proposals, PR verification, assigned finding suppression
     Roles.DEVELOPER: {
         Permissions.ASSETS_READ,
@@ -192,7 +184,6 @@ ROLE_PERMISSIONS: Dict[str, Set[str]] = {
         Permissions.POLICY_READ,
         Permissions.COMPLIANCE_READ,
     },
-
     # 5. Auditor: Strictly READ-ONLY for audit logs, compliance evidence, policies, findings
     Roles.AUDITOR: {
         Permissions.AUDIT_READ,
@@ -210,7 +201,6 @@ ROLE_PERMISSIONS: Dict[str, Set[str]] = {
         Permissions.TICKETING_READ,
         Permissions.KMS_READ,
     },
-
     # 6. Viewer: Minimal read-only dashboard access
     Roles.VIEWER: {
         Permissions.ASSETS_READ,
@@ -231,7 +221,6 @@ ENDPOINT_PERMISSIONS: Dict[str, str] = {
     "GET /api/v1/cboms": Permissions.CBOM_READ,
     "POST /api/v1/cboms": Permissions.CBOM_GENERATE,
     "POST /api/v1/cbom/merge": Permissions.CBOM_GENERATE,
-
     # Scans & Findings
     "GET /api/v1/scans": Permissions.SCANS_READ,
     "POST /api/v1/scans": Permissions.SCANS_TRIGGER,
@@ -239,24 +228,20 @@ ENDPOINT_PERMISSIONS: Dict[str, str] = {
     "GET /api/v1/findings": Permissions.FINDINGS_READ,
     "POST /api/v1/findings/:id/suppress": Permissions.FINDINGS_SUPPRESS,
     "GET /api/v1/findings/export": Permissions.FINDINGS_EXPORT,
-
     # Policy-as-Code & Governance
     "GET /api/v1/policy": Permissions.POLICY_READ,
     "POST /api/v1/policy": Permissions.POLICY_CREATE,
     "POST /api/v1/policy/approve": Permissions.POLICY_APPROVE,
     "DELETE /api/v1/policy/:id": Permissions.POLICY_DELETE,
-
     # Remediation & Patch Approvals
     "GET /api/v1/remediation": Permissions.REMEDIATION_READ,
     "POST /api/v1/remediation/plan": Permissions.REMEDIATION_PROPOSE,
     "POST /api/v1/remediation/approve": Permissions.REMEDIATION_APPROVE,
     "POST /api/v1/remediation/apply": Permissions.REMEDIATION_APPLY,
-
     # Compliance & Audits
     "GET /api/v1/compliance": Permissions.COMPLIANCE_READ,
     "GET /api/v1/compliance/export": Permissions.COMPLIANCE_EXPORT,
     "GET /api/v1/auth/audit": Permissions.AUDIT_READ,
-
     # CI Workflows & Integrations
     "GET /api/v1/ci": Permissions.CI_READ,
     "POST /api/v1/ci/scan": Permissions.CI_EXECUTE,
@@ -264,7 +249,6 @@ ENDPOINT_PERMISSIONS: Dict[str, str] = {
     "POST /api/v1/integrations/ticketing": Permissions.TICKETING_CREATE,
     "GET /api/v1/integrations/kms": Permissions.KMS_READ,
     "POST /api/v1/integrations/kms/sync": Permissions.KMS_SYNC,
-
     # Platform & Secrets Administration
     "POST /api/v1/auth/secrets/rotate": Permissions.SECRETS_ROTATE,
 }

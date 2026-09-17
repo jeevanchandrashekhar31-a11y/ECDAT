@@ -352,11 +352,17 @@ def ingest_sbom(payload: Dict[str, Any]) -> NormalizedSbom:
             elem2 = rel.get("relatedSpdxElement")
             if elem1 and elem2:
                 if r_type == "DEPENDENCY_OF":
-                    relationships.append(DependencyRelationship(from_ref=elem2, to_ref=elem1, relationship_type="DEPENDS_ON"))
+                    relationships.append(
+                        DependencyRelationship(from_ref=elem2, to_ref=elem1, relationship_type="DEPENDS_ON")
+                    )
                 elif r_type == "CONTAINS":
-                    relationships.append(DependencyRelationship(from_ref=elem1, to_ref=elem2, relationship_type="CONTAINS"))
+                    relationships.append(
+                        DependencyRelationship(from_ref=elem1, to_ref=elem2, relationship_type="CONTAINS")
+                    )
                 else:
-                    relationships.append(DependencyRelationship(from_ref=elem1, to_ref=elem2, relationship_type="DEPENDS_ON"))
+                    relationships.append(
+                        DependencyRelationship(from_ref=elem1, to_ref=elem2, relationship_type="DEPENDS_ON")
+                    )
 
         return NormalizedSbom(
             format="SPDX",

@@ -60,9 +60,7 @@ def crypto_filesystem_tree():
         keys_dir.mkdir(parents=True)
         pubkey_pem = keys_dir / "rsa_pub.pem"
         pubkey_pem.write_bytes(
-            b"-----BEGIN PUBLIC KEY-----\n"
-            b"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...\n"
-            b"-----END PUBLIC KEY-----\n"
+            b"-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...\n-----END PUBLIC KEY-----\n"
         )
 
         ssh_pub = keys_dir / "id_ed25519.pub"
@@ -70,11 +68,9 @@ def crypto_filesystem_tree():
 
         jwk_file = keys_dir / "jwks.json"
         jwk_file.write_text(
-            json.dumps({
-                "keys": [
-                    {"kty": "RSA", "use": "sig", "kid": "key1", "n": "0vx7agoebGcQSuuPiG...", "e": "AQAB"}
-                ]
-            })
+            json.dumps(
+                {"keys": [{"kty": "RSA", "use": "sig", "kid": "key1", "n": "0vx7agoebGcQSuuPiG...", "e": "AQAB"}]}
+            )
         )
 
         # 3. Crypto Configuration (OpenSSL, Java security)
@@ -82,15 +78,12 @@ def crypto_filesystem_tree():
         conf_dir.mkdir(parents=True)
         openssl_cnf = conf_dir / "openssl.cnf"
         openssl_cnf.write_text(
-            "[system_default_sect]\n"
-            "MinProtocol = TLSv1.2\n"
-            "CipherString = DEFAULT@SECLEVEL=2:!aNULL:!eNULL\n"
+            "[system_default_sect]\nMinProtocol = TLSv1.2\nCipherString = DEFAULT@SECLEVEL=2:!aNULL:!eNULL\n"
         )
 
         java_sec = conf_dir / "java.security"
         java_sec.write_text(
-            "crypto.policy=unlimited\n"
-            "jdk.tls.disabledAlgorithms=SSLv3, TLSv1, TLSv1.1, RC4, DES, MD5withRSA\n"
+            "crypto.policy=unlimited\njdk.tls.disabledAlgorithms=SSLv3, TLSv1, TLSv1.1, RC4, DES, MD5withRSA\n"
         )
 
         # 4. TLS Configuration (Nginx, SSHD)
@@ -134,6 +127,7 @@ def crypto_filesystem_tree():
 # ---------------------------------------------------------------------------
 # Test: Full Filesystem Discovery Across All 6 Asset Types
 # ---------------------------------------------------------------------------
+
 
 def test_filesystem_scanner_discovers_all_asset_types(crypto_filesystem_tree):
     scanner = FilesystemScanner(str(crypto_filesystem_tree))
@@ -192,6 +186,7 @@ def test_filesystem_scanner_discovers_all_asset_types(crypto_filesystem_tree):
 # Test: Scan-Root Containment & ../ Traversal Protection
 # ---------------------------------------------------------------------------
 
+
 def test_prevent_dot_dot_traversal(crypto_filesystem_tree):
     guard = FilesystemSecurityGuard(crypto_filesystem_tree)
 
@@ -207,6 +202,7 @@ def test_prevent_dot_dot_traversal(crypto_filesystem_tree):
 # ---------------------------------------------------------------------------
 # Test: Symlink Escape Protection
 # ---------------------------------------------------------------------------
+
 
 def test_prevent_symlink_escape(crypto_filesystem_tree):
     """
@@ -246,6 +242,7 @@ def test_prevent_symlink_escape(crypto_filesystem_tree):
 # Test: Giant File Protection
 # ---------------------------------------------------------------------------
 
+
 def test_prevent_giant_files(crypto_filesystem_tree):
     """
     Creates a file exceeding max_file_size_bytes and verifies it is skipped.
@@ -266,6 +263,7 @@ def test_prevent_giant_files(crypto_filesystem_tree):
 # ---------------------------------------------------------------------------
 # Test: Permission Confusion & Graceful Handling
 # ---------------------------------------------------------------------------
+
 
 def test_permission_denied_graceful_handling(crypto_filesystem_tree, monkeypatch):
     """
@@ -294,6 +292,7 @@ def test_permission_denied_graceful_handling(crypto_filesystem_tree, monkeypatch
 # ---------------------------------------------------------------------------
 # Test: CBOM Generation from Filesystem Report
 # ---------------------------------------------------------------------------
+
 
 def test_filesystem_report_to_cbom(crypto_filesystem_tree):
     scanner = FilesystemScanner(str(crypto_filesystem_tree))

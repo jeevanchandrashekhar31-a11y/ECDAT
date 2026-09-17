@@ -94,11 +94,7 @@ class TestMetadataOnlyInvariant:
             assert_metadata_only({"auth_token": "eyJhbGciOi..."})
 
     def test_rejection_of_pem_private_key_content(self):
-        pem_key = (
-            "-----BEGIN RSA PRIVATE KEY-----\n"
-            "MIIEowIBAAKCAQEA0Y18V...\n"
-            "-----END RSA PRIVATE KEY-----"
-        )
+        pem_key = "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0Y18V...\n-----END RSA PRIVATE KEY-----"
         with pytest.raises(SensitiveDataExposureError) as exc_info:
             assert_metadata_only({"captured_buffer": pem_key})
         assert "Private key material detected" in str(exc_info.value)

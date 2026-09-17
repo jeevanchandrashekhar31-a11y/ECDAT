@@ -33,7 +33,9 @@ def derive_why_it_matters(finding: Dict[str, Any], asset: Optional[Dict[str, Any
     asset = asset or {}
     algo = str(finding.get("algorithm") or asset.get("algorithm") or finding.get("name") or "Unknown").upper()
     key_size = finding.get("key_size") or asset.get("key_size") or finding.get("keySizeBits")
-    is_internet = bool(asset.get("is_internet_facing") or asset.get("isInternetExposed") or finding.get("is_internet_facing"))
+    is_internet = bool(
+        asset.get("is_internet_facing") or asset.get("isInternetExposed") or finding.get("is_internet_facing")
+    )
     mosca = asset.get("mosca") or {}
     mosca_status = mosca.get("status") or finding.get("mosca_status")
 
@@ -41,40 +43,66 @@ def derive_why_it_matters(finding: Dict[str, Any], asset: Optional[Dict[str, Any
 
     # Classical Weaknesses
     if any(w in algo for w in ["MD5", "MD4", "MD2"]):
-        points.append("Cryptographic collision attacks against MD5 are practical in seconds; attackers can forge certificates, signatures, or checksums.")
+        points.append(
+            "Cryptographic collision attacks against MD5 are practical in seconds; attackers can forge certificates, signatures, or checksums."
+        )
     elif any(w in algo for w in ["SHA1", "SHA-1"]):
-        points.append("SHA-1 is susceptible to practical chosen-prefix collision attacks (SHAttered), allowing digital signature forgery.")
+        points.append(
+            "SHA-1 is susceptible to practical chosen-prefix collision attacks (SHAttered), allowing digital signature forgery."
+        )
     elif any(w in algo for w in ["DES", "3DES", "TDEA"]):
-        points.append("Legacy 64-bit block ciphers are vulnerable to Sweet32 collision attacks and brute-force key recovery in transit.")
+        points.append(
+            "Legacy 64-bit block ciphers are vulnerable to Sweet32 collision attacks and brute-force key recovery in transit."
+        )
     elif "RC4" in algo:
-        points.append("RC4 contains severe statistical keystream biases allowing plaintext extraction from repeated TLS sessions (Bar Mitzvah / Royal Holloway attacks).")
+        points.append(
+            "RC4 contains severe statistical keystream biases allowing plaintext extraction from repeated TLS sessions (Bar Mitzvah / Royal Holloway attacks)."
+        )
     elif "RSA" in algo and key_size and int(key_size) < 2048:
-        points.append(f"RSA-{key_size} provides sub-standard security (< 112 bits) and is vulnerable to factorization by academic/cloud computing clusters.")
+        points.append(
+            f"RSA-{key_size} provides sub-standard security (< 112 bits) and is vulnerable to factorization by academic/cloud computing clusters."
+        )
     elif any(p in algo for p in ["TLS 1.0", "TLS 1.1", "SSLV2", "SSLV3"]):
-        points.append("Protocol version contains known protocol vulnerabilities (POODLE, BEAST) and lacks AEAD cipher suites, violating modern PCI DSS and NIST baselines.")
+        points.append(
+            "Protocol version contains known protocol vulnerabilities (POODLE, BEAST) and lacks AEAD cipher suites, violating modern PCI DSS and NIST baselines."
+        )
 
     # Quantum Cryptanalysis Vulnerability
     if any(a in algo for a in ["RSA", "ECDSA", "ECDH", "DIFFIE-HELLMAN", "DH", "DSA", "ED25519", "X25519"]):
-        points.append("Asymmetric discrete logarithm and integer factorization problems will be solved in polynomial time by Shor's algorithm on a Cryptanalytically Relevant Quantum Computer (CRQC).")
+        points.append(
+            "Asymmetric discrete logarithm and integer factorization problems will be solved in polynomial time by Shor's algorithm on a Cryptanalytically Relevant Quantum Computer (CRQC)."
+        )
     elif "AES" in algo and key_size and int(key_size) == 128:
-        points.append("Grover's algorithm reduces effective brute-force symmetric search space to 2^64 operations, cutting quantum security margin below long-term assurance thresholds.")
+        points.append(
+            "Grover's algorithm reduces effective brute-force symmetric search space to 2^64 operations, cutting quantum security margin below long-term assurance thresholds."
+        )
 
     # Exposure & Harvest-Now-Decrypt-Later (HNDL)
     if is_internet:
-        points.append("Active exposure on the public internet perimeter exposes traffic to passive nation-state interception and Harvest-Now-Decrypt-Later (HNDL) archiving.")
+        points.append(
+            "Active exposure on the public internet perimeter exposes traffic to passive nation-state interception and Harvest-Now-Decrypt-Later (HNDL) archiving."
+        )
 
     # Mosca Urgency
     if mosca_status == "CRITICAL_URGENT":
-        points.append("Critical Mosca inequality deficit (D + T > Q): Data shelf life plus migration time exceeds quantum threat arrival horizon.")
+        points.append(
+            "Critical Mosca inequality deficit (D + T > Q): Data shelf life plus migration time exceeds quantum threat arrival horizon."
+        )
     elif mosca_status == "AT_RISK":
-        points.append("Mosca timeline margin is narrow; initiating migration immediately is required to prevent data compromise.")
+        points.append(
+            "Mosca timeline margin is narrow; initiating migration immediately is required to prevent data compromise."
+        )
 
     # Certificate Specifics
     if finding.get("is_self_signed") or asset.get("is_self_signed"):
-        points.append("Self-signed certificate bypasses public PKI trust hierarchies and lacks automated revocation checking, leaving endpoints vulnerable to Man-in-the-Middle (MitM) attacks.")
+        points.append(
+            "Self-signed certificate bypasses public PKI trust hierarchies and lacks automated revocation checking, leaving endpoints vulnerable to Man-in-the-Middle (MitM) attacks."
+        )
 
     if not points:
-        points.append("Asset does not conform to enterprise cryptographic standards and requires modernization to maintain long-term assurance.")
+        points.append(
+            "Asset does not conform to enterprise cryptographic standards and requires modernization to maintain long-term assurance."
+        )
 
     return {
         "summary": points[0],
@@ -193,138 +221,158 @@ def build_migration_options(finding: Dict[str, Any], asset: Optional[Dict[str, A
     options = []
 
     if any(k in algo for k in ["ECDH", "X25519", "DIFFIE-HELLMAN"]) or algo.startswith("TLS"):
-        options.append({
-            "option_id": "OPT-1-PQC-HYBRID",
-            "name": "Standardized PQC Hybrid Key Exchange (X25519MLKEM768)",
-            "type": "PQC_HYBRID",
-            "is_primary_recommendation": True,
-            "description": "Deploys standardized IETF hybrid group combining X25519 with ML-KEM-768.",
-            "pros": [
-                "Immediate immunity against Harvest-Now-Decrypt-Later (HNDL) attacks.",
-                "Zero regression risk: Classical curve preserves security even if quantum lattice breaks.",
-                "Supported natively in modern browsers (Chrome, Edge, Firefox) and OpenSSL 3.2+.",
-            ],
-            "cons": ["ClientHello message size increases by ~1.2 KB."],
-            "effort": "LOW",
-            "risk_rating": "LOW",
-        })
-        options.append({
-            "option_id": "OPT-2-FIPS-HYBRID",
-            "name": "FIPS 140-3 Regulated Hybrid (SecP256r1MLKEM768)",
-            "type": "PQC_HYBRID_FIPS",
-            "is_primary_recommendation": False,
-            "description": "Combines NIST P-256 curve with ML-KEM-768 for strict US Fed / BFSI regulatory mandates.",
-            "pros": [
-                "Satisfies strict FIPS 140-3 and NSA CNSA 2.0 compliance mandates.",
-                "Guarantees post-quantum forward secrecy.",
-            ],
-            "cons": ["Slightly higher compute overhead than X25519."],
-            "effort": "LOW",
-            "risk_rating": "LOW",
-        })
-        options.append({
-            "option_id": "OPT-3-CLASSICAL-ONLY",
-            "name": "Classical Hardening (X25519 only, TLS 1.3)",
-            "type": "CLASSICAL_HARDENING",
-            "is_primary_recommendation": False,
-            "description": "Restricts ciphers to TLS 1.3 with pure X25519 without PQC shares.",
-            "pros": ["Zero packet size increase; maximum legacy client compatibility."],
-            "cons": ["Vulnerable to retrospective quantum decryption (HNDL)."],
-            "effort": "LOW",
-            "risk_rating": "HIGH",
-        })
+        options.append(
+            {
+                "option_id": "OPT-1-PQC-HYBRID",
+                "name": "Standardized PQC Hybrid Key Exchange (X25519MLKEM768)",
+                "type": "PQC_HYBRID",
+                "is_primary_recommendation": True,
+                "description": "Deploys standardized IETF hybrid group combining X25519 with ML-KEM-768.",
+                "pros": [
+                    "Immediate immunity against Harvest-Now-Decrypt-Later (HNDL) attacks.",
+                    "Zero regression risk: Classical curve preserves security even if quantum lattice breaks.",
+                    "Supported natively in modern browsers (Chrome, Edge, Firefox) and OpenSSL 3.2+.",
+                ],
+                "cons": ["ClientHello message size increases by ~1.2 KB."],
+                "effort": "LOW",
+                "risk_rating": "LOW",
+            }
+        )
+        options.append(
+            {
+                "option_id": "OPT-2-FIPS-HYBRID",
+                "name": "FIPS 140-3 Regulated Hybrid (SecP256r1MLKEM768)",
+                "type": "PQC_HYBRID_FIPS",
+                "is_primary_recommendation": False,
+                "description": "Combines NIST P-256 curve with ML-KEM-768 for strict US Fed / BFSI regulatory mandates.",
+                "pros": [
+                    "Satisfies strict FIPS 140-3 and NSA CNSA 2.0 compliance mandates.",
+                    "Guarantees post-quantum forward secrecy.",
+                ],
+                "cons": ["Slightly higher compute overhead than X25519."],
+                "effort": "LOW",
+                "risk_rating": "LOW",
+            }
+        )
+        options.append(
+            {
+                "option_id": "OPT-3-CLASSICAL-ONLY",
+                "name": "Classical Hardening (X25519 only, TLS 1.3)",
+                "type": "CLASSICAL_HARDENING",
+                "is_primary_recommendation": False,
+                "description": "Restricts ciphers to TLS 1.3 with pure X25519 without PQC shares.",
+                "pros": ["Zero packet size increase; maximum legacy client compatibility."],
+                "cons": ["Vulnerable to retrospective quantum decryption (HNDL)."],
+                "effort": "LOW",
+                "risk_rating": "HIGH",
+            }
+        )
     elif any(s in algo for s in ["RSA", "ECDSA", "DSA"]):
-        options.append({
-            "option_id": "OPT-1-PQC-SIGNATURE",
-            "name": "NIST FIPS 204 ML-DSA-65 Migration",
-            "type": "PQC_DIRECT",
-            "is_primary_recommendation": True,
-            "description": "Migrates public key digital signing to lattice-based ML-DSA-65 (Security Category 3).",
-            "pros": [
-                "Quantum-resistant against Shor's polynomial-time factorization.",
-                "Fast signing and verification cycle performance.",
-            ],
-            "cons": ["Signature size is ~3.3 KB (vs 64-256 bytes classical); requires buffer resizing."],
-            "effort": "HIGH",
-            "risk_rating": "MEDIUM",
-        })
-        options.append({
-            "option_id": "OPT-2-COMPOSITE-DUAL-SIG",
-            "name": "Composite Dual-Signing (RSA-3072 + ML-DSA-65)",
-            "type": "PQC_COMPOSITE",
-            "is_primary_recommendation": False,
-            "description": "Emits composite dual signatures to maintain legacy validator compatibility during transition.",
-            "pros": [
-                "Non-breaking for legacy client applications.",
-                "PQC-ready validators achieve quantum forgery resistance.",
-            ],
-            "cons": ["Dual signature payload overhead; complex validation logic."],
-            "effort": "HIGH",
-            "risk_rating": "MEDIUM",
-        })
-        options.append({
-            "option_id": "OPT-3-CLASSICAL-UPGRADE",
-            "name": "Interim Classical Hardening (RSA-3072 / ECDSA P-256)",
-            "type": "CLASSICAL_HARDENING",
-            "is_primary_recommendation": False,
-            "description": "Upgrades weak key size to 3072-bit RSA or 256-bit ECC.",
-            "pros": ["100% ecosystem compatibility; no payload expansion."],
-            "cons": ["Remains completely vulnerable to CRQCs; fails 2030+ compliance mandates."],
-            "effort": "MEDIUM",
-            "risk_rating": "HIGH",
-        })
+        options.append(
+            {
+                "option_id": "OPT-1-PQC-SIGNATURE",
+                "name": "NIST FIPS 204 ML-DSA-65 Migration",
+                "type": "PQC_DIRECT",
+                "is_primary_recommendation": True,
+                "description": "Migrates public key digital signing to lattice-based ML-DSA-65 (Security Category 3).",
+                "pros": [
+                    "Quantum-resistant against Shor's polynomial-time factorization.",
+                    "Fast signing and verification cycle performance.",
+                ],
+                "cons": ["Signature size is ~3.3 KB (vs 64-256 bytes classical); requires buffer resizing."],
+                "effort": "HIGH",
+                "risk_rating": "MEDIUM",
+            }
+        )
+        options.append(
+            {
+                "option_id": "OPT-2-COMPOSITE-DUAL-SIG",
+                "name": "Composite Dual-Signing (RSA-3072 + ML-DSA-65)",
+                "type": "PQC_COMPOSITE",
+                "is_primary_recommendation": False,
+                "description": "Emits composite dual signatures to maintain legacy validator compatibility during transition.",
+                "pros": [
+                    "Non-breaking for legacy client applications.",
+                    "PQC-ready validators achieve quantum forgery resistance.",
+                ],
+                "cons": ["Dual signature payload overhead; complex validation logic."],
+                "effort": "HIGH",
+                "risk_rating": "MEDIUM",
+            }
+        )
+        options.append(
+            {
+                "option_id": "OPT-3-CLASSICAL-UPGRADE",
+                "name": "Interim Classical Hardening (RSA-3072 / ECDSA P-256)",
+                "type": "CLASSICAL_HARDENING",
+                "is_primary_recommendation": False,
+                "description": "Upgrades weak key size to 3072-bit RSA or 256-bit ECC.",
+                "pros": ["100% ecosystem compatibility; no payload expansion."],
+                "cons": ["Remains completely vulnerable to CRQCs; fails 2030+ compliance mandates."],
+                "effort": "MEDIUM",
+                "risk_rating": "HIGH",
+            }
+        )
     elif any(w in algo for w in ["MD5", "SHA-1"]):
-        options.append({
-            "option_id": "OPT-1-SHA256-DROPIN",
-            "name": "NIST FIPS 180-4 SHA-256 Migration",
-            "type": "CLASSICAL_DIRECT",
-            "is_primary_recommendation": True,
-            "description": "Drop-in replacement with SHA-256 or SHA-384 cryptographic digest.",
-            "pros": [
-                "Eliminates collision attacks immediately.",
-                "Hardware-accelerated on modern Intel/ARM processors.",
-                "Universal library and language runtime support.",
-            ],
-            "cons": ["Database columns storing 16/20-byte raw hashes require expansion to 32 bytes."],
-            "effort": "LOW",
-            "risk_rating": "LOW",
-        })
-        options.append({
-            "option_id": "OPT-2-SHA3-UPGRADE",
-            "name": "NIST FIPS 202 SHA3-256 (Keccak)",
-            "type": "CLASSICAL_DIRECT",
-            "is_primary_recommendation": False,
-            "description": "Adopts sponge-construction SHA3-256 for enhanced structural collision resistance.",
-            "pros": ["Immune to length-extension attacks without HMAC wrapping."],
-            "cons": ["Marginally slower on CPUs lacking dedicated SHA3 instructions."],
-            "effort": "LOW",
-            "risk_rating": "LOW",
-        })
+        options.append(
+            {
+                "option_id": "OPT-1-SHA256-DROPIN",
+                "name": "NIST FIPS 180-4 SHA-256 Migration",
+                "type": "CLASSICAL_DIRECT",
+                "is_primary_recommendation": True,
+                "description": "Drop-in replacement with SHA-256 or SHA-384 cryptographic digest.",
+                "pros": [
+                    "Eliminates collision attacks immediately.",
+                    "Hardware-accelerated on modern Intel/ARM processors.",
+                    "Universal library and language runtime support.",
+                ],
+                "cons": ["Database columns storing 16/20-byte raw hashes require expansion to 32 bytes."],
+                "effort": "LOW",
+                "risk_rating": "LOW",
+            }
+        )
+        options.append(
+            {
+                "option_id": "OPT-2-SHA3-UPGRADE",
+                "name": "NIST FIPS 202 SHA3-256 (Keccak)",
+                "type": "CLASSICAL_DIRECT",
+                "is_primary_recommendation": False,
+                "description": "Adopts sponge-construction SHA3-256 for enhanced structural collision resistance.",
+                "pros": ["Immune to length-extension attacks without HMAC wrapping."],
+                "cons": ["Marginally slower on CPUs lacking dedicated SHA3 instructions."],
+                "effort": "LOW",
+                "risk_rating": "LOW",
+            }
+        )
     else:
-        options.append({
-            "option_id": "OPT-1-PRIMARY",
-            "name": "Recommended Standard Upgrade",
-            "type": "DIRECT_REMEDIATION",
-            "is_primary_recommendation": True,
-            "description": "Remediates finding according to NIST SP 800-57 and CNSA 2.0 guidance.",
-            "pros": ["Restores compliance posture and mitigates security risks."],
-            "cons": ["Requires testing and staged deployment."],
-            "effort": "MEDIUM",
-            "risk_rating": "LOW",
-        })
+        options.append(
+            {
+                "option_id": "OPT-1-PRIMARY",
+                "name": "Recommended Standard Upgrade",
+                "type": "DIRECT_REMEDIATION",
+                "is_primary_recommendation": True,
+                "description": "Remediates finding according to NIST SP 800-57 and CNSA 2.0 guidance.",
+                "pros": ["Restores compliance posture and mitigates security risks."],
+                "cons": ["Requires testing and staged deployment."],
+                "effort": "MEDIUM",
+                "risk_rating": "LOW",
+            }
+        )
 
     # Compensating control / exception option
-    options.append({
-        "option_id": "OPT-COMPENSATING-CONTROL",
-        "name": "Compensating Control with Approved Exception",
-        "type": "COMPENSATING_CONTROL",
-        "is_primary_recommendation": False,
-        "description": "Applies network micro-segmentation, mTLS perimeter, and registers formal policy exception.",
-        "pros": ["Prevents immediate application refactoring or breaking change."],
-        "cons": ["Technical debt remains; requires security review and executive sign-off."],
-        "effort": "MEDIUM",
-        "risk_rating": "MEDIUM",
-    })
+    options.append(
+        {
+            "option_id": "OPT-COMPENSATING-CONTROL",
+            "name": "Compensating Control with Approved Exception",
+            "type": "COMPENSATING_CONTROL",
+            "is_primary_recommendation": False,
+            "description": "Applies network micro-segmentation, mTLS perimeter, and registers formal policy exception.",
+            "pros": ["Prevents immediate application refactoring or breaking change."],
+            "cons": ["Technical debt remains; requires security review and executive sign-off."],
+            "effort": "MEDIUM",
+            "risk_rating": "MEDIUM",
+        }
+    )
 
     return options
 
@@ -377,7 +425,12 @@ def derive_dependencies(finding: Dict[str, Any], asset: Optional[Dict[str, Any]]
 
     if algo.startswith("TLS") or any(k in algo for k in ["ECDH", "X25519", "ML-KEM", "KEM"]):
         required_libraries = ["OpenSSL 3.2.0+", "liboqs 0.10.0+ (optional for native C)", "BoringSSL (current)"]
-        min_runtime_versions = ["Go 1.23+", "Node.js 22+", "Java 21 with Bouncy Castle 1.78+", "Python 3.12+ with cryptography 42.0+"]
+        min_runtime_versions = [
+            "Go 1.23+",
+            "Node.js 22+",
+            "Java 21 with Bouncy Castle 1.78+",
+            "Python 3.12+ with cryptography 42.0+",
+        ]
         kms_hsm_support = "KMS supporting hybrid key exchange envelopes (AWS KMS / GCP Cloud KMS PQC preview)"
         ca_profile_support = "X.509 RFC 5280 PKI with support for hybrid signature algorithms"
     elif any(s in algo for s in ["RSA", "ECDSA", "ML-DSA"]):
@@ -490,7 +543,9 @@ class RemediationPlanner:
     def __init__(self, default_dry_run: bool = True):
         self.default_dry_run = default_dry_run
 
-    def plan_finding_remediation(self, finding: Dict[str, Any], options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def plan_finding_remediation(
+        self, finding: Dict[str, Any], options: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Generates a complete 10-dimension remediation plan for a single actionable finding."""
         options = options or {}
         is_dry_run = options.get("dry_run", self.default_dry_run)
@@ -500,8 +555,18 @@ class RemediationPlanner:
         clean_finding = sanitize_evidence_data(finding)
         clean_asset = sanitize_evidence_data(asset)
 
-        finding_id = clean_finding.get("findingId") or clean_finding.get("finding_id") or clean_finding.get("id") or f"fnd_{uuid.uuid4().hex[:8]}"
-        title = clean_finding.get("title") or clean_finding.get("algorithmStandard") or clean_finding.get("algorithm") or "Cryptographic Finding"
+        finding_id = (
+            clean_finding.get("findingId")
+            or clean_finding.get("finding_id")
+            or clean_finding.get("id")
+            or f"fnd_{uuid.uuid4().hex[:8]}"
+        )
+        title = (
+            clean_finding.get("title")
+            or clean_finding.get("algorithmStandard")
+            or clean_finding.get("algorithm")
+            or "Cryptographic Finding"
+        )
         severity = clean_finding.get("severity", "HIGH")
 
         why_it_matters = derive_why_it_matters(clean_finding, clean_asset)
@@ -537,22 +602,39 @@ class RemediationPlanner:
                 "severity": severity,
                 "category": clean_finding.get("primitiveType") or clean_finding.get("category") or "cryptography",
                 "algorithm": clean_finding.get("algorithm") or clean_finding.get("algorithmStandard") or "Unknown",
-                "evidence": clean_finding.get("evidence") or {
+                "evidence": clean_finding.get("evidence")
+                or {
                     "location": clean_finding.get("file") or clean_finding.get("location") or "unknown",
                     "line_number": clean_finding.get("line") or clean_finding.get("lineNumber"),
                 },
             },
             "why_it_matters": why_it_matters,
             "affected_asset": {
-                "asset_id": clean_asset.get("assetId") or clean_asset.get("asset_id") or clean_finding.get("assetId") or clean_finding.get("asset_id") or "asset_unknown",
-                "name": clean_asset.get("name") or clean_asset.get("primaryIdentifier") or clean_finding.get("name") or "Cryptographic Asset",
-                "type": clean_asset.get("assetType") or clean_asset.get("asset_type") or clean_finding.get("assetType") or "algorithm",
+                "asset_id": clean_asset.get("assetId")
+                or clean_asset.get("asset_id")
+                or clean_finding.get("assetId")
+                or clean_finding.get("asset_id")
+                or "asset_unknown",
+                "name": clean_asset.get("name")
+                or clean_asset.get("primaryIdentifier")
+                or clean_finding.get("name")
+                or "Cryptographic Asset",
+                "type": clean_asset.get("assetType")
+                or clean_asset.get("asset_type")
+                or clean_finding.get("assetType")
+                or "algorithm",
                 "algorithm": clean_asset.get("algorithm") or clean_finding.get("algorithm") or "Unknown",
                 "key_size": clean_asset.get("key_size") or clean_finding.get("key_size"),
                 "environment": clean_asset.get("environment") or options.get("environment", "production"),
                 "business_unit": clean_asset.get("business_unit") or options.get("business_unit", "general"),
-                "is_internet_facing": bool(clean_asset.get("is_internet_facing") or clean_asset.get("isInternetExposed") or clean_finding.get("is_internet_facing")),
-                "reachability": clean_asset.get("reachability") or clean_finding.get("reachability") or "DIRECT_API_CALL",
+                "is_internet_facing": bool(
+                    clean_asset.get("is_internet_facing")
+                    or clean_asset.get("isInternetExposed")
+                    or clean_finding.get("is_internet_facing")
+                ),
+                "reachability": clean_asset.get("reachability")
+                or clean_finding.get("reachability")
+                or "DIRECT_API_CALL",
             },
             "recommended_remediation": recommended_remediation,
             "migration_options": migration_options,
@@ -584,8 +666,12 @@ class RemediationPlanner:
                     {
                         "finding_id": f"fnd_cbom_{c.get('bom-ref', c.get('name'))}",
                         "title": f"Cryptographic Asset: {c.get('name')}",
-                        "algorithm": c.get("cryptoProperties", {}).get("algorithmProperties", {}).get("name", c.get("name")),
-                        "key_size": c.get("cryptoProperties", {}).get("algorithmProperties", {}).get("parameterSetIdentifier"),
+                        "algorithm": c.get("cryptoProperties", {})
+                        .get("algorithmProperties", {})
+                        .get("name", c.get("name")),
+                        "key_size": c.get("cryptoProperties", {})
+                        .get("algorithmProperties", {})
+                        .get("parameterSetIdentifier"),
                         "asset_type": c.get("cryptoProperties", {}).get("assetType", "algorithm"),
                         "severity": "HIGH",
                         "location": c.get("bom-ref", c.get("name")),
@@ -595,10 +681,7 @@ class RemediationPlanner:
             else:
                 raw_findings = [findings_or_cbom]
 
-        plan_items = [
-            self.plan_finding_remediation(f, {**options, "dry_run": is_dry_run})
-            for f in raw_findings
-        ]
+        plan_items = [self.plan_finding_remediation(f, {**options, "dry_run": is_dry_run}) for f in raw_findings]
 
         now_ts = datetime.now(timezone.utc).isoformat()
         plan_payload = {

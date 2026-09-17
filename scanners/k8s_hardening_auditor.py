@@ -71,7 +71,9 @@ class KubernetesHardeningAuditor:
     # 1. RBAC Least Privilege
     def check_rbac_least_privilege(self, manifests: Dict[str, str]) -> K8sAuditCheck:
         rbac_content = manifests.get("02-rbac.yaml", "")
-        has_wildcard = re.search(r"verbs:\s*\[.*?\*.*?\]", rbac_content) or re.search(r"resources:\s*\[.*?\*.*?\]", rbac_content)
+        has_wildcard = re.search(r"verbs:\s*\[.*?\*.*?\]", rbac_content) or re.search(
+            r"resources:\s*\[.*?\*.*?\]", rbac_content
+        )
         has_backend_sa = "name: ecdat-backend-sa" in rbac_content
         has_ebpf_sa = "name: ecdat-ebpf-agent-sa" in rbac_content
         has_roles = "kind: Role" in rbac_content and "kind: ClusterRole" in rbac_content
@@ -101,7 +103,14 @@ class KubernetesHardeningAuditor:
         has_postgres_netpol = "name: postgres-networkpolicy" in netpol_content
         has_ebpf_netpol = "name: ebpf-agent-networkpolicy" in netpol_content
 
-        passed = bool(has_default_deny and has_runtime_deny and has_dns_egress and has_backend_netpol and has_postgres_netpol and has_ebpf_netpol)
+        passed = bool(
+            has_default_deny
+            and has_runtime_deny
+            and has_dns_egress
+            and has_backend_netpol
+            and has_postgres_netpol
+            and has_ebpf_netpol
+        )
         details = {
             "control_plane_default_deny": has_default_deny,
             "runtime_default_deny": has_runtime_deny,
@@ -150,7 +159,9 @@ class KubernetesHardeningAuditor:
         has_secret_key_ref_backend = "secretKeyRef:" in backend_content
         has_secret_key_ref_postgres = "secretKeyRef:" in postgres_content
 
-        passed = bool(has_secrets and has_vault_annotations and has_secret_key_ref_backend and has_secret_key_ref_postgres)
+        passed = bool(
+            has_secrets and has_vault_annotations and has_secret_key_ref_backend and has_secret_key_ref_postgres
+        )
         details = {
             "kubernetes_secret_defined": has_secrets,
             "external_secrets_vault_annotations": has_vault_annotations,
@@ -195,7 +206,8 @@ class KubernetesHardeningAuditor:
             "backend_non_root": "runAsNonRoot: true" in backend_content and "runAsUser: 1000" in backend_content,
             "backend_readonly_rootfs": "readOnlyRootFilesystem: true" in backend_content,
             "backend_drop_all_caps": "drop:\n                - ALL" in backend_content or "- ALL" in backend_content,
-            "backend_seccomp_runtime_default": "seccompProfile:\n          type: RuntimeDefault" in backend_content or "RuntimeDefault" in backend_content,
+            "backend_seccomp_runtime_default": "seccompProfile:\n          type: RuntimeDefault" in backend_content
+            or "RuntimeDefault" in backend_content,
             "frontend_non_root": "runAsNonRoot: true" in frontend_content and "runAsUser: 101" in frontend_content,
             "frontend_readonly_rootfs": "readOnlyRootFilesystem: true" in frontend_content,
             "frontend_drop_all_caps": "- ALL" in frontend_content,
@@ -226,12 +238,20 @@ class KubernetesHardeningAuditor:
         ebpf_in_runtime = "namespace: ecdat-runtime" in ebpf_daemonset and "name: ecdat-ebpf-agent" in ebpf_daemonset
 
         # 3. Control Plane has ZERO privileged containers
-        control_plane_has_privileged = ("privileged: true" in backend_content) or ("privileged: true" in frontend_content)
+        control_plane_has_privileged = ("privileged: true" in backend_content) or (
+            "privileged: true" in frontend_content
+        )
 
         # 4. eBPF agent does NOT use hostNetwork
         ebpf_no_host_network = "hostNetwork: false" in ebpf_daemonset
 
-        passed = bool(has_runtime_ns and has_control_ns and ebpf_in_runtime and not control_plane_has_privileged and ebpf_no_host_network)
+        passed = bool(
+            has_runtime_ns
+            and has_control_ns
+            and ebpf_in_runtime
+            and not control_plane_has_privileged
+            and ebpf_no_host_network
+        )
         details = {
             "separate_runtime_namespace": has_runtime_ns,
             "control_plane_namespace": has_control_ns,
@@ -289,7 +309,9 @@ def main():
     print("  ECDAT KUBERNETES DEPLOYMENT & HELM HARDENING AUDIT (PHASE 24.2)")
     print("=================================================================")
     print(f"Compliance Score : {report.overall_score}%")
-    print(f"Status           : {'ALL 7 MANDATES HARDENED (PASS)' if report.all_passed else 'HARDENING GAPS DETECTED (FAIL)'}\n")
+    print(
+        f"Status           : {'ALL 7 MANDATES HARDENED (PASS)' if report.all_passed else 'HARDENING GAPS DETECTED (FAIL)'}\n"
+    )
 
     for c in report.checks:
         symbol = "[PASS]" if c["passed"] else "[FAIL]"

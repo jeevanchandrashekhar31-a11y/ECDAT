@@ -62,11 +62,7 @@ class ScannerCache:
         enabled: bool = True,
     ):
         self.target_root = Path(target_root).resolve() if target_root else Path.cwd()
-        self.cache_dir = (
-            Path(cache_dir).resolve()
-            if cache_dir
-            else self.target_root / DEFAULT_CACHE_DIR_NAME
-        )
+        self.cache_dir = Path(cache_dir).resolve() if cache_dir else self.target_root / DEFAULT_CACHE_DIR_NAME
         self.enabled = enabled
         self._lock = threading.Lock()
 
@@ -87,9 +83,7 @@ class ScannerCache:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._entries_dir.mkdir(parents=True, exist_ok=True)
 
-        self.current_fingerprints = self.fingerprint_engine.generate_composite_fingerprints(
-            self.config_dict
-        )
+        self.current_fingerprints = self.fingerprint_engine.generate_composite_fingerprints(self.config_dict)
 
         if self._manifest_path.exists():
             try:
@@ -97,9 +91,7 @@ class ScannerCache:
                     cached_manifest = json.load(f)
 
                 cached_fps = cached_manifest.get("fingerprints", {})
-                is_stale, reasons = FingerprintEngine.is_environment_stale(
-                    cached_fps, self.current_fingerprints
-                )
+                is_stale, reasons = FingerprintEngine.is_environment_stale(cached_fps, self.current_fingerprints)
 
                 if is_stale:
                     # Invalidate stale cache
@@ -117,11 +109,7 @@ class ScannerCache:
 
     def _compute_entry_key(self, rel_path: str, file_hash: str) -> str:
         """Computes content-addressed cache key."""
-        env_digest = (
-            self.current_fingerprints.environment_digest
-            if self.current_fingerprints
-            else "DEFAULT_ENV"
-        )
+        env_digest = self.current_fingerprints.environment_digest if self.current_fingerprints else "DEFAULT_ENV"
         h = hashlib.sha256()
         h.update(rel_path.replace("\\", "/").encode("utf-8"))
         h.update(file_hash.encode("utf-8"))

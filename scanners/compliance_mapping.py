@@ -53,7 +53,10 @@ NON_CERTIFICATION_DISCLAIMER = (
 )
 
 RAW_SECRET_PATTERNS = [
-    re.compile(r"-----BEGIN (?:RSA |EC |DSA |ENCRYPTED )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |DSA |ENCRYPTED )?PRIVATE KEY-----", re.MULTILINE),
+    re.compile(
+        r"-----BEGIN (?:RSA |EC |DSA |ENCRYPTED )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |DSA |ENCRYPTED )?PRIVATE KEY-----",
+        re.MULTILINE,
+    ),
     re.compile(r"(?:api[_-]?key|secret|token|password)\s*[:=]\s*['\"]?([a-zA-Z0-9_\-\.+=/]{16,})['\"]?", re.IGNORECASE),
 ]
 
@@ -72,9 +75,11 @@ def sanitize_evidence_data(data: Any) -> Any:
     if isinstance(data, str):
         cleaned = data
         for pat in RAW_SECRET_PATTERNS:
+
             def _replace(match):
                 matched_val = match.group(0)
                 return redact_secret_string(matched_val)
+
             cleaned = pat.sub(_replace, cleaned)
         return cleaned
     elif isinstance(data, dict):
@@ -167,8 +172,7 @@ class ComplianceMapper:
                 "evidence": [],
                 "gaps": [],
                 "manual_audit_guidance": control.get(
-                    "manual_audit_guidance",
-                    "This control requires manual physical or organizational inspection."
+                    "manual_audit_guidance", "This control requires manual physical or organizational inspection."
                 ),
             }
 
@@ -254,10 +258,12 @@ class ComplianceMapper:
             evidence.append(evidence_entry)
 
             if asset_gaps:
-                gaps.append({
-                    "asset_id": asset_id,
-                    "issues": asset_gaps,
-                })
+                gaps.append(
+                    {
+                        "asset_id": asset_id,
+                        "issues": asset_gaps,
+                    }
+                )
 
         # Determine verdict
         if support_level == "SUPPORTED CONTROL":
@@ -346,13 +352,15 @@ class ComplianceMapper:
                     compliant_controls += 1
                 assessed_controls.append(assessment)
 
-            assessment_results.append({
-                "standard_id": std["id"],
-                "standard_name": std["name"],
-                "version": std["version"],
-                "publisher": std["publisher"],
-                "controls": assessed_controls,
-            })
+            assessment_results.append(
+                {
+                    "standard_id": std["id"],
+                    "standard_name": std["name"],
+                    "version": std["version"],
+                    "publisher": std["publisher"],
+                    "controls": assessed_controls,
+                }
+            )
 
         # Create cryptographic SHA-256 evidence digest for non-repudiation
         canonical_digest_payload = {
@@ -389,7 +397,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="ECDAT Evidence-Based Compliance Mapping CLI")
     parser.add_argument("--input", "-i", default=None, help="Path to asset JSON or CycloneDX CBOM file")
-    parser.add_argument("--standards", "-s", default=None, help="Comma-separated list of standard IDs (e.g. nist_sp_800_53_r5,cnsa_2_0)")
+    parser.add_argument(
+        "--standards", "-s", default=None, help="Comma-separated list of standard IDs (e.g. nist_sp_800_53_r5,cnsa_2_0)"
+    )
     parser.add_argument("--list-standards", action="store_true", help="List all supported standards in catalog")
     parser.add_argument("--output", "-o", default=None, help="Output file path for assessment JSON")
     parser.add_argument("--json", action="store_true", help="Print full JSON output to stdout")
@@ -422,4 +432,3 @@ if __name__ == "__main__":
 
     if args.json or not args.output:
         print(json.dumps(result, indent=2))
-

@@ -26,7 +26,9 @@ from scanners.production_config_guard import (
 
 VALID_PROD_API_KEY = "k8s-prod-cluster-api-key-ecdat-enterprise-sec-token-2026"
 VALID_PROD_DEK = "k8s-prod-dek-aes256-master-encryption-key-entropy-token"
-VALID_PROD_DB_URL = "postgresql://ecdat_svc:ProdP@ssw0rd991!@aurora-cluster.internal:5432/ecdat_prod?sslmode=verify-full"
+VALID_PROD_DB_URL = (
+    "postgresql://ecdat_svc:ProdP@ssw0rd991!@aurora-cluster.internal:5432/ecdat_prod?sslmode=verify-full"
+)
 
 
 class TestProductionConfigGuard:
@@ -69,15 +71,18 @@ class TestProductionConfigGuard:
         assert "DATA_ENCRYPTION_KEY" in exc_info.value.missing_keys
         assert "ECDAT_API_KEY" not in exc_info.value.missing_keys
 
-    @pytest.mark.parametrize("dev_key", [
-        "ecdat-demo-admin-key-2026",
-        "change-this-local-api-key",
-        "dummy-secret-key-for-testing",
-        "test-mock-secret",
-        "password",
-        "admin",
-        "default",
-    ])
+    @pytest.mark.parametrize(
+        "dev_key",
+        [
+            "ecdat-demo-admin-key-2026",
+            "change-this-local-api-key",
+            "dummy-secret-key-for-testing",
+            "test-mock-secret",
+            "password",
+            "admin",
+            "default",
+        ],
+    )
     def test_known_dev_secrets_prohibited_in_production(self, dev_key):
         """Known development mock credentials must never silently become production defaults."""
         prod_env = {

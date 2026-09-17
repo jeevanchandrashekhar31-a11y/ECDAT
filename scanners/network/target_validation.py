@@ -66,7 +66,6 @@ def is_ip_allowed(ip_str: str, allow_private: bool) -> bool:
     return ip.is_global
 
 
-
 def validate_and_resolve(target: str, allow_private: bool = False, default_port: int = 443) -> NormalizedTarget:
     hostname, port = normalize_target(target, default_port)
 

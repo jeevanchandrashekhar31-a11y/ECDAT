@@ -81,12 +81,9 @@ class SecurityRegressionPolicyEngine:
         repo_root: Optional[Path] = None,
     ):
         self.repo_root = (repo_root or REPO_ROOT).resolve()
-        self.registry_path = (
-            registry_path or (self.repo_root / "rules" / "security_regressions.json")
-        ).resolve()
+        self.registry_path = (registry_path or (self.repo_root / "rules" / "security_regressions.json")).resolve()
         self.schema_path = (
-            schema_path
-            or (self.repo_root / "rules" / "schemas" / "security_regression.schema.json")
+            schema_path or (self.repo_root / "rules" / "schemas" / "security_regression.schema.json")
         ).resolve()
 
     def load_registry(self) -> Dict[str, Any]:
@@ -122,9 +119,7 @@ class SecurityRegressionPolicyEngine:
         # 1. Root Cause verification
         rc = entry.get("root_cause")
         if not rc or not isinstance(rc, dict):
-            violations.append(
-                RegressionPolicyViolation(bug_id, "root_cause", "Missing root_cause object")
-            )
+            violations.append(RegressionPolicyViolation(bug_id, "root_cause", "Missing root_cause object"))
         else:
             if not rc.get("technical_summary") or len(rc.get("technical_summary", "").strip()) < 10:
                 violations.append(
@@ -133,44 +128,32 @@ class SecurityRegressionPolicyEngine:
                     )
                 )
             if not rc.get("cwe_id"):
-                violations.append(
-                    RegressionPolicyViolation(bug_id, "root_cause.cwe_id", "Missing CWE identifier")
-                )
+                violations.append(RegressionPolicyViolation(bug_id, "root_cause.cwe_id", "Missing CWE identifier"))
 
         # 2. Fix verification
         fix = entry.get("fix")
         if not fix or not isinstance(fix, dict):
-            violations.append(
-                RegressionPolicyViolation(bug_id, "fix", "Missing fix specification object")
-            )
+            violations.append(RegressionPolicyViolation(bug_id, "fix", "Missing fix specification object"))
         else:
             if not fix.get("fix_summary") or len(fix.get("fix_summary", "").strip()) < 10:
                 violations.append(
-                    RegressionPolicyViolation(
-                        bug_id, "fix.fix_summary", "Insufficient fix summary explanation"
-                    )
+                    RegressionPolicyViolation(bug_id, "fix.fix_summary", "Insufficient fix summary explanation")
                 )
             if not fix.get("modified_files") or len(fix.get("modified_files", [])) == 0:
                 violations.append(
-                    RegressionPolicyViolation(
-                        bug_id, "fix.modified_files", "No modified files recorded for fix"
-                    )
+                    RegressionPolicyViolation(bug_id, "fix.modified_files", "No modified files recorded for fix")
                 )
 
         # 3. Test verification (Must physically exist on disk and define test function)
         test = entry.get("test")
         if not test or not isinstance(test, dict):
-            violations.append(
-                RegressionPolicyViolation(bug_id, "test", "Missing regression test object")
-            )
+            violations.append(RegressionPolicyViolation(bug_id, "test", "Missing regression test object"))
         else:
             test_file_rel = test.get("test_file")
             test_name = test.get("test_name")
 
             if not test_file_rel:
-                violations.append(
-                    RegressionPolicyViolation(bug_id, "test.test_file", "Missing test file path")
-                )
+                violations.append(RegressionPolicyViolation(bug_id, "test.test_file", "Missing test file path"))
             else:
                 test_file_abs = self.repo_root / test_file_rel
                 if not test_file_abs.exists():
@@ -195,18 +178,14 @@ class SecurityRegressionPolicyEngine:
                             )
                     except Exception as e:
                         violations.append(
-                            RegressionPolicyViolation(
-                                bug_id, "test.test_file", f"Unable to read test file: {e}"
-                            )
+                            RegressionPolicyViolation(bug_id, "test.test_file", f"Unable to read test file: {e}")
                         )
 
         # 4. Threat Model Update verification
         tmu = entry.get("threat_model_update")
         if not tmu or not isinstance(tmu, dict):
             violations.append(
-                RegressionPolicyViolation(
-                    bug_id, "threat_model_update", "Missing threat model update object"
-                )
+                RegressionPolicyViolation(bug_id, "threat_model_update", "Missing threat model update object")
             )
         else:
             if not tmu.get("stride_category") or len(tmu.get("stride_category", [])) == 0:
@@ -225,11 +204,7 @@ class SecurityRegressionPolicyEngine:
         # 5. Release Note verification
         rn = entry.get("release_note")
         if not rn or not isinstance(rn, dict):
-            violations.append(
-                RegressionPolicyViolation(
-                    bug_id, "release_note", "Missing release note specification"
-                )
-            )
+            violations.append(RegressionPolicyViolation(bug_id, "release_note", "Missing release note specification"))
         else:
             if rn.get("applicable", False):
                 if not rn.get("advisory_summary") or len(rn.get("advisory_summary", "").strip()) < 10:
@@ -255,9 +230,7 @@ class SecurityRegressionPolicyEngine:
         # 1. Validate Schema
         schema_errors = self.validate_schema(registry)
         for se in schema_errors:
-            all_violations.append(
-                RegressionPolicyViolation("REGISTRY_SCHEMA", "schema_validation", se)
-            )
+            all_violations.append(RegressionPolicyViolation("REGISTRY_SCHEMA", "schema_validation", se))
 
         # 2. Validate every entry for the 5-point policy
         verified_count = 0

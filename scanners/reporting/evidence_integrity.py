@@ -150,19 +150,31 @@ class EvidenceIntegrityBuilder:
         ev_list = evidence_list or []
         merkle_root = compute_evidence_merkle_root(ev_list)
 
-        report_hash = compute_canonical_sha256(report_content) if report_content else compute_canonical_sha256({"scan_timestamp": self.scan_timestamp, "merkle_root": merkle_root})
+        report_hash = (
+            compute_canonical_sha256(report_content)
+            if report_content
+            else compute_canonical_sha256({"scan_timestamp": self.scan_timestamp, "merkle_root": merkle_root})
+        )
 
         attestation = {
             "independent_audit_obtained": self.is_independently_audited,
-            "certification_status": "FORMALLY_ATTESTED_THIRD_PARTY" if self.is_independently_audited else "UNATTESTED_AUTOMATED_EVALUATION",
+            "certification_status": "FORMALLY_ATTESTED_THIRD_PARTY"
+            if self.is_independently_audited
+            else "UNATTESTED_AUTOMATED_EVALUATION",
             "attestation_statement": (
                 f"This report has been formally audited and counter-attested by: {self.attestation_details.get('auditor_identity')}."
                 if self.is_independently_audited
                 else "AUTOMATED SCANNER EVALUATION ONLY: This report is generated automatically by ECDAT and reflects automated scanner outputs, heuristic static analysis, and dynamic observation. It does NOT constitute an independent third-party audit, formal certification, or accredited Common Criteria / FIPS 140-3 laboratory evaluation. No independent external certification has been obtained for this assessment."
             ),
-            "auditor_identity": self.attestation_details.get("auditor_identity") if self.is_independently_audited else None,
-            "accreditation_body": self.attestation_details.get("accreditation_body") if self.is_independently_audited else None,
-            "attestation_valid_until": self.attestation_details.get("attestation_valid_until") if self.is_independently_audited else None,
+            "auditor_identity": self.attestation_details.get("auditor_identity")
+            if self.is_independently_audited
+            else None,
+            "accreditation_body": self.attestation_details.get("accreditation_body")
+            if self.is_independently_audited
+            else None,
+            "attestation_valid_until": self.attestation_details.get("attestation_valid_until")
+            if self.is_independently_audited
+            else None,
             "disclaimer_mandatory": True,
         }
 
@@ -247,12 +259,16 @@ def validate_evidence_integrity(report: Dict[str, Any]) -> Tuple[bool, List[str]
 
         if audited is False:
             if attestation.get("certification_status") not in {"UNATTESTED_AUTOMATED_EVALUATION", "NONE"}:
-                violations.append(f"Invalid certification_status for unattested report: '{attestation.get('certification_status')}'")
+                violations.append(
+                    f"Invalid certification_status for unattested report: '{attestation.get('certification_status')}'"
+                )
 
             report_str = json.dumps(report).lower()
             for phrase in PROHIBITED_DECEPTIVE_CLAIMS:
                 if phrase in report_str:
-                    violations.append(f"Deceptive certification claim detected: Report implies '{phrase}' without formal third-party attestation.")
+                    violations.append(
+                        f"Deceptive certification claim detected: Report implies '{phrase}' without formal third-party attestation."
+                    )
         else:
             if not attestation.get("auditor_identity"):
                 violations.append("Independent audit claimed, but 'auditor_identity' is missing")

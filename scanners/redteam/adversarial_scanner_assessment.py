@@ -296,11 +296,7 @@ class AdversarialScannerAssessmentEngine:
             "MHcCAQEEIIDummyMockKeyBytesForTest1234567890abcdef==\n"
             "-----END EC PRIVATE KEY-----\n"
         )
-        fake_cert = (
-            "-----BEGIN CERTIFICATE-----\n"
-            "MIIBkzCCATegAwIBAgIU...\n"
-            "-----END CERTIFICATE-----\n"
-        )
+        fake_cert = "-----BEGIN CERTIFICATE-----\nMIIBkzCCATegAwIBAgIU...\n-----END CERTIFICATE-----\n"
         hostile_bundle = fake_cert + fake_private_key
 
         # SafeCertParser strictly raises CertSecurityError when private key material is present
@@ -372,7 +368,7 @@ class AdversarialScannerAssessmentEngine:
         capped_depth = min(layers_simulated, max_layer_depth)
 
         duration = (time.perf_counter() - start) * 1000
-        defended = (capped_depth == 8)
+        defended = capped_depth == 8
 
         return AdversarialAssessmentResult(
             scenario_id=s["id"],
@@ -477,7 +473,7 @@ class AdversarialScannerAssessmentEngine:
             return {"valid": True}
 
         res = safe_binary_inspect(corrupted_elf)
-        defended = (res["valid"] is False and "Truncated" in res["error"])
+        defended = res["valid"] is False and "Truncated" in res["error"]
         duration = (time.perf_counter() - start) * 1000
 
         return AdversarialAssessmentResult(
@@ -523,7 +519,7 @@ class AdversarialScannerAssessmentEngine:
 
         resolved = resolve_deps_safe("pkg-A", graph)
         duration = (time.perf_counter() - start) * 1000
-        cycle_pruned = (len(resolved) == 3)  # Visited A, B, C exactly once
+        cycle_pruned = len(resolved) == 3  # Visited A, B, C exactly once
 
         return AdversarialAssessmentResult(
             scenario_id=s["id"],
@@ -581,7 +577,7 @@ class AdversarialScannerAssessmentEngine:
         val = validate_syntax(broken_code, file_type="python")
 
         duration = (time.perf_counter() - start) * 1000
-        syntax_rejected = (val["valid"] is False)
+        syntax_rejected = val["valid"] is False
 
         return AdversarialAssessmentResult(
             scenario_id=s["id"],
@@ -677,7 +673,9 @@ def main():
         status_tag = "[DEFENDED]" if r.status == "DEFENDED" else "[FAILED]"
         print(f"{status_tag} {r.scenario_id}: {r.name} ({r.cwe_id})")
         print(f"  - Attack Input       : {r.attack_input.get('input_type')}")
-        print(f"  - Affected Component : {r.affected_component.get('component_name')} ({r.affected_component.get('module_path')})")
+        print(
+            f"  - Affected Component : {r.affected_component.get('component_name')} ({r.affected_component.get('module_path')})"
+        )
         print(f"  - Potential Impact   : {r.impact.get('failure_mode')} [Severity: {r.impact.get('severity')}]")
         print(f"  - Mitigation         : {r.mitigation.get('defensive_strategy')}")
         print(f"  - Regression Test    : {r.regression_test.get('test_name')} in {r.regression_test.get('test_file')}")

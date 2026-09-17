@@ -97,8 +97,8 @@ def test_auth_audit_logger_chain_and_zero_secret_leakage():
         metadata={
             "scope": "openid email",
             "user_password": "super-secret-password-123",  # Must be redacted
-            "client_secret": "raw-client-secret-xyz",        # Must be redacted
-            "auth_token": "bearer-token-abc",              # Must be redacted
+            "client_secret": "raw-client-secret-xyz",  # Must be redacted
+            "auth_token": "bearer-token-abc",  # Must be redacted
             "safe_attribute": "department_secops",
         },
     )

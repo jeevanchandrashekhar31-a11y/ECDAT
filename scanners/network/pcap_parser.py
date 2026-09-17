@@ -33,16 +33,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Security limits
 DEFAULT_MAX_PCAP_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
-DEFAULT_MAX_PACKET_COUNT = 10000                # 10,000 packets
-DEFAULT_MAX_PROTOCOL_RECURSION = 5              # 5 layers (prevents tunnel loops)
-DEFAULT_MAX_PARSING_TIME_SECONDS = 30.0         # 30 seconds max execution time
+DEFAULT_MAX_PACKET_COUNT = 10000  # 10,000 packets
+DEFAULT_MAX_PROTOCOL_RECURSION = 5  # 5 layers (prevents tunnel loops)
+DEFAULT_MAX_PARSING_TIME_SECONDS = 30.0  # 30 seconds max execution time
 
 # Magic numbers for classic PCAP
-PCAP_MAGIC_MICRO_LE = 0xa1b2c3d4
-PCAP_MAGIC_MICRO_BE = 0xd4c3b2a1
-PCAP_MAGIC_NANO_LE = 0xa1b23c4d
-PCAP_MAGIC_NANO_BE = 0x4d3cb2a1
-PCAPNG_MAGIC = 0x0a0d0d0a
+PCAP_MAGIC_MICRO_LE = 0xA1B2C3D4
+PCAP_MAGIC_MICRO_BE = 0xD4C3B2A1
+PCAP_MAGIC_NANO_LE = 0xA1B23C4D
+PCAP_MAGIC_NANO_BE = 0x4D3CB2A1
+PCAPNG_MAGIC = 0x0A0D0D0A
 
 # Link-layer types
 LINKTYPE_ETHERNET = 1
@@ -69,27 +69,24 @@ KNOWN_CIPHER_SUITES = {
     0x1303: "TLS_CHACHA20_POLY1305_SHA256",
 }
 
-KNOWN_TLS_VERSIONS = {
-    0x0300: "SSL 3.0",
-    0x0301: "TLS 1.0",
-    0x0302: "TLS 1.1",
-    0x0303: "TLS 1.2",
-    0x0304: "TLS 1.3"
-}
+KNOWN_TLS_VERSIONS = {0x0300: "SSL 3.0", 0x0301: "TLS 1.0", 0x0302: "TLS 1.1", 0x0303: "TLS 1.2", 0x0304: "TLS 1.3"}
 
 
 class PcapSecurityError(Exception):
     """Base exception for PCAP security policy violations."""
+
     pass
 
 
 class PcapSizeLimitError(PcapSecurityError):
     """Raised when PCAP file size exceeds allowed limits."""
+
     pass
 
 
 class PcapTimeoutError(PcapSecurityError):
     """Raised when PCAP parsing execution time exceeds deadline."""
+
     pass
 
 
@@ -171,12 +168,9 @@ class SafePcapParser:
             clean_msg = d.message
             if "PRIVATE KEY" in clean_msg or "token" in clean_msg.lower():
                 clean_msg = "[REDACTED_DIAGNOSTIC_SECRET]"
-            sanitized_diagnostics.append({
-                "packet_index": d.packet_index,
-                "offset": d.offset,
-                "type": d.error_type,
-                "message": clean_msg
-            })
+            sanitized_diagnostics.append(
+                {"packet_index": d.packet_index, "offset": d.offset, "type": d.error_type, "message": clean_msg}
+            )
 
         return {
             "file": file_name,
@@ -192,17 +186,19 @@ class SafePcapParser:
                     "version": f.version,
                     "source": f.source_endpoint,
                     "destination": f.dest_endpoint,
-                    "details": f.details
+                    "details": f.details,
                 }
                 for f in self.findings
             ],
-            "diagnostics": sanitized_diagnostics
+            "diagnostics": sanitized_diagnostics,
         }
 
     def _parse_pcap_buffer(self, data: bytes):
         """Parse classic PCAP global header and iterate through packets safely."""
         if len(data) < 24:
-            self.diagnostics.append(PcapParseDiagnostic(0, 0, "TRUNCATED_HEADER", "File too short for PCAP global header"))
+            self.diagnostics.append(
+                PcapParseDiagnostic(0, 0, "TRUNCATED_HEADER", "File too short for PCAP global header")
+            )
             return
 
         # Check magic number
@@ -216,7 +212,9 @@ class SafePcapParser:
             self._parse_pcapng_buffer(data)
             return
         else:
-            self.diagnostics.append(PcapParseDiagnostic(0, 0, "INVALID_MAGIC", f"Unsupported or corrupted PCAP magic: 0x{raw_magic:08x}"))
+            self.diagnostics.append(
+                PcapParseDiagnostic(0, 0, "INVALID_MAGIC", f"Unsupported or corrupted PCAP magic: 0x{raw_magic:08x}")
+            )
             return
 
         # Unpack global header: magic(4), v_maj(2), v_min(2), thiszone(4), sigfigs(4), snaplen(4), network(4)
@@ -233,7 +231,9 @@ class SafePcapParser:
             # Time limit check
             if time.time() - self.start_time > self.max_time_seconds:
                 self.limit_reached = True
-                self.diagnostics.append(PcapParseDiagnostic(self.packet_count, offset, "TIMEOUT", "Parsing time limit exceeded"))
+                self.diagnostics.append(
+                    PcapParseDiagnostic(self.packet_count, offset, "TIMEOUT", "Parsing time limit exceeded")
+                )
                 break
 
             # Packet count limit check
@@ -256,18 +256,24 @@ class SafePcapParser:
             # Sanity checks on packet length
             if incl_len > snaplen or incl_len > (total_len - offset):
                 # Corrupted or truncated packet record
-                self.diagnostics.append(PcapParseDiagnostic(pkt_idx, offset, "TRUNCATED_PACKET", f"Declared incl_len {incl_len} exceeds remaining bytes"))
+                self.diagnostics.append(
+                    PcapParseDiagnostic(
+                        pkt_idx, offset, "TRUNCATED_PACKET", f"Declared incl_len {incl_len} exceeds remaining bytes"
+                    )
+                )
                 # Advance boundedly
                 break
 
-            pkt_bytes = data[offset:offset + incl_len]
+            pkt_bytes = data[offset : offset + incl_len]
             offset += incl_len
 
             # Parse packet layers safely
             try:
                 self._parse_link_layer(pkt_bytes, link_type, pkt_idx, 0)
             except Exception as e:
-                self.diagnostics.append(PcapParseDiagnostic(pkt_idx, offset, "PARSER_EXCEPTION", f"Layer parse error: {e}"))
+                self.diagnostics.append(
+                    PcapParseDiagnostic(pkt_idx, offset, "PARSER_EXCEPTION", f"Layer parse error: {e}")
+                )
 
     def _parse_pcapng_buffer(self, data: bytes):
         """Basic safe PCAPNG section and enhanced packet block parser."""
@@ -293,7 +299,7 @@ class SafePcapParser:
                 pkt_idx = self.packet_count
                 try:
                     cap_len = struct.unpack_from("<I", data, offset + 20)[0]
-                    pkt_data = data[offset + 28:offset + 28 + cap_len]
+                    pkt_data = data[offset + 28 : offset + 28 + cap_len]
                     self._parse_link_layer(pkt_data, LINKTYPE_ETHERNET, pkt_idx, 0)
                 except Exception as e:
                     self.diagnostics.append(PcapParseDiagnostic(pkt_idx, offset, "PCAPNG_EPB_ERROR", str(e)))
@@ -303,7 +309,9 @@ class SafePcapParser:
     def _parse_link_layer(self, pkt: bytes, link_type: int, pkt_idx: int, recursion_depth: int):
         """Parse link layer (Ethernet, Linux SLL) with recursion guard."""
         if recursion_depth > self.max_recursion:
-            self.diagnostics.append(PcapParseDiagnostic(pkt_idx, 0, "RECURSION_LIMIT", "Protocol encapsulation limit exceeded"))
+            self.diagnostics.append(
+                PcapParseDiagnostic(pkt_idx, 0, "RECURSION_LIMIT", "Protocol encapsulation limit exceeded")
+            )
             return
 
         if link_type == LINKTYPE_ETHERNET:
@@ -322,7 +330,11 @@ class SafePcapParser:
             header_size = 16 if link_type == LINKTYPE_LINUX_SLL else 20
             if len(pkt) < header_size:
                 return
-            eth_type = struct.unpack_from(">H", pkt, 14)[0] if link_type == LINKTYPE_LINUX_SLL else struct.unpack_from(">H", pkt, 0)[0]
+            eth_type = (
+                struct.unpack_from(">H", pkt, 14)[0]
+                if link_type == LINKTYPE_LINUX_SLL
+                else struct.unpack_from(">H", pkt, 0)[0]
+            )
             self._parse_network_layer(pkt[header_size:], eth_type, pkt_idx, recursion_depth + 1)
         elif link_type == LINKTYPE_RAW_IP:
             # Assume IPv4 if first nibble is 4, IPv6 if 6
@@ -333,7 +345,9 @@ class SafePcapParser:
     def _parse_network_layer(self, payload: bytes, eth_type: int, pkt_idx: int, recursion_depth: int):
         """Parse IPv4 / IPv6 network layer with recursion guard."""
         if recursion_depth > self.max_recursion:
-            self.diagnostics.append(PcapParseDiagnostic(pkt_idx, 0, "RECURSION_LIMIT", "Network layer recursion limit exceeded"))
+            self.diagnostics.append(
+                PcapParseDiagnostic(pkt_idx, 0, "RECURSION_LIMIT", "Network layer recursion limit exceeded")
+            )
             return
 
         if eth_type == 0x0800:  # IPv4
@@ -368,8 +382,8 @@ class SafePcapParser:
             if len(payload) < 40:
                 return
             next_hdr = payload[6]
-            src_ip = ":".join(f"{payload[i]:02x}{payload[i+1]:02x}" for i in range(8, 24, 2))
-            dst_ip = ":".join(f"{payload[i]:02x}{payload[i+1]:02x}" for i in range(24, 40, 2))
+            src_ip = ":".join(f"{payload[i]:02x}{payload[i + 1]:02x}" for i in range(8, 24, 2))
+            dst_ip = ":".join(f"{payload[i]:02x}{payload[i + 1]:02x}" for i in range(24, 40, 2))
             self._parse_transport_layer(payload[40:], next_hdr, src_ip, dst_ip, pkt_idx)
 
     def _parse_transport_layer(self, payload: bytes, proto: int, src_ip: str, dst_ip: str, pkt_idx: int):
@@ -407,7 +421,7 @@ class SafePcapParser:
         rec_len = struct.unpack_from(">H", data, 3)[0]
 
         rec_version = KNOWN_TLS_VERSIONS.get(rec_ver_id, f"Unknown (0x{rec_ver_id:04x})")
-        payload = data[5:5 + rec_len]
+        payload = data[5 : 5 + rec_len]
 
         if content_type == 0x16 and len(payload) >= 4:  # Handshake
             handshake_type = payload[0]
@@ -428,7 +442,7 @@ class SafePcapParser:
                 if len(payload) >= pos + 2:
                     cipher_suite_len = struct.unpack_from(">H", payload, pos)[0]
                     pos += 2
-                    cipher_bytes = payload[pos:pos + cipher_suite_len]
+                    cipher_bytes = payload[pos : pos + cipher_suite_len]
                     pos += cipher_suite_len
 
                     for i in range(0, len(cipher_bytes) - 1, 2):
@@ -450,21 +464,19 @@ class SafePcapParser:
                             if ext_type == 0:  # SNI extension
                                 if pos + 5 <= len(payload):
                                     sni_len = struct.unpack_from(">H", payload, pos + 3)[0]
-                                    sni = payload[pos + 5:pos + 5 + sni_len].decode("utf-8", errors="replace")
+                                    sni = payload[pos + 5 : pos + 5 + sni_len].decode("utf-8", errors="replace")
                             pos += ext_len
 
-                self.findings.append(PcapCryptoFinding(
-                    packet_index=pkt_idx,
-                    protocol="TLS",
-                    version=client_ver,
-                    source_endpoint=src_ep,
-                    dest_endpoint=dst_ep,
-                    details={
-                        "message": "ClientHello",
-                        "sni": sni,
-                        "cipher_suites": ciphers[:15]
-                    }
-                ))
+                self.findings.append(
+                    PcapCryptoFinding(
+                        packet_index=pkt_idx,
+                        protocol="TLS",
+                        version=client_ver,
+                        source_endpoint=src_ep,
+                        dest_endpoint=dst_ep,
+                        details={"message": "ClientHello", "sni": sni, "cipher_suites": ciphers[:15]},
+                    )
+                )
 
             # 2. Server Hello (Type 2)
             elif handshake_type == 2 and len(payload) >= 38:
@@ -479,17 +491,16 @@ class SafePcapParser:
                     cid = struct.unpack_from(">H", payload, pos)[0]
                     selected_cipher = KNOWN_CIPHER_SUITES.get(cid, f"0x{cid:04x}")
 
-                self.findings.append(PcapCryptoFinding(
-                    packet_index=pkt_idx,
-                    protocol="TLS",
-                    version=server_ver,
-                    source_endpoint=src_ep,
-                    dest_endpoint=dst_ep,
-                    details={
-                        "message": "ServerHello",
-                        "selected_cipher_suite": selected_cipher
-                    }
-                ))
+                self.findings.append(
+                    PcapCryptoFinding(
+                        packet_index=pkt_idx,
+                        protocol="TLS",
+                        version=server_ver,
+                        source_endpoint=src_ep,
+                        dest_endpoint=dst_ep,
+                        details={"message": "ServerHello", "selected_cipher_suite": selected_cipher},
+                    )
+                )
 
     def _parse_ssh_banner(self, data: bytes, src_ep: str, dst_ep: str, pkt_idx: int):
         """Safely parse SSH identification string with bounded length and secret sanitization."""
@@ -499,14 +510,16 @@ class SafePcapParser:
         banner_lower = banner_str.lower()
         if any(w in banner_lower for w in ["private key", "token", "secret", "api_key", "password", "canary"]):
             banner_str = "[REDACTED_BANNER_SECRET]"
-        self.findings.append(PcapCryptoFinding(
-            packet_index=pkt_idx,
-            protocol="SSH",
-            version=banner_str[:30],
-            source_endpoint=src_ep,
-            dest_endpoint=dst_ep,
-            details={"banner": banner_str}
-        ))
+        self.findings.append(
+            PcapCryptoFinding(
+                packet_index=pkt_idx,
+                protocol="SSH",
+                version=banner_str[:30],
+                source_endpoint=src_ep,
+                dest_endpoint=dst_ep,
+                details={"banner": banner_str},
+            )
+        )
 
 
 def main():
@@ -520,9 +533,7 @@ def main():
     args = parser.parse_args()
 
     safe_parser = SafePcapParser(
-        max_size_bytes=args.max_size_mb * 1024 * 1024,
-        max_packet_count=args.max_packets,
-        max_time_seconds=args.timeout
+        max_size_bytes=args.max_size_mb * 1024 * 1024, max_packet_count=args.max_packets, max_time_seconds=args.timeout
     )
 
     try:

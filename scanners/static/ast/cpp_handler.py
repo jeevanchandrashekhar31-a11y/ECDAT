@@ -61,13 +61,45 @@ class CppGenericDataFlow(DataFlowProvider):
 class CppCryptoRuleProvider(CryptoRuleProvider):
     def get_rules(self) -> List[CryptoDetectionRule]:
         return [
-            CryptoDetectionRule("CPP_BOTAN_WEAK_HASH_MD5", "MD5", "Botan::HashFunction::create(\"MD5\")", "weak_hash", "critical", "high"),
-            CryptoDetectionRule("CPP_BOTAN_WEAK_HASH_SHA1", "SHA-1", "Botan::HashFunction::create(\"SHA-1\")", "weak_hash", "high", "high"),
-            CryptoDetectionRule("CPP_BOTAN_WEAK_CIPHER", "DES", "Botan::Cipher_Mode::create(\"DES/CBC\", ...)", "weak_cipher", "critical", "high"),
-            CryptoDetectionRule("CPP_BOTAN_INSECURE_CIPHER_MODE_ECB", "ECB", "Botan::Cipher_Mode::create(\"AES-128/ECB\", ...)", "insecure_cipher_mode", "critical", "high"),
-            CryptoDetectionRule("CPP_BOTAN_WEAK_RSA", "RSA-Weak", "Botan::RSA_PrivateKey(rng, 1024)", "weak_asymmetric_key", "critical", "high"),
+            CryptoDetectionRule(
+                "CPP_BOTAN_WEAK_HASH_MD5", "MD5", 'Botan::HashFunction::create("MD5")', "weak_hash", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "CPP_BOTAN_WEAK_HASH_SHA1", "SHA-1", 'Botan::HashFunction::create("SHA-1")', "weak_hash", "high", "high"
+            ),
+            CryptoDetectionRule(
+                "CPP_BOTAN_WEAK_CIPHER",
+                "DES",
+                'Botan::Cipher_Mode::create("DES/CBC", ...)',
+                "weak_cipher",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "CPP_BOTAN_INSECURE_CIPHER_MODE_ECB",
+                "ECB",
+                'Botan::Cipher_Mode::create("AES-128/ECB", ...)',
+                "insecure_cipher_mode",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "CPP_BOTAN_WEAK_RSA",
+                "RSA-Weak",
+                "Botan::RSA_PrivateKey(rng, 1024)",
+                "weak_asymmetric_key",
+                "critical",
+                "high",
+            ),
             CryptoDetectionRule("C_WEAK_HASH_MD5", "MD5", "EVP_md5() / MD5()", "weak_hash", "critical", "high"),
-            CryptoDetectionRule("C_DISABLED_CERT_VALIDATION", "SSL_VERIFY_NONE", "SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL)", "disabled_certificate_validation", "critical", "high"),
+            CryptoDetectionRule(
+                "C_DISABLED_CERT_VALIDATION",
+                "SSL_VERIFY_NONE",
+                "SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL)",
+                "disabled_certificate_validation",
+                "critical",
+                "high",
+            ),
         ]
 
 

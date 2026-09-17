@@ -94,16 +94,38 @@ class SafeElfParser:
             if bit_width == 32:
                 # 32-bit header format: 16s HHIIIIIHHHHHH
                 (
-                    e_ident, e_type, e_machine, e_version, e_entry,
-                    e_phoff, e_shoff, e_flags, e_ehsize,
-                    e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx
+                    e_ident,
+                    e_type,
+                    e_machine,
+                    e_version,
+                    e_entry,
+                    e_phoff,
+                    e_shoff,
+                    e_flags,
+                    e_ehsize,
+                    e_phentsize,
+                    e_phnum,
+                    e_shentsize,
+                    e_shnum,
+                    e_shstrndx,
                 ) = struct.unpack(prefix + "16sHHIIIIIHHHHHH", data[:52])
             else:
                 # 64-bit header format: 16s HHIQQQIHHHHHH
                 (
-                    e_ident, e_type, e_machine, e_version, e_entry,
-                    e_phoff, e_shoff, e_flags, e_ehsize,
-                    e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx
+                    e_ident,
+                    e_type,
+                    e_machine,
+                    e_version,
+                    e_entry,
+                    e_phoff,
+                    e_shoff,
+                    e_flags,
+                    e_ehsize,
+                    e_phentsize,
+                    e_phnum,
+                    e_shentsize,
+                    e_shnum,
+                    e_shstrndx,
                 ) = struct.unpack(prefix + "16sHHIQQQIHHHHHH", data[:64])
         except Exception as e:
             raise ValueError(f"Failed to unpack ELF header: {e}")
@@ -124,25 +146,45 @@ class SafeElfParser:
                     s_offset = e_shoff + (i * e_shentsize)
                     try:
                         if bit_width == 32:
-                            sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size, sh_link, sh_info, sh_addralign, sh_entsize = struct.unpack(
-                                prefix + "IIIIIIIIII", data[s_offset:s_offset + 40]
-                            )
+                            (
+                                sh_name,
+                                sh_type,
+                                sh_flags,
+                                sh_addr,
+                                sh_offset,
+                                sh_size,
+                                sh_link,
+                                sh_info,
+                                sh_addralign,
+                                sh_entsize,
+                            ) = struct.unpack(prefix + "IIIIIIIIII", data[s_offset : s_offset + 40])
                         else:
-                            sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size, sh_link, sh_info, sh_addralign, sh_entsize = struct.unpack(
-                                prefix + "IIQQQQIIQQ", data[s_offset:s_offset + 64]
-                            )
-                        raw_sections.append({
-                            "index": i,
-                            "name_offset": sh_name,
-                            "type": sh_type,
-                            "flags": sh_flags,
-                            "addr": sh_addr,
-                            "offset": sh_offset,
-                            "size": sh_size,
-                            "link": sh_link,
-                            "info": sh_info,
-                            "entsize": sh_entsize,
-                        })
+                            (
+                                sh_name,
+                                sh_type,
+                                sh_flags,
+                                sh_addr,
+                                sh_offset,
+                                sh_size,
+                                sh_link,
+                                sh_info,
+                                sh_addralign,
+                                sh_entsize,
+                            ) = struct.unpack(prefix + "IIQQQQIIQQ", data[s_offset : s_offset + 64])
+                        raw_sections.append(
+                            {
+                                "index": i,
+                                "name_offset": sh_name,
+                                "type": sh_type,
+                                "flags": sh_flags,
+                                "addr": sh_addr,
+                                "offset": sh_offset,
+                                "size": sh_size,
+                                "link": sh_link,
+                                "info": sh_info,
+                                "entsize": sh_entsize,
+                            }
+                        )
                     except Exception as err:
                         warnings.append(f"Section {i} unpack failed: {err}")
                         break
@@ -151,7 +193,7 @@ class SafeElfParser:
                 if 0 <= e_shstrndx < len(raw_sections):
                     str_sec = raw_sections[e_shstrndx]
                     if str_sec["offset"] + str_sec["size"] <= len(data):
-                        shstrtab_data = data[str_sec["offset"]:str_sec["offset"] + str_sec["size"]]
+                        shstrtab_data = data[str_sec["offset"] : str_sec["offset"] + str_sec["size"]]
 
         # Helper to read null-terminated string from table
         def read_string(str_table: bytes, offset: int) -> str:
@@ -168,7 +210,9 @@ class SafeElfParser:
         # Second pass: construct SectionMetadata with names
         for rs in raw_sections:
             sec_name = read_string(shstrtab_data, rs["name_offset"]) if shstrtab_data else f"sec_{rs['index']}"
-            sec_bytes = data[rs["offset"]:rs["offset"] + rs["size"]] if rs["offset"] + rs["size"] <= len(data) else b""
+            sec_bytes = (
+                data[rs["offset"] : rs["offset"] + rs["size"]] if rs["offset"] + rs["size"] <= len(data) else b""
+            )
             entropy = calculate_entropy(sec_bytes) if sec_bytes else 0.0
 
             sections.append(
@@ -191,7 +235,7 @@ class SafeElfParser:
         for s, rs in zip(sections, raw_sections):
             if s.name == ".dynstr" or (rs["type"] == SHT_STRTAB and s.name != ".shstrtab" and not dynstr_data):
                 if rs["offset"] + rs["size"] <= len(data):
-                    dynstr_data = data[rs["offset"]:rs["offset"] + rs["size"]]
+                    dynstr_data = data[rs["offset"] : rs["offset"] + rs["size"]]
 
         # Parse SHT_DYNAMIC section
         for s, rs in zip(sections, raw_sections):
@@ -205,9 +249,9 @@ class SafeElfParser:
                         e_off = dyn_offset + (i * entry_size)
                         try:
                             if bit_width == 32:
-                                d_tag, d_val = struct.unpack(prefix + "iI", data[e_off:e_off + 8])
+                                d_tag, d_val = struct.unpack(prefix + "iI", data[e_off : e_off + 8])
                             else:
-                                d_tag, d_val = struct.unpack(prefix + "qQ", data[e_off:e_off + 16])
+                                d_tag, d_val = struct.unpack(prefix + "qQ", data[e_off : e_off + 16])
                             if d_tag == 0:  # DT_NULL
                                 break
                             if d_tag == DT_NEEDED and dynstr_data:
@@ -231,7 +275,7 @@ class SafeElfParser:
                     if 0 <= link_idx < len(raw_sections):
                         link_sec = raw_sections[link_idx]
                         if link_sec["offset"] + link_sec["size"] <= len(data):
-                            sym_str_data = data[link_sec["offset"]:link_sec["offset"] + link_sec["size"]]
+                            sym_str_data = data[link_sec["offset"] : link_sec["offset"] + link_sec["size"]]
 
                     ent_size = 16 if bit_width == 32 else 24
                     num_syms = sym_size // ent_size
@@ -244,11 +288,11 @@ class SafeElfParser:
                         try:
                             if bit_width == 32:
                                 st_name, st_value, st_size, st_info, st_other, st_shndx = struct.unpack(
-                                    prefix + "IIIBBH", data[soff:soff + 16]
+                                    prefix + "IIIBBH", data[soff : soff + 16]
                                 )
                             else:
                                 st_name, st_info, st_other, st_shndx, st_value, st_size = struct.unpack(
-                                    prefix + "IBBHQQ", data[soff:soff + 24]
+                                    prefix + "IBBHQQ", data[soff : soff + 24]
                                 )
 
                             sym_type_num = st_info & 0xF
@@ -256,7 +300,7 @@ class SafeElfParser:
 
                             sym_type = "function" if sym_type_num == 2 else ("object" if sym_type_num == 1 else "other")
                             sym_bind = "global" if sym_bind_num == 1 else ("weak" if sym_bind_num == 2 else "local")
-                            is_imported = (st_shndx == 0)
+                            is_imported = st_shndx == 0
 
                             sym_name = read_string(sym_str_data, st_name) if sym_str_data else ""
                             if sym_name:

@@ -65,14 +65,34 @@ class CIScanMode(str, Enum):
 VALID_FAIL_ON_CHOICES = ("none", "critical", "high", "policy")
 
 DEFAULT_INCLUDE_EXTS = {
-    ".c", ".h", ".cpp", ".hpp", ".cc", ".go", ".js", ".mjs", ".cjs",
-    ".py", ".pyw", ".java", ".kt", ".kts", ".ts", ".tsx", ".cs", ".rs",
-    ".json", ".yaml", ".yml", ".env", ".pem", ".key", ".crt"
+    ".c",
+    ".h",
+    ".cpp",
+    ".hpp",
+    ".cc",
+    ".go",
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".py",
+    ".pyw",
+    ".java",
+    ".kt",
+    ".kts",
+    ".ts",
+    ".tsx",
+    ".cs",
+    ".rs",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".env",
+    ".pem",
+    ".key",
+    ".crt",
 }
 
-DEFAULT_EXCLUDE_DIRS = {
-    ".git", "node_modules", "vendor", "dist", "build", ".venv", "__pycache__", ".pytest_cache"
-}
+DEFAULT_EXCLUDE_DIRS = {".git", "node_modules", "vendor", "dist", "build", ".venv", "__pycache__", ".pytest_cache"}
 
 
 @dataclass
@@ -191,7 +211,10 @@ class CIScanner:
             return False, f"Target path is not a directory: {self.config.target_dir}"
 
         if self.config.fail_on not in VALID_FAIL_ON_CHOICES:
-            return False, f"Invalid fail_on choice '{self.config.fail_on}'. Choose from: {', '.join(VALID_FAIL_ON_CHOICES)}"
+            return (
+                False,
+                f"Invalid fail_on choice '{self.config.fail_on}'. Choose from: {', '.join(VALID_FAIL_ON_CHOICES)}",
+            )
 
         if self.config.policy_path:
             p = Path(self.config.policy_path)
@@ -252,7 +275,9 @@ class CIScanner:
                 if diff_err:
                     # If git diff failed due to bad ref or git error
                     return CIScanResult(
-                        exit_code=CIExitCode.INVALID_CONFIG if "not inside a git repository" in diff_err or "failed" in diff_err else CIExitCode.SCANNER_ERROR,
+                        exit_code=CIExitCode.INVALID_CONFIG
+                        if "not inside a git repository" in diff_err or "failed" in diff_err
+                        else CIExitCode.SCANNER_ERROR,
                         scan_mode=mode_str,
                         target_dir=str(target_path),
                         complete=False,
@@ -397,19 +422,21 @@ class CIScanner:
 
                     for cand in secret_candidates:
                         # Strictly zero raw secret leakage: minimal_evidence has redaction token only
-                        findings.append({
-                            "rule_id": f"ECDAT-SECRET-{cand.candidate_type}",
-                            "algorithm": cand.candidate_type,
-                            "finding_type": "hardcoded_key",
-                            "file_path": rel_path,
-                            "line_number": cand.line_number,
-                            "severity": cand.severity,
-                            "confidence": cand.confidence,
-                            "evidence": cand.minimal_evidence,
-                            "fingerprint": cand.safe_fingerprint,
-                            "category": "secret",
-                            "source": "secret_detector",
-                        })
+                        findings.append(
+                            {
+                                "rule_id": f"ECDAT-SECRET-{cand.candidate_type}",
+                                "algorithm": cand.candidate_type,
+                                "finding_type": "hardcoded_key",
+                                "file_path": rel_path,
+                                "line_number": cand.line_number,
+                                "severity": cand.severity,
+                                "confidence": cand.confidence,
+                                "evidence": cand.minimal_evidence,
+                                "fingerprint": cand.safe_fingerprint,
+                                "category": "secret",
+                                "source": "secret_detector",
+                            }
+                        )
                         secret_count += 1
             except Exception as e:
                 scan_errors.append(f"Secret scanner crash: {str(e)}")
@@ -439,6 +466,7 @@ class CIScanner:
 
         # 7. Developer Feedback Enrichment (Phase 13.2)
         from scanners.developer_feedback import DeveloperFeedbackGenerator
+
         enriched_findings = []
         for f in findings:
             df = DeveloperFeedbackGenerator.generate(f, target_root=str(target_path))
@@ -512,7 +540,9 @@ class CIScanner:
                     for asset_eval in pol_res.get("assets", []):
                         for r_res in asset_eval.get("rule_results", []):
                             for reason in r_res.get("reasons", []):
-                                gate_violations.append(f"{r_res.get('final_action')}: {reason} [{r_res.get('rule_id')}] on {asset_eval.get('name', 'asset')}")
+                                gate_violations.append(
+                                    f"{r_res.get('final_action')}: {reason} [{r_res.get('rule_id')}] on {asset_eval.get('name', 'asset')}"
+                                )
             except Exception as pe:
                 scan_errors.append(f"Policy evaluation crash: {str(pe)}")
                 return CIScanResult(
@@ -578,7 +608,10 @@ class CIScanner:
 
         # Known insecure or deprecated crypto libraries
         insecure_packages = {
-            "pycrypto": ("critical", "PyCrypto is unmaintained and contains known vulnerabilities. Use cryptography instead."),
+            "pycrypto": (
+                "critical",
+                "PyCrypto is unmaintained and contains known vulnerabilities. Use cryptography instead.",
+            ),
             "pycryptodome": ("informational", "PyCryptodome is present; verify algorithm usage."),
             "des": ("critical", "Legacy DES package is deprecated and vulnerable."),
             "md5": ("critical", "MD5 hashing package is cryptographically broken."),
@@ -597,19 +630,21 @@ class CIScanner:
                     clean_name = pkg_name.lower().strip()
                     if clean_name in insecure_packages:
                         sev, rec = insecure_packages[clean_name]
-                        findings.append({
-                            "rule_id": f"ECDAT-DEP-{clean_name.upper()}",
-                            "algorithm": clean_name,
-                            "finding_type": "weak_dependency",
-                            "file_path": "package.json",
-                            "line_number": 1,
-                            "severity": sev,
-                            "confidence": "high",
-                            "evidence": f'"{pkg_name}": "{ver}"',
-                            "category": "dependency",
-                            "source": "sca",
-                            "remediation": rec,
-                        })
+                        findings.append(
+                            {
+                                "rule_id": f"ECDAT-DEP-{clean_name.upper()}",
+                                "algorithm": clean_name,
+                                "finding_type": "weak_dependency",
+                                "file_path": "package.json",
+                                "line_number": 1,
+                                "severity": sev,
+                                "confidence": "high",
+                                "evidence": f'"{pkg_name}": "{ver}"',
+                                "category": "dependency",
+                                "source": "sca",
+                                "remediation": rec,
+                            }
+                        )
             except Exception as e:
                 logger.warning("Error reading package.json: %s", e)
 
@@ -626,19 +661,21 @@ class CIScanner:
                     pkg_candidate = re.split(r"[><=~!;]", raw)[0].strip().lower()
                     if pkg_candidate in insecure_packages:
                         sev, rec = insecure_packages[pkg_candidate]
-                        findings.append({
-                            "rule_id": f"ECDAT-DEP-{pkg_candidate.upper()}",
-                            "algorithm": pkg_candidate,
-                            "finding_type": "weak_dependency",
-                            "file_path": "requirements.txt",
-                            "line_number": line_no,
-                            "severity": sev,
-                            "confidence": "high",
-                            "evidence": raw,
-                            "category": "dependency",
-                            "source": "sca",
-                            "remediation": rec,
-                        })
+                        findings.append(
+                            {
+                                "rule_id": f"ECDAT-DEP-{pkg_candidate.upper()}",
+                                "algorithm": pkg_candidate,
+                                "finding_type": "weak_dependency",
+                                "file_path": "requirements.txt",
+                                "line_number": line_no,
+                                "severity": sev,
+                                "confidence": "high",
+                                "evidence": raw,
+                                "category": "dependency",
+                                "source": "sca",
+                                "remediation": rec,
+                            }
+                        )
             except Exception as e:
                 logger.warning("Error reading requirements.txt: %s", e)
 
@@ -660,36 +697,42 @@ class CIScanner:
                 for line_no, line in enumerate(lines, start=1):
                     raw = line.strip()
                     # Check for outdated base images
-                    if re.search(r"\bFROM\s+.*\b(alpine:3\.[0-9]|ubuntu:14\.|ubuntu:16\.|debian:8|centos:6)", raw, re.IGNORECASE):
-                        findings.append({
-                            "rule_id": "ECDAT-CONTAINER-DEPRECATED-BASE",
-                            "algorithm": "LEGACY_BASE_IMAGE",
-                            "finding_type": "container_weakness",
-                            "file_path": str(dockerfile_path.relative_to(root_dir)).replace("\\", "/"),
-                            "line_number": line_no,
-                            "severity": "high",
-                            "confidence": "high",
-                            "evidence": raw,
-                            "category": "container",
-                            "source": "dockerfile",
-                            "remediation": "Update base container image to an actively supported LTS distribution.",
-                        })
-                    # Check for insecure package installations
-                    if "apt-get" in raw or "apk add" in raw or "yum install" in raw:
-                        if "pycrypto" in raw or "libssl1.0" in raw:
-                            findings.append({
-                                "rule_id": "ECDAT-CONTAINER-INSECURE-PKG",
-                                "algorithm": "LEGACY_CRYPTO_PKG",
+                    if re.search(
+                        r"\bFROM\s+.*\b(alpine:3\.[0-9]|ubuntu:14\.|ubuntu:16\.|debian:8|centos:6)", raw, re.IGNORECASE
+                    ):
+                        findings.append(
+                            {
+                                "rule_id": "ECDAT-CONTAINER-DEPRECATED-BASE",
+                                "algorithm": "LEGACY_BASE_IMAGE",
                                 "finding_type": "container_weakness",
                                 "file_path": str(dockerfile_path.relative_to(root_dir)).replace("\\", "/"),
                                 "line_number": line_no,
-                                "severity": "critical",
+                                "severity": "high",
                                 "confidence": "high",
                                 "evidence": raw,
                                 "category": "container",
                                 "source": "dockerfile",
-                                "remediation": "Remove vulnerable cryptographic libraries from container build instructions.",
-                            })
+                                "remediation": "Update base container image to an actively supported LTS distribution.",
+                            }
+                        )
+                    # Check for insecure package installations
+                    if "apt-get" in raw or "apk add" in raw or "yum install" in raw:
+                        if "pycrypto" in raw or "libssl1.0" in raw:
+                            findings.append(
+                                {
+                                    "rule_id": "ECDAT-CONTAINER-INSECURE-PKG",
+                                    "algorithm": "LEGACY_CRYPTO_PKG",
+                                    "finding_type": "container_weakness",
+                                    "file_path": str(dockerfile_path.relative_to(root_dir)).replace("\\", "/"),
+                                    "line_number": line_no,
+                                    "severity": "critical",
+                                    "confidence": "high",
+                                    "evidence": raw,
+                                    "category": "container",
+                                    "source": "dockerfile",
+                                    "remediation": "Remove vulnerable cryptographic libraries from container build instructions.",
+                                }
+                            )
             except Exception as e:
                 logger.warning("Error parsing Dockerfile: %s", e)
 
@@ -723,16 +766,20 @@ class CIScanner:
             serialized = serialize_cbom(merged)
             p.write_text(serialized, encoding="utf-8")
         else:
-            empty_cbom = json.dumps({
-                "bomFormat": "CycloneDX",
-                "specVersion": "1.6",
-                "components": [],
-            }, indent=2)
+            empty_cbom = json.dumps(
+                {
+                    "bomFormat": "CycloneDX",
+                    "specVersion": "1.6",
+                    "components": [],
+                },
+                indent=2,
+            )
             p.write_text(empty_cbom, encoding="utf-8")
 
     def _write_sarif(self, findings: List[Dict[str, Any]], dest_path: str) -> None:
         """Generates, automatically validates, and writes OASIS SARIF v2.1.0 JSON."""
         from scanners.sarif_engine import SarifEngine
+
         sarif_data = SarifEngine.generate_and_validate(
             findings,
             tool_name="ECDAT CI Scanner",
@@ -747,6 +794,7 @@ def generate_sarif_v2(findings: List[Dict[str, Any]], tool_name: str = "ECDAT CI
     Ensures safe redaction of secrets in code snippets.
     """
     from scanners.sarif_engine import SarifEngine
+
     return SarifEngine.generate_and_validate(findings, tool_name=tool_name)
 
 
@@ -755,9 +803,15 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         description="ECDAT First-Class CI/CD Scanner (Phase 13.1)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("target", nargs="?", default=".", help="Directory or workspace to scan (default: current directory)")
-    parser.add_argument("--pr-base", default=None, help="Base branch/ref for Pull Request diff-aware scan (e.g. origin/main, HEAD~1)")
-    parser.add_argument("--changed-files", default=None, help="Comma-separated list of explicit changed files for PR scan")
+    parser.add_argument(
+        "target", nargs="?", default=".", help="Directory or workspace to scan (default: current directory)"
+    )
+    parser.add_argument(
+        "--pr-base", default=None, help="Base branch/ref for Pull Request diff-aware scan (e.g. origin/main, HEAD~1)"
+    )
+    parser.add_argument(
+        "--changed-files", default=None, help="Comma-separated list of explicit changed files for PR scan"
+    )
     parser.add_argument("--policy", default=None, help="Path to policy-as-code JSON file")
     parser.add_argument(
         "--fail-on",
@@ -771,7 +825,9 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
     parser.add_argument("--no-secrets", action="store_true", help="Disable secret scanning")
     parser.add_argument("--no-deps", action="store_true", help="Disable dependency SCA scanning")
     parser.add_argument("--scan-container", default=None, help="Path to Dockerfile or container artifact to inspect")
-    parser.add_argument("--developer-feedback", action="store_true", help="Print actionable developer feedback cards for findings")
+    parser.add_argument(
+        "--developer-feedback", action="store_true", help="Print actionable developer feedback cards for findings"
+    )
     parser.add_argument("--json", action="store_true", help="Output summary in JSON format")
 
     return parser.parse_args(args)
@@ -814,9 +870,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"Complete:              {result.complete}")
         print(f"Exit Code:             {result.exit_code.value} ({result.exit_code.name})")
         print(f"Policy Gate Verdict:   {result.gate_verdict} (Passed: {result.gate_passed})")
-        print(f"Findings:              {len(result.findings)} total "
-              f"({result.static_findings_count} static, {result.secret_findings_count} secret, "
-              f"{result.dependency_findings_count} dependency, {result.container_findings_count} container)")
+        print(
+            f"Findings:              {len(result.findings)} total "
+            f"({result.static_findings_count} static, {result.secret_findings_count} secret, "
+            f"{result.dependency_findings_count} dependency, {result.container_findings_count} container)"
+        )
 
         if result.cbom_path:
             print(f"CBOM Written:          {result.cbom_path}")
@@ -835,6 +893,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         if args.developer_feedback and result.findings:
             from scanners.developer_feedback import DeveloperFeedbackGenerator
+
             print("\n" + "=" * 60)
             print("Actionable Developer Feedback Cards")
             print("=" * 60)

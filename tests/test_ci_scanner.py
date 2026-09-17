@@ -115,11 +115,9 @@ def test_exit_code_1_policy_gate_block(vulnerable_repo, tmp_path):
                 "name": "Prohibit MD5 in Test",
                 "category": "algorithm",
                 "action": "BLOCK",
-                "algorithms": {
-                    "prohibited": ["MD5"]
-                }
+                "algorithms": {"prohibited": ["MD5"]},
             }
-        ]
+        ],
     }
     policy_file = tmp_path / "test_policy.json"
     policy_file.write_text(json.dumps(policy_content), encoding="utf-8")
@@ -252,13 +250,7 @@ MIIEowIBAAKCAQEA0YpW3...FAKE_KEY_FOR_TESTING...
 
 def test_dependency_scan(tmp_path):
     """Dependency scanning must detect weak crypto libraries in package manifests."""
-    pkg_json = {
-        "name": "test-app",
-        "dependencies": {
-            "pycrypto": "2.6.1",
-            "express": "4.18.2"
-        }
-    }
+    pkg_json = {"name": "test-app", "dependencies": {"pycrypto": "2.6.1", "express": "4.18.2"}}
     (tmp_path / "package.json").write_text(json.dumps(pkg_json), encoding="utf-8")
 
     req_txt = "pycrypto==2.6.1\nrequests>=2.28.0\n"
@@ -312,7 +304,10 @@ def test_sarif_v2_generation(vulnerable_repo, tmp_path):
     assert sarif_output.exists()
     sarif_data = json.loads(sarif_output.read_text(encoding="utf-8"))
     assert sarif_data["version"] == "2.1.0"
-    assert sarif_data["$schema"] == "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
+    assert (
+        sarif_data["$schema"]
+        == "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
+    )
     assert len(sarif_data["runs"]) == 1
 
     driver = sarif_data["runs"][0]["tool"]["driver"]

@@ -91,9 +91,7 @@ class FilesystemScanner:
                                 target = entry_path.resolve()
                                 if not self.guard.is_contained(target):
                                     report.skipped_symlinks += 1
-                                    report.security_warnings.append(
-                                        f"Symlink escape blocked: {entry_path} -> {target}"
-                                    )
+                                    report.security_warnings.append(f"Symlink escape blocked: {entry_path} -> {target}")
                                     continue
                             except (OSError, ValueError):
                                 report.skipped_symlinks += 1

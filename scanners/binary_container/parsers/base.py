@@ -38,7 +38,7 @@ class SymbolMetadata:
     name: str
     is_imported: bool = True
     symbol_type: str = "function"  # function, object, notype, unknown
-    binding: str = "global"        # global, weak, local
+    binding: str = "global"  # global, weak, local
     section_index: int = 0
 
 

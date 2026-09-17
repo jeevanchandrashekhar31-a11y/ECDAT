@@ -28,21 +28,14 @@ class TicketingService:
         return self._connectors.get(name)
 
     def list_connectors(self) -> List[Dict[str, str]]:
-        return [
-            {"name": name, "type": conn.connector_type}
-            for name, conn in self._connectors.items()
-        ]
+        return [{"name": name, "type": conn.connector_type} for name, conn in self._connectors.items()]
 
     def format_ticket(self, raw_request: Any, connector_name: str) -> Dict[str, Any]:
         conn = self.get_connector(connector_name)
         if not conn:
             raise KeyError(f"Connector '{connector_name}' is not registered")
 
-        req = (
-            raw_request
-            if isinstance(raw_request, TicketRequest)
-            else TicketRequest(**raw_request)
-        )
+        req = raw_request if isinstance(raw_request, TicketRequest) else TicketRequest(**raw_request)
         return {
             "connector_name": connector_name,
             "connector_type": conn.connector_type,
@@ -56,14 +49,8 @@ class TicketingService:
 
         return conn.create_ticket(raw_request)
 
-    def dispatch_multi(
-        self, raw_request: Any, connector_names: Optional[List[str]] = None
-    ) -> List[Dict[str, Any]]:
-        req = (
-            raw_request
-            if isinstance(raw_request, TicketRequest)
-            else TicketRequest(**raw_request)
-        )
+    def dispatch_multi(self, raw_request: Any, connector_names: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        req = raw_request if isinstance(raw_request, TicketRequest) else TicketRequest(**raw_request)
 
         target_connectors = (
             [self.get_connector(name) for name in connector_names]
@@ -79,19 +66,23 @@ class TicketingService:
             assert conn is not None
             try:
                 ticket_res = conn.create_ticket(req)
-                results.append({
-                    "connector": conn.name,
-                    "connector_type": conn.connector_type,
-                    "success": True,
-                    "ticket": ticket_res.to_dict(),
-                })
+                results.append(
+                    {
+                        "connector": conn.name,
+                        "connector_type": conn.connector_type,
+                        "success": True,
+                        "ticket": ticket_res.to_dict(),
+                    }
+                )
             except Exception as e:
-                results.append({
-                    "connector": conn.name,
-                    "connector_type": conn.connector_type,
-                    "success": False,
-                    "error": str(e),
-                })
+                results.append(
+                    {
+                        "connector": conn.name,
+                        "connector_type": conn.connector_type,
+                        "success": False,
+                        "error": str(e),
+                    }
+                )
         return results
 
     def batch_create_from_findings(
@@ -103,12 +94,7 @@ class TicketingService:
     ) -> Dict[str, Any]:
         results = []
         for finding in findings:
-            asset_id = (
-                finding.get("asset_id")
-                or finding.get("assetId")
-                or finding.get("file_path")
-                or "unknown-asset"
-            )
+            asset_id = finding.get("asset_id") or finding.get("assetId") or finding.get("file_path") or "unknown-asset"
             finding_id = (
                 finding.get("finding_id")
                 or finding.get("findingId")
@@ -129,11 +115,7 @@ class TicketingService:
             )
             remediation = (
                 finding.get("remediation")
-                or (
-                    finding.get("developer_feedback", {})
-                    .get("safe_fix", {})
-                    .get("summary")
-                )
+                or (finding.get("developer_feedback", {}).get("safe_fix", {}).get("summary"))
                 or "Upgrade algorithm according to enterprise crypto policy."
             )
             c_ref = finding.get("cbom_ref") or finding.get("cbomRef") or cbom_ref
@@ -156,11 +138,13 @@ class TicketingService:
             )
 
             dispatch_res = self.dispatch_multi(req, connector_names)
-            results.append({
-                "finding_id": finding_id,
-                "asset_id": asset_id,
-                "dispatch": dispatch_res,
-            })
+            results.append(
+                {
+                    "finding_id": finding_id,
+                    "asset_id": asset_id,
+                    "dispatch": dispatch_res,
+                }
+            )
 
         return {
             "total_findings": len(findings),

@@ -41,9 +41,7 @@ class BaseTicketingConnector(ABC):
         pass
 
     @abstractmethod
-    def send_create_request(
-        self, ticket_request: TicketRequest, payload: Dict[str, Any]
-    ) -> TicketResponse:
+    def send_create_request(self, ticket_request: TicketRequest, payload: Dict[str, Any]) -> TicketResponse:
         """Sends formatted payload to vendor API."""
         pass
 

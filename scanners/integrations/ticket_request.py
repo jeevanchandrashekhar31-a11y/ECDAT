@@ -82,9 +82,7 @@ class TicketResponse:
     ticket_url: str
     connector_type: str
     status: str = "OPEN"
-    created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     raw_response: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:

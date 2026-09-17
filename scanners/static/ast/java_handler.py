@@ -66,14 +66,55 @@ class GenericDataFlow(DataFlowProvider):
 class JavaCryptoRuleProvider(CryptoRuleProvider):
     def get_rules(self) -> List[CryptoDetectionRule]:
         return [
-            CryptoDetectionRule("JAVA_WEAK_CIPHER", "DES", "Cipher.getInstance(\"DES\")", "weak_cipher", "critical", "high"),
-            CryptoDetectionRule("JAVA_INSECURE_CIPHER_MODE_ECB", "ECB", "Cipher.getInstance(\".../ECB/...\")", "insecure_cipher_mode", "critical", "high"),
-            CryptoDetectionRule("JAVA_WEAK_HASH", "MD5", "MessageDigest.getInstance(\"MD5\")", "weak_hash", "critical", "high"),
-            CryptoDetectionRule("JAVA_WEAK_MAC", "HmacMD5", "Mac.getInstance(\"HmacMD5\")", "weak_hash", "critical", "high"),
-            CryptoDetectionRule("JAVA_WEAK_SIGNATURE", "SHA1withRSA", "Signature.getInstance(\"SHA1withRSA\")", "weak_signature_algorithm", "high", "high"),
-            CryptoDetectionRule("JAVA_WEAK_KEY_SIZE", "RSA-Weak", "KeyPairGenerator.initialize(1024)", "weak_asymmetric_key", "critical", "high"),
-            CryptoDetectionRule("JAVA_INSECURE_TLS_PROTOCOL", "SSLv3", "SSLContext.getInstance(\"SSLv3\")", "insecure_tls_protocol", "critical", "high"),
-            CryptoDetectionRule("JAVA_TRUST_ALL_CERTS", "TrustAllCerts", "X509TrustManager empty checkServerTrusted", "disabled_certificate_validation", "critical", "high"),
+            CryptoDetectionRule(
+                "JAVA_WEAK_CIPHER", "DES", 'Cipher.getInstance("DES")', "weak_cipher", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "JAVA_INSECURE_CIPHER_MODE_ECB",
+                "ECB",
+                'Cipher.getInstance(".../ECB/...")',
+                "insecure_cipher_mode",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "JAVA_WEAK_HASH", "MD5", 'MessageDigest.getInstance("MD5")', "weak_hash", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "JAVA_WEAK_MAC", "HmacMD5", 'Mac.getInstance("HmacMD5")', "weak_hash", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "JAVA_WEAK_SIGNATURE",
+                "SHA1withRSA",
+                'Signature.getInstance("SHA1withRSA")',
+                "weak_signature_algorithm",
+                "high",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "JAVA_WEAK_KEY_SIZE",
+                "RSA-Weak",
+                "KeyPairGenerator.initialize(1024)",
+                "weak_asymmetric_key",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "JAVA_INSECURE_TLS_PROTOCOL",
+                "SSLv3",
+                'SSLContext.getInstance("SSLv3")',
+                "insecure_tls_protocol",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "JAVA_TRUST_ALL_CERTS",
+                "TrustAllCerts",
+                "X509TrustManager empty checkServerTrusted",
+                "disabled_certificate_validation",
+                "critical",
+                "high",
+            ),
         ]
 
 

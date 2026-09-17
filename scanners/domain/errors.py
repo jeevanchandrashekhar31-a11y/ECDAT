@@ -72,6 +72,7 @@ class ErrorCode(str, Enum):
 def _sanitize_error_val(val: Any) -> Any:
     if isinstance(val, str):
         import re
+
         pat = re.compile(
             r"-----BEGIN (?:[A-Z0-9_-]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z0-9_-]+ )?PRIVATE KEY-----",
             re.IGNORECASE,
@@ -106,7 +107,6 @@ class EcdatException(Exception):
         self.status_code = status_code
         self.timestamp = datetime.now(timezone.utc).isoformat()
 
-
     def to_dict(self) -> Dict[str, Any]:
         return {
             "error": self.__class__.__name__,
@@ -120,47 +120,99 @@ class EcdatException(Exception):
 
 
 class InvalidInputError(EcdatException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None, code: ErrorCode = ErrorCode.ERR_INPUT_INVALID_TARGET):
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        code: ErrorCode = ErrorCode.ERR_INPUT_INVALID_TARGET,
+    ):
         super().__init__(message, ErrorCategory.INVALID_INPUT, code, details, fatal=True, status_code=400)
 
 
 class UnsupportedFormatError(EcdatException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None, code: ErrorCode = ErrorCode.ERR_FORMAT_UNSUPPORTED_SPEC):
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        code: ErrorCode = ErrorCode.ERR_FORMAT_UNSUPPORTED_SPEC,
+    ):
         super().__init__(message, ErrorCategory.UNSUPPORTED_FORMAT, code, details, fatal=True, status_code=415)
 
 
 class ParserFailureError(EcdatException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None, fatal: bool = False, code: ErrorCode = ErrorCode.ERR_PARSER_AST_SYNTAX):
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        fatal: bool = False,
+        code: ErrorCode = ErrorCode.ERR_PARSER_AST_SYNTAX,
+    ):
         super().__init__(message, ErrorCategory.PARSER_FAILURE, code, details, fatal=fatal, status_code=422)
 
 
 class PermissionFailureError(EcdatException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None, fatal: bool = False, code: ErrorCode = ErrorCode.ERR_PERMISSION_FILE_DENIED):
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        fatal: bool = False,
+        code: ErrorCode = ErrorCode.ERR_PERMISSION_FILE_DENIED,
+    ):
         super().__init__(message, ErrorCategory.PERMISSION_FAILURE, code, details, fatal=fatal, status_code=403)
 
 
 class NetworkTimeoutError(EcdatException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None, fatal: bool = True, code: ErrorCode = ErrorCode.ERR_NETWORK_TIMEOUT):
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        fatal: bool = True,
+        code: ErrorCode = ErrorCode.ERR_NETWORK_TIMEOUT,
+    ):
         super().__init__(message, ErrorCategory.NETWORK_TIMEOUT, code, details, fatal=fatal, status_code=504)
 
 
 class DependencyFailureError(EcdatException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None, fatal: bool = True, code: ErrorCode = ErrorCode.ERR_DEPENDENCY_MISSING_TOOL):
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        fatal: bool = True,
+        code: ErrorCode = ErrorCode.ERR_DEPENDENCY_MISSING_TOOL,
+    ):
         super().__init__(message, ErrorCategory.DEPENDENCY_FAILURE, code, details, fatal=fatal, status_code=502)
 
 
 class ScannerFailureError(EcdatException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None, fatal: bool = True, code: ErrorCode = ErrorCode.ERR_SCANNER_EXECUTION_FAILURE):
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        fatal: bool = True,
+        code: ErrorCode = ErrorCode.ERR_SCANNER_EXECUTION_FAILURE,
+    ):
         super().__init__(message, ErrorCategory.SCANNER_FAILURE, code, details, fatal=fatal, status_code=500)
 
 
 class PolicyFailureError(EcdatException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None, fatal: bool = False, code: ErrorCode = ErrorCode.ERR_POLICY_THRESHOLD_BREACHED):
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        fatal: bool = False,
+        code: ErrorCode = ErrorCode.ERR_POLICY_THRESHOLD_BREACHED,
+    ):
         super().__init__(message, ErrorCategory.POLICY_FAILURE, code, details, fatal=fatal, status_code=422)
 
 
 class InfrastructureFailureError(EcdatException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None, fatal: bool = True, code: ErrorCode = ErrorCode.ERR_INFRA_DATABASE_UNAVAILABLE):
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        fatal: bool = True,
+        code: ErrorCode = ErrorCode.ERR_INFRA_DATABASE_UNAVAILABLE,
+    ):
         super().__init__(message, ErrorCategory.INFRASTRUCTURE_FAILURE, code, details, fatal=fatal, status_code=503)
 
 
@@ -193,8 +245,12 @@ def evaluate_scan_status(
     return ScanStatus.SUCCESS
 
 
-def assert_valid_scanner_result(status: ScanStatus, findings: Optional[List[Any]] = None, errors: Optional[List[Any]] = None) -> None:
+def assert_valid_scanner_result(
+    status: ScanStatus, findings: Optional[List[Any]] = None, errors: Optional[List[Any]] = None
+) -> None:
     """Guardrail asserting that a scanner failure is never marked as a successful empty result."""
     errs = errors or []
     if len(errs) > 0 and status == ScanStatus.SUCCESS:
-        raise ScannerFailureError("Invalid Scan State: Scan reported SUCCESS despite containing recorded scanner errors")
+        raise ScannerFailureError(
+            "Invalid Scan State: Scan reported SUCCESS despite containing recorded scanner errors"
+        )

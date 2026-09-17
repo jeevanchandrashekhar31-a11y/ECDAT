@@ -63,12 +63,49 @@ class JSTSCryptoRuleProvider(CryptoRuleProvider):
     def get_rules(self) -> List[CryptoDetectionRule]:
         return [
             CryptoDetectionRule("JS_WEAK_HASH", "MD5", "crypto.createHash('md5')", "weak_hash", "critical", "high"),
-            CryptoDetectionRule("JS_WEAK_CIPHER", "DES", "crypto.createCipheriv('des-ecb')", "weak_cipher", "critical", "high"),
-            CryptoDetectionRule("JS_INSECURE_CIPHER_MODE_ECB", "ECB", "createCipheriv('aes-128-ecb')", "insecure_cipher_mode", "critical", "high"),
-            CryptoDetectionRule("JS_WEAK_RSA_KEY_SIZE", "RSA-Weak", "generateKeyPairSync('rsa', { modulusLength: 1024 })", "weak_asymmetric_key", "critical", "high"),
-            CryptoDetectionRule("JS_DISABLED_CERT_VALIDATION", "rejectUnauthorized: false", "https.Agent({ rejectUnauthorized: false })", "disabled_certificate_validation", "critical", "high"),
-            CryptoDetectionRule("JS_INSECURE_TLS_VERSION", "TLSv1.0", "https.createServer({ minVersion: 'TLSv1' })", "insecure_tls_protocol", "critical", "high"),
-            CryptoDetectionRule("JS_JWT_NONE_ALGORITHM", "JWT-NONE", "jwt.verify(..., { algorithms: ['none'] })", "insecure_jwt_algorithm", "critical", "high"),
+            CryptoDetectionRule(
+                "JS_WEAK_CIPHER", "DES", "crypto.createCipheriv('des-ecb')", "weak_cipher", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "JS_INSECURE_CIPHER_MODE_ECB",
+                "ECB",
+                "createCipheriv('aes-128-ecb')",
+                "insecure_cipher_mode",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "JS_WEAK_RSA_KEY_SIZE",
+                "RSA-Weak",
+                "generateKeyPairSync('rsa', { modulusLength: 1024 })",
+                "weak_asymmetric_key",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "JS_DISABLED_CERT_VALIDATION",
+                "rejectUnauthorized: false",
+                "https.Agent({ rejectUnauthorized: false })",
+                "disabled_certificate_validation",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "JS_INSECURE_TLS_VERSION",
+                "TLSv1.0",
+                "https.createServer({ minVersion: 'TLSv1' })",
+                "insecure_tls_protocol",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "JS_JWT_NONE_ALGORITHM",
+                "JWT-NONE",
+                "jwt.verify(..., { algorithms: ['none'] })",
+                "insecure_jwt_algorithm",
+                "critical",
+                "high",
+            ),
             CryptoDetectionRule("JS_CRYPTOJS_MD5", "MD5", "CryptoJS.MD5(...)", "weak_hash", "critical", "high"),
         ]
 

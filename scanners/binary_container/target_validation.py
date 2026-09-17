@@ -41,6 +41,7 @@ def validate_target(target: str, target_type: str) -> bool:
             raise ValueError(f"Invalid image name format: {target}")
 
         from scanners.binary_container.security_guards import validate_registry_security
+
         validate_registry_security(target)
 
         return True

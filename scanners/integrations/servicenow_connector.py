@@ -88,31 +88,36 @@ class ServiceNowConnector(BaseTicketingConnector):
         urgency = SERVICENOW_URGENCY_MAP.get(sev, "2")
         impact = SERVICENOW_IMPACT_MAP.get(sev, "2")
 
-        description = "\n".join([
-            "ECDAT Cryptographic Security Finding",
-            "====================================",
-            f"Asset ID:        {ticket_request.asset_id}",
-            f"Finding ID:      {ticket_request.finding_id}",
-            f"Severity:        {ticket_request.severity}",
-            f"Owner:           {ticket_request.owner}",
-            f"Evidence Link:   {ticket_request.evidence_link}",
-            f"CBOM Reference:  {ticket_request.cbom_ref}",
-            f"Risk Score:      {ticket_request.risk_score}",
-            "",
-            "Remediation Guidance:",
-            f"{ticket_request.remediation}",
-        ])
+        description = "\n".join(
+            [
+                "ECDAT Cryptographic Security Finding",
+                "====================================",
+                f"Asset ID:        {ticket_request.asset_id}",
+                f"Finding ID:      {ticket_request.finding_id}",
+                f"Severity:        {ticket_request.severity}",
+                f"Owner:           {ticket_request.owner}",
+                f"Evidence Link:   {ticket_request.evidence_link}",
+                f"CBOM Reference:  {ticket_request.cbom_ref}",
+                f"Risk Score:      {ticket_request.risk_score}",
+                "",
+                "Remediation Guidance:",
+                f"{ticket_request.remediation}",
+            ]
+        )
 
-        work_notes = "\n".join([
-            "[ECDAT Automated Security Alert]",
-            f"Evidence: {ticket_request.evidence_link}",
-            f"CBOM Reference: {ticket_request.cbom_ref}",
-            f"Risk Score: {ticket_request.risk_score}",
-            f"Remediation: {ticket_request.remediation}",
-        ])
+        work_notes = "\n".join(
+            [
+                "[ECDAT Automated Security Alert]",
+                f"Evidence: {ticket_request.evidence_link}",
+                f"CBOM Reference: {ticket_request.cbom_ref}",
+                f"Risk Score: {ticket_request.risk_score}",
+                f"Remediation: {ticket_request.remediation}",
+            ]
+        )
 
         record = {
-            "short_description": ticket_request.title or f"[ECDAT {ticket_request.severity}] Finding {ticket_request.finding_id} on {ticket_request.asset_id}",
+            "short_description": ticket_request.title
+            or f"[ECDAT {ticket_request.severity}] Finding {ticket_request.finding_id} on {ticket_request.asset_id}",
             "description": description,
             "urgency": urgency,
             "impact": impact,
@@ -128,13 +133,13 @@ class ServiceNowConnector(BaseTicketingConnector):
 
         return record
 
-    def send_create_request(
-        self, ticket_request: TicketRequest, payload: Dict[str, Any]
-    ) -> TicketResponse:
+    def send_create_request(self, ticket_request: TicketRequest, payload: Dict[str, Any]) -> TicketResponse:
         endpoint = f"{self.normalized_instance_url}/api/now/table/{self.table}"
 
         if self.http_client:
-            data = self.http_client(endpoint, method="POST", json_payload=payload, headers={"Authorization": self.get_auth_header()})
+            data = self.http_client(
+                endpoint, method="POST", json_payload=payload, headers={"Authorization": self.get_auth_header()}
+            )
         else:
             req = urllib.request.Request(
                 endpoint,

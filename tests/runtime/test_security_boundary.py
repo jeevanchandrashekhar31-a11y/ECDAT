@@ -90,10 +90,12 @@ class TestResourceLimitsAndBoundedBuffer:
 
         enqueued = 0
         for _ in range(25):
-            success = agent.ingest_raw_event({
-                "function_name": "EVP_EncryptInit_ex",
-                "parameters": {"cipher_name": "AES-256-GCM"},
-            })
+            success = agent.ingest_raw_event(
+                {
+                    "function_name": "EVP_EncryptInit_ex",
+                    "parameters": {"cipher_name": "AES-256-GCM"},
+                }
+            )
             if success:
                 enqueued += 1
 

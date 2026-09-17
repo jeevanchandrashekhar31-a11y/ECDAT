@@ -169,7 +169,9 @@ class ContainerImageAnalyzer:
                 scan_status="success",
             )
 
-    def analyze_rootfs_directory(self, rootfs_dir: Path, image_reference: str = "container:rootfs") -> ContainerScanReport:
+    def analyze_rootfs_directory(
+        self, rootfs_dir: Path, image_reference: str = "container:rootfs"
+    ) -> ContainerScanReport:
         """
         Analyzes a container rootfs directory statically.
         Never executes any binary or entrypoint.
@@ -263,8 +265,7 @@ class ContainerImageAnalyzer:
                             pkg_arch = line.split("Architecture: ")[1].strip()
                     if pkg_name and pkg_ver:
                         is_crypto = any(
-                            c in pkg_name.lower()
-                            for c in ["ssl", "crypto", "tls", "sodium", "botan", "mbed", "wolf"]
+                            c in pkg_name.lower() for c in ["ssl", "crypto", "tls", "sodium", "botan", "mbed", "wolf"]
                         )
                         packages.append(
                             InstalledPackageMetadata(
@@ -293,8 +294,7 @@ class ContainerImageAnalyzer:
                             pkg_ver = line[2:].strip()
                     if pkg_name and pkg_ver:
                         is_crypto = any(
-                            c in pkg_name.lower()
-                            for c in ["ssl", "crypto", "tls", "sodium", "botan", "mbed", "wolf"]
+                            c in pkg_name.lower() for c in ["ssl", "crypto", "tls", "sodium", "botan", "mbed", "wolf"]
                         )
                         packages.append(
                             InstalledPackageMetadata(
@@ -413,7 +413,16 @@ class ContainerImageAnalyzer:
         found = []
         for f in file_list:
             fname = f.split("/")[-1]
-            for pat in ["libcrypto", "libssl", "libboringssl", "libtls", "libmbed", "libwolfssl", "libbotan", "libsodium"]:
+            for pat in [
+                "libcrypto",
+                "libssl",
+                "libboringssl",
+                "libtls",
+                "libmbed",
+                "libwolfssl",
+                "libbotan",
+                "libsodium",
+            ]:
                 if pat in fname.lower():
                     found.append(fname)
                     break

@@ -61,7 +61,12 @@ def test_source_wrapper_crypto_call_parameter():
             start_line=20,
             end_line=25,
             body_calls=[
-                CallSite(callee_name="Cipher.getInstance", arguments=["cipher_name"], line_number=22, snippet="Cipher.getInstance(cipher_name)")
+                CallSite(
+                    callee_name="Cipher.getInstance",
+                    arguments=["cipher_name"],
+                    line_number=22,
+                    snippet="Cipher.getInstance(cipher_name)",
+                )
             ],
         )
     )
@@ -236,14 +241,16 @@ def test_complexity_bound_exceeded_depth():
 
     # Create a 6-deep wrapper chain
     for i in range(1, 7):
-        next_fn = f"fn_{i+1}" if i < 6 else "crypto_sink"
+        next_fn = f"fn_{i + 1}" if i < 6 else "crypto_sink"
         engine.register_function(
             FunctionSignature(
                 name=f"fn_{i}",
                 param_names=["p"],
                 start_line=i * 10,
                 end_line=i * 10 + 5,
-                body_calls=[CallSite(callee_name=next_fn, arguments=["p"], line_number=i * 10 + 2, snippet=f"{next_fn}(p)")],
+                body_calls=[
+                    CallSite(callee_name=next_fn, arguments=["p"], line_number=i * 10 + 2, snippet=f"{next_fn}(p)")
+                ],
             )
         )
 
@@ -277,7 +284,11 @@ def test_complexity_bound_exceeded_traversed_functions():
                 param_names=["p"],
                 start_line=i * 5,
                 end_line=i * 5 + 4,
-                body_calls=[CallSite(callee_name=f"fn_{i+1}", arguments=["p"], line_number=i * 5 + 2, snippet=f"fn_{i+1}(p)")],
+                body_calls=[
+                    CallSite(
+                        callee_name=f"fn_{i + 1}", arguments=["p"], line_number=i * 5 + 2, snippet=f"fn_{i + 1}(p)"
+                    )
+                ],
             )
         )
 
@@ -336,7 +347,14 @@ def test_uncertainty_unresolved_function():
             param_names=["algo"],
             start_line=1,
             end_line=5,
-            body_calls=[CallSite(callee_name="unknown_external_wrapper", arguments=["algo"], line_number=3, snippet="unknown_external_wrapper(algo)")],
+            body_calls=[
+                CallSite(
+                    callee_name="unknown_external_wrapper",
+                    arguments=["algo"],
+                    line_number=3,
+                    snippet="unknown_external_wrapper(algo)",
+                )
+            ],
         )
     )
 
@@ -373,7 +391,7 @@ def test_python_source_ast_loading():
     """
     Verify automated loading of functions, calls, assignments, and configs from Python source code.
     """
-    py_code = '''
+    py_code = """
 SSL_CIPHER_SUITE = "RC4-MD5"
 
 def dispatch_crypto(algorithm):
@@ -381,7 +399,7 @@ def dispatch_crypto(algorithm):
 
 def run_hash(algo_name):
     return hashlib.new(algo_name)
-'''
+"""
     engine = BoundedDataFlowEngine()
     engine.load_from_python_source(py_code)
 
@@ -431,7 +449,14 @@ def test_dataflow_providers_integration():
             param_names=[],
             start_line=10,
             end_line=15,
-            body_calls=[CallSite(callee_name="ssl.wrap_socket", arguments=["TLS_VERSION"], line_number=12, snippet="ssl.wrap_socket(TLS_VERSION)")],
+            body_calls=[
+                CallSite(
+                    callee_name="ssl.wrap_socket",
+                    arguments=["TLS_VERSION"],
+                    line_number=12,
+                    snippet="ssl.wrap_socket(TLS_VERSION)",
+                )
+            ],
         )
     )
     trace_py_cfg = py_df.trace_configuration_flow("TLS_VERSION", "ssl.wrap_socket")

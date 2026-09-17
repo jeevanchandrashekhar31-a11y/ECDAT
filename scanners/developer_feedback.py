@@ -400,7 +400,12 @@ class DeveloperFeedbackGenerator:
             if "VALIDATION" in ft_upper or "VERIF" in ft_upper or "CERT" in ft_upper:
                 return KNOWLEDGE_CATALOG["CERT_VALIDATION"]
             return KNOWLEDGE_CATALOG["TLS_VERSION"]
-        if "HARDCODED" in ft_upper or "SECRET" in ft_upper or "PRIVATE_KEY" in algo_upper or "SYMMETRIC_KEY" in algo_upper:
+        if (
+            "HARDCODED" in ft_upper
+            or "SECRET" in ft_upper
+            or "PRIVATE_KEY" in algo_upper
+            or "SYMMETRIC_KEY" in algo_upper
+        ):
             return KNOWLEDGE_CATALOG["HARDCODED_KEY"]
         if "PRNG" in ft_upper or "RANDOM" in ft_upper:
             return KNOWLEDGE_CATALOG["WEAK_PRNG"]
@@ -454,7 +459,10 @@ class DeveloperFeedbackGenerator:
                     or supp_target == clean_rule
                     or supp_target in clean_rule
                     or clean_rule in supp_target
-                    or (clean_algo and (clean_algo == supp_target or clean_algo in supp_target or supp_target in clean_algo))
+                    or (
+                        clean_algo
+                        and (clean_algo == supp_target or clean_algo in supp_target or supp_target in clean_algo)
+                    )
                     or (clean_ft and (clean_ft == supp_target or clean_ft in supp_target or supp_target in clean_ft))
                 ):
                     return True, reason
@@ -539,7 +547,7 @@ class DeveloperFeedbackGenerator:
         if feedback.is_suppressed:
             status_line += f" (SUPPRESSED: {feedback.suppression_reason})"
 
-        steps_str = "\n".join(f"    {i+1}. {step}" for i, step in enumerate(feedback.safe_fix.migration_steps))
+        steps_str = "\n".join(f"    {i + 1}. {step}" for i, step in enumerate(feedback.safe_fix.migration_steps))
         refs_str = "\n".join(f"    * {ref}" for ref in feedback.references)
 
         return (
@@ -571,7 +579,7 @@ class DeveloperFeedbackGenerator:
     @classmethod
     def render_markdown(cls, feedback: DeveloperFeedback) -> str:
         """Renders developer feedback card as GitHub Flavored Markdown for PR comments and SARIF."""
-        steps_md = "\n".join(f"{i+1}. {s}" for i, s in enumerate(feedback.safe_fix.migration_steps))
+        steps_md = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(feedback.safe_fix.migration_steps))
         refs_md = "\n".join(f"- {r}" for r in feedback.references)
 
         return (

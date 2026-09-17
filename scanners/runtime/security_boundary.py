@@ -52,17 +52,20 @@ logger = logging.getLogger("ecdat.runtime.security_boundary")
 
 class SecurityBoundaryViolation(Exception):
     """Raised when an eBPF security boundary rule, resource limit, or probe restriction is violated."""
+
     pass
 
 
 class KernelCompatibilityError(Exception):
     """Raised when host kernel fails to meet minimum eBPF / uprobe safety requirements."""
+
     pass
 
 
 @dataclass
 class AgentResourceLimits:
     """Resource constraints strictly enforced on the eBPF runtime agent."""
+
     max_event_buffer_size_mb: int = 16
     max_events_per_second: int = 5000
     max_memory_overhead_mb: int = 64
@@ -73,6 +76,7 @@ class AgentResourceLimits:
 @dataclass
 class ProbeAttachment:
     """Represents a validated, attached uprobe."""
+
     probe_id: str
     library_name: str
     function_name: str
@@ -190,7 +194,7 @@ class KernelCompatibilityValidator:
 class RuntimeSecurityAgent:
     """
     Dedicated, isolated eBPF Runtime Agent.
-    
+
     Invariants:
     1. Runs independently from the ECDAT control plane server.
     2. Enforces capability minimization (refuses execution if full CAP_SYS_ADMIN is assumed without CAP_BPF).
@@ -250,9 +254,7 @@ class RuntimeSecurityAgent:
 
         # 2. Target binary validation
         if not target_binary_path or not isinstance(target_binary_path, str):
-            raise SecurityBoundaryViolation(
-                f"Invalid target binary path '{target_binary_path}'."
-            )
+            raise SecurityBoundaryViolation(f"Invalid target binary path '{target_binary_path}'.")
 
         # 3. Create attachment record
         attachment = ProbeAttachment(
@@ -283,7 +285,7 @@ class RuntimeSecurityAgent:
         if now - self.rate_window_start >= 1.0:
             self.rate_window_start = now
             self.rate_count = 0
-        
+
         self.rate_count += 1
         if self.rate_count > self.limits.max_events_per_second:
             logger.warning(

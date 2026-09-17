@@ -99,9 +99,7 @@ class ResourceMetrics:
     concurrency_workers: int = 1
     total_loc: int = 0
     total_files: int = 0
-    sample_timestamp: str = field(
-        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
-    )
+    sample_timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -192,6 +190,7 @@ class ResourceMonitor:
         # Unix fallback using getrusage
         try:
             import resource
+
             usage = resource.getrusage(resource.RUSAGE_SELF)
             # On Linux maxrss is in KB; on macOS in bytes
             peak_kb = usage.ru_maxrss

@@ -53,6 +53,7 @@ def _make_cert_dict(
 # 1. FIELD TRACKING & INVENTORY TESTS
 # ==============================================================================
 
+
 def test_certificate_inventory_tracks_all_required_fields():
     inv = CertificateInventory()
     cert_data = _make_cert_dict(
@@ -113,6 +114,7 @@ def test_certificate_inventory_tracks_all_required_fields():
 # ==============================================================================
 # 2. ANOMALY DETECTION TESTS
 # ==============================================================================
+
 
 def test_detect_expired_and_expiring():
     inv = CertificateInventory(warning_days=30, critical_days=7)
@@ -219,13 +221,20 @@ def test_detect_inconsistent_deployments():
         days_to_expiry=300,
     )
 
-    inv.add_or_update_certificate(cert_node1, endpoint={"endpoint": "10.0.0.1:443", "host": "api.cluster.internal", "port": 443})
-    inv.add_or_update_certificate(cert_node2, endpoint={"endpoint": "10.0.0.2:443", "host": "api.cluster.internal", "port": 443})
+    inv.add_or_update_certificate(
+        cert_node1, endpoint={"endpoint": "10.0.0.1:443", "host": "api.cluster.internal", "port": 443}
+    )
+    inv.add_or_update_certificate(
+        cert_node2, endpoint={"endpoint": "10.0.0.2:443", "host": "api.cluster.internal", "port": 443}
+    )
 
     inconsistencies = inv.detect_inconsistent_deployments()
     assert "cert_cluster_node1" in inconsistencies
     assert "cert_cluster_node2" in inconsistencies
-    assert any("multiple_certificates_for_host:api.cluster.internal" in a for a in inv.get("cert_cluster_node1").detected_anomalies)
+    assert any(
+        "multiple_certificates_for_host:api.cluster.internal" in a
+        for a in inv.get("cert_cluster_node1").detected_anomalies
+    )
 
     # 2. Hostname mismatch
     cert_mismatch = _make_cert_dict(
@@ -255,6 +264,7 @@ def test_detect_inconsistent_deployments():
 # ==============================================================================
 # 3. STRICT INVARIANT: NEVER STORE PRIVATE KEY MATERIAL
 # ==============================================================================
+
 
 def test_strict_invariant_never_store_private_key():
     # 1. Direct assert function
@@ -290,6 +300,7 @@ def test_strict_invariant_never_store_private_key():
 # 4. NETWORK SCANNING FINDING INGESTION & CBOM
 # ==============================================================================
 
+
 def test_ingest_from_network_finding_and_cbom_validation(tmp_path):
     inv = CertificateInventory()
 
@@ -309,7 +320,6 @@ def test_ingest_from_network_finding_and_cbom_validation(tmp_path):
                 "notValidBefore": "2026-01-01T00:00:00+00:00",
                 "notValidAfter": "2027-10-01T00:00:00+00:00",
                 "algo_family": "EC",
-
                 "key_size": 256,
                 "signature_algorithm": "ecdsa-with-SHA384",
                 "isSelfSigned": False,

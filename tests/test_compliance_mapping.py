@@ -75,7 +75,7 @@ def test_zero_secret_leakage_and_redaction():
         "nested": {
             "password": "SuperSecretPassword123!",
             "public_exponent": 65537,
-        }
+        },
     }
 
     sanitized = sanitize_evidence_data(raw_dict)
@@ -142,7 +142,7 @@ def test_control_assessment_supported_control(mapper):
             "name": "Legacy Checksum",
             "asset_type": "digest",
             "algorithm": "MD5",
-        }
+        },
     ]
 
     bad_report = mapper.assess(non_compliant_assets, standard_ids=["nist_sp_800_131a_r2", "pci_dss_v4"])
@@ -179,10 +179,10 @@ def test_cbom_format_support(mapper):
                         "name": "AES",
                         "primitive": "ae",
                         "parameterSetIdentifier": "256",
-                    }
-                }
+                    },
+                },
             }
-        ]
+        ],
     }
 
     report = mapper.assess(cbom_data)

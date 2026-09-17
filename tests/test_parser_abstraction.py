@@ -52,7 +52,18 @@ def test_do_not_claim_language_support_beyond_tested_corpus():
     supported_langs = registry.get_supported_languages()
 
     # Must only claim languages in the tested corpus: c, cpp, go, javascript, python, java, kotlin, typescript, csharp, rust
-    assert set(supported_langs) == {"c", "cpp", "go", "javascript", "python", "java", "kotlin", "typescript", "csharp", "rust"}
+    assert set(supported_langs) == {
+        "c",
+        "cpp",
+        "go",
+        "javascript",
+        "python",
+        "java",
+        "kotlin",
+        "typescript",
+        "csharp",
+        "rust",
+    }
 
     # Must not claim untrusted/untested languages (e.g. ruby, swift, php)
     assert registry.get_by_extension(".swift") is None

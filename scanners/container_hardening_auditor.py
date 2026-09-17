@@ -127,7 +127,9 @@ class ContainerHardeningAuditor:
         score = (len(passed) / (len(passed) + len(failed))) * 100 if (passed or failed) else 0
 
         return ContainerAuditResult(
-            target_path=str(file_path.relative_to(self.repo_root) if file_path.is_relative_to(self.repo_root) else file_path).replace("\\", "/"),
+            target_path=str(
+                file_path.relative_to(self.repo_root) if file_path.is_relative_to(self.repo_root) else file_path
+            ).replace("\\", "/"),
             target_type="dockerfile",
             score=round(score, 1),
             passed_rules=passed,
@@ -218,7 +220,7 @@ class ContainerHardeningAuditor:
             details["no_privileged_mode"] = "privileged: true detected or privileged: false omitted."
 
         # 9. No host networking
-        has_host_net = "network_mode: host" in content or "network_mode: \"host\"" in content
+        has_host_net = "network_mode: host" in content or 'network_mode: "host"' in content
         if not has_host_net:
             passed.append("no_host_networking")
             details["no_host_networking"] = "Isolated bridge/internal networks enforced; no host network."
@@ -229,7 +231,9 @@ class ContainerHardeningAuditor:
         score = (len(passed) / 9.0) * 100.0
 
         return ContainerAuditResult(
-            target_path=str(file_path.relative_to(self.repo_root) if file_path.is_relative_to(self.repo_root) else file_path).replace("\\", "/"),
+            target_path=str(
+                file_path.relative_to(self.repo_root) if file_path.is_relative_to(self.repo_root) else file_path
+            ).replace("\\", "/"),
             target_type="compose",
             score=round(score, 1),
             passed_rules=passed,
@@ -327,7 +331,9 @@ class ContainerHardeningAuditor:
         score = (len(passed) / 9.0) * 100.0
 
         return ContainerAuditResult(
-            target_path=str(file_path.relative_to(self.repo_root) if file_path.is_relative_to(self.repo_root) else file_path).replace("\\", "/"),
+            target_path=str(
+                file_path.relative_to(self.repo_root) if file_path.is_relative_to(self.repo_root) else file_path
+            ).replace("\\", "/"),
             target_type="kubernetes",
             score=round(score, 1),
             passed_rules=passed,
@@ -389,7 +395,9 @@ def main():
     print("  ECDAT PRODUCTION CONTAINER HARDENING AUDIT (PHASE 24.1)")
     print("==========================================================")
     print(f"Overall Compliance Score : {report['overall_score']}%")
-    print(f"Status                   : {'ALL HARDENED (PASS)' if report['all_hardened'] else 'HARDENING GAPS DETECTED (FAIL)'}\n")
+    print(
+        f"Status                   : {'ALL HARDENED (PASS)' if report['all_hardened'] else 'HARDENING GAPS DETECTED (FAIL)'}\n"
+    )
 
     for art in report["artifacts"]:
         status = "[PASS]" if len(art["failed_rules"]) == 0 else "[FAIL]"

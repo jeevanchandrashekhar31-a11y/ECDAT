@@ -133,6 +133,7 @@ def create_synthetic_image_tarball() -> bytes:
 # Test: Never Execute Application Entrypoints
 # ---------------------------------------------------------------------------
 
+
 def test_never_execute_application_entrypoint(monkeypatch):
     """
     Strictly verifies that analyzing a container image NEVER runs the entrypoint, CMD,
@@ -169,6 +170,7 @@ def test_never_execute_application_entrypoint(monkeypatch):
 # ---------------------------------------------------------------------------
 # Test: Inspection of Layers, Packages, Libraries, Configs, Certs, SBOM
 # ---------------------------------------------------------------------------
+
 
 def test_full_container_inspection():
     img_bytes = create_synthetic_image_tarball()
@@ -222,6 +224,7 @@ def test_full_container_inspection():
 # Test: Credential Leakage Prevention
 # ---------------------------------------------------------------------------
 
+
 def test_credential_leakage_prevention():
     raw_env = [
         "PATH=/usr/bin",
@@ -255,6 +258,7 @@ def test_credential_leakage_prevention():
 # Test: Registry SSRF Prevention
 # ---------------------------------------------------------------------------
 
+
 def test_prevent_registry_ssrf():
     """
     Prevents SSRF attacks against loopback, private IPs, link-local, and cloud metadata.
@@ -263,13 +267,13 @@ def test_prevent_registry_ssrf():
         "127.0.0.1:5000/app:latest",
         "127.0.0.1/app:latest",
         "localhost:5000/my-image",
-        "169.254.169.254/secret:v1",          # AWS/GCP/Azure IMDS
+        "169.254.169.254/secret:v1",  # AWS/GCP/Azure IMDS
         "metadata.google.internal/app:latest",
-        "10.0.0.1:5000/internal-repo:latest", # RFC 1918 private
-        "192.168.1.1/app:latest",             # RFC 1918 private
-        "172.16.0.1:5000/app:latest",          # RFC 1918 private
+        "10.0.0.1:5000/internal-repo:latest",  # RFC 1918 private
+        "192.168.1.1/app:latest",  # RFC 1918 private
+        "172.16.0.1:5000/app:latest",  # RFC 1918 private
         "http://docker.io/library/nginx:latest",  # URL scheme injection
-        "file:///etc/shadow",                  # Local file inclusion
+        "file:///etc/shadow",  # Local file inclusion
     ]
 
     for target in ssrf_targets:
@@ -280,6 +284,7 @@ def test_prevent_registry_ssrf():
 # ---------------------------------------------------------------------------
 # Test: Untrusted Registry Access Prevention
 # ---------------------------------------------------------------------------
+
 
 def test_prevent_untrusted_registry():
     """
@@ -293,12 +298,15 @@ def test_prevent_untrusted_registry():
 
     # Untrusted registry is blocked
     with pytest.raises(UntrustedRegistryError):
-        validate_registry_security("untrusted-registry.evil.com/app:latest", allowed_registries=allowed, enforce_allowlist=True)
+        validate_registry_security(
+            "untrusted-registry.evil.com/app:latest", allowed_registries=allowed, enforce_allowlist=True
+        )
 
 
 # ---------------------------------------------------------------------------
 # Test: Decompression Bombs & Oversized Layers Prevention
 # ---------------------------------------------------------------------------
+
 
 def test_prevent_tar_slip_path_traversal():
     """

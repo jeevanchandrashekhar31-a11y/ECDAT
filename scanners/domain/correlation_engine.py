@@ -61,6 +61,7 @@ class EvidenceOrigin(str, Enum):
 
 class GraphSecurityViolation(Exception):
     """Raised when an unauthorized query, tenant isolation breach, or graph injection is attempted."""
+
     pass
 
 
@@ -69,6 +70,7 @@ class CorrelationEvidence:
     """
     Standardized evidence observation feeding into the correlation engine.
     """
+
     origin: EvidenceOrigin
     entity_type: AssetType
     canonical_name: str
@@ -84,6 +86,7 @@ class CorrelationEvidence:
 @dataclass
 class AuditLogEntry:
     """Audit log entry for sensitive queries against the crypto knowledge graph."""
+
     timestamp: float
     actor_id: str
     tenant_id: str
@@ -154,7 +157,11 @@ class CorrelationEngine:
             norm_loc = entity.provenance.locator.replace("\\", "/").lower()
             self._locator_index[norm_loc] = entity.entity_id
 
-        fp = entity.provenance.hash_or_fingerprint or entity.properties.get("fingerprint") or entity.properties.get("sha256")
+        fp = (
+            entity.provenance.hash_or_fingerprint
+            or entity.properties.get("fingerprint")
+            or entity.properties.get("sha256")
+        )
         if fp:
             self._fingerprint_index[str(fp).lower()] = entity.entity_id
 
@@ -345,7 +352,9 @@ class CorrelationEngine:
             proc_id = evidence.attributes.get("process_id")
             if proc_id:
                 # Link Process -> Algorithm (USES)
-                proc_ref = f"urn:ecdat:v1:asset:{self.tenant_id}:{evidence.application_id}:runtime_process:pid_{proc_id}"
+                proc_ref = (
+                    f"urn:ecdat:v1:asset:{self.tenant_id}:{evidence.application_id}:runtime_process:pid_{proc_id}"
+                )
                 rel = CanonicalRelationship.create(
                     source_id=proc_ref,
                     target_id=entity.entity_id,
@@ -417,7 +426,9 @@ class CorrelationEngine:
                     action=query_type,
                     target_entity_or_type=target_id_or_type,
                     authorized=False,
-                    details={"error": f"Tenant mismatch: Actor '{actor_tenant}' cannot query tenant '{self.tenant_id}'"},
+                    details={
+                        "error": f"Tenant mismatch: Actor '{actor_tenant}' cannot query tenant '{self.tenant_id}'"
+                    },
                 )
             )
             raise GraphSecurityViolation(

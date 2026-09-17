@@ -87,9 +87,7 @@ class WebhookConnector(BaseTicketingConnector):
         )
         return f"sha256={mac.hexdigest()}"
 
-    def send_create_request(
-        self, ticket_request: TicketRequest, payload: Dict[str, Any]
-    ) -> TicketResponse:
+    def send_create_request(self, ticket_request: TicketRequest, payload: Dict[str, Any]) -> TicketResponse:
         payload_str = json.dumps(payload)
         timestamp = payload.get("timestamp", datetime.now(timezone.utc).isoformat())
 

@@ -19,16 +19,19 @@ from typing import Dict, Optional, Tuple, List
 
 class SecurityControlError(ValueError):
     """Raised when a security guard or network policy invariant is violated."""
+
     pass
 
 
 class SSRFProtectionError(SecurityControlError):
     """Raised when a target attempts to access loopback, link-local, or cloud metadata."""
+
     pass
 
 
 class DNSRebindingError(SecurityControlError):
     """Raised when a target resolution changes or attempts DNS rebinding."""
+
     pass
 
 
@@ -69,7 +72,9 @@ class RateLimiter:
                 # 1. Refill global tokens
                 elapsed_global = now - self.last_global_update
                 self.last_global_update = now
-                self.global_tokens = min(self.global_rate_rps, self.global_tokens + elapsed_global * self.global_rate_rps)
+                self.global_tokens = min(
+                    self.global_rate_rps, self.global_tokens + elapsed_global * self.global_rate_rps
+                )
 
                 # 2. Refill host tokens
                 elapsed_host = now - self.last_host_update.get(host, now)
@@ -98,14 +103,14 @@ class DNSRebindingGuard:
     """
 
     BLOCKED_IPS_AND_RANGES = [
-        ipaddress.ip_network("127.0.0.0/8"),      # Loopback IPv4
-        ipaddress.ip_network("::1/128"),          # Loopback IPv6
-        ipaddress.ip_network("169.254.0.0/16"),   # Link-local / Cloud metadata
-        ipaddress.ip_network("fe80::/10"),        # Link-local IPv6
-        ipaddress.ip_network("224.0.0.0/4"),      # Multicast IPv4
-        ipaddress.ip_network("ff00::/8"),         # Multicast IPv6
-        ipaddress.ip_network("0.0.0.0/8"),        # This host on this network
-        ipaddress.ip_network("100.100.100.200/32"), # Alibaba IMDS
+        ipaddress.ip_network("127.0.0.0/8"),  # Loopback IPv4
+        ipaddress.ip_network("::1/128"),  # Loopback IPv6
+        ipaddress.ip_network("169.254.0.0/16"),  # Link-local / Cloud metadata
+        ipaddress.ip_network("fe80::/10"),  # Link-local IPv6
+        ipaddress.ip_network("224.0.0.0/4"),  # Multicast IPv4
+        ipaddress.ip_network("ff00::/8"),  # Multicast IPv6
+        ipaddress.ip_network("0.0.0.0/8"),  # This host on this network
+        ipaddress.ip_network("100.100.100.200/32"),  # Alibaba IMDS
     ]
 
     PRIVATE_IPV4_RANGES = [
@@ -119,7 +124,9 @@ class DNSRebindingGuard:
     ]
 
     @classmethod
-    def validate_ip_address(cls, ip_str: str, allow_private: bool = False) -> ipaddress.IPv4Address | ipaddress.IPv6Address:
+    def validate_ip_address(
+        cls, ip_str: str, allow_private: bool = False
+    ) -> ipaddress.IPv4Address | ipaddress.IPv6Address:
         """
         Validates an IP against SSRF and private network policies.
         """

@@ -52,15 +52,17 @@ class PythonCryptoASTTransformer(ast.NodeTransformer):
                 target_method = "sha256" if "256" in self.target_algorithm else "sha384"
                 old_call = f"hashlib.{method_name}"
                 node.func.attr = target_method
-                self.transformations_applied.append({
-                    "line": getattr(node, "lineno", None),
-                    "col": getattr(node, "col_offset", None),
-                    "type": "AST_CALL_REPLACE",
-                    "old": old_call,
-                    "new": f"hashlib.{target_method}",
-                    "node_type": "ast.Call",
-                    "reason": f"Migrated {old_call}() to collision-resistant hashlib.{target_method}()",
-                })
+                self.transformations_applied.append(
+                    {
+                        "line": getattr(node, "lineno", None),
+                        "col": getattr(node, "col_offset", None),
+                        "type": "AST_CALL_REPLACE",
+                        "old": old_call,
+                        "new": f"hashlib.{target_method}",
+                        "node_type": "ast.Call",
+                        "reason": f"Migrated {old_call}() to collision-resistant hashlib.{target_method}()",
+                    }
+                )
                 return node
 
             # Check rsa.generate_private_key(..., key_size=1024, ...)
@@ -70,15 +72,17 @@ class PythonCryptoASTTransformer(ast.NodeTransformer):
                         if isinstance(kw.value.value, int) and kw.value.value < 2048:
                             old_val = kw.value.value
                             kw.value.value = 3072
-                            self.transformations_applied.append({
-                                "line": getattr(node, "lineno", None),
-                                "col": getattr(node, "col_offset", None),
-                                "type": "AST_KEYWORD_REPLACE",
-                                "old": f"key_size={old_val}",
-                                "new": "key_size=3072",
-                                "node_type": "ast.keyword",
-                                "reason": f"Upgraded weak RSA key size from {old_val} to 3072 bits",
-                            })
+                            self.transformations_applied.append(
+                                {
+                                    "line": getattr(node, "lineno", None),
+                                    "col": getattr(node, "col_offset", None),
+                                    "type": "AST_KEYWORD_REPLACE",
+                                    "old": f"key_size={old_val}",
+                                    "new": "key_size=3072",
+                                    "node_type": "ast.keyword",
+                                    "reason": f"Upgraded weak RSA key size from {old_val} to 3072 bits",
+                                }
+                            )
                 return node
 
         # Check algorithms.TripleDES(...) or algorithms.ARC4(...)
@@ -86,15 +90,17 @@ class PythonCryptoASTTransformer(ast.NodeTransformer):
             if node.func.value.id == "algorithms" and node.func.attr in ["TripleDES", "ARC4", "Blowfish"]:
                 old_name = f"algorithms.{node.func.attr}"
                 node.func.attr = "AES"
-                self.transformations_applied.append({
-                    "line": getattr(node, "lineno", None),
-                    "col": getattr(node, "col_offset", None),
-                    "type": "AST_ALGO_REPLACE",
-                    "old": old_name,
-                    "new": "algorithms.AES",
-                    "node_type": "ast.Call",
-                    "reason": f"Replaced legacy cipher {old_name} with standard algorithms.AES",
-                })
+                self.transformations_applied.append(
+                    {
+                        "line": getattr(node, "lineno", None),
+                        "col": getattr(node, "col_offset", None),
+                        "type": "AST_ALGO_REPLACE",
+                        "old": old_name,
+                        "new": "algorithms.AES",
+                        "node_type": "ast.Call",
+                        "reason": f"Replaced legacy cipher {old_name} with standard algorithms.AES",
+                    }
+                )
                 return node
 
         return self.generic_visit(node)
@@ -107,15 +113,17 @@ class PythonCryptoASTTransformer(ast.NodeTransformer):
                     old_name = alias.name
                     target = "sha256" if "256" in self.target_algorithm else "sha384"
                     alias.name = target
-                    self.transformations_applied.append({
-                        "line": getattr(node, "lineno", None),
-                        "col": getattr(node, "col_offset", None),
-                        "type": "AST_IMPORT_REPLACE",
-                        "old": f"from hashlib import {old_name}",
-                        "new": f"from hashlib import {target}",
-                        "node_type": "ast.ImportFrom",
-                        "reason": f"Updated import from {old_name} to {target}",
-                    })
+                    self.transformations_applied.append(
+                        {
+                            "line": getattr(node, "lineno", None),
+                            "col": getattr(node, "col_offset", None),
+                            "type": "AST_IMPORT_REPLACE",
+                            "old": f"from hashlib import {old_name}",
+                            "new": f"from hashlib import {target}",
+                            "node_type": "ast.ImportFrom",
+                            "reason": f"Updated import from {old_name} to {target}",
+                        }
+                    )
         return self.generic_visit(node)
 
 
@@ -139,7 +147,9 @@ def transform_python_code_ast(source_code: str, target_algorithm: str = "SHA-256
     return new_code, transformer.transformations_applied
 
 
-def transform_javascript_code_ast_aware(source_code: str, target_algorithm: str = "SHA-256") -> Tuple[str, List[Dict[str, Any]]]:
+def transform_javascript_code_ast_aware(
+    source_code: str, target_algorithm: str = "SHA-256"
+) -> Tuple[str, List[Dict[str, Any]]]:
     """
     Context-aware cryptographic transformation for JavaScript / TypeScript.
     Targets exact crypto API patterns without blind global replacement.
@@ -151,7 +161,9 @@ def transform_javascript_code_ast_aware(source_code: str, target_algorithm: str 
     # Regex targeting crypto.createHash('md5') or crypto.createHash("sha1")
     hash_call_pat = re.compile(r"""(crypto\s*\.\s*createHash\s*\(\s*['"])(?:md5|sha1|sha-1|md4)(['"])""", re.IGNORECASE)
     # Regex targeting crypto.createCipheriv('des-ede3-cbc', ...)
-    cipher_call_pat = re.compile(r"""(crypto\s*\.\s*createCipheriv\s*\(\s*['"])(?:des-ede3-cbc|des-cbc|rc4|bf-cbc)(['"])""", re.IGNORECASE)
+    cipher_call_pat = re.compile(
+        r"""(crypto\s*\.\s*createCipheriv\s*\(\s*['"])(?:des-ede3-cbc|des-cbc|rc4|bf-cbc)(['"])""", re.IGNORECASE
+    )
     # Regex targeting modulusLength: 1024
     rsa_key_pat = re.compile(r"""(modulusLength\s*:\s*)(?:1024|512)""", re.IGNORECASE)
 
@@ -164,39 +176,45 @@ def transform_javascript_code_ast_aware(source_code: str, target_algorithm: str 
             match = hash_call_pat.search(modified_line)
             old_str = match.group(0)
             modified_line = hash_call_pat.sub(rf"\g<1>{target}\g<2>", modified_line)
-            transformations.append({
-                "line": idx,
-                "type": "CRYPTO_API_REPLACE",
-                "old": old_str,
-                "new": f"crypto.createHash('{target}')",
-                "reason": f"Migrated insecure hash call to crypto.createHash('{target}')",
-            })
+            transformations.append(
+                {
+                    "line": idx,
+                    "type": "CRYPTO_API_REPLACE",
+                    "old": old_str,
+                    "new": f"crypto.createHash('{target}')",
+                    "reason": f"Migrated insecure hash call to crypto.createHash('{target}')",
+                }
+            )
 
         # 2. Symmetric Ciphers
         if cipher_call_pat.search(modified_line):
             match = cipher_call_pat.search(modified_line)
             old_str = match.group(0)
             modified_line = cipher_call_pat.sub(r"\g<1>aes-256-gcm\g<2>", modified_line)
-            transformations.append({
-                "line": idx,
-                "type": "CRYPTO_API_REPLACE",
-                "old": old_str,
-                "new": "crypto.createCipheriv('aes-256-gcm', ...)",
-                "reason": "Upgraded legacy symmetric cipher to authenticated 'aes-256-gcm'",
-            })
+            transformations.append(
+                {
+                    "line": idx,
+                    "type": "CRYPTO_API_REPLACE",
+                    "old": old_str,
+                    "new": "crypto.createCipheriv('aes-256-gcm', ...)",
+                    "reason": "Upgraded legacy symmetric cipher to authenticated 'aes-256-gcm'",
+                }
+            )
 
         # 3. RSA Key Size
         if rsa_key_pat.search(modified_line):
             match = rsa_key_pat.search(modified_line)
             old_str = match.group(0)
             modified_line = rsa_key_pat.sub(r"\g<1>3072", modified_line)
-            transformations.append({
-                "line": idx,
-                "type": "KEY_PARAM_REPLACE",
-                "old": old_str,
-                "new": "modulusLength: 3072",
-                "reason": "Upgraded sub-standard RSA modulus length to 3072 bits",
-            })
+            transformations.append(
+                {
+                    "line": idx,
+                    "type": "KEY_PARAM_REPLACE",
+                    "old": old_str,
+                    "new": "modulusLength: 3072",
+                    "reason": "Upgraded sub-standard RSA modulus length to 3072 bits",
+                }
+            )
 
         new_lines.append(modified_line)
 
@@ -224,13 +242,15 @@ def transform_config_code_aware(source_code: str, file_ext: str = ".conf") -> Tu
             if any(p in current_protos for p in ["TLSv1", "TLSv1.1", "SSLv2", "SSLv3"]):
                 old_str = match.group(0)
                 modified_line = nginx_proto_pat.sub(r"\g<1>TLSv1.2 TLSv1.3\g<3>", modified_line)
-                transformations.append({
-                    "line": idx,
-                    "type": "CONFIG_BLOCK_REPLACE",
-                    "old": old_str.strip(),
-                    "new": "ssl_protocols TLSv1.2 TLSv1.3;",
-                    "reason": "Disabled deprecated TLS 1.0/1.1; restricted to TLSv1.2 and TLSv1.3",
-                })
+                transformations.append(
+                    {
+                        "line": idx,
+                        "type": "CONFIG_BLOCK_REPLACE",
+                        "old": old_str.strip(),
+                        "new": "ssl_protocols TLSv1.2 TLSv1.3;",
+                        "reason": "Disabled deprecated TLS 1.0/1.1; restricted to TLSv1.2 and TLSv1.3",
+                    }
+                )
 
         new_lines.append(modified_line)
 
@@ -274,7 +294,11 @@ def validate_syntax(code: str, file_type: str = "python") -> Dict[str, Any]:
     open_braces = code.count("{") - code.count("}")
     open_parens = code.count("(") - code.count(")")
     if open_braces != 0 or open_parens != 0:
-        return {"valid": False, "syntax_error": f"Mismatched braces ({open_braces}) or parens ({open_parens})", "parser": "generic"}
+        return {
+            "valid": False,
+            "syntax_error": f"Mismatched braces ({open_braces}) or parens ({open_parens})",
+            "parser": "generic",
+        }
 
     return {"valid": True, "syntax_error": None, "parser": "generic"}
 
@@ -306,17 +330,21 @@ class SafePatchGenerator:
             patched_code, transformations = transform_python_code_ast(source_code, target_algorithm=target_algorithm)
             file_type = "python"
         elif ext in [".js", ".ts", ".jsx", ".tsx", ".mjs"]:
-            patched_code, transformations = transform_javascript_code_ast_aware(source_code, target_algorithm=target_algorithm)
+            patched_code, transformations = transform_javascript_code_ast_aware(
+                source_code, target_algorithm=target_algorithm
+            )
             file_type = "javascript"
         elif ext in [".conf", ".nginx", ".yaml", ".yml"]:
             patched_code, transformations = transform_config_code_aware(source_code, file_ext=ext)
             file_type = "config"
         else:
             # Fallback to JavaScript/generic context-aware
-            patched_code, transformations = transform_javascript_code_ast_aware(source_code, target_algorithm=target_algorithm)
+            patched_code, transformations = transform_javascript_code_ast_aware(
+                source_code, target_algorithm=target_algorithm
+            )
             file_type = "generic"
 
-        has_changes = (patched_code != source_code)
+        has_changes = patched_code != source_code
         diff_text = generate_unified_diff(source_code, patched_code, file_path=file_path) if has_changes else ""
 
         # Syntax validation
@@ -432,7 +460,9 @@ class SafePatchGenerator:
             recheck_algo = patch_result["explanation"]["target_standard"]
             old_algos = ["md5", "sha1", "des", "3des", "rc4"]
             staged_content = patch_result["patched_code"].lower()
-            remaining_vulnerabilities = [a for a in old_algos if f"hashlib.{a}" in staged_content or f"createhash('{a}')" in staged_content]
+            remaining_vulnerabilities = [
+                a for a in old_algos if f"hashlib.{a}" in staged_content or f"createhash('{a}')" in staged_content
+            ]
 
             ecdat_passed = len(remaining_vulnerabilities) == 0
             lifecycle_results["steps"]["rerun_ecdat"] = {
@@ -453,7 +483,11 @@ class SafePatchGenerator:
             # 6. Compare CBOM (Pre-patch vs Post-patch)
             pre_cbom = {
                 "components": [
-                    {"name": os.path.basename(target_file_path), "algorithm": "LEGACY_ALGORITHM", "status": "VULNERABLE"}
+                    {
+                        "name": os.path.basename(target_file_path),
+                        "algorithm": "LEGACY_ALGORITHM",
+                        "status": "VULNERABLE",
+                    }
                 ]
             }
             post_cbom = {

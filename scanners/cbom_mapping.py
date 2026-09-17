@@ -24,23 +24,103 @@ from cyclonedx.schema import SchemaVersion
 from scanners.models import NetworkCryptoFinding, CodeCryptoFinding, BinaryContainerFinding
 
 CYCLONEDX_17_ALGORITHM_FAMILIES = {
-    "3DES", "3GPP-XOR", "A5/1", "A5/2", "AES", "ARIA", "Argon2", "Ascon",
-    "BLAKE2", "BLAKE3", "BLS", "Blowfish", "CAMELLIA", "CAST5", "CAST6",
-    "CMAC", "CMEA", "CTR_DRBG", "ChaCha", "ChaCha20", "DES", "DSA",
-    "ECDH", "ECDSA", "ECIES", "EdDSA", "ElGamal", "FFDH", "Fortuna",
-    "GOST", "HC", "HKDF", "HMAC", "HMAC_DRBG", "HPKE", "Hash_DRBG",
-    "IDEA", "IKE-PRF", "J-PAKE", "LMS", "MD2", "MD4", "MD5", "MILENAGE",
-    "ML-DSA", "ML-KEM", "MQV", "OPAQUE", "PBES1", "PBES2", "PBKDF1",
-    "PBKDF2", "PBMAC1", "Poly1305", "RABBIT", "RC2", "RC4", "RC5",
-    "RC6", "RIPEMD", "RSAES-OAEP", "RSAES-PKCS1", "RSASSA-PKCS1",
-    "RSASSA-PSS", "SEED", "SHA-1", "SHA-2", "SHA-3", "SLH-DSA", "SM2",
-    "SM3", "SM4", "SM9", "SNOW3G", "SP800-108", "SPAKE2", "SPAKE2PLUS",
-    "SRP", "Salsa20", "Serpent", "SipHash", "Skipjack", "TUAK", "Twofish",
-    "UMAC", "Whirlpool", "X3DH", "XMSS", "Yarrow", "ZUC", "bcrypt",
-    "scrypt", "yescrypt"
+    "3DES",
+    "3GPP-XOR",
+    "A5/1",
+    "A5/2",
+    "AES",
+    "ARIA",
+    "Argon2",
+    "Ascon",
+    "BLAKE2",
+    "BLAKE3",
+    "BLS",
+    "Blowfish",
+    "CAMELLIA",
+    "CAST5",
+    "CAST6",
+    "CMAC",
+    "CMEA",
+    "CTR_DRBG",
+    "ChaCha",
+    "ChaCha20",
+    "DES",
+    "DSA",
+    "ECDH",
+    "ECDSA",
+    "ECIES",
+    "EdDSA",
+    "ElGamal",
+    "FFDH",
+    "Fortuna",
+    "GOST",
+    "HC",
+    "HKDF",
+    "HMAC",
+    "HMAC_DRBG",
+    "HPKE",
+    "Hash_DRBG",
+    "IDEA",
+    "IKE-PRF",
+    "J-PAKE",
+    "LMS",
+    "MD2",
+    "MD4",
+    "MD5",
+    "MILENAGE",
+    "ML-DSA",
+    "ML-KEM",
+    "MQV",
+    "OPAQUE",
+    "PBES1",
+    "PBES2",
+    "PBKDF1",
+    "PBKDF2",
+    "PBMAC1",
+    "Poly1305",
+    "RABBIT",
+    "RC2",
+    "RC4",
+    "RC5",
+    "RC6",
+    "RIPEMD",
+    "RSAES-OAEP",
+    "RSAES-PKCS1",
+    "RSASSA-PKCS1",
+    "RSASSA-PSS",
+    "SEED",
+    "SHA-1",
+    "SHA-2",
+    "SHA-3",
+    "SLH-DSA",
+    "SM2",
+    "SM3",
+    "SM4",
+    "SM9",
+    "SNOW3G",
+    "SP800-108",
+    "SPAKE2",
+    "SPAKE2PLUS",
+    "SRP",
+    "Salsa20",
+    "Serpent",
+    "SipHash",
+    "Skipjack",
+    "TUAK",
+    "Twofish",
+    "UMAC",
+    "Whirlpool",
+    "X3DH",
+    "XMSS",
+    "Yarrow",
+    "ZUC",
+    "bcrypt",
+    "scrypt",
+    "yescrypt",
 }
 
 FAMILY_CASE_MAP = {f.upper(): f for f in CYCLONEDX_17_ALGORITHM_FAMILIES}
+
 
 def resolve_cdx17_algorithm_family(name: str, context: str = "") -> Optional[str]:
     if not name:
@@ -81,6 +161,7 @@ def resolve_cdx17_algorithm_family(name: str, context: str = "") -> Optional[str
         return "RSASSA-PKCS1"
     return None
 
+
 def _attach_provenance_metadata(bom: Bom, target_name: Optional[str] = None):
     try:
         tool_comp = Component(
@@ -91,8 +172,6 @@ def _attach_provenance_metadata(bom: Bom, target_name: Optional[str] = None):
         bom.metadata.tools.components.add(tool_comp)
     except Exception:
         pass
-
-
 
 
 def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
@@ -109,11 +188,15 @@ def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
     if finding.trust_problems:
         target_comp.properties.add(Property(name="ecdat:trustProblems", value=",".join(finding.trust_problems)))
     if finding.quantum_vulnerabilities:
-        target_comp.properties.add(Property(name="ecdat:quantumVulnerabilities", value=",".join(finding.quantum_vulnerabilities)))
+        target_comp.properties.add(
+            Property(name="ecdat:quantumVulnerabilities", value=",".join(finding.quantum_vulnerabilities))
+        )
     if finding.key_exchanges:
         target_comp.properties.add(Property(name="ecdat:keyExchanges", value=",".join(finding.key_exchanges)))
     if finding.signature_algorithms:
-        target_comp.properties.add(Property(name="ecdat:signatureAlgorithms", value=",".join(finding.signature_algorithms)))
+        target_comp.properties.add(
+            Property(name="ecdat:signatureAlgorithms", value=",".join(finding.signature_algorithms))
+        )
     if finding.alpn_protocols:
         target_comp.properties.add(Property(name="ecdat:alpnProtocols", value=",".join(finding.alpn_protocols)))
 
@@ -129,8 +212,7 @@ def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
         protocol_props = ProtocolProperties(type=proto_type, version=version)
         if finding.cipher_suites:
             protocol_props.cipher_suites = [
-                ProtocolPropertiesCipherSuite(name=cs) if isinstance(cs, str) else cs
-                for cs in finding.cipher_suites
+                ProtocolPropertiesCipherSuite(name=cs) if isinstance(cs, str) else cs for cs in finding.cipher_suites
             ]
 
         crypto_props = CryptoProperties(asset_type=CryptoAssetType.PROTOCOL, protocol_properties=protocol_props)
@@ -188,7 +270,9 @@ def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
         if cert.get("trust_problems"):
             comp.properties.add(Property(name="ecdat:trustProblems", value=",".join(cert.get("trust_problems"))))
         if cert.get("quantum_vulnerabilities"):
-            comp.properties.add(Property(name="ecdat:quantumVulnerabilities", value=",".join(cert.get("quantum_vulnerabilities"))))
+            comp.properties.add(
+                Property(name="ecdat:quantumVulnerabilities", value=",".join(cert.get("quantum_vulnerabilities")))
+            )
         if cert.get("fingerprint_sha256"):
             comp.properties.add(Property(name="ecdat:fingerprint", value=str(cert.get("fingerprint_sha256"))))
         comp.properties.add(Property(name="ecdat:chainPosition", value=position))
@@ -219,7 +303,6 @@ def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
     bom.register_dependency(target_comp, dependencies)
     _attach_provenance_metadata(bom, "network_scanner")
     return bom
-
 
 
 def code_finding_to_cbom(finding: CodeCryptoFinding) -> Bom:
@@ -362,7 +445,7 @@ def binary_metadata_to_cbom(meta, target_name: str = "") -> Bom:
         lib_comp.properties.add(Property(name="ecdat:confidence", value=ind.confidence))
         if ind.description:
             lib_comp.properties.add(Property(name="ecdat:description", value=ind.description[:255]))
-        
+
         evidence_parts = []
         if ind.matched_libraries:
             evidence_parts.append(f"libs:[{','.join(ind.matched_libraries[:5])}]")
@@ -416,48 +499,63 @@ def hybrid_analysis_to_cbom(analysis_props: Any) -> Bom:
     bom = Bom()
     endpoint = getattr(analysis_props, "endpoint", "network-endpoint")
     endpoint_ref = f"net:endpoint/{endpoint}"
-    
+
     # Endpoint Application Component
     endpoint_comp = Component(
         type=ComponentType.APPLICATION,
         name=endpoint,
         bom_ref=endpoint_ref,
     )
-    endpoint_comp.properties.add(Property(name="ecdat:evidenceSource", value=str(getattr(analysis_props, "evidence_source", "network_handshake"))))
-    endpoint_comp.properties.add(Property(name="ecdat:pcapDisclaimer", value=str(getattr(analysis_props, "pcap_plaintext_disclaimer", ""))))
+    endpoint_comp.properties.add(
+        Property(
+            name="ecdat:evidenceSource", value=str(getattr(analysis_props, "evidence_source", "network_handshake"))
+        )
+    )
+    endpoint_comp.properties.add(
+        Property(name="ecdat:pcapDisclaimer", value=str(getattr(analysis_props, "pcap_plaintext_disclaimer", "")))
+    )
     endpoint_comp.properties.add(Property(name="ecdat:packetCaptureCanRevealPlaintext", value="false"))
-    
+
     bom.components.add(endpoint_comp)
     dep_comps = []
 
     # Negotiated KEX Component
-    kex_name = getattr(analysis_props, "standard_name", None) or getattr(analysis_props, "key_exchange_group", None) or "KeyExchange"
-    kex_ref = f"net:kex/{kex_name}@{endpoint}"
-    
-    nist_lvl = getattr(analysis_props, "nist_quantum_level", None)
-    algo_props = AlgorithmProperties(
-        nist_quantum_security_level=nist_lvl if nist_lvl is not None else 0
+    kex_name = (
+        getattr(analysis_props, "standard_name", None)
+        or getattr(analysis_props, "key_exchange_group", None)
+        or "KeyExchange"
     )
+    kex_ref = f"net:kex/{kex_name}@{endpoint}"
+
+    nist_lvl = getattr(analysis_props, "nist_quantum_level", None)
+    algo_props = AlgorithmProperties(nist_quantum_security_level=nist_lvl if nist_lvl is not None else 0)
     crypto_props = CryptoProperties(
         asset_type=CryptoAssetType.ALGORITHM,
         algorithm_properties=algo_props,
     )
-    
+
     kex_comp = Component(
         type=ComponentType.CRYPTOGRAPHIC_ASSET,
         name=kex_name,
         bom_ref=kex_ref,
         crypto_properties=crypto_props,
     )
-    kex_comp.properties.add(Property(name="ecdat:category", value=str(getattr(analysis_props, "category", "classical"))))
-    kex_comp.properties.add(Property(name="ecdat:tlsVersion", value=str(getattr(analysis_props, "tls_version", "TLSv1.3"))))
+    kex_comp.properties.add(
+        Property(name="ecdat:category", value=str(getattr(analysis_props, "category", "classical")))
+    )
+    kex_comp.properties.add(
+        Property(name="ecdat:tlsVersion", value=str(getattr(analysis_props, "tls_version", "TLSv1.3")))
+    )
     kex_comp.properties.add(Property(name="ecdat:cipherSuite", value=str(getattr(analysis_props, "cipher_suite", ""))))
     if getattr(analysis_props, "iana_group_id", None):
         kex_comp.properties.add(Property(name="ecdat:ianaGroupId", value=str(analysis_props.iana_group_id)))
     if getattr(analysis_props, "standard_reference", None):
         kex_comp.properties.add(Property(name="ecdat:standardReference", value=str(analysis_props.standard_reference)))
     kex_comp.properties.add(
-        Property(name="ecdat:hndlResilient", value=str(getattr(analysis_props, "harvest_now_decrypt_later_resilient", False)).lower())
+        Property(
+            name="ecdat:hndlResilient",
+            value=str(getattr(analysis_props, "harvest_now_decrypt_later_resilient", False)).lower(),
+        )
     )
 
     bom.components.add(kex_comp)
@@ -470,13 +568,13 @@ def hybrid_analysis_to_cbom(analysis_props: Any) -> Bom:
         if hasattr(r_type, "value"):
             r_type = r_type.value
         props = getattr(rel, "properties", {})
-        
+
         if r_type in ["has_classical_component", "has_post_quantum_component"]:
             sub_id = getattr(rel, "target_id", "sub-algo")
             sub_name = props.get("standard_name", sub_id)
             sub_ref = f"net:subalgo/{sub_name}@{endpoint}"
             is_pqc = r_type == "has_post_quantum_component"
-            
+
             sub_algo_props = AlgorithmProperties(
                 nist_quantum_security_level=props.get("nist_level", 3 if is_pqc else 0)
             )
@@ -492,7 +590,7 @@ def hybrid_analysis_to_cbom(analysis_props: Any) -> Bom:
             )
             sub_comp.properties.add(Property(name="ecdat:componentRole", value=props.get("role", "pre_master_secret")))
             sub_comp.properties.add(Property(name="ecdat:quantumResilient", value=str(is_pqc).lower()))
-            
+
             bom.components.add(sub_comp)
             sub_dependencies.append(sub_comp)
 
@@ -504,7 +602,9 @@ def hybrid_analysis_to_cbom(analysis_props: Any) -> Bom:
                 name=combiner_func,
                 bom_ref=comb_ref,
             )
-            comb_comp.properties.add(Property(name="ecdat:combinerStrategy", value=props.get("combining_strategy", "kdf")))
+            comb_comp.properties.add(
+                Property(name="ecdat:combinerStrategy", value=props.get("combining_strategy", "kdf"))
+            )
             bom.components.add(comb_comp)
             sub_dependencies.append(comb_comp)
 
@@ -529,7 +629,7 @@ def runtime_event_to_cbom(event: Any) -> Bom:
     bom = Bom()
     app_name = getattr(event, "application_name", None) or getattr(event, "process_name", "runtime-app")
     app_ref = f"runtime:app/{app_name}"
-    
+
     app_comp = Component(
         type=ComponentType.APPLICATION,
         name=app_name,
@@ -565,12 +665,16 @@ def runtime_event_to_cbom(event: Any) -> Bom:
     )
     lib_comp.properties.add(Property(name="ecdat:cryptoLibrary", value=lib_name))
     lib_comp.properties.add(Property(name="ecdat:functionHooked", value=getattr(event, "function_name", "unknown")))
-    lib_comp.properties.add(Property(name="ecdat:cryptoOperation", value=getattr(event, "crypto_operation", "operation")))
+    lib_comp.properties.add(
+        Property(name="ecdat:cryptoOperation", value=getattr(event, "crypto_operation", "operation"))
+    )
     bom.components.add(lib_comp)
 
     # Algorithm Asset
     params = getattr(event, "parameters", {}) or {}
-    algo_name = params.get("cipher_name") or params.get("digest_name") or params.get("algorithm") or "RuntimeCryptoAsset"
+    algo_name = (
+        params.get("cipher_name") or params.get("digest_name") or params.get("algorithm") or "RuntimeCryptoAsset"
+    )
     key_size = params.get("key_length") or params.get("key_size_bits")
     algo_ref = f"runtime:algo/{algo_name}@{proc_ref}"
 
@@ -696,4 +800,3 @@ def validate_cbom_detailed(json_str: str) -> Tuple[bool, Optional[str]]:
         return True, None
     except Exception as e:
         return False, f"Official schema validation error: {str(e)}"
-

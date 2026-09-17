@@ -28,6 +28,7 @@ from scanners.domain.errors import (
 
 def test_isolated_engine_success():
     """Healthy engine must report SUCCESS with all findings and zero errors."""
+
     def healthy_task():
         return {
             "findings": [
@@ -51,14 +52,13 @@ def test_isolated_engine_success():
 
 def test_isolated_engine_partial_failure():
     """Engine encountering non-fatal error while extracting findings must report PARTIAL."""
+
     def partial_task():
         return {
             "findings": [{"algorithm": "SHA-256", "file": "src/valid.c"}],
             "targets_scanned": 2,
             "targets_failed": 1,
-            "errors": [
-                ParserFailureError("Corrupted token in broken.c", {"file": "broken.c"}, fatal=False)
-            ],
+            "errors": [ParserFailureError("Corrupted token in broken.c", {"file": "broken.c"}, fatal=False)],
         }
 
     job = EngineJob(engine_name="test_partial_engine", task=partial_task)
@@ -76,6 +76,7 @@ def test_isolated_engine_fatal_crash_anti_masking():
     Engine encountering unhandled crash or fatal error must report FAILED.
     Strict invariant: NEVER convert failures into empty findings or false SUCCESS.
     """
+
     def crashing_task():
         raise RuntimeError("Segmentation fault / memory bus error in native parser")
 
@@ -95,6 +96,7 @@ def test_failed_engine_does_not_corrupt_composite_scan():
     When one engine crashes, other healthy engines must preserve 100% of their findings.
     Composite scan outcome reports PARTIAL (or FAILED), with all healthy findings intact.
     """
+
     def healthy_engine_1():
         return {
             "findings": [

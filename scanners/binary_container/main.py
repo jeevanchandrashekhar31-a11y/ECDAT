@@ -67,7 +67,10 @@ def main():
         target_path = Path(args.target)
         if target_path.is_file():
             try:
-                from scanners.binary_container.container_analyzer import ContainerImageAnalyzer, container_report_to_cbom
+                from scanners.binary_container.container_analyzer import (
+                    ContainerImageAnalyzer,
+                    container_report_to_cbom,
+                )
 
                 analyzer = ContainerImageAnalyzer()
                 report = analyzer.analyze_image_archive(target_path, image_reference=target_path.name)

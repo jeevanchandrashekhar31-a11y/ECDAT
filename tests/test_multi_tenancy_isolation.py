@@ -52,7 +52,9 @@ class TestApiLayerTenantSpoofing:
         assert res["tenantId"] == "tenant-alpha"
 
     def test_platform_admin_can_manage_across_tenants(self):
-        admin_ctx = TenantContext(tenant_id="platform-root", user_id="root-admin", roles=["platform administrator"], is_platform_admin=True)
+        admin_ctx = TenantContext(
+            tenant_id="platform-root", user_id="root-admin", roles=["platform administrator"], is_platform_admin=True
+        )
         res = TenantIsolationEnforcer.validate_request(admin_ctx, client_supplied_tenant_id="tenant-customer-x")
         assert res["valid"] is True
 

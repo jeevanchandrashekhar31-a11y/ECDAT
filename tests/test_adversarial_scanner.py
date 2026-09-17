@@ -27,7 +27,7 @@ from testing.corpora.generate_hostile_repo import (
     create_unicode_path_tricks,
     create_generated_code_explosions,
     create_complex_asts,
-    create_huge_dependency_graphs
+    create_huge_dependency_graphs,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -58,7 +58,7 @@ def test_huge_files_skipped(hostile_corpus_dir):
         include_exts={".c", ".h"},
         exclude_dirs=set(),
         max_file_size_bytes=5 * 1024 * 1024,  # 5 MB limit
-        max_files=100
+        max_files=100,
     )
     files = discovery.discover_files()
     assert len(files) == 0, "Huge file should be skipped"
@@ -73,7 +73,7 @@ def test_deeply_nested_directories_bounded(hostile_corpus_dir):
         exclude_dirs=set(),
         max_file_size_bytes=5 * 1024 * 1024,
         max_files=100,
-        max_depth=20  # Limit to 20
+        max_depth=20,  # Limit to 20
     )
     files = discovery.discover_files()
     assert len(files) == 0, "Files deeper than max_depth should be skipped"
@@ -87,7 +87,7 @@ def test_symlink_loops_safe(hostile_corpus_dir):
         include_exts={".c", ".h"},
         exclude_dirs=set(),
         max_file_size_bytes=5 * 1024 * 1024,
-        max_files=100
+        max_files=100,
     )
     files = discovery.discover_files()
     # Should find real_file.c without entering circular loops
@@ -102,7 +102,7 @@ def test_malformed_source_tolerated(hostile_corpus_dir):
         include_exts={".js", ".c", ".py"},
         exclude_dirs=set(),
         max_file_size_bytes=5 * 1024 * 1024,
-        max_files=100
+        max_files=100,
     )
     files = discovery.discover_files()
     assert len(files) >= 2
@@ -121,7 +121,7 @@ def test_parser_edge_cases_terminate_safely(hostile_corpus_dir):
         include_exts={".c", ".js", ".py"},
         exclude_dirs=set(),
         max_file_size_bytes=5 * 1024 * 1024,
-        max_files=100
+        max_files=100,
     )
     files = discovery.discover_files()
     assert len(files) == 3
@@ -139,7 +139,7 @@ def test_generated_code_explosion_redos_protection(hostile_corpus_dir):
         include_exts={".js", ".py"},
         exclude_dirs=set(),
         max_file_size_bytes=5 * 1024 * 1024,
-        max_files=100
+        max_files=100,
     )
     files = discovery.discover_files()
     assert len(files) == 2
@@ -176,7 +176,7 @@ def test_full_hostile_repo_scan_command(hostile_corpus_dir, tmp_path):
         "-o",
         str(out_cbom),
         "--fail-on",
-        "none"
+        "none",
     ]
     proc = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=30)
     assert proc.returncode == 0, f"Scanner crashed with exit code {proc.returncode}: {proc.stderr}"

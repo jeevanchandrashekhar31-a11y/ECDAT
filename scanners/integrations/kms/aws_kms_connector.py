@@ -76,7 +76,9 @@ class AwsKmsConnector(BaseKmsConnector):
             for dis in AWS_DISALLOWED_ACTIONS:
                 pattern = dis.lower().replace("*", ".*")
                 if re.match(f"^{pattern}$", lower):
-                    violations.append(f"Violation: Disallowed action '{act}' violates least-privilege read-only requirement.")
+                    violations.append(
+                        f"Violation: Disallowed action '{act}' violates least-privilege read-only requirement."
+                    )
 
         return {"valid": len(violations) == 0, "violations": violations}
 
@@ -118,7 +120,9 @@ class AwsKmsConnector(BaseKmsConnector):
 
         return self._map_to_kms_metadata(key_metadata, rotation_status, tags)
 
-    def _map_to_kms_metadata(self, key_meta: Dict[str, Any], rotation_status: Dict[str, Any], tags: List[Dict[str, Any]]) -> KmsKeyMetadata:
+    def _map_to_kms_metadata(
+        self, key_meta: Dict[str, Any], rotation_status: Dict[str, Any], tags: List[Dict[str, Any]]
+    ) -> KmsKeyMetadata:
         spec = key_meta.get("KeySpec") or key_meta.get("CustomerMasterKeySpec") or "SYMMETRIC_DEFAULT"
         algorithm, size = self._parse_algorithm_and_size(spec)
 

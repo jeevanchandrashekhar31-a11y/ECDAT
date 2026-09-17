@@ -42,18 +42,21 @@ class AuthAuditLogger:
         clean_meta = self.sanitize_metadata(metadata or {})
 
         prev_hash = self.last_hash
-        entry_data = json.dumps({
-            "eventId": event_id,
-            "eventType": event_type,
-            "userId": str(user_id),
-            "provider": str(provider),
-            "ipAddress": str(ip_address),
-            "status": str(status),
-            "reason": str(reason),
-            "metadata": clean_meta,
-            "prevHash": prev_hash,
-            "timestamp": timestamp,
-        }, sort_keys=True)
+        entry_data = json.dumps(
+            {
+                "eventId": event_id,
+                "eventType": event_type,
+                "userId": str(user_id),
+                "provider": str(provider),
+                "ipAddress": str(ip_address),
+                "status": str(status),
+                "reason": str(reason),
+                "metadata": clean_meta,
+                "prevHash": prev_hash,
+                "timestamp": timestamp,
+            },
+            sort_keys=True,
+        )
 
         audit_hash = hashlib.sha256(entry_data.encode("utf-8")).hexdigest()
         self.last_hash = audit_hash
@@ -80,18 +83,21 @@ class AuthAuditLogger:
             if i > 0 and entry["prevHash"] != expected_prev:
                 return {"valid": False, "error": f"Chain broken at index {i}", "brokenIndex": i}
 
-            entry_data = json.dumps({
-                "eventId": entry["eventId"],
-                "eventType": entry["eventType"],
-                "userId": entry["userId"],
-                "provider": entry["provider"],
-                "ipAddress": entry["ipAddress"],
-                "status": entry["status"],
-                "reason": entry["reason"],
-                "metadata": entry["metadata"],
-                "prevHash": entry["prevHash"],
-                "timestamp": entry["timestamp"],
-            }, sort_keys=True)
+            entry_data = json.dumps(
+                {
+                    "eventId": entry["eventId"],
+                    "eventType": entry["eventType"],
+                    "userId": entry["userId"],
+                    "provider": entry["provider"],
+                    "ipAddress": entry["ipAddress"],
+                    "status": entry["status"],
+                    "reason": entry["reason"],
+                    "metadata": entry["metadata"],
+                    "prevHash": entry["prevHash"],
+                    "timestamp": entry["timestamp"],
+                },
+                sort_keys=True,
+            )
 
             recalc = hashlib.sha256(entry_data.encode("utf-8")).hexdigest()
             if recalc != entry["auditHash"]:

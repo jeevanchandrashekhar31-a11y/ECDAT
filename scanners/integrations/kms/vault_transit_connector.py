@@ -57,7 +57,9 @@ class VaultTransitConnector(BaseKmsConnector):
             return self._map_to_kms_metadata(key_name, self.config["mock_key_details"][key_name])
 
         if self.client and hasattr(self.client, "secrets") and hasattr(self.client.secrets, "transit"):
-            res = self.client.secrets.transit.read_key(name=key_name, mount_point=self.config.get("mount_path", "transit"))
+            res = self.client.secrets.transit.read_key(
+                name=key_name, mount_point=self.config.get("mount_path", "transit")
+            )
             return self._map_to_kms_metadata(key_name, res.get("data", res))
 
         raise ValueError(f"Vault describe_key('{key_name}') failed: client unavailable")

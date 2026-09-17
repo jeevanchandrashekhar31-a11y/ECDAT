@@ -48,15 +48,21 @@ def identify_why_risky(asset: Dict[str, Any]) -> Dict[str, Any]:
         risks["classical_weakness"] = f"Sub-standard RSA key size ({key_size} bits) vulnerable to factorization."
 
     if any(a in algo for a in ["RSA", "ECDSA", "ECDH", "DIFFIE-HELLMAN", "DH", "DSA", "ED25519", "X25519"]):
-        risks["quantum_vulnerability"] = f"Asymmetric algorithm ({algo}) completely broken by Shor's algorithm on CRQCs."
+        risks["quantum_vulnerability"] = (
+            f"Asymmetric algorithm ({algo}) completely broken by Shor's algorithm on CRQCs."
+        )
     elif "AES" in algo and key_size == 128:
         risks["quantum_vulnerability"] = "Grover's algorithm halves effective symmetric key search security margin."
 
     if is_internet:
-        risks["environmental_exposure"] = "Directly exposed on public internet perimeter; subject to active Harvest-Now-Decrypt-Later (HNDL)."
+        risks["environmental_exposure"] = (
+            "Directly exposed on public internet perimeter; subject to active Harvest-Now-Decrypt-Later (HNDL)."
+        )
 
     if mosca.get("status") == "CRITICAL_URGENT":
-        risks["mosca_urgency"] = "Critical Mosca deficit: Data shelf life + migration timeline exceeds quantum threat arrival."
+        risks["mosca_urgency"] = (
+            "Critical Mosca deficit: Data shelf life + migration timeline exceeds quantum threat arrival."
+        )
     elif mosca.get("status") == "AT_RISK":
         risks["mosca_urgency"] = "Mosca margin is narrow; migration lead time window is expiring."
 
@@ -72,77 +78,93 @@ def identify_replacement_candidates(asset: Dict[str, Any]) -> List[Dict[str, Any
     candidates = []
 
     if any(k in algo for k in ["X25519", "ECDH", "DIFFIE-HELLMAN", "DH"]) or algo.startswith("TLS"):
-        candidates.append({
-            "role": "PRIMARY_PQC_HYBRID",
-            "algorithm": "X25519MLKEM768",
-            "standard": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
-            "iana_group": "0x11ec (4588)",
-            "security_level": 3,
-            "rationale": "Standardized TLS 1.3 hybrid key exchange combining X25519 with ML-KEM-768.",
-            "trade_offs": "ClientHello size increases by ~1.2 KB; supported in modern TLS stacks.",
-        })
-        candidates.append({
-            "role": "FIPS_REGULATED_HYBRID",
-            "algorithm": "SecP256r1MLKEM768",
-            "standard": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
-            "iana_group": "0x11ed (4589)",
-            "security_level": 3,
-            "rationale": "FIPS-compliant hybrid group combining NIST P-256 with ML-KEM-768.",
-            "trade_offs": "Standard MTU compliance; FIPS 140-3 validated.",
-        })
+        candidates.append(
+            {
+                "role": "PRIMARY_PQC_HYBRID",
+                "algorithm": "X25519MLKEM768",
+                "standard": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
+                "iana_group": "0x11ec (4588)",
+                "security_level": 3,
+                "rationale": "Standardized TLS 1.3 hybrid key exchange combining X25519 with ML-KEM-768.",
+                "trade_offs": "ClientHello size increases by ~1.2 KB; supported in modern TLS stacks.",
+            }
+        )
+        candidates.append(
+            {
+                "role": "FIPS_REGULATED_HYBRID",
+                "algorithm": "SecP256r1MLKEM768",
+                "standard": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
+                "iana_group": "0x11ed (4589)",
+                "security_level": 3,
+                "rationale": "FIPS-compliant hybrid group combining NIST P-256 with ML-KEM-768.",
+                "trade_offs": "Standard MTU compliance; FIPS 140-3 validated.",
+            }
+        )
     elif "RSA" in algo and asset_type in ["certificate", "signing_key"]:
-        candidates.append({
-            "role": "PRIMARY_PQC_SIGNATURE",
-            "algorithm": "ML-DSA-65",
-            "standard": "NIST FIPS 204",
-            "security_level": 3,
-            "rationale": "Primary post-quantum digital signature standard with fast verification.",
-            "trade_offs": "Signature size is 3309 bytes; requires composite X.509 support.",
-        })
-        candidates.append({
-            "role": "STATELESS_HASH_FALLBACK",
-            "algorithm": "SLH-DSA-SHA2-128s",
-            "standard": "NIST FIPS 205",
-            "security_level": 1,
-            "rationale": "Stateless hash-based signature scheme without lattice assumptions.",
-            "trade_offs": "Signatures are 7856 bytes; slower signing speed.",
-        })
+        candidates.append(
+            {
+                "role": "PRIMARY_PQC_SIGNATURE",
+                "algorithm": "ML-DSA-65",
+                "standard": "NIST FIPS 204",
+                "security_level": 3,
+                "rationale": "Primary post-quantum digital signature standard with fast verification.",
+                "trade_offs": "Signature size is 3309 bytes; requires composite X.509 support.",
+            }
+        )
+        candidates.append(
+            {
+                "role": "STATELESS_HASH_FALLBACK",
+                "algorithm": "SLH-DSA-SHA2-128s",
+                "standard": "NIST FIPS 205",
+                "security_level": 1,
+                "rationale": "Stateless hash-based signature scheme without lattice assumptions.",
+                "trade_offs": "Signatures are 7856 bytes; slower signing speed.",
+            }
+        )
     elif asset_type in ["firmware", "bootloader"]:
-        candidates.append({
-            "role": "STATEFUL_HASH_PRIMARY",
-            "algorithm": "LMS/HSS",
-            "standard": "NIST SP 800-208 & RFC 8554",
-            "security_level": 3,
-            "rationale": "Mandated under CNSA 2.0 for firmware signing; extremely fast ASIC verification.",
-            "trade_offs": "Strict monotonic non-volatile state management required. Key reuse destroys private key.",
-        })
+        candidates.append(
+            {
+                "role": "STATEFUL_HASH_PRIMARY",
+                "algorithm": "LMS/HSS",
+                "standard": "NIST SP 800-208 & RFC 8554",
+                "security_level": 3,
+                "rationale": "Mandated under CNSA 2.0 for firmware signing; extremely fast ASIC verification.",
+                "trade_offs": "Strict monotonic non-volatile state management required. Key reuse destroys private key.",
+            }
+        )
     elif any(h in algo for h in ["MD5", "SHA1", "SHA-1"]):
-        candidates.append({
-            "role": "PRIMARY_HASH",
-            "algorithm": "SHA-256",
-            "standard": "NIST FIPS 180-4",
-            "security_level": 0,
-            "rationale": "Standard cryptographically secure classical hash.",
-            "trade_offs": "Universal compatibility.",
-        })
+        candidates.append(
+            {
+                "role": "PRIMARY_HASH",
+                "algorithm": "SHA-256",
+                "standard": "NIST FIPS 180-4",
+                "security_level": 0,
+                "rationale": "Standard cryptographically secure classical hash.",
+                "trade_offs": "Universal compatibility.",
+            }
+        )
     elif any(c in algo for c in ["DES", "3DES", "RC4"]):
-        candidates.append({
-            "role": "PRIMARY_SYMMETRIC",
-            "algorithm": "AES-256-GCM",
-            "standard": "NIST FIPS 197 & SP 800-38D",
-            "security_level": 5,
-            "rationale": "Full 256-bit symmetric encryption providing 128-bit quantum security under Grover's algorithm.",
-            "trade_offs": "Hardware accelerated on modern CPUs (AES-NI).",
-        })
+        candidates.append(
+            {
+                "role": "PRIMARY_SYMMETRIC",
+                "algorithm": "AES-256-GCM",
+                "standard": "NIST FIPS 197 & SP 800-38D",
+                "security_level": 5,
+                "rationale": "Full 256-bit symmetric encryption providing 128-bit quantum security under Grover's algorithm.",
+                "trade_offs": "Hardware accelerated on modern CPUs (AES-NI).",
+            }
+        )
     else:
-        candidates.append({
-            "role": "PRIMARY_PQC_HYBRID",
-            "algorithm": "X25519MLKEM768",
-            "standard": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
-            "security_level": 3,
-            "rationale": "Modern post-quantum hybrid protection.",
-            "trade_offs": "Requires TLS 1.3.",
-        })
+        candidates.append(
+            {
+                "role": "PRIMARY_PQC_HYBRID",
+                "algorithm": "X25519MLKEM768",
+                "standard": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
+                "security_level": 3,
+                "rationale": "Modern post-quantum hybrid protection.",
+                "trade_offs": "Requires TLS 1.3.",
+            }
+        )
 
     return candidates
 
@@ -163,10 +185,12 @@ def identify_dependencies(asset: Dict[str, Any], selected_candidate: Optional[Di
         deps["protocols"].append("TLS 1.3 (RFC 8446 with hybrid design support)")
     elif any(k in cand_algo for k in ["LMS", "XMSS"]):
         deps["cryptographic_libraries"].append("NIST SP 800-208 certified module")
-        deps["hardware_requirements"].extend([
-            "Hardware Security Module (HSM) with certified monotonic counter",
-            "FIPS 140-3 Level 3+ physical boundary",
-        ])
+        deps["hardware_requirements"].extend(
+            [
+                "Hardware Security Module (HSM) with certified monotonic counter",
+                "FIPS 140-3 Level 3+ physical boundary",
+            ]
+        )
     else:
         deps["cryptographic_libraries"].append("Standard OpenSSL 3.0+ or language runtime standard crypto library")
         deps["protocols"].append("TLS 1.2 or TLS 1.3")
@@ -195,7 +219,9 @@ def identify_affected_services(asset: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def estimate_migration_complexity(asset: Dict[str, Any], selected_candidate: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def estimate_migration_complexity(
+    asset: Dict[str, Any], selected_candidate: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """5. Estimates migration complexity."""
     algo = str(asset.get("algorithm") or asset.get("name") or "").upper()
     asset_type = asset.get("asset_type") or asset.get("assetType")
@@ -240,7 +266,9 @@ def estimate_migration_complexity(asset: Dict[str, Any], selected_candidate: Opt
     }
 
 
-def identify_testing_requirements(asset: Dict[str, Any], selected_candidate: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def identify_testing_requirements(
+    asset: Dict[str, Any], selected_candidate: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """6. Identifies testing requirements."""
     cand_algo = (selected_candidate or {}).get("algorithm", "")
     is_internet = bool(asset.get("is_internet_facing") or asset.get("isInternetExposed"))
@@ -265,7 +293,9 @@ def identify_testing_requirements(asset: Dict[str, Any], selected_candidate: Opt
     }
 
 
-def propose_staged_rollout(asset: Dict[str, Any], selected_candidate: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+def propose_staged_rollout(
+    asset: Dict[str, Any], selected_candidate: Optional[Dict[str, Any]] = None
+) -> List[Dict[str, Any]]:
     """7. Proposes a structured staged rollout."""
     cand = (selected_candidate or {}).get("algorithm", "PQC Target")
     return [
@@ -323,7 +353,9 @@ def define_rollback(asset: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def define_rescan_verification(asset: Dict[str, Any], selected_candidate: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def define_rescan_verification(
+    asset: Dict[str, Any], selected_candidate: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """9. Defines rescan verification requirements."""
     classical_algo = asset.get("algorithm") or asset.get("name") or "Classical"
     target_algo = (selected_candidate or {}).get("algorithm", "PQC Target")
@@ -395,10 +427,12 @@ def create_enterprise_migration_plan(input_data: Any) -> Dict[str, Any]:
 
     # ASSESS
     requiring_migration = [
-        a for a in assets
-        if any(w in str(a.get("algorithm") or a.get("name") or "").upper() for w in [
-            "MD5", "SHA1", "SHA-1", "DES", "RC4", "3DES", "RSA", "ECDSA", "ECDH", "TLS 1.0", "TLS 1.1"
-        ])
+        a
+        for a in assets
+        if any(
+            w in str(a.get("algorithm") or a.get("name") or "").upper()
+            for w in ["MD5", "SHA1", "SHA-1", "DES", "RC4", "3DES", "RSA", "ECDSA", "ECDH", "TLS 1.0", "TLS 1.1"]
+        )
     ]
 
     # PLAN
@@ -409,14 +443,18 @@ def create_enterprise_migration_plan(input_data: Any) -> Dict[str, Any]:
     for plan in asset_plans:
         cand = (plan.get("selected_candidate") or {}).get("algorithm", "")
         is_mtu_risk = cand in ["SecP384r1MLKEM1024", "ML-KEM-1024"]
-        simulation_results.append({
-            "asset_id": plan["asset_id"],
-            "candidate_algorithm": cand,
-            "mtu_packet_size_safe": not is_mtu_risk,
-            "middlebox_fragmentation_risk": "HIGH (Key share > 1500B)" if is_mtu_risk else "LOW (Fits standard MTU)",
-            "simulation_passed": True,
-            "estimated_latency_delta_ms": 1.2 if "ML-KEM" in cand else 0.0,
-        })
+        simulation_results.append(
+            {
+                "asset_id": plan["asset_id"],
+                "candidate_algorithm": cand,
+                "mtu_packet_size_safe": not is_mtu_risk,
+                "middlebox_fragmentation_risk": "HIGH (Key share > 1500B)"
+                if is_mtu_risk
+                else "LOW (Fits standard MTU)",
+                "simulation_passed": True,
+                "estimated_latency_delta_ms": 1.2 if "ML-KEM" in cand else 0.0,
+            }
+        )
 
     # REMEDIATE
     remediation_recipes = []
@@ -432,12 +470,14 @@ def create_enterprise_migration_plan(input_data: Any) -> Dict[str, Any]:
             recipe_type = "generic_crypto_upgrade"
             snippet = f"# Upgrade target: {cand}\n# Refer to FIPS / IETF guidance for implementation details."
 
-        remediation_recipes.append({
-            "asset_id": plan["asset_id"],
-            "target_algorithm": cand,
-            "recipe_type": recipe_type,
-            "remediation_snippet": snippet,
-        })
+        remediation_recipes.append(
+            {
+                "asset_id": plan["asset_id"],
+                "target_algorithm": cand,
+                "recipe_type": recipe_type,
+                "remediation_snippet": snippet,
+            }
+        )
 
     # VERIFY
     verification_summary = {

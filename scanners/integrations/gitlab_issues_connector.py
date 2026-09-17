@@ -61,26 +61,28 @@ class GitLabIssuesConnector(BaseTicketingConnector):
     def format_payload(self, ticket_request: TicketRequest) -> Dict[str, Any]:
         sev = str(ticket_request.severity or "MEDIUM").upper()
 
-        description = "\n".join([
-            "## 🦊 ECDAT Cryptographic Vulnerability Finding",
-            "",
-            "| Field | Value |",
-            "|---|---|",
-            f"| **Asset ID** | `{ticket_request.asset_id}` |",
-            f"| **Finding ID** | `{ticket_request.finding_id}` |",
-            f"| **Severity** | **`{sev}`** |",
-            f"| **Owner** | `{ticket_request.owner}` |",
-            f"| **Evidence Link** | [Inspect Evidence]({ticket_request.evidence_link}) |",
-            f"| **CBOM Reference** | `{ticket_request.cbom_ref}` |",
-            f"| **Risk Score** | **`{ticket_request.risk_score}`** |",
-            "",
-            "### 🔧 Remediation Guidance",
-            ticket_request.remediation,
-            "",
-            "/confidential",
-            "---",
-            "*Reported automatically by ECDAT (Enterprise Cryptographic Discovery & Agility Toolkit)*",
-        ])
+        description = "\n".join(
+            [
+                "## 🦊 ECDAT Cryptographic Vulnerability Finding",
+                "",
+                "| Field | Value |",
+                "|---|---|",
+                f"| **Asset ID** | `{ticket_request.asset_id}` |",
+                f"| **Finding ID** | `{ticket_request.finding_id}` |",
+                f"| **Severity** | **`{sev}`** |",
+                f"| **Owner** | `{ticket_request.owner}` |",
+                f"| **Evidence Link** | [Inspect Evidence]({ticket_request.evidence_link}) |",
+                f"| **CBOM Reference** | `{ticket_request.cbom_ref}` |",
+                f"| **Risk Score** | **`{ticket_request.risk_score}`** |",
+                "",
+                "### 🔧 Remediation Guidance",
+                ticket_request.remediation,
+                "",
+                "/confidential",
+                "---",
+                "*Reported automatically by ECDAT (Enterprise Cryptographic Discovery & Agility Toolkit)*",
+            ]
+        )
 
         labels = [
             "security",
@@ -90,7 +92,8 @@ class GitLabIssuesConnector(BaseTicketingConnector):
         ]
 
         payload = {
-            "title": ticket_request.title or f"[ECDAT {sev}] Finding {ticket_request.finding_id} on {ticket_request.asset_id}",
+            "title": ticket_request.title
+            or f"[ECDAT {sev}] Finding {ticket_request.finding_id} on {ticket_request.asset_id}",
             "description": description,
             "labels": ",".join(labels),
             "confidential": bool(self.config.get("confidential", True)),
@@ -99,13 +102,13 @@ class GitLabIssuesConnector(BaseTicketingConnector):
 
         return payload
 
-    def send_create_request(
-        self, ticket_request: TicketRequest, payload: Dict[str, Any]
-    ) -> TicketResponse:
+    def send_create_request(self, ticket_request: TicketRequest, payload: Dict[str, Any]) -> TicketResponse:
         endpoint = f"{self.base_url}/projects/{self.project_id}/issues"
 
         if self.http_client:
-            data = self.http_client(endpoint, method="POST", json_payload=payload, headers={"PRIVATE-TOKEN": self.token})
+            data = self.http_client(
+                endpoint, method="POST", json_payload=payload, headers={"PRIVATE-TOKEN": self.token}
+            )
         else:
             req = urllib.request.Request(
                 endpoint,

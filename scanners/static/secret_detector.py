@@ -32,12 +32,27 @@ from scanners.static.results import StaticFinding
 # =========================================================================
 
 PEM_PATTERNS = [
-    ("RSA_PRIVATE_KEY", re.compile(r"-----BEGIN RSA PRIVATE KEY-----[\s\S]*?-----END RSA PRIVATE KEY-----", re.MULTILINE)),
+    (
+        "RSA_PRIVATE_KEY",
+        re.compile(r"-----BEGIN RSA PRIVATE KEY-----[\s\S]*?-----END RSA PRIVATE KEY-----", re.MULTILINE),
+    ),
     ("EC_PRIVATE_KEY", re.compile(r"-----BEGIN EC PRIVATE KEY-----[\s\S]*?-----END EC PRIVATE KEY-----", re.MULTILINE)),
-    ("DSA_PRIVATE_KEY", re.compile(r"-----BEGIN DSA PRIVATE KEY-----[\s\S]*?-----END DSA PRIVATE KEY-----", re.MULTILINE)),
-    ("OPENSSH_PRIVATE_KEY", re.compile(r"-----BEGIN OPENSSH PRIVATE KEY-----[\s\S]*?-----END OPENSSH PRIVATE KEY-----", re.MULTILINE)),
-    ("PGP_PRIVATE_KEY", re.compile(r"-----BEGIN PGP PRIVATE KEY BLOCK-----[\s\S]*?-----END PGP PRIVATE KEY BLOCK-----", re.MULTILINE)),
-    ("ENCRYPTED_PRIVATE_KEY", re.compile(r"-----BEGIN ENCRYPTED PRIVATE KEY-----[\s\S]*?-----END ENCRYPTED PRIVATE KEY-----", re.MULTILINE)),
+    (
+        "DSA_PRIVATE_KEY",
+        re.compile(r"-----BEGIN DSA PRIVATE KEY-----[\s\S]*?-----END DSA PRIVATE KEY-----", re.MULTILINE),
+    ),
+    (
+        "OPENSSH_PRIVATE_KEY",
+        re.compile(r"-----BEGIN OPENSSH PRIVATE KEY-----[\s\S]*?-----END OPENSSH PRIVATE KEY-----", re.MULTILINE),
+    ),
+    (
+        "PGP_PRIVATE_KEY",
+        re.compile(r"-----BEGIN PGP PRIVATE KEY BLOCK-----[\s\S]*?-----END PGP PRIVATE KEY BLOCK-----", re.MULTILINE),
+    ),
+    (
+        "ENCRYPTED_PRIVATE_KEY",
+        re.compile(r"-----BEGIN ENCRYPTED PRIVATE KEY-----[\s\S]*?-----END ENCRYPTED PRIVATE KEY-----", re.MULTILINE),
+    ),
     ("PKCS8_PRIVATE_KEY", re.compile(r"-----BEGIN PRIVATE KEY-----[\s\S]*?-----END PRIVATE KEY-----", re.MULTILINE)),
 ]
 
@@ -46,7 +61,16 @@ GENERIC_PEM_PRIVATE_KEY = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 
-SYMMETRIC_KEY_VAR_NAMES = ("aes_key", "secret_key", "des_key", "private_key", "encryption_key", "symmetric_key", "signing_key", "crypto_key")
+SYMMETRIC_KEY_VAR_NAMES = (
+    "aes_key",
+    "secret_key",
+    "des_key",
+    "private_key",
+    "encryption_key",
+    "symmetric_key",
+    "signing_key",
+    "crypto_key",
+)
 
 API_TOKEN_PATTERNS = [
     ("AWS_ACCESS_KEY", re.compile(r"\b(AKIA[0-9A-Z]{16})\b")),
@@ -120,12 +144,12 @@ class SecretSafeDetector:
                 # Build minimal evidence: snippet with variable name and redaction token
                 if "=" in raw_line:
                     var_part = raw_line.split("=")[0].strip()
-                    minimal_evidence = f"{var_part} = \"{redacted_token}\""
+                    minimal_evidence = f'{var_part} = "{redacted_token}"'
                 elif ":" in raw_line:
                     var_part = raw_line.split(":")[0].strip()
-                    minimal_evidence = f"{var_part}: \"{redacted_token}\""
+                    minimal_evidence = f'{var_part}: "{redacted_token}"'
                 else:
-                    minimal_evidence = f"private_key = \"{redacted_token}\""
+                    minimal_evidence = f'private_key = "{redacted_token}"'
 
                 candidates.append(
                     SecretCandidate(
@@ -157,7 +181,7 @@ class SecretSafeDetector:
                     line_number=line_no,
                     safe_fingerprint=fingerprint,
                     redacted_token=redacted_token,
-                    minimal_evidence=f"private_key = \"{redacted_token}\"",
+                    minimal_evidence=f'private_key = "{redacted_token}"',
                     confidence="high",
                     severity="critical",
                 )
@@ -176,9 +200,9 @@ class SecretSafeDetector:
                 raw_line = lines[line_no - 1].strip() if line_no <= len(lines) else ""
                 if "=" in raw_line:
                     var_part = raw_line.split("=")[0].strip()
-                    minimal_evidence = f"{var_part} = \"{redacted_token}\""
+                    minimal_evidence = f'{var_part} = "{redacted_token}"'
                 else:
-                    minimal_evidence = f"token = \"{redacted_token}\""
+                    minimal_evidence = f'token = "{redacted_token}"'
 
                 candidates.append(
                     SecretCandidate(
@@ -196,7 +220,9 @@ class SecretSafeDetector:
 
         # 4. Detect Symmetric Keys assigned to known variable names
         assign_regex = re.compile(
-            r"(?i)\b([a-zA-Z0-9_]*(" + "|".join(SYMMETRIC_KEY_VAR_NAMES) + r")[a-zA-Z0-9_]*)\s*[:=]\s*(?:b)?['\"]([^'\"]{16,128})['\"]"
+            r"(?i)\b([a-zA-Z0-9_]*("
+            + "|".join(SYMMETRIC_KEY_VAR_NAMES)
+            + r")[a-zA-Z0-9_]*)\s*[:=]\s*(?:b)?['\"]([^'\"]{16,128})['\"]"
         )
         for match in assign_regex.finditer(sanitized):
             var_name = match.group(1)
@@ -208,7 +234,7 @@ class SecretSafeDetector:
             fingerprint = cls.generate_fingerprint(raw_val)
             redacted_token = f"[REDACTED_KEY:SYMMETRIC_KEY:{fingerprint}]"
 
-            minimal_evidence = f"{var_name} = \"{redacted_token}\""
+            minimal_evidence = f'{var_name} = "{redacted_token}"'
             candidates.append(
                 SecretCandidate(
                     candidate_type="SYMMETRIC_KEY",
@@ -221,7 +247,9 @@ class SecretSafeDetector:
                     severity="high",
                 )
             )
-            sanitized = sanitized.replace(f'"{raw_val}"', f'"{redacted_token}"').replace(f"'{raw_val}'", f"'{redacted_token}'")
+            sanitized = sanitized.replace(f'"{raw_val}"', f'"{redacted_token}"').replace(
+                f"'{raw_val}'", f"'{redacted_token}'"
+            )
 
         return sanitized, candidates
 
@@ -237,7 +265,9 @@ class SecretSafeDetector:
                     algorithm=c.candidate_type,
                     evidence=c.minimal_evidence,
                     confidence=c.confidence,
-                    finding_type="hardcoded_private_key" if "PRIVATE_KEY" in c.candidate_type else "hardcoded_symmetric_key",
+                    finding_type="hardcoded_private_key"
+                    if "PRIVATE_KEY" in c.candidate_type
+                    else "hardcoded_symmetric_key",
                     severity=c.severity,
                     analysis_source="secret_detector",
                     needs_human_review=False,

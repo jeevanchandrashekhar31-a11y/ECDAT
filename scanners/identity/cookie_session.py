@@ -83,7 +83,11 @@ class CookieSecurityValidator:
         if origin:
             try:
                 parsed = urlparse(origin)
-                origin_base = f"{parsed.protocol or 'http'}://{parsed.netloc}" if hasattr(parsed, 'protocol') else f"{parsed.scheme}://{parsed.netloc}"
+                origin_base = (
+                    f"{parsed.protocol or 'http'}://{parsed.netloc}"
+                    if hasattr(parsed, "protocol")
+                    else f"{parsed.scheme}://{parsed.netloc}"
+                )
                 allowed = allowed_origins or ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000"]
                 hostname = parsed.hostname or ""
 

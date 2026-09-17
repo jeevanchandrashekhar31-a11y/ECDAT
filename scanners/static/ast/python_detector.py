@@ -103,9 +103,7 @@ class PythonCryptoDetector(ast.NodeVisitor):
     Comprehensive AST + Semantic Cryptographic Detector for Python.
     """
 
-    PEM_PRIVATE_KEY_REGEX = re.compile(
-        r"-----BEGIN (RSA |EC |DSA |ENCRYPTED )?PRIVATE KEY-----", re.IGNORECASE
-    )
+    PEM_PRIVATE_KEY_REGEX = re.compile(r"-----BEGIN (RSA |EC |DSA |ENCRYPTED )?PRIVATE KEY-----", re.IGNORECASE)
 
     def __init__(self, file_path: Path, root_dir: Path, source_bytes: bytes):
         self.file_path = file_path
@@ -233,7 +231,9 @@ class PythonCryptoDetector(ast.NodeVisitor):
                     digestmod = kw.value
 
             if digestmod:
-                digest_str = str(self.resolver.resolve_val(digestmod) or self.resolver.resolve_symbol(digestmod)).lower()
+                digest_str = str(
+                    self.resolver.resolve_val(digestmod) or self.resolver.resolve_symbol(digestmod)
+                ).lower()
                 if "md5" in digest_str:
                     self._add_finding(node.lineno, "PY_HMAC_MD5", "MD5", "weak_hash", "critical")
                 elif "sha1" in digest_str:
@@ -333,7 +333,10 @@ class PythonCryptoDetector(ast.NodeVisitor):
         # Insecure protocol constants in SSL calls: ssl.PROTOCOL_SSLv2, PROTOCOL_SSLv3, PROTOCOL_TLSv1, PROTOCOL_TLSv1_1
         for arg in node.args + [kw.value for kw in node.keywords]:
             arg_sym = self.resolver.resolve_symbol(arg).upper()
-            if any(p in arg_sym for p in ("PROTOCOL_SSLV2", "PROTOCOL_SSLV3", "PROTOCOL_TLSV1_0", "PROTOCOL_TLSV1_1", "PROTOCOL_TLSV1")):
+            if any(
+                p in arg_sym
+                for p in ("PROTOCOL_SSLV2", "PROTOCOL_SSLV3", "PROTOCOL_TLSV1_0", "PROTOCOL_TLSV1_1", "PROTOCOL_TLSV1")
+            ):
                 proto = "SSLv3" if "SSL" in arg_sym else "TLS 1.0/1.1"
                 self._add_finding(node.lineno, "PY_INSECURE_TLS_PROTOCOL", proto, "insecure_tls_protocol", "critical")
 
@@ -370,7 +373,10 @@ class PythonCryptoDetector(ast.NodeVisitor):
             # We flag standard random generation as insecure randomness if named key, token, salt, iv, secret, nonce
             parent = getattr(node, "_parent", None)
             snippet = self._get_evidence(node.lineno).lower()
-            if any(sec_word in snippet for sec_word in ("key", "token", "salt", "iv", "secret", "nonce", "auth", "passwd", "password")):
+            if any(
+                sec_word in snippet
+                for sec_word in ("key", "token", "salt", "iv", "secret", "nonce", "auth", "passwd", "password")
+            ):
                 self._add_finding(
                     node.lineno,
                     "PY_INSECURE_RANDOMNESS",
@@ -388,11 +394,15 @@ class PythonCryptoDetector(ast.NodeVisitor):
 
             algos_kw = self._get_keyword_or_arg_val(node, "algorithms")
             if isinstance(algos_kw, list) and any(str(a).lower() == "none" for a in algos_kw):
-                self._add_finding(node.lineno, "PY_JWT_NONE_ALGORITHM", "JWT-NONE", "insecure_jwt_algorithm", "critical")
+                self._add_finding(
+                    node.lineno, "PY_JWT_NONE_ALGORITHM", "JWT-NONE", "insecure_jwt_algorithm", "critical"
+                )
 
             options_kw = self._get_keyword_or_arg_val(node, "options")
             if isinstance(options_kw, dict) and options_kw.get("verify_signature") is False:
-                self._add_finding(node.lineno, "PY_JWT_VERIFY_SIGNATURE_FALSE", "JWT", "insecure_jwt_verification", "critical")
+                self._add_finding(
+                    node.lineno, "PY_JWT_VERIFY_SIGNATURE_FALSE", "JWT", "insecure_jwt_verification", "critical"
+                )
 
     def _check_cloud_kms(self, node: ast.Call, func_sym: str):
         # AWS KMS create_key(KeySpec='RSA_1024')
@@ -434,7 +444,7 @@ class PythonCryptoDetector(ast.NodeVisitor):
                     target_name = "private_key"
                     if node.targets and isinstance(node.targets[0], ast.Name):
                         target_name = node.targets[0].id
-                    minimal_evidence = f"{target_name} = \"{redacted_tok}\""
+                    minimal_evidence = f'{target_name} = "{redacted_tok}"'
 
                     self.findings.append(
                         StaticFinding(
@@ -457,14 +467,16 @@ class PythonCryptoDetector(ast.NodeVisitor):
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     target_name = target.id.lower()
-                    if any(k in target_name for k in ("aes_key", "secret_key", "des_key", "private_key", "encryption_key")):
+                    if any(
+                        k in target_name for k in ("aes_key", "secret_key", "des_key", "private_key", "encryption_key")
+                    ):
                         if isinstance(val, (str, bytes)) and len(val) in (8, 16, 24, 32):
                             from scanners.static.secret_detector import SecretSafeDetector
 
                             str_val = val.decode("utf-8", errors="ignore") if isinstance(val, bytes) else str(val)
                             fingerprint = SecretSafeDetector.generate_fingerprint(str_val)
                             redacted_tok = f"[REDACTED_KEY:SYMMETRIC_KEY:{fingerprint}]"
-                            minimal_evidence = f"{target.id} = \"{redacted_tok}\""
+                            minimal_evidence = f'{target.id} = "{redacted_tok}"'
 
                             self.findings.append(
                                 StaticFinding(

@@ -33,6 +33,7 @@ def make_symbols(names):
 # Invariant: Never Fingerprint by One String Alone
 # ---------------------------------------------------------------------------
 
+
 def test_reject_single_string_match_openssl(fingerprinter):
     """A single string alone MUST NOT produce a positive fingerprint."""
     results = fingerprinter.fingerprint(
@@ -86,6 +87,7 @@ def test_multiple_strings_produce_low_confidence(fingerprinter):
 # ---------------------------------------------------------------------------
 # Test All 10 Target Cryptographic Libraries
 # ---------------------------------------------------------------------------
+
 
 def test_fingerprint_openssl(fingerprinter):
     symbols = make_symbols(["EVP_CIPHER_CTX_new", "OSSL_PROVIDER_load", "X509_verify_cert"])
@@ -192,10 +194,12 @@ def test_fingerprint_libsodium(fingerprinter):
 
 
 def test_fingerprint_jca_jce(fingerprinter):
-    symbols = make_symbols([
-        "Java_sun_security_ec_ECDHKeyAgreement_deriveKey",
-        "org/bouncycastle/jce/provider/BouncyCastleProvider",
-    ])
+    symbols = make_symbols(
+        [
+            "Java_sun_security_ec_ECDHKeyAgreement_deriveKey",
+            "org/bouncycastle/jce/provider/BouncyCastleProvider",
+        ]
+    )
     strings = ["org.bouncycastle.jce.provider.BouncyCastleProvider", "SunJCE Provider"]
     libs = ["bcprov-jdk18on-1.77.jar", "libsunec.so"]
 
@@ -208,11 +212,13 @@ def test_fingerprint_jca_jce(fingerprinter):
 
 
 def test_fingerprint_windows_cng(fingerprinter):
-    symbols = make_symbols([
-        "BCryptOpenAlgorithmProvider",
-        "BCryptEncrypt",
-        "NCryptOpenStorageProvider",
-    ])
+    symbols = make_symbols(
+        [
+            "BCryptOpenAlgorithmProvider",
+            "BCryptEncrypt",
+            "NCryptOpenStorageProvider",
+        ]
+    )
     strings = ["Microsoft Software Key Storage Provider", "MS_ENH_RSA_AES_PROV"]
     libs = ["bcrypt.dll", "ncrypt.dll"]
 

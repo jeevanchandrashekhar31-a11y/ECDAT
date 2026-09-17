@@ -111,12 +111,15 @@ class ApprovalWorkflowEngine:
         explicit_required = requires_explicit_approval(category, environment)
 
         now_ts = datetime.now(timezone.utc).isoformat()
-        genesis_hash = self._compute_transition_hash(None, {
-            "approval_id": approval_id,
-            "state": "PROPOSED",
-            "proposer": proposer["username"],
-            "timestamp": now_ts,
-        })
+        genesis_hash = self._compute_transition_hash(
+            None,
+            {
+                "approval_id": approval_id,
+                "state": "PROPOSED",
+                "proposer": proposer["username"],
+                "timestamp": now_ts,
+            },
+        )
 
         initial_audit = {
             "event_id": f"evt_{uuid.uuid4().hex[:8]}",
@@ -170,18 +173,19 @@ class ApprovalWorkflowEngine:
         record = self.get_approval(approval_id)
 
         if record["state"] != "PROPOSED":
-            raise ApprovalWorkflowError(
-                f"Cannot review approval in state '{record['state']}'. Expected 'PROPOSED'."
-            )
+            raise ApprovalWorkflowError(f"Cannot review approval in state '{record['state']}'. Expected 'PROPOSED'.")
 
         now_ts = datetime.now(timezone.utc).isoformat()
-        new_hash = self._compute_transition_hash(record["current_state_hash"], {
-            "approval_id": approval_id,
-            "from_state": record["state"],
-            "to_state": "REVIEWED",
-            "reviewer": reviewer["username"],
-            "timestamp": now_ts,
-        })
+        new_hash = self._compute_transition_hash(
+            record["current_state_hash"],
+            {
+                "approval_id": approval_id,
+                "from_state": record["state"],
+                "to_state": "REVIEWED",
+                "reviewer": reviewer["username"],
+                "timestamp": now_ts,
+            },
+        )
 
         record["state"] = "REVIEWED"
         record["reviewer"] = {
@@ -191,16 +195,18 @@ class ApprovalWorkflowEngine:
             "comments": comments,
         }
 
-        record["audit_history"].append({
-            "event_id": f"evt_{uuid.uuid4().hex[:8]}",
-            "from_state": "PROPOSED",
-            "to_state": "REVIEWED",
-            "actor": reviewer["username"],
-            "role": reviewer.get("role", "reviewer"),
-            "timestamp": now_ts,
-            "comments": comments,
-            "hash": new_hash,
-        })
+        record["audit_history"].append(
+            {
+                "event_id": f"evt_{uuid.uuid4().hex[:8]}",
+                "from_state": "PROPOSED",
+                "to_state": "REVIEWED",
+                "actor": reviewer["username"],
+                "role": reviewer.get("role", "reviewer"),
+                "timestamp": now_ts,
+                "comments": comments,
+                "hash": new_hash,
+            }
+        )
 
         record["current_state_hash"] = new_hash
         return record
@@ -236,13 +242,16 @@ class ApprovalWorkflowEngine:
             )
 
         now_ts = datetime.now(timezone.utc).isoformat()
-        new_hash = self._compute_transition_hash(record["current_state_hash"], {
-            "approval_id": approval_id,
-            "from_state": record["state"],
-            "to_state": "APPROVED",
-            "approver": approver["username"],
-            "timestamp": now_ts,
-        })
+        new_hash = self._compute_transition_hash(
+            record["current_state_hash"],
+            {
+                "approval_id": approval_id,
+                "from_state": record["state"],
+                "to_state": "APPROVED",
+                "approver": approver["username"],
+                "timestamp": now_ts,
+            },
+        )
 
         record["state"] = "APPROVED"
         record["approver"] = {
@@ -252,16 +261,18 @@ class ApprovalWorkflowEngine:
             "comments": comments,
         }
 
-        record["audit_history"].append({
-            "event_id": f"evt_{uuid.uuid4().hex[:8]}",
-            "from_state": "REVIEWED",
-            "to_state": "APPROVED",
-            "actor": approver["username"],
-            "role": approver.get("role", "admin"),
-            "timestamp": now_ts,
-            "comments": comments,
-            "hash": new_hash,
-        })
+        record["audit_history"].append(
+            {
+                "event_id": f"evt_{uuid.uuid4().hex[:8]}",
+                "from_state": "REVIEWED",
+                "to_state": "APPROVED",
+                "actor": approver["username"],
+                "role": approver.get("role", "admin"),
+                "timestamp": now_ts,
+                "comments": comments,
+                "hash": new_hash,
+            }
+        )
 
         record["current_state_hash"] = new_hash
         return record
@@ -283,18 +294,19 @@ class ApprovalWorkflowEngine:
             )
 
         if record["state"] not in ["APPROVED", "REVIEWED", "PROPOSED"]:
-            raise ApprovalWorkflowError(
-                f"Cannot apply remediation in terminal or invalid state '{record['state']}'."
-            )
+            raise ApprovalWorkflowError(f"Cannot apply remediation in terminal or invalid state '{record['state']}'.")
 
         now_ts = datetime.now(timezone.utc).isoformat()
-        new_hash = self._compute_transition_hash(record["current_state_hash"], {
-            "approval_id": approval_id,
-            "from_state": record["state"],
-            "to_state": "APPLIED",
-            "deployer": deployer["username"],
-            "timestamp": now_ts,
-        })
+        new_hash = self._compute_transition_hash(
+            record["current_state_hash"],
+            {
+                "approval_id": approval_id,
+                "from_state": record["state"],
+                "to_state": "APPLIED",
+                "deployer": deployer["username"],
+                "timestamp": now_ts,
+            },
+        )
 
         record["state"] = "APPLIED"
         record["deployer"] = {
@@ -303,16 +315,18 @@ class ApprovalWorkflowEngine:
             "applied_at": now_ts,
         }
 
-        record["audit_history"].append({
-            "event_id": f"evt_{uuid.uuid4().hex[:8]}",
-            "from_state": record["audit_history"][-1]["to_state"],
-            "to_state": "APPLIED",
-            "actor": deployer["username"],
-            "role": deployer.get("role", "deployer"),
-            "timestamp": now_ts,
-            "comments": "Remediation patch applied to target environment.",
-            "hash": new_hash,
-        })
+        record["audit_history"].append(
+            {
+                "event_id": f"evt_{uuid.uuid4().hex[:8]}",
+                "from_state": record["audit_history"][-1]["to_state"],
+                "to_state": "APPLIED",
+                "actor": deployer["username"],
+                "role": deployer.get("role", "deployer"),
+                "timestamp": now_ts,
+                "comments": "Remediation patch applied to target environment.",
+                "hash": new_hash,
+            }
+        )
 
         record["current_state_hash"] = new_hash
         return record
@@ -329,21 +343,22 @@ class ApprovalWorkflowEngine:
         record = self.get_approval(approval_id)
 
         if record["state"] != "APPLIED":
-            raise ApprovalWorkflowError(
-                f"Cannot verify remediation in state '{record['state']}'. Expected 'APPLIED'."
-            )
+            raise ApprovalWorkflowError(f"Cannot verify remediation in state '{record['state']}'. Expected 'APPLIED'.")
 
         if not verification_results.get("tests_passed") or not verification_results.get("finding_resolved"):
             return self.fail_remediation(approval_id, verifier, "Verification tests or rescan check failed.")
 
         now_ts = datetime.now(timezone.utc).isoformat()
-        new_hash = self._compute_transition_hash(record["current_state_hash"], {
-            "approval_id": approval_id,
-            "from_state": record["state"],
-            "to_state": "VERIFIED",
-            "verifier": verifier["username"],
-            "timestamp": now_ts,
-        })
+        new_hash = self._compute_transition_hash(
+            record["current_state_hash"],
+            {
+                "approval_id": approval_id,
+                "from_state": record["state"],
+                "to_state": "VERIFIED",
+                "verifier": verifier["username"],
+                "timestamp": now_ts,
+            },
+        )
 
         record["state"] = "VERIFIED"
         record["verifier"] = {
@@ -353,16 +368,18 @@ class ApprovalWorkflowEngine:
             "verification_results": verification_results,
         }
 
-        record["audit_history"].append({
-            "event_id": f"evt_{uuid.uuid4().hex[:8]}",
-            "from_state": "APPLIED",
-            "to_state": "VERIFIED",
-            "actor": verifier["username"],
-            "role": verifier.get("role", "verifier"),
-            "timestamp": now_ts,
-            "comments": "Post-remediation verification tests and CBOM comparison succeeded.",
-            "hash": new_hash,
-        })
+        record["audit_history"].append(
+            {
+                "event_id": f"evt_{uuid.uuid4().hex[:8]}",
+                "from_state": "APPLIED",
+                "to_state": "VERIFIED",
+                "actor": verifier["username"],
+                "role": verifier.get("role", "verifier"),
+                "timestamp": now_ts,
+                "comments": "Post-remediation verification tests and CBOM comparison succeeded.",
+                "hash": new_hash,
+            }
+        )
 
         record["current_state_hash"] = new_hash
         return record
@@ -381,28 +398,33 @@ class ApprovalWorkflowEngine:
             raise ApprovalWorkflowError(f"Cannot rollback remediation in state '{record['state']}'.")
 
         now_ts = datetime.now(timezone.utc).isoformat()
-        new_hash = self._compute_transition_hash(record["current_state_hash"], {
-            "approval_id": approval_id,
-            "from_state": record["state"],
-            "to_state": "ROLLED_BACK",
-            "actor": actor["username"],
-            "reason": reason,
-            "timestamp": now_ts,
-        })
+        new_hash = self._compute_transition_hash(
+            record["current_state_hash"],
+            {
+                "approval_id": approval_id,
+                "from_state": record["state"],
+                "to_state": "ROLLED_BACK",
+                "actor": actor["username"],
+                "reason": reason,
+                "timestamp": now_ts,
+            },
+        )
 
         prev_state = record["state"]
         record["state"] = "ROLLED_BACK"
 
-        record["audit_history"].append({
-            "event_id": f"evt_{uuid.uuid4().hex[:8]}",
-            "from_state": prev_state,
-            "to_state": "ROLLED_BACK",
-            "actor": actor["username"],
-            "role": actor.get("role", "admin"),
-            "timestamp": now_ts,
-            "comments": f"Rollback executed: {reason}",
-            "hash": new_hash,
-        })
+        record["audit_history"].append(
+            {
+                "event_id": f"evt_{uuid.uuid4().hex[:8]}",
+                "from_state": prev_state,
+                "to_state": "ROLLED_BACK",
+                "actor": actor["username"],
+                "role": actor.get("role", "admin"),
+                "timestamp": now_ts,
+                "comments": f"Rollback executed: {reason}",
+                "hash": new_hash,
+            }
+        )
 
         record["current_state_hash"] = new_hash
         return record
@@ -418,28 +440,33 @@ class ApprovalWorkflowEngine:
         record = self.get_approval(approval_id)
 
         now_ts = datetime.now(timezone.utc).isoformat()
-        new_hash = self._compute_transition_hash(record["current_state_hash"], {
-            "approval_id": approval_id,
-            "from_state": record["state"],
-            "to_state": "FAILED",
-            "actor": actor["username"],
-            "reason": reason,
-            "timestamp": now_ts,
-        })
+        new_hash = self._compute_transition_hash(
+            record["current_state_hash"],
+            {
+                "approval_id": approval_id,
+                "from_state": record["state"],
+                "to_state": "FAILED",
+                "actor": actor["username"],
+                "reason": reason,
+                "timestamp": now_ts,
+            },
+        )
 
         prev_state = record["state"]
         record["state"] = "FAILED"
 
-        record["audit_history"].append({
-            "event_id": f"evt_{uuid.uuid4().hex[:8]}",
-            "from_state": prev_state,
-            "to_state": "FAILED",
-            "actor": actor["username"],
-            "role": actor.get("role", "system"),
-            "timestamp": now_ts,
-            "comments": f"Remediation marked as failed: {reason}",
-            "hash": new_hash,
-        })
+        record["audit_history"].append(
+            {
+                "event_id": f"evt_{uuid.uuid4().hex[:8]}",
+                "from_state": prev_state,
+                "to_state": "FAILED",
+                "actor": actor["username"],
+                "role": actor.get("role", "system"),
+                "timestamp": now_ts,
+                "comments": f"Remediation marked as failed: {reason}",
+                "hash": new_hash,
+            }
+        )
 
         record["current_state_hash"] = new_hash
         return record
@@ -499,7 +526,9 @@ if __name__ == "__main__":
             {"title": args.title, "category": args.category, "environment": args.env},
             proposer={"username": args.user, "role": "developer"},
         )
-        print(f"[PROPOSED] Created approval ID: {rec['approval_id']} (State: {rec['state']}, Category: {rec['category']})")
+        print(
+            f"[PROPOSED] Created approval ID: {rec['approval_id']} (State: {rec['state']}, Category: {rec['category']})"
+        )
     elif args.subcommand == "list":
         print(json.dumps(engine.list_approvals(), indent=2))
     else:

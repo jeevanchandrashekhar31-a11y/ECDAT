@@ -100,11 +100,7 @@ def calculate_crypto_agility(
     if isinstance(inventory_or_findings, list):
         findings = inventory_or_findings
     elif isinstance(inventory_or_findings, dict):
-        findings = (
-            inventory_or_findings.get("components")
-            or inventory_or_findings.get("findings")
-            or []
-        )
+        findings = inventory_or_findings.get("components") or inventory_or_findings.get("findings") or []
 
     meta = architecture_metadata or {}
     opts = options or {}
@@ -161,14 +157,16 @@ def calculate_crypto_agility(
             "actionable_recommendations": d["recommendations"],
         }
 
-        step_by_step.append({
-            "dimension_id": dim_id,
-            "dimension_name": d["name"],
-            "raw_score": d["raw_score"],
-            "weight": norm_w,
-            "weighted_contribution": weighted_pts,
-            "formula": f"{d['raw_score']} * ({norm_w} / 100) = {weighted_pts} pts",
-        })
+        step_by_step.append(
+            {
+                "dimension_id": dim_id,
+                "dimension_name": d["name"],
+                "raw_score": d["raw_score"],
+                "weight": norm_w,
+                "weighted_contribution": weighted_pts,
+                "formula": f"{d['raw_score']} * ({norm_w} / 100) = {weighted_pts} pts",
+            }
+        )
 
     overall_score = max(0.0, min(100.0, round(overall_score, 1)))
     overall_maturity = resolve_maturity_tier(overall_score)
@@ -199,7 +197,8 @@ def calculate_crypto_agility(
                 "dimension_id": b["id"],
                 "dimension_name": b["name"],
                 "score": b["raw_score"],
-                "gap_summary": "; ".join(s["description"] for s in b["negative_signals"]) or "Sub-optimal architecture readiness.",
+                "gap_summary": "; ".join(s["description"] for s in b["negative_signals"])
+                or "Sub-optimal architecture readiness.",
                 "remediation_priority": "URGENT_BLOCKER" if b["raw_score"] < 30.0 else "MODERATE_FRICTION",
             }
             for b in blockers
@@ -224,18 +223,54 @@ def _eval_centralized_config(findings: List[Dict[str, Any]], meta: Dict[str, Any
     cfg = meta.get("centralized_config") or meta.get("centralized_algorithm_configuration") or {}
 
     if cfg.get("has_crypto_policy_file") or meta.get("has_crypto_policy_file"):
-        pos.append({"signal": "external_crypto_policy_file", "points": 40.0, "description": "External policy file manages crypto parameters."})
+        pos.append(
+            {
+                "signal": "external_crypto_policy_file",
+                "points": 40.0,
+                "description": "External policy file manages crypto parameters.",
+            }
+        )
     if cfg.get("has_central_registry") or meta.get("has_central_registry"):
-        pos.append({"signal": "centralized_crypto_registry", "points": 35.0, "description": "Centralized crypto registry encapsulates algorithm selection."})
+        pos.append(
+            {
+                "signal": "centralized_crypto_registry",
+                "points": 35.0,
+                "description": "Centralized crypto registry encapsulates algorithm selection.",
+            }
+        )
     if cfg.get("environment_variable_ciphers") or meta.get("environment_variable_ciphers"):
-        pos.append({"signal": "environment_variable_ciphers", "points": 25.0, "description": "Ciphers configurable via deployment environment variables."})
+        pos.append(
+            {
+                "signal": "environment_variable_ciphers",
+                "points": 25.0,
+                "description": "Ciphers configurable via deployment environment variables.",
+            }
+        )
 
-    hardcoded = [f for f in findings if "ast" in str(f.get("evidence_type", "")).lower() or "literal" in str(f.get("evidence_context", "")).lower()]
+    hardcoded = [
+        f
+        for f in findings
+        if "ast" in str(f.get("evidence_type", "")).lower() or "literal" in str(f.get("evidence_context", "")).lower()
+    ]
     if cfg.get("hardcoded_algorithm_strings_inline") or len(hardcoded) >= 3:
-        neg.append({"signal": "hardcoded_algorithm_strings_inline", "penalty": 40.0, "description": "Raw algorithm strings hardcoded inline in application logic."})
-        recs.append("Extract hardcoded algorithm literals into a centralized configuration file or environment variables.")
+        neg.append(
+            {
+                "signal": "hardcoded_algorithm_strings_inline",
+                "penalty": 40.0,
+                "description": "Raw algorithm strings hardcoded inline in application logic.",
+            }
+        )
+        recs.append(
+            "Extract hardcoded algorithm literals into a centralized configuration file or environment variables."
+        )
     if cfg.get("scattered_cipher_definitions") or len(hardcoded) >= 6:
-        neg.append({"signal": "scattered_cipher_definitions", "penalty": 30.0, "description": "Scattered cipher definitions across disparate source files."})
+        neg.append(
+            {
+                "signal": "scattered_cipher_definitions",
+                "penalty": 30.0,
+                "description": "Scattered cipher definitions across disparate source files.",
+            }
+        )
         recs.append("Consolidate disparate cryptographic calls into a unified crypto registry module.")
 
     pos_pts = sum(s["points"] for s in pos)
@@ -258,15 +293,39 @@ def _eval_replaceability(findings: List[Dict[str, Any]], meta: Dict[str, Any]) -
     rep = meta.get("replaceability") or {}
 
     if rep.get("interface_based_crypto_design") or meta.get("uses_interfaces"):
-        pos.append({"signal": "interface_based_crypto_design", "points": 40.0, "description": "Application consumes abstract interfaces rather than concrete ciphers."})
+        pos.append(
+            {
+                "signal": "interface_based_crypto_design",
+                "points": 40.0,
+                "description": "Application consumes abstract interfaces rather than concrete ciphers.",
+            }
+        )
     if rep.get("pluggable_algorithm_factory") or meta.get("uses_algorithm_factory"):
-        pos.append({"signal": "pluggable_algorithm_factory", "points": 35.0, "description": "Dependency injection or factory manages cipher instantiation."})
+        pos.append(
+            {
+                "signal": "pluggable_algorithm_factory",
+                "points": 35.0,
+                "description": "Dependency injection or factory manages cipher instantiation.",
+            }
+        )
 
     if rep.get("concrete_class_coupling") or meta.get("concrete_class_coupling"):
-        neg.append({"signal": "concrete_class_coupling", "penalty": 40.0, "description": "Direct instantiation of concrete crypto classes in business logic."})
+        neg.append(
+            {
+                "signal": "concrete_class_coupling",
+                "penalty": 40.0,
+                "description": "Direct instantiation of concrete crypto classes in business logic.",
+            }
+        )
         recs.append("Introduce interface abstraction layers between caller services and cryptographic primitives.")
     if rep.get("fixed_size_signature_buffer") or meta.get("fixed_size_buffers"):
-        neg.append({"signal": "fixed_size_signature_buffer", "penalty": 35.0, "description": "Fixed-size buffers that will fail on larger PQC signatures (e.g. 3309B ML-DSA)."})
+        neg.append(
+            {
+                "signal": "fixed_size_signature_buffer",
+                "penalty": 35.0,
+                "description": "Fixed-size buffers that will fail on larger PQC signatures (e.g. 3309B ML-DSA).",
+            }
+        )
         recs.append("Refactor fixed-size byte buffers to dynamic allocations accommodating PQC signature sizes.")
 
     pos_pts = sum(s["points"] for s in pos)
@@ -289,18 +348,42 @@ def _eval_key_lifecycle(findings: List[Dict[str, Any]], meta: Dict[str, Any]) ->
     key_meta = meta.get("key_lifecycle") or meta.get("key_lifecycle_management") or {}
 
     if key_meta.get("kms_hsm_integration") or meta.get("uses_kms") or meta.get("uses_hsm"):
-        pos.append({"signal": "kms_hsm_integration", "points": 40.0, "description": "Certified cloud KMS or Hardware Security Module (HSM) manages key materials."})
+        pos.append(
+            {
+                "signal": "kms_hsm_integration",
+                "points": 40.0,
+                "description": "Certified cloud KMS or Hardware Security Module (HSM) manages key materials.",
+            }
+        )
     if key_meta.get("automated_key_rotation") or meta.get("automated_key_rotation"):
-        pos.append({"signal": "automated_key_rotation", "points": 35.0, "description": "Automated key rotation with multi-version verification support."})
+        pos.append(
+            {
+                "signal": "automated_key_rotation",
+                "points": 35.0,
+                "description": "Automated key rotation with multi-version verification support.",
+            }
+        )
     if key_meta.get("ephemeral_session_keys") or meta.get("ephemeral_forward_secrecy"):
-        pos.append({"signal": "ephemeral_session_keys", "points": 25.0, "description": "Ephemeral forward secrecy enforced across communication channels."})
+        pos.append(
+            {
+                "signal": "ephemeral_session_keys",
+                "points": 25.0,
+                "description": "Ephemeral forward secrecy enforced across communication channels.",
+            }
+        )
 
     has_hardcoded = any(
         f.get("asset_type") == "hardcoded_private_key" or "hardcoded" in str(f.get("rule_id", "")).lower()
         for f in findings
     )
     if key_meta.get("hardcoded_static_keys") or has_hardcoded:
-        neg.append({"signal": "hardcoded_static_keys", "penalty": 50.0, "description": "Static keys or secrets embedded in source code or unencrypted configuration."})
+        neg.append(
+            {
+                "signal": "hardcoded_static_keys",
+                "penalty": 50.0,
+                "description": "Static keys or secrets embedded in source code or unencrypted configuration.",
+            }
+        )
         recs.append("Purge hardcoded keys immediately; migrate all private keys and secrets to KMS or Vault.")
 
     pos_pts = sum(s["points"] for s in pos)
@@ -323,16 +406,34 @@ def _eval_protocol_agility(findings: List[Dict[str, Any]], meta: Dict[str, Any])
     proto = meta.get("protocol_agility") or {}
 
     if proto.get("tls_1_3_dynamic_groups") or meta.get("tls_1_3_enabled"):
-        pos.append({"signal": "tls_1_3_dynamic_groups", "points": 40.0, "description": "TLS 1.3 configured with runtime-negotiated key exchange groups."})
+        pos.append(
+            {
+                "signal": "tls_1_3_dynamic_groups",
+                "points": 40.0,
+                "description": "TLS 1.3 configured with runtime-negotiated key exchange groups.",
+            }
+        )
     if proto.get("multi_protocol_negotiation"):
-        pos.append({"signal": "multi_protocol_negotiation", "points": 35.0, "description": "Dynamic multi-protocol negotiation with strict minimum baseline enforcement."})
+        pos.append(
+            {
+                "signal": "multi_protocol_negotiation",
+                "points": 35.0,
+                "description": "Dynamic multi-protocol negotiation with strict minimum baseline enforcement.",
+            }
+        )
 
     has_legacy = any(
         any(w in str(f.get("algorithm") or f.get("name") or "").upper() for w in ["TLS 1.0", "TLS 1.1", "SSLV3"])
         for f in findings
     )
     if proto.get("pinned_legacy_protocol") or has_legacy:
-        neg.append({"signal": "pinned_legacy_protocol", "penalty": 50.0, "description": "Insecure legacy protocols (TLS 1.0/1.1) permitted or pinned."})
+        neg.append(
+            {
+                "signal": "pinned_legacy_protocol",
+                "penalty": 50.0,
+                "description": "Insecure legacy protocols (TLS 1.0/1.1) permitted or pinned.",
+            }
+        )
         recs.append("Decommission TLS 1.0 and 1.1; mandate TLS 1.3 and modern cipher groups across all ingress points.")
 
     pos_pts = sum(s["points"] for s in pos)
@@ -355,20 +456,44 @@ def _eval_certificate_automation(findings: List[Dict[str, Any]], meta: Dict[str,
     cert = meta.get("certificate_automation") or {}
 
     if cert.get("acme_automated_renewal") or meta.get("acme_enabled"):
-        pos.append({"signal": "acme_automated_renewal", "points": 45.0, "description": "Automated ACME or CA enrollment pipeline active."})
+        pos.append(
+            {
+                "signal": "acme_automated_renewal",
+                "points": 45.0,
+                "description": "Automated ACME or CA enrollment pipeline active.",
+            }
+        )
     if cert.get("short_lived_certificates") or meta.get("short_lived_certs"):
-        pos.append({"signal": "short_lived_certificates", "points": 30.0, "description": "Certificate validity <= 90 days, shrinking compromise windows."})
+        pos.append(
+            {
+                "signal": "short_lived_certificates",
+                "points": 30.0,
+                "description": "Certificate validity <= 90 days, shrinking compromise windows.",
+            }
+        )
 
     has_expired = any(
-        (f.get("certificate_properties") or {}).get("isExpired") or
-        (f.get("certificate_properties") or {}).get("daysToExpiration", 999) <= 0
+        (f.get("certificate_properties") or {}).get("isExpired")
+        or (f.get("certificate_properties") or {}).get("daysToExpiration", 999) <= 0
         for f in findings
     )
     if cert.get("expired_or_imminent_expiration") or has_expired:
-        neg.append({"signal": "expired_or_imminent_expiration", "penalty": 45.0, "description": "Active certificates expired or expiring without automated renewal."})
+        neg.append(
+            {
+                "signal": "expired_or_imminent_expiration",
+                "penalty": 45.0,
+                "description": "Active certificates expired or expiring without automated renewal.",
+            }
+        )
         recs.append("Deploy automated certificate renewal (ACME / cert-manager) to prevent operational outages.")
     if cert.get("manual_certificate_provisioning") or meta.get("manual_certs"):
-        neg.append({"signal": "manual_certificate_provisioning", "penalty": 40.0, "description": "Certificates manually copied or uploaded to servers."})
+        neg.append(
+            {
+                "signal": "manual_certificate_provisioning",
+                "penalty": 40.0,
+                "description": "Certificates manually copied or uploaded to servers.",
+            }
+        )
         recs.append("Replace manual certificate handling with automated enrollment pipelines.")
 
     pos_pts = sum(s["points"] for s in pos)
@@ -391,12 +516,30 @@ def _eval_provider_abstraction(findings: List[Dict[str, Any]], meta: Dict[str, A
     prov = meta.get("provider_abstraction") or {}
 
     if prov.get("standard_provider_framework") or meta.get("uses_standard_provider"):
-        pos.append({"signal": "standard_provider_framework", "points": 45.0, "description": "Standardized provider architecture (JCA/JCE, WebCrypto, OpenSSL 3.x Providers) utilized."})
+        pos.append(
+            {
+                "signal": "standard_provider_framework",
+                "points": 45.0,
+                "description": "Standardized provider architecture (JCA/JCE, WebCrypto, OpenSSL 3.x Providers) utilized.",
+            }
+        )
     if prov.get("pkcs11_cng_hsm_abstraction"):
-        pos.append({"signal": "pkcs11_cng_hsm_abstraction", "points": 35.0, "description": "Hardware operations abstracted via PKCS#11 or CNG."})
+        pos.append(
+            {
+                "signal": "pkcs11_cng_hsm_abstraction",
+                "points": 35.0,
+                "description": "Hardware operations abstracted via PKCS#11 or CNG.",
+            }
+        )
 
     if prov.get("vendor_lock_in_api") or meta.get("vendor_lock_in"):
-        neg.append({"signal": "vendor_lock_in_api", "penalty": 45.0, "description": "Direct calls to proprietary, non-standard vendor cryptographic SDKs."})
+        neg.append(
+            {
+                "signal": "vendor_lock_in_api",
+                "penalty": 45.0,
+                "description": "Direct calls to proprietary, non-standard vendor cryptographic SDKs.",
+            }
+        )
         recs.append("Wrap proprietary vendor SDKs behind standard cryptographic provider abstractions.")
 
     pos_pts = sum(s["points"] for s in pos)
@@ -419,13 +562,31 @@ def _eval_dependency_coupling(findings: List[Dict[str, Any]], meta: Dict[str, An
     dep = meta.get("dependency_coupling") or {}
 
     if dep.get("isolated_crypto_service_module") or meta.get("isolated_crypto_service"):
-        pos.append({"signal": "isolated_crypto_service_module", "points": 45.0, "description": "Cryptographic functions isolated in a dedicated service or wrapper module."})
+        pos.append(
+            {
+                "signal": "isolated_crypto_service_module",
+                "points": 45.0,
+                "description": "Cryptographic functions isolated in a dedicated service or wrapper module.",
+            }
+        )
     if dep.get("low_blast_radius") or (meta.get("crypto_blast_radius", 99) <= 2):
-        pos.append({"signal": "low_blast_radius", "points": 35.0, "description": "Low blast radius: crypto dependencies isolated to <= 2 modules."})
+        pos.append(
+            {
+                "signal": "low_blast_radius",
+                "points": 35.0,
+                "description": "Low blast radius: crypto dependencies isolated to <= 2 modules.",
+            }
+        )
 
     high_blast = any(int(f.get("dependency_blast_radius") or f.get("blast_radius") or 0) >= 5 for f in findings)
     if dep.get("high_blast_radius_sprawl") or high_blast or (meta.get("crypto_blast_radius", 0) >= 5):
-        neg.append({"signal": "high_blast_radius_sprawl", "penalty": 45.0, "description": "High blast radius: crypto symbols imported across >= 5 business logic packages."})
+        neg.append(
+            {
+                "signal": "high_blast_radius_sprawl",
+                "penalty": 45.0,
+                "description": "High blast radius: crypto symbols imported across >= 5 business logic packages.",
+            }
+        )
         recs.append("Isolate cryptographic invocations into a shared gateway service to shrink blast radius.")
 
     pos_pts = sum(s["points"] for s in pos)
@@ -448,12 +609,30 @@ def _eval_test_coverage(findings: List[Dict[str, Any]], meta: Dict[str, Any]) ->
     tst = meta.get("test_coverage") or {}
 
     if tst.get("known_answer_tests_kat") or meta.get("has_kat_tests"):
-        pos.append({"signal": "known_answer_tests_kat", "points": 40.0, "description": "NIST CAVP / RFC Known Answer Tests (KAT) implemented."})
+        pos.append(
+            {
+                "signal": "known_answer_tests_kat",
+                "points": 40.0,
+                "description": "NIST CAVP / RFC Known Answer Tests (KAT) implemented.",
+            }
+        )
     if tst.get("downgrade_resilience_tests") or meta.get("has_downgrade_tests"):
-        pos.append({"signal": "downgrade_resilience_tests", "points": 35.0, "description": "Protocol downgrade resilience tests verify rejection of weak ciphers."})
+        pos.append(
+            {
+                "signal": "downgrade_resilience_tests",
+                "points": 35.0,
+                "description": "Protocol downgrade resilience tests verify rejection of weak ciphers.",
+            }
+        )
 
     if tst.get("zero_crypto_test_coverage") or meta.get("zero_crypto_tests"):
-        neg.append({"signal": "zero_crypto_test_coverage", "penalty": 50.0, "description": "Zero unit or integration tests covering cryptographic pathways."})
+        neg.append(
+            {
+                "signal": "zero_crypto_test_coverage",
+                "penalty": 50.0,
+                "description": "Zero unit or integration tests covering cryptographic pathways.",
+            }
+        )
         recs.append("Implement automated cryptographic unit tests and Known Answer Tests (KAT).")
 
     pos_pts = sum(s["points"] for s in pos)
@@ -475,17 +654,46 @@ def _eval_pqc_hybrid_readiness(findings: List[Dict[str, Any]], meta: Dict[str, A
     pos, neg, recs = [], [], []
     pqc = meta.get("pqc_hybrid_readiness") or {}
 
-    has_hybrid = any("MLKEM" in str(f.get("algorithm") or "").upper() or "ML-KEM" in str(f.get("algorithm") or "").upper() for f in findings)
+    has_hybrid = any(
+        "MLKEM" in str(f.get("algorithm") or "").upper() or "ML-KEM" in str(f.get("algorithm") or "").upper()
+        for f in findings
+    )
     if pqc.get("pqc_capable_library_dependency") or meta.get("has_pqc_library"):
-        pos.append({"signal": "pqc_capable_library_dependency", "points": 40.0, "description": "Dependencies include PQC-enabled libraries (OpenSSL 3.4+, liboqs, BoringSSL)."})
+        pos.append(
+            {
+                "signal": "pqc_capable_library_dependency",
+                "points": 40.0,
+                "description": "Dependencies include PQC-enabled libraries (OpenSSL 3.4+, liboqs, BoringSSL).",
+            }
+        )
     if pqc.get("hybrid_key_exchange_support") or has_hybrid or meta.get("hybrid_supported"):
-        pos.append({"signal": "hybrid_key_exchange_support", "points": 35.0, "description": "Architecture actively supports hybrid post-quantum key exchange."})
+        pos.append(
+            {
+                "signal": "hybrid_key_exchange_support",
+                "points": 35.0,
+                "description": "Architecture actively supports hybrid post-quantum key exchange.",
+            }
+        )
     if pqc.get("pqc_buffer_tolerance") or meta.get("pqc_buffer_tolerance"):
-        pos.append({"signal": "pqc_buffer_tolerance", "points": 25.0, "description": "Buffers and network MTUs accommodate larger PQC public keys and signatures."})
+        pos.append(
+            {
+                "signal": "pqc_buffer_tolerance",
+                "points": 25.0,
+                "description": "Buffers and network MTUs accommodate larger PQC public keys and signatures.",
+            }
+        )
 
     if pqc.get("pqc_intolerant_buffer_limits") or meta.get("pqc_intolerant_buffer_limits"):
-        neg.append({"signal": "pqc_intolerant_buffer_limits", "penalty": 45.0, "description": "Buffer or column size limits will crash on larger PQC key shares or signatures."})
-        recs.append("Expand buffer and database column definitions to accommodate post-quantum key and signature sizes.")
+        neg.append(
+            {
+                "signal": "pqc_intolerant_buffer_limits",
+                "penalty": 45.0,
+                "description": "Buffer or column size limits will crash on larger PQC key shares or signatures.",
+            }
+        )
+        recs.append(
+            "Expand buffer and database column definitions to accommodate post-quantum key and signature sizes."
+        )
 
     pos_pts = sum(s["points"] for s in pos)
     neg_pts = sum(s["penalty"] for s in neg)
@@ -507,14 +715,38 @@ def _eval_rollback_capability(findings: List[Dict[str, Any]], meta: Dict[str, An
     roll = meta.get("rollback_capability") or {}
 
     if roll.get("runtime_feature_flag_rollback") or meta.get("has_feature_flags"):
-        pos.append({"signal": "runtime_feature_flag_rollback", "points": 40.0, "description": "Algorithm selection controllable via runtime feature flags or reverse proxy toggles."})
+        pos.append(
+            {
+                "signal": "runtime_feature_flag_rollback",
+                "points": 40.0,
+                "description": "Algorithm selection controllable via runtime feature flags or reverse proxy toggles.",
+            }
+        )
     if roll.get("dual_stack_fallback") or meta.get("dual_stack_supported"):
-        pos.append({"signal": "dual_stack_fallback", "points": 35.0, "description": "Dual-stack verification and backward-compatible fallback enabled."})
+        pos.append(
+            {
+                "signal": "dual_stack_fallback",
+                "points": 35.0,
+                "description": "Dual-stack verification and backward-compatible fallback enabled.",
+            }
+        )
     if roll.get("automated_telemetry_tripwires") or meta.get("telemetry_tripwires"):
-        pos.append({"signal": "automated_telemetry_tripwires", "points": 25.0, "description": "Monitoring alerts trigger automated circuit breaker rollbacks."})
+        pos.append(
+            {
+                "signal": "automated_telemetry_tripwires",
+                "points": 25.0,
+                "description": "Monitoring alerts trigger automated circuit breaker rollbacks.",
+            }
+        )
 
     if roll.get("irreversible_crypto_migration") or meta.get("irreversible_migration"):
-        neg.append({"signal": "irreversible_crypto_migration", "penalty": 50.0, "description": "Irreversible cryptographic data migration without failover rollback mechanism."})
+        neg.append(
+            {
+                "signal": "irreversible_crypto_migration",
+                "penalty": 50.0,
+                "description": "Irreversible cryptographic data migration without failover rollback mechanism.",
+            }
+        )
         recs.append("Design two-phase dual-read/write migration pipelines to maintain instant rollback capabilities.")
 
     pos_pts = sum(s["points"] for s in pos)
@@ -535,30 +767,36 @@ def _generate_quick_wins(dims_map: Dict[str, Any]) -> List[Dict[str, str]]:
     quick_wins = []
     centralized = dims_map.get("centralized_algorithm_configuration")
     if centralized and centralized["raw_score"] < 60.0:
-        quick_wins.append({
-            "dimension": "Centralized Algorithm Configuration",
-            "effort": "LOW",
-            "impact": "HIGH",
-            "action": "Extract hardcoded algorithm and cipher strings into environment variables or a policy configuration file.",
-        })
+        quick_wins.append(
+            {
+                "dimension": "Centralized Algorithm Configuration",
+                "effort": "LOW",
+                "impact": "HIGH",
+                "action": "Extract hardcoded algorithm and cipher strings into environment variables or a policy configuration file.",
+            }
+        )
 
     cert = dims_map.get("certificate_automation")
     if cert and cert["raw_score"] < 60.0:
-        quick_wins.append({
-            "dimension": "Certificate Automation",
-            "effort": "LOW",
-            "impact": "HIGH",
-            "action": "Enable ACME automated renewal on ingress reverse proxies to eliminate manual certificate renewals.",
-        })
+        quick_wins.append(
+            {
+                "dimension": "Certificate Automation",
+                "effort": "LOW",
+                "impact": "HIGH",
+                "action": "Enable ACME automated renewal on ingress reverse proxies to eliminate manual certificate renewals.",
+            }
+        )
 
     rollback = dims_map.get("rollback_capability")
     if rollback and rollback["raw_score"] < 60.0:
-        quick_wins.append({
-            "dimension": "Rollback Capability",
-            "effort": "LOW",
-            "impact": "MEDIUM",
-            "action": "Place cipher suite selection behind dynamic runtime configuration flags for instant zero-downtime rollback.",
-        })
+        quick_wins.append(
+            {
+                "dimension": "Rollback Capability",
+                "effort": "LOW",
+                "impact": "MEDIUM",
+                "action": "Place cipher suite selection behind dynamic runtime configuration flags for instant zero-downtime rollback.",
+            }
+        )
 
     return quick_wins
 

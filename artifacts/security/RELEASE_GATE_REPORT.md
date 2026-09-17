@@ -1,6 +1,6 @@
 # ECDAT Supply-Chain Release Gate Audit Report
 
-**Execution Timestamp**: `2026-09-17T01:10:57.452181+00:00`  
+**Execution Timestamp**: `2026-09-17T01:43:02.096734+00:00`  
 **Verdict**: **`PASS`** (7/7 gates passed)  
 
 ---

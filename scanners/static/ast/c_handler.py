@@ -63,15 +63,56 @@ class CCryptoRuleProvider(CryptoRuleProvider):
         return [
             CryptoDetectionRule("C_WEAK_HASH_MD5", "MD5", "EVP_md5() / MD5()", "weak_hash", "critical", "high"),
             CryptoDetectionRule("C_WEAK_HASH_SHA1", "SHA-1", "EVP_sha1() / SHA1()", "weak_hash", "high", "high"),
-            CryptoDetectionRule("C_WEAK_CIPHER_DES", "DES", "EVP_des_cbc() / mbedtls_des_crypt_ecb()", "weak_cipher", "critical", "high"),
+            CryptoDetectionRule(
+                "C_WEAK_CIPHER_DES", "DES", "EVP_des_cbc() / mbedtls_des_crypt_ecb()", "weak_cipher", "critical", "high"
+            ),
             CryptoDetectionRule("C_WEAK_CIPHER_RC4", "RC4", "EVP_rc4()", "weak_cipher", "critical", "high"),
-            CryptoDetectionRule("C_WEAK_CIPHER_BLOWFISH", "Blowfish", "EVP_bf_cbc()", "weak_cipher", "critical", "high"),
-            CryptoDetectionRule("C_INSECURE_CIPHER_MODE_ECB", "ECB", "EVP_aes_128_ecb()", "insecure_cipher_mode", "critical", "high"),
-            CryptoDetectionRule("C_WEAK_RSA_KEY_SIZE", "RSA-Weak", "RSA_generate_key_ex(rsa, 1024, ...)", "weak_asymmetric_key", "critical", "high"),
-            CryptoDetectionRule("C_WEAK_ECC_CURVE", "ECDSA-P224", "EC_KEY_new_by_curve_name(NID_secp224k1)", "weak_asymmetric_key", "high", "high"),
-            CryptoDetectionRule("C_DISABLED_CERT_VALIDATION", "SSL_VERIFY_NONE", "SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL)", "disabled_certificate_validation", "critical", "high"),
-            CryptoDetectionRule("C_INSECURE_TLS_VERSION", "TLSv1.0", "SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION)", "insecure_tls_protocol", "critical", "high"),
-            CryptoDetectionRule("C_WEAK_CERT_SIGNATURE_ALGO", "MD5WithRSA", "X509_sign(x, pkey, EVP_md5())", "weak_signature_algorithm", "critical", "high"),
+            CryptoDetectionRule(
+                "C_WEAK_CIPHER_BLOWFISH", "Blowfish", "EVP_bf_cbc()", "weak_cipher", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "C_INSECURE_CIPHER_MODE_ECB", "ECB", "EVP_aes_128_ecb()", "insecure_cipher_mode", "critical", "high"
+            ),
+            CryptoDetectionRule(
+                "C_WEAK_RSA_KEY_SIZE",
+                "RSA-Weak",
+                "RSA_generate_key_ex(rsa, 1024, ...)",
+                "weak_asymmetric_key",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "C_WEAK_ECC_CURVE",
+                "ECDSA-P224",
+                "EC_KEY_new_by_curve_name(NID_secp224k1)",
+                "weak_asymmetric_key",
+                "high",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "C_DISABLED_CERT_VALIDATION",
+                "SSL_VERIFY_NONE",
+                "SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL)",
+                "disabled_certificate_validation",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "C_INSECURE_TLS_VERSION",
+                "TLSv1.0",
+                "SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION)",
+                "insecure_tls_protocol",
+                "critical",
+                "high",
+            ),
+            CryptoDetectionRule(
+                "C_WEAK_CERT_SIGNATURE_ALGO",
+                "MD5WithRSA",
+                "X509_sign(x, pkey, EVP_md5())",
+                "weak_signature_algorithm",
+                "critical",
+                "high",
+            ),
         ]
 
 

@@ -117,9 +117,7 @@ class FingerprintEngine:
         return sha.hexdigest()
 
     def compute_policy_fingerprint(
-        self,
-        policy_files: Optional[List[Path]] = None,
-        policy_profile: Optional[str] = None
+        self, policy_files: Optional[List[Path]] = None, policy_profile: Optional[str] = None
     ) -> Tuple[str, List[str]]:
         """
         Computes SHA-256 digest of active policy-as-code files and compliance catalogs.
@@ -196,7 +194,7 @@ class FingerprintEngine:
         self,
         config_dict: Dict[str, Any],
         policy_files: Optional[List[Path]] = None,
-        policy_profile: Optional[str] = None
+        policy_profile: Optional[str] = None,
     ) -> ScanFingerprints:
         """
         Generates full multi-dimensional fingerprint vector and global Environment Digest.
@@ -226,7 +224,9 @@ class FingerprintEngine:
         )
 
     @staticmethod
-    def is_environment_stale(cached_fingerprints: Dict[str, Any], current_fingerprints: ScanFingerprints) -> Tuple[bool, List[str]]:
+    def is_environment_stale(
+        cached_fingerprints: Dict[str, Any], current_fingerprints: ScanFingerprints
+    ) -> Tuple[bool, List[str]]:
         """
         Validates whether cached state has become stale due to any fingerprint drift.
         Returns (is_stale, list_of_drift_reasons).

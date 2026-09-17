@@ -151,7 +151,9 @@ def test_clean_c_and_cpp_detection(c_adapter, cpp_adapter):
     cpp_findings = cpp_adapter.extract_findings(cpp_bytes, cpp_fixture, Path("tests/fixtures/static"))
 
     critical_or_high_cpp = [f for f in cpp_findings if f.severity in ("critical", "high")]
-    assert len(critical_or_high_cpp) == 0, f"Unexpected critical/high findings in clean C++ code: {critical_or_high_cpp}"
+    assert len(critical_or_high_cpp) == 0, (
+        f"Unexpected critical/high findings in clean C++ code: {critical_or_high_cpp}"
+    )
 
     cpp_rules = {f.rule_id for f in cpp_findings}
     assert "CPP_BOTAN_HASH_SECURE" in cpp_rules

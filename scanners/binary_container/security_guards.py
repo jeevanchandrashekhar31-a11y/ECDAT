@@ -29,47 +29,63 @@ DEFAULT_TRUSTED_REGISTRIES = {
 
 # Cloud metadata services and sensitive endpoints
 BLOCKED_HOSTS_AND_IPS = {
-    "169.254.169.254",          # AWS / GCP / Azure IMDS
-    "metadata.google.internal", # GCP
-    "100.100.100.200",          # Alibaba IMDS
-    "169.254.169.253",          # AWS DNS
+    "169.254.169.254",  # AWS / GCP / Azure IMDS
+    "metadata.google.internal",  # GCP
+    "100.100.100.200",  # Alibaba IMDS
+    "169.254.169.253",  # AWS DNS
     "instance-data",
     "localhost",
 }
 
 # Sensitive credential keywords for environment and config sanitization
 SENSITIVE_KEY_PATTERNS = [
-    re.compile(p, re.IGNORECASE) for p in [
-        r"password", r"secret", r"token", r"api[_-]?key", r"auth",
-        r"cred(?:ential)?", r"private[_-]?key", r"cert(?:ificate)?",
-        r"access[_-]?key", r"signing[_-]?key", r"jwt", r"bearer",
-        r"ssh[_-]?key", r"passphrase",
+    re.compile(p, re.IGNORECASE)
+    for p in [
+        r"password",
+        r"secret",
+        r"token",
+        r"api[_-]?key",
+        r"auth",
+        r"cred(?:ential)?",
+        r"private[_-]?key",
+        r"cert(?:ificate)?",
+        r"access[_-]?key",
+        r"signing[_-]?key",
+        r"jwt",
+        r"bearer",
+        r"ssh[_-]?key",
+        r"passphrase",
     ]
 ]
 
 
 class SecurityGuardError(ValueError):
     """Raised when a security guard invariant is violated."""
+
     pass
 
 
 class RegistrySSRFError(SecurityGuardError):
     """Raised when an image registry attempts SSRF against private or metadata endpoints."""
+
     pass
 
 
 class UntrustedRegistryError(SecurityGuardError):
     """Raised when an image registry is not in the trusted registry allowlist."""
+
     pass
 
 
 class DecompressionBombError(SecurityGuardError):
     """Raised when an archive exceeds expansion ratio, layer size, or file count limits."""
+
     pass
 
 
 class PathTraversalError(SecurityGuardError):
     """Raised when an archive member attempts directory traversal (TarSlip)."""
+
     pass
 
 
@@ -173,7 +189,10 @@ def validate_registry_security(
     Returns: (resolved_registry, repository)
     """
     # Reject URL schemes
-    if any(image_reference.lower().startswith(scheme) for scheme in ["http://", "https://", "file://", "ftp://", "gopher://"]):
+    if any(
+        image_reference.lower().startswith(scheme)
+        for scheme in ["http://", "https://", "file://", "ftp://", "gopher://"]
+    ):
         raise RegistrySSRFError(f"URL schemes are forbidden in container image references: {image_reference}")
 
     registry, repo, tag, digest = parse_image_reference(image_reference)
@@ -287,9 +306,7 @@ class SafeArchiveExtractor:
                 try:
                     target_path.relative_to(extract_to_resolved)
                 except ValueError:
-                    raise PathTraversalError(
-                        f"Blocked TarSlip path traversal attempt in archive member: {member.name}"
-                    )
+                    raise PathTraversalError(f"Blocked TarSlip path traversal attempt in archive member: {member.name}")
 
                 # Block special device nodes or FIFOs
                 if member.isdev() or member.ischr() or member.isblk() or member.isfifo():

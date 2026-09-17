@@ -18,19 +18,22 @@ from scanners.api_security import (
 class TestSsrfProtection:
     """Test SSRF validation against private networks, cloud metadata, and invalid schemes."""
 
-    @pytest.mark.parametrize("bad_url, expected_error_fragment", [
-        ("http://127.0.0.1/admin", "forbidden target"),
-        ("http://localhost:8080/metrics", "forbidden target"),
-        ("http://169.254.169.254/latest/meta-data/", "forbidden target"),
-        ("http://metadata.google.internal/computeMetadata/v1/", "forbidden target"),
-        ("http://10.0.1.5:9200/_search", "private/link-local"),
-        ("http://192.168.1.1/router", "private/link-local"),
-        ("http://172.16.5.10/internal", "private/link-local"),
-        ("ftp://files.example.com/dump.zip", "Protocol 'ftp' is not permitted"),
-        ("file:///etc/passwd", "Protocol 'file' is not permitted"),
-        ("gopher://127.0.0.1:6379/_flushall", "Protocol 'gopher' is not permitted"),
-        ("https://admin:secret@api.example.com/webhook", "Embedded credentials"),
-    ])
+    @pytest.mark.parametrize(
+        "bad_url, expected_error_fragment",
+        [
+            ("http://127.0.0.1/admin", "forbidden target"),
+            ("http://localhost:8080/metrics", "forbidden target"),
+            ("http://169.254.169.254/latest/meta-data/", "forbidden target"),
+            ("http://metadata.google.internal/computeMetadata/v1/", "forbidden target"),
+            ("http://10.0.1.5:9200/_search", "private/link-local"),
+            ("http://192.168.1.1/router", "private/link-local"),
+            ("http://172.16.5.10/internal", "private/link-local"),
+            ("ftp://files.example.com/dump.zip", "Protocol 'ftp' is not permitted"),
+            ("file:///etc/passwd", "Protocol 'file' is not permitted"),
+            ("gopher://127.0.0.1:6379/_flushall", "Protocol 'gopher' is not permitted"),
+            ("https://admin:secret@api.example.com/webhook", "Embedded credentials"),
+        ],
+    )
     def test_ssrf_rejects_malicious_urls(self, bad_url, expected_error_fragment):
         safe, err = validate_safe_url(bad_url)
         assert safe is False
@@ -117,7 +120,7 @@ class TestInjectionProtection:
         safe_data = {
             "algorithm": "AES-256-GCM",
             "keyLength": 256,
-            "evidence": "db.query('SELECT name FROM assets WHERE id = 1')", # exempt code field
+            "evidence": "db.query('SELECT name FROM assets WHERE id = 1')",  # exempt code field
             "description": "Standard cryptographic scan on database endpoint",
         }
         res = inspect_for_injection(safe_data)
@@ -131,7 +134,7 @@ class TestMassAssignmentAndBopla:
         payload = {
             "displayName": "Jeevan C",
             "email": "jeevan@enterprise.internal",
-            "role": "admin", # Forbidden mass assignment
+            "role": "admin",  # Forbidden mass assignment
         }
         valid, violations = validate_mass_assignment(payload, is_admin=False)
         assert valid is False

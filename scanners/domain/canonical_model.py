@@ -65,6 +65,7 @@ class ProvenanceRecord:
     """
     Immutable provenance metadata tracking origin, scanner version, and observation context.
     """
+
     scanner_name: str
     scanner_version: str
     source_kind: str  # source_code, dependency_manifest, binary_elf, container_layer, network_handshake, runtime_uprobe, cbom_import
@@ -92,6 +93,7 @@ class CanonicalCryptoEntity:
     """
     Canonical base entity representing any node in the ECDAT Crypto Asset Inventory.
     """
+
     entity_id: str
     entity_type: AssetType
     name: str
@@ -168,6 +170,7 @@ class CanonicalRelationship:
     Supports: USES, PROTECTS, PRESENT_IN, DEPENDS_ON, OBSERVED_BY, TERMINATES_AT,
     OWNED_BY, VIOLATES, REMEDIATED_BY, and first-class hybrid component relationships.
     """
+
     relationship_id: str
     source_id: str
     target_id: str
@@ -241,7 +244,7 @@ class CanonicalCryptoInventory:
     def add_relationship(self, relationship: CanonicalRelationship) -> CanonicalRelationship:
         # Validate that connected entities exist or register stubs
         self.relationships[relationship.relationship_id] = relationship
-        
+
         if relationship.source_id not in self._out_edges:
             self._out_edges[relationship.source_id] = set()
         self._out_edges[relationship.source_id].add(relationship.relationship_id)

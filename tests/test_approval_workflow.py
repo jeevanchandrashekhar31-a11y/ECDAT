@@ -93,7 +93,9 @@ def test_four_eyes_governance_violation(engine):
     proposer = {"username": "alice_engineer", "role": "developer"}
     reviewer = {"username": "bob_lead", "role": "reviewer"}
 
-    req = engine.propose_remediation({"title": "Renew production cert", "category": "key/certificate rotation"}, proposer=proposer)
+    req = engine.propose_remediation(
+        {"title": "Renew production cert", "category": "key/certificate rotation"}, proposer=proposer
+    )
     appr_id = req["approval_id"]
     engine.review_remediation(appr_id, reviewer=reviewer)
 
@@ -132,14 +134,18 @@ def test_rollback_state_transition(engine):
     approver = {"username": "charlie_secadmin", "role": "admin"}
     deployer = {"username": "cd_pipeline", "role": "deployer"}
 
-    req = engine.propose_remediation({"title": "Host config change", "category": "infrastructure changes"}, proposer=proposer)
+    req = engine.propose_remediation(
+        {"title": "Host config change", "category": "infrastructure changes"}, proposer=proposer
+    )
     appr_id = req["approval_id"]
     engine.review_remediation(appr_id, reviewer=reviewer)
     engine.approve_remediation(appr_id, approver=approver)
     engine.apply_remediation(appr_id, deployer=deployer)
 
     # Rollback
-    rolled_back = engine.rollback_remediation(appr_id, actor={"username": "secops", "role": "admin"}, reason="Latency spike > 50ms")
+    rolled_back = engine.rollback_remediation(
+        appr_id, actor={"username": "secops", "role": "admin"}, reason="Latency spike > 50ms"
+    )
     assert rolled_back["state"] == "ROLLED_BACK"
 
 
@@ -148,5 +154,7 @@ def test_fail_state_transition(engine):
     req = engine.propose_remediation({"title": "Test change", "category": "other"}, proposer=proposer)
     appr_id = req["approval_id"]
 
-    failed = engine.fail_remediation(appr_id, actor={"username": "qa_tester", "role": "qa"}, reason="Syntax error detected")
+    failed = engine.fail_remediation(
+        appr_id, actor={"username": "qa_tester", "role": "qa"}, reason="Syntax error detected"
+    )
     assert failed["state"] == "FAILED"

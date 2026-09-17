@@ -127,7 +127,10 @@ def test_classical_weakness_remediations(planner):
 
     des_finding = {"algorithm": "3DES", "asset_type": "cipher", "severity": "CRITICAL"}
     plan_des = planner.plan_finding_remediation(des_finding)
-    assert "Sweet32" in plan_des["why_it_matters"]["summary"] or "collision" in plan_des["why_it_matters"]["summary"].lower()
+    assert (
+        "Sweet32" in plan_des["why_it_matters"]["summary"]
+        or "collision" in plan_des["why_it_matters"]["summary"].lower()
+    )
     assert "AES-256-GCM" in plan_des["recommended_remediation"]["summary"]
 
 
@@ -178,8 +181,8 @@ def test_cbom_remediation_planning(planner):
                     "assetType": "algorithm",
                     "algorithmProperties": {
                         "name": "DES",
-                    }
-                }
+                    },
+                },
             },
             {
                 "name": "RSA Ingress Cert",
@@ -189,10 +192,10 @@ def test_cbom_remediation_planning(planner):
                     "algorithmProperties": {
                         "name": "RSA",
                         "parameterSetIdentifier": "2048",
-                    }
-                }
-            }
-        ]
+                    },
+                },
+            },
+        ],
     }
 
     plan = planner.plan_remediations(cbom_data)

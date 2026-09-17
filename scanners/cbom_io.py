@@ -282,32 +282,36 @@ def cbom_to_csv(bom_or_data: Union[Bom, dict, str]) -> str:
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        "BOM_Ref",
-        "Component_Name",
-        "Asset_Type",
-        "Algorithm",
-        "Key_Size_Bits",
-        "Risk_Level",
-        "Quantum_Vulnerable",
-        "Policy_Status",
-        "Reachability",
-        "Reasons",
-    ])
+    writer.writerow(
+        [
+            "BOM_Ref",
+            "Component_Name",
+            "Asset_Type",
+            "Algorithm",
+            "Key_Size_Bits",
+            "Risk_Level",
+            "Quantum_Vulnerable",
+            "Policy_Status",
+            "Reachability",
+            "Reasons",
+        ]
+    )
 
     for a in assets:
-        writer.writerow([
-            a.get("bom_ref", ""),
-            a.get("name", ""),
-            a.get("asset_type", ""),
-            a.get("algorithm", ""),
-            a.get("key_size", "") or "",
-            a.get("risk_level", ""),
-            "YES" if a.get("quantum_vulnerable") else "NO",
-            a.get("policy_status", ""),
-            a.get("reachability", ""),
-            "; ".join(a.get("reasons", [])),
-        ])
+        writer.writerow(
+            [
+                a.get("bom_ref", ""),
+                a.get("name", ""),
+                a.get("asset_type", ""),
+                a.get("algorithm", ""),
+                a.get("key_size", "") or "",
+                a.get("risk_level", ""),
+                "YES" if a.get("quantum_vulnerable") else "NO",
+                a.get("policy_status", ""),
+                a.get("reachability", ""),
+                "; ".join(a.get("reasons", [])),
+            ]
+        )
 
     return output.getvalue()
 
@@ -332,17 +336,19 @@ def cbom_to_sarif(bom_or_data: Union[Bom, dict, str]) -> str:
         rule_id = f"ECDAT-{a.get('algorithm', 'CRYPTO')}-{a.get('risk_level', 'WARN')}"
         if rule_id not in rule_ids_seen:
             rule_ids_seen.add(rule_id)
-            sarif_rules.append({
-                "id": rule_id,
-                "name": f"CryptographicRisk_{a.get('algorithm', 'Asset')}",
-                "shortDescription": {"text": f"Cryptographic risk detected for {a.get('algorithm')}"},
-                "fullDescription": {
-                    "text": f"Identified {a.get('risk_level')} risk cryptographic asset: {a.get('algorithm')} ({a.get('asset_type')})."
-                },
-                "defaultConfiguration": {
-                    "level": "error" if a.get("risk_level") in ("CRITICAL", "HIGH") else "warning"
-                },
-            })
+            sarif_rules.append(
+                {
+                    "id": rule_id,
+                    "name": f"CryptographicRisk_{a.get('algorithm', 'Asset')}",
+                    "shortDescription": {"text": f"Cryptographic risk detected for {a.get('algorithm')}"},
+                    "fullDescription": {
+                        "text": f"Identified {a.get('risk_level')} risk cryptographic asset: {a.get('algorithm')} ({a.get('asset_type')})."
+                    },
+                    "defaultConfiguration": {
+                        "level": "error" if a.get("risk_level") in ("CRITICAL", "HIGH") else "warning"
+                    },
+                }
+            )
 
         comp = components.get(a.get("bom_ref"), {})
         evidence = comp.get("evidence", {})
@@ -354,26 +360,28 @@ def cbom_to_sarif(bom_or_data: Union[Bom, dict, str]) -> str:
             loc_uri = first_occ.get("location", "crypto-inventory")
             loc_line = int(first_occ.get("line", 1) or 1)
 
-        sarif_results.append({
-            "ruleId": rule_id,
-            "level": "error" if a.get("risk_level") in ("CRITICAL", "HIGH") else "warning",
-            "message": {
-                "text": f"{a.get('name')}: {'; '.join(a.get('reasons', ['Risk detected']))} [Policy: {a.get('policy_status')}]"
-            },
-            "locations": [
-                {
-                    "physicalLocation": {
-                        "artifactLocation": {"uri": loc_uri},
-                        "region": {"startLine": loc_line},
+        sarif_results.append(
+            {
+                "ruleId": rule_id,
+                "level": "error" if a.get("risk_level") in ("CRITICAL", "HIGH") else "warning",
+                "message": {
+                    "text": f"{a.get('name')}: {'; '.join(a.get('reasons', ['Risk detected']))} [Policy: {a.get('policy_status')}]"
+                },
+                "locations": [
+                    {
+                        "physicalLocation": {
+                            "artifactLocation": {"uri": loc_uri},
+                            "region": {"startLine": loc_line},
+                        }
                     }
-                }
-            ],
-            "properties": {
-                "bomRef": a.get("bom_ref"),
-                "reachability": a.get("reachability"),
-                "quantumVulnerable": a.get("quantum_vulnerable"),
-            },
-        })
+                ],
+                "properties": {
+                    "bomRef": a.get("bom_ref"),
+                    "reachability": a.get("reachability"),
+                    "quantumVulnerable": a.get("quantum_vulnerable"),
+                },
+            }
+        )
 
     sarif_doc = {
         "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",

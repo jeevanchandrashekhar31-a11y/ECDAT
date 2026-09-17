@@ -21,6 +21,7 @@ from .crypto_detector import detect_crypto_indicators, KNOWN_CRYPTO_LIBRARIES
 from .library_fingerprinter import LibraryFingerprinter, FingerprintEvidence
 from .worker_pool import WorkerIsolatedBinaryAnalyzer
 
+
 # Convenient top-level analyzer function
 def analyze_binary(
     file_path: str,

@@ -20,7 +20,7 @@ from scanners.common.archive_guard import (
     ArchiveSecurityGuard,
     DecompressionBombError,
     PathTraversalError,
-    NestedArchiveError
+    NestedArchiveError,
 )
 
 
@@ -28,11 +28,11 @@ from scanners.common.archive_guard import (
 def guard():
     """Archive security guard with lowered limits for fast, isolated testing."""
     return ArchiveSecurityGuard(
-        max_total_bytes=10 * 1024 * 1024,   # 10 MB total
-        max_entry_size=2 * 1024 * 1024,     # 2 MB max entry
+        max_total_bytes=10 * 1024 * 1024,  # 10 MB total
+        max_entry_size=2 * 1024 * 1024,  # 2 MB max entry
         max_files_count=50,
-        max_compression_ratio=20.0,         # 20:1 max ratio for testing
-        allow_nested=False
+        max_compression_ratio=20.0,  # 20:1 max ratio for testing
+        allow_nested=False,
     )
 
 

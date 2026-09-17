@@ -127,12 +127,16 @@ class TestHybridHandshakeAnalysis:
         assert HybridRelationshipType.USES_HYBRID_COMBINER in rel_types
 
         # Inspect components
-        pqc_rel = next(r for r in props.relationships if r.relationship_type == HybridRelationshipType.HAS_POST_QUANTUM_COMPONENT)
+        pqc_rel = next(
+            r for r in props.relationships if r.relationship_type == HybridRelationshipType.HAS_POST_QUANTUM_COMPONENT
+        )
         assert pqc_rel.target_id == "algo:ml_kem_768"
         assert pqc_rel.properties["quantum_resilient"] is True
         assert pqc_rel.properties["nist_level"] == 3
 
-        classical_rel = next(r for r in props.relationships if r.relationship_type == HybridRelationshipType.HAS_CLASSICAL_COMPONENT)
+        classical_rel = next(
+            r for r in props.relationships if r.relationship_type == HybridRelationshipType.HAS_CLASSICAL_COMPONENT
+        )
         assert classical_rel.target_id == "algo:x25519"
         assert classical_rel.properties["quantum_resilient"] is False
 

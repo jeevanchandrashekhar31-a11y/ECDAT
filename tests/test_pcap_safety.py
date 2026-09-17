@@ -14,17 +14,12 @@ import time
 from pathlib import Path
 import pytest
 
-from scanners.network.pcap_parser import (
-    SafePcapParser,
-    PcapSizeLimitError,
-    PcapSecurityError,
-    LINKTYPE_ETHERNET
-)
+from scanners.network.pcap_parser import SafePcapParser, PcapSizeLimitError, PcapSecurityError, LINKTYPE_ETHERNET
 
 
 def make_pcap_bytes(packets: list, snaplen: int = 65535, endian: str = "<") -> bytes:
     """Helper to synthesize a classic PCAP file buffer."""
-    magic = 0xa1b2c3d4 if endian == "<" else 0xd4c3b2a1
+    magic = 0xA1B2C3D4 if endian == "<" else 0xD4C3B2A1
     # Global header: magic(4), v_maj(2), v_min(2), thiszone(4), sigfigs(4), snaplen(4), network(4)
     hdr = struct.pack(f"{endian}IHHiIII", magic, 2, 4, 0, 0, snaplen, LINKTYPE_ETHERNET)
     body = bytearray(hdr)
@@ -62,7 +57,7 @@ def parser():
         max_size_bytes=5 * 1024 * 1024,  # 5 MB
         max_packet_count=50,
         max_recursion=3,
-        max_time_seconds=2.0
+        max_time_seconds=2.0,
     )
 
 
@@ -98,7 +93,7 @@ def test_malformed_truncated_packets_produce_diagnostics_not_crashes(parser, tmp
     pcap_path = tmp_path / "corrupted.pcap"
 
     # Packet with corrupted incl_len claiming 60,000 bytes when only 10 bytes exist
-    magic = 0xa1b2c3d4
+    magic = 0xA1B2C3D4
     hdr = struct.pack("<IHHiIII", magic, 2, 4, 0, 0, 65535, LINKTYPE_ETHERNET)
     # Packet header declaring incl_len=60000, orig_len=60000, but followed by only 10 bytes
     pkt_hdr = struct.pack("<IIII", int(time.time()), 0, 60000, 60000)

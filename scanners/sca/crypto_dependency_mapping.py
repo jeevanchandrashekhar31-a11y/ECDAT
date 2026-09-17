@@ -43,10 +43,10 @@ def extract_name_from_purl(purl: str) -> str:
     if not purl or not isinstance(purl, str):
         return ""
     import urllib.parse
+
     stripped = re.sub(r"^pkg:[^/]+/", "", purl, flags=re.IGNORECASE)
     name_part = re.split(r"[@#?]", stripped)[0]
     return urllib.parse.unquote(name_part).lower()
-
 
 
 @dataclass
@@ -77,7 +77,7 @@ class CryptoDependencyKnowledgeBase:
     def _load(self):
         if not os.path.exists(self.mapping_file):
             raise FileNotFoundError(f"Crypto mapping rule file not found: {self.mapping_file}")
-        
+
         with open(self.mapping_file, "r", encoding="utf-8") as f:
             data = json.load(f)
 
@@ -212,7 +212,10 @@ class CryptoReachabilityClassifier:
                 cstr_lower = cstr.lower()
                 if any(api.lower() in cstr_lower or cstr_lower in api.lower() for api in kb_entry.api_identifiers):
                     verified_calls.append(cstr)
-                elif isinstance(c, dict) and c.get("target_package", "").lower() in (package_name.lower(), canonical.lower()):
+                elif isinstance(c, dict) and c.get("target_package", "").lower() in (
+                    package_name.lower(),
+                    canonical.lower(),
+                ):
                     verified_calls.append(cstr)
         else:
             for c in direct_calls:
@@ -355,7 +358,10 @@ class CryptoReachabilityClassifier:
                 if matches_tgt and (api or f.get("type") in ("api_call", "call")):
                     matched_calls.append(f)
                 elif kb_entry and kb_entry.api_identifiers:
-                    if any((api and ident.lower() in api) or (snip and ident.lower() in snip) for ident in kb_entry.api_identifiers):
+                    if any(
+                        (api and ident.lower() in api) or (snip and ident.lower() in snip)
+                        for ident in kb_entry.api_identifiers
+                    ):
                         matched_calls.append(f)
 
             # Match runtime

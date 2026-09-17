@@ -174,4 +174,3 @@ class TlsScanner:
             finding.error_reason = str(e)
 
         return finding
-

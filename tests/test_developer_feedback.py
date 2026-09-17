@@ -85,17 +85,20 @@ def test_developer_feedback_has_all_9_dimensions():
     assert "src/auth/hasher.py" in feedback.verification_command
 
 
-@pytest.mark.parametrize("algo,finding_type,expected_keyword", [
-    ("MD5", "weak_hash", "collision"),
-    ("SHA-1", "weak_hash", "collision"),
-    ("DES", "weak_cipher", "56-bit"),
-    ("3DES", "weak_cipher", "sweet32"),
-    ("RC4", "weak_cipher", "keystream"),
-    ("AES", "insecure_mode_ecb", "electronic codebook"),
-    ("RSA", "weak_rsa_key_size", "factorable"),
-    ("TLSv1.0", "insecure_tls_version", "poodle"),
-    ("RSA_PRIVATE_KEY", "hardcoded_key", "exposes"),
-])
+@pytest.mark.parametrize(
+    "algo,finding_type,expected_keyword",
+    [
+        ("MD5", "weak_hash", "collision"),
+        ("SHA-1", "weak_hash", "collision"),
+        ("DES", "weak_cipher", "56-bit"),
+        ("3DES", "weak_cipher", "sweet32"),
+        ("RC4", "weak_cipher", "keystream"),
+        ("AES", "insecure_mode_ecb", "electronic codebook"),
+        ("RSA", "weak_rsa_key_size", "factorable"),
+        ("TLSv1.0", "insecure_tls_version", "poodle"),
+        ("RSA_PRIVATE_KEY", "hardcoded_key", "exposes"),
+    ],
+)
 def test_why_it_matters_specific_cryptographic_rationale(algo, finding_type, expected_keyword):
     """Why it matters must articulate exact cryptographic mechanisms and never use generic phrasing."""
     finding = {

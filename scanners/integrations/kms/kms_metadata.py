@@ -19,33 +19,36 @@ or raw secret material.
 from typing import Dict, Any, Optional, Union, List
 import copy
 
-FORBIDDEN_PRIVATE_KEY_FIELDS = frozenset({
-    "privatekey",
-    "private_key",
-    "d",
-    "p",
-    "q",
-    "dp",
-    "dq",
-    "qi",
-    "rawkey",
-    "raw_key",
-    "secretbytes",
-    "secret_bytes",
-    "secretmaterial",
-    "secret_material",
-    "privatekeybytes",
-    "private_key_bytes",
-    "seed",
-    "masterkey",
-    "master_key",
-    "keymaterial",
-    "key_material",
-})
+FORBIDDEN_PRIVATE_KEY_FIELDS = frozenset(
+    {
+        "privatekey",
+        "private_key",
+        "d",
+        "p",
+        "q",
+        "dp",
+        "dq",
+        "qi",
+        "rawkey",
+        "raw_key",
+        "secretbytes",
+        "secret_bytes",
+        "secretmaterial",
+        "secret_material",
+        "privatekeybytes",
+        "private_key_bytes",
+        "seed",
+        "masterkey",
+        "master_key",
+        "keymaterial",
+        "key_material",
+    }
+)
 
 
 class ProtectedKeyMaterialError(Exception):
     """Raised when any protected private or raw secret key material is detected."""
+
     pass
 
 

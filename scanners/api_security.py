@@ -18,19 +18,21 @@ from typing import Dict, Any, Optional, Tuple, List, Set
 
 PROTOTYPE_POLLUTION_KEYS = frozenset({"__proto__", "constructor", "prototype"})
 
-DANGEROUS_NOSQL_KEYS = frozenset({
-    "$where",
-    "$gt",
-    "$gte",
-    "$lt",
-    "$lte",
-    "$ne",
-    "$in",
-    "$nin",
-    "$regex",
-    "$expr",
-    "$function",
-})
+DANGEROUS_NOSQL_KEYS = frozenset(
+    {
+        "$where",
+        "$gt",
+        "$gte",
+        "$lt",
+        "$lte",
+        "$ne",
+        "$in",
+        "$nin",
+        "$regex",
+        "$expr",
+        "$function",
+    }
+)
 
 SQLI_PATTERNS = [
     re.compile(r"(\b(UNION(\s+ALL)?)\b\s+SELECT\b)", re.IGNORECASE),
@@ -44,68 +46,78 @@ SQLI_PATTERNS = [
 ]
 
 COMMAND_INJECTION_PATTERNS = [
-    re.compile(r"[;&|`$]\s*(cat|rm|wget|curl|nc|bash|sh|powershell|cmd\.exe|netcat|whoami|id|uname|dir|ls)\b", re.IGNORECASE),
+    re.compile(
+        r"[;&|`$]\s*(cat|rm|wget|curl|nc|bash|sh|powershell|cmd\.exe|netcat|whoami|id|uname|dir|ls)\b", re.IGNORECASE
+    ),
     re.compile(r"\$\((?:whoami|id|uname|dir|ls|cat|rm|wget|curl|[^\)]+)\)", re.IGNORECASE),
     re.compile(r"`\s*(?:whoami|id|uname|dir|ls|cat|rm|wget|curl|[^`]+)\s*`", re.IGNORECASE),
 ]
 
-FORBIDDEN_HOSTNAMES = frozenset({
-    "localhost",
-    "127.0.0.1",
-    "::1",
-    "0.0.0.0",
-    "metadata.google.internal",
-    "instance-data",
-    "169.254.169.254",
-})
+FORBIDDEN_HOSTNAMES = frozenset(
+    {
+        "localhost",
+        "127.0.0.1",
+        "::1",
+        "0.0.0.0",
+        "metadata.google.internal",
+        "instance-data",
+        "169.254.169.254",
+    }
+)
 
-DEFAULT_BLOCKED_MASS_ASSIGNMENT_FIELDS = frozenset({
-    "role",
-    "roles",
-    "isadmin",
-    "admin",
-    "tenantid",
-    "tenant_id",
-    "permissions",
-    "isverified",
-    "verified",
-    "internalhash",
-    "ownerid",
-    "owner_id",
-})
+DEFAULT_BLOCKED_MASS_ASSIGNMENT_FIELDS = frozenset(
+    {
+        "role",
+        "roles",
+        "isadmin",
+        "admin",
+        "tenantid",
+        "tenant_id",
+        "permissions",
+        "isverified",
+        "verified",
+        "internalhash",
+        "ownerid",
+        "owner_id",
+    }
+)
 
-SENSITIVE_RESPONSE_FIELDS = frozenset({
-    "password",
-    "secret",
-    "privatekey",
-    "private_key",
-    "secretbytes",
-    "secret_bytes",
-    "privatekeybytes",
-    "rawkey",
-    "d",
-    "p",
-    "q",
-    "dp",
-    "dq",
-    "qi",
-    "seed",
-    "internaltoken",
-})
+SENSITIVE_RESPONSE_FIELDS = frozenset(
+    {
+        "password",
+        "secret",
+        "privatekey",
+        "private_key",
+        "secretbytes",
+        "secret_bytes",
+        "privatekeybytes",
+        "rawkey",
+        "d",
+        "p",
+        "q",
+        "dp",
+        "dq",
+        "qi",
+        "seed",
+        "internaltoken",
+    }
+)
 
-EXEMPT_CODE_FIELDS = frozenset({
-    "evidence",
-    "diff",
-    "unifieddiff",
-    "patchcontent",
-    "sourcecode",
-    "rawcontent",
-    "rawmetadata",
-    "code",
-    "annotatedbom",
-    "components",
-    "cbom",
-})
+EXEMPT_CODE_FIELDS = frozenset(
+    {
+        "evidence",
+        "diff",
+        "unifieddiff",
+        "patchcontent",
+        "sourcecode",
+        "rawcontent",
+        "rawmetadata",
+        "code",
+        "annotatedbom",
+        "components",
+        "cbom",
+    }
+)
 
 
 def is_private_ip(ip_str: str) -> bool:
@@ -117,7 +129,9 @@ def is_private_ip(ip_str: str) -> bool:
         return False
 
 
-def validate_safe_url(raw_url: str, allowed_protocols=("http", "https"), allow_localhost: bool = False) -> Tuple[bool, Optional[str]]:
+def validate_safe_url(
+    raw_url: str, allowed_protocols=("http", "https"), allow_localhost: bool = False
+) -> Tuple[bool, Optional[str]]:
     """Validates an outbound target URL against SSRF attacks."""
     if not raw_url or not isinstance(raw_url, str):
         return False, "URL must be a non-empty string"

@@ -60,9 +60,15 @@ def test_no_empty_fields_in_full_parity():
         if cap.status == "FULL PARITY":
             assert len(cap.source_files) > 0, f"Capability {cap.capability_id} missing source_files"
             assert len(cap.test_files) > 0, f"Capability {cap.capability_id} missing test_files"
-            assert cap.demo_command is not None and len(cap.demo_command) > 0, f"Capability {cap.capability_id} missing demo_command"
-            assert cap.documentation is not None and len(cap.documentation) > 0, f"Capability {cap.capability_id} missing documentation"
-            assert cap.evidence is not None and len(cap.evidence) > 0, f"Capability {cap.capability_id} missing evidence"
+            assert cap.demo_command is not None and len(cap.demo_command) > 0, (
+                f"Capability {cap.capability_id} missing demo_command"
+            )
+            assert cap.documentation is not None and len(cap.documentation) > 0, (
+                f"Capability {cap.capability_id} missing documentation"
+            )
+            assert cap.evidence is not None and len(cap.evidence) > 0, (
+                f"Capability {cap.capability_id} missing evidence"
+            )
 
 
 def test_cli_execution_json():

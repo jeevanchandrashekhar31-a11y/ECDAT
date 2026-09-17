@@ -58,25 +58,27 @@ class GitHubIssuesConnector(BaseTicketingConnector):
     def format_payload(self, ticket_request: TicketRequest) -> Dict[str, Any]:
         sev = str(ticket_request.severity or "MEDIUM").upper()
 
-        body = "\n".join([
-            "## 🛡️ ECDAT Cryptographic Security Finding",
-            "",
-            "| Field | Value |",
-            "|---|---|",
-            f"| **Asset ID** | `{ticket_request.asset_id}` |",
-            f"| **Finding ID** | `{ticket_request.finding_id}` |",
-            f"| **Severity** | **`{sev}`** |",
-            f"| **Owner** | `{ticket_request.owner}` |",
-            f"| **Evidence Link** | [Inspect Evidence Source]({ticket_request.evidence_link}) |",
-            f"| **CBOM Reference** | `{ticket_request.cbom_ref}` |",
-            f"| **Risk Score** | **`{ticket_request.risk_score}`** |",
-            "",
-            "### 🔧 Remediation Guidance",
-            ticket_request.remediation,
-            "",
-            "---",
-            "*Reported automatically by ECDAT (Enterprise Cryptographic Discovery & Agility Toolkit)*",
-        ])
+        body = "\n".join(
+            [
+                "## 🛡️ ECDAT Cryptographic Security Finding",
+                "",
+                "| Field | Value |",
+                "|---|---|",
+                f"| **Asset ID** | `{ticket_request.asset_id}` |",
+                f"| **Finding ID** | `{ticket_request.finding_id}` |",
+                f"| **Severity** | **`{sev}`** |",
+                f"| **Owner** | `{ticket_request.owner}` |",
+                f"| **Evidence Link** | [Inspect Evidence Source]({ticket_request.evidence_link}) |",
+                f"| **CBOM Reference** | `{ticket_request.cbom_ref}` |",
+                f"| **Risk Score** | **`{ticket_request.risk_score}`** |",
+                "",
+                "### 🔧 Remediation Guidance",
+                ticket_request.remediation,
+                "",
+                "---",
+                "*Reported automatically by ECDAT (Enterprise Cryptographic Discovery & Agility Toolkit)*",
+            ]
+        )
 
         labels = [
             "security",
@@ -86,7 +88,8 @@ class GitHubIssuesConnector(BaseTicketingConnector):
         ]
 
         payload: Dict[str, Any] = {
-            "title": ticket_request.title or f"[ECDAT {sev}] Finding {ticket_request.finding_id} on {ticket_request.asset_id}",
+            "title": ticket_request.title
+            or f"[ECDAT {sev}] Finding {ticket_request.finding_id} on {ticket_request.asset_id}",
             "body": body,
             "labels": labels,
         }
@@ -97,13 +100,13 @@ class GitHubIssuesConnector(BaseTicketingConnector):
 
         return payload
 
-    def send_create_request(
-        self, ticket_request: TicketRequest, payload: Dict[str, Any]
-    ) -> TicketResponse:
+    def send_create_request(self, ticket_request: TicketRequest, payload: Dict[str, Any]) -> TicketResponse:
         endpoint = f"{self.base_url}/repos/{self.repo}/issues"
 
         if self.http_client:
-            data = self.http_client(endpoint, method="POST", json_payload=payload, headers={"Authorization": f"Bearer {self.token}"})
+            data = self.http_client(
+                endpoint, method="POST", json_payload=payload, headers={"Authorization": f"Bearer {self.token}"}
+            )
         else:
             req = urllib.request.Request(
                 endpoint,

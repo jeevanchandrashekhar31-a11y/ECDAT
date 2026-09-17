@@ -261,7 +261,13 @@ class JavascriptCryptoDetector:
 
                     # Check insecure mode ECB
                     if "ECB" in algo_val or (resolved_callee.endswith("createCipher") and "ECB" in algo_val):
-                        self._add_finding(lineno, "JS_INSECURE_CIPHER_MODE_ECB", f"{algo_val} [ECB]", "insecure_cipher_mode", "critical")
+                        self._add_finding(
+                            lineno,
+                            "JS_INSECURE_CIPHER_MODE_ECB",
+                            f"{algo_val} [ECB]",
+                            "insecure_cipher_mode",
+                            "critical",
+                        )
 
             # Check generateKeyPairSync / generateKeyPair for weak key sizes
             if resolved_callee.endswith("generateKeyPairSync") or resolved_callee.endswith("generateKeyPair"):
@@ -301,7 +307,9 @@ class JavascriptCryptoDetector:
                 if size_match:
                     size_val = self._resolve_val(size_match.group(1))
                     if isinstance(size_val, int) and size_val < 2048:
-                        self._add_finding(lineno, "JS_WEAK_RSA_KEY_SIZE", f"RSA-{size_val}", "weak_asymmetric_key", "critical")
+                        self._add_finding(
+                            lineno, "JS_WEAK_RSA_KEY_SIZE", f"RSA-{size_val}", "weak_asymmetric_key", "critical"
+                        )
 
             # 3. CryptoJS calls: CryptoJS.MD5, CryptoJS.SHA1, CryptoJS.DES, CryptoJS.RC4
             if "CryptoJS" in call_text or resolved_callee == "crypto-js":

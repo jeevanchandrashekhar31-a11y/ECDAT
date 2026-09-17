@@ -75,6 +75,7 @@ class TenantContext:
 # LAYER 1: API LAYER — TENANT ISOLATION VALIDATOR
 # ============================================================================
 
+
 class TenantIsolationEnforcer:
     """
     Enforces the invariant:
@@ -108,6 +109,7 @@ class TenantIsolationEnforcer:
 # ============================================================================
 # LAYER 2: DATABASE LAYER — TENANT-SCOPED QUERIES
 # ============================================================================
+
 
 class TenantScopedDatabase:
     def __init__(self):
@@ -152,7 +154,9 @@ class TenantScopedDatabase:
                 return dict(r)
         return None
 
-    def update(self, table_name: str, record_id: str, updates: Dict[str, Any], context: TenantContext) -> Dict[str, Any]:
+    def update(
+        self, table_name: str, record_id: str, updates: Dict[str, Any], context: TenantContext
+    ) -> Dict[str, Any]:
         table = self._ensure_table(table_name)
         for i, r in enumerate(table):
             if not context.is_platform_admin and r.get("tenant_id") != context.tenant_id:
@@ -183,6 +187,7 @@ class TenantScopedDatabase:
 # LAYER 3: OBJECT STORAGE LAYER — TENANT-SCOPED PREFIXES & PATH DEFENSE
 # ============================================================================
 
+
 class TenantScopedObjectStorage:
     def __init__(self, base_prefix: str = "/storage"):
         self.base_prefix = base_prefix
@@ -203,7 +208,9 @@ class TenantScopedObjectStorage:
 
         return full_path
 
-    def put_object(self, key: str, data: Any, context: TenantContext, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def put_object(
+        self, key: str, data: Any, context: TenantContext, metadata: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         full_key = self._sanitize_and_resolve(key, context.tenant_id)
         self.objects[full_key] = {
             "data": data,
@@ -241,13 +248,14 @@ class TenantScopedObjectStorage:
         for k, v in self.objects.items():
             if k.startswith(search_prefix):
                 if context and (context.is_platform_admin or v["tenant_id"] == context.tenant_id):
-                    results.append({"key": k[len(tenant_prefix):], "tenant_id": v["tenant_id"]})
+                    results.append({"key": k[len(tenant_prefix) :], "tenant_id": v["tenant_id"]})
         return results
 
 
 # ============================================================================
 # LAYER 4: BACKGROUND JOBS LAYER — TENANT-BOUND JOB ENVELOPES
 # ============================================================================
+
 
 class TenantScopedJobQueue:
     def __init__(self):
@@ -286,16 +294,13 @@ class TenantScopedJobQueue:
             raise
 
     def get_jobs(self, context: TenantContext) -> List[Dict[str, Any]]:
-        return [
-            dict(j)
-            for j in self.jobs.values()
-            if context.is_platform_admin or j["tenant_id"] == context.tenant_id
-        ]
+        return [dict(j) for j in self.jobs.values() if context.is_platform_admin or j["tenant_id"] == context.tenant_id]
 
 
 # ============================================================================
 # LAYER 5: CACHES LAYER — TENANT-PREFIXED KEYSPACE
 # ============================================================================
+
 
 class TenantScopedCache:
     def __init__(self):
@@ -340,6 +345,7 @@ class TenantScopedCache:
 # LAYER 6: QUEUES LAYER — PARTITIONED MESSAGE CHANNELS
 # ============================================================================
 
+
 class TenantScopedQueue:
     def __init__(self):
         self.queues: Dict[str, List[Dict[str, Any]]] = {}
@@ -372,6 +378,7 @@ class TenantScopedQueue:
 # ============================================================================
 # LAYER 7: EXPORTS LAYER — TENANT-FILTERED REPORT GENERATION
 # ============================================================================
+
 
 class TenantScopedExportEngine:
     def __init__(self, db: Optional[TenantScopedDatabase] = None, storage: Optional[TenantScopedObjectStorage] = None):
@@ -421,6 +428,7 @@ class TenantScopedExportEngine:
 # LAYER 8: LOGS & AUDIT LAYER — TENANT-SCOPED CRYPTOGRAPHIC AUDIT
 # ============================================================================
 
+
 class TenantScopedAuditLogger:
     def __init__(self):
         self.events: List[Dict[str, Any]] = []
@@ -441,16 +449,19 @@ class TenantScopedAuditLogger:
         event_id = f"authevt_{uuid.uuid4().hex[:12]}"
         prev_hash = self.tenant_last_hashes.get(tenant_id, "0" * 64)
 
-        entry_data = json.dumps({
-            "eventId": event_id,
-            "eventType": event_type,
-            "userId": effective_user_id,
-            "tenantId": tenant_id,
-            "status": status,
-            "reason": reason,
-            "metadata": metadata or {},
-            "prevHash": prev_hash,
-        }, sort_keys=True)
+        entry_data = json.dumps(
+            {
+                "eventId": event_id,
+                "eventType": event_type,
+                "userId": effective_user_id,
+                "tenantId": tenant_id,
+                "status": status,
+                "reason": reason,
+                "metadata": metadata or {},
+                "prevHash": prev_hash,
+            },
+            sort_keys=True,
+        )
 
         current_hash = hashlib.sha256(entry_data.encode("utf-8")).hexdigest()
         self.tenant_last_hashes[tenant_id] = current_hash
@@ -473,10 +484,7 @@ class TenantScopedAuditLogger:
     def get_recent_events(self, limit: int = 50, context: Optional[TenantContext] = None) -> List[Dict[str, Any]]:
         tenant_id = context.tenant_id if context else "default-tenant"
         is_admin = context.is_platform_admin if context else False
-        return [
-            dict(e) for e in self.events
-            if is_admin or e.get("tenantId") == tenant_id
-        ][-limit:]
+        return [dict(e) for e in self.events if is_admin or e.get("tenantId") == tenant_id][-limit:]
 
     def verify_tenant_chain(self, context: TenantContext) -> bool:
         tenant_events = [e for e in self.events if e.get("tenantId") == context.tenant_id]
@@ -484,16 +492,19 @@ class TenantScopedAuditLogger:
         for evt in tenant_events:
             if evt.get("prevHash") != prev:
                 return False
-            data = json.dumps({
-                "eventId": evt["eventId"],
-                "eventType": evt["eventType"],
-                "userId": evt["userId"],
-                "tenantId": evt["tenantId"],
-                "status": evt["status"],
-                "reason": evt["reason"],
-                "metadata": evt.get("metadata", {}),
-                "prevHash": prev,
-            }, sort_keys=True)
+            data = json.dumps(
+                {
+                    "eventId": evt["eventId"],
+                    "eventType": evt["eventType"],
+                    "userId": evt["userId"],
+                    "tenantId": evt["tenantId"],
+                    "status": evt["status"],
+                    "reason": evt["reason"],
+                    "metadata": evt.get("metadata", {}),
+                    "prevHash": prev,
+                },
+                sort_keys=True,
+            )
             expected = hashlib.sha256(data.encode("utf-8")).hexdigest()
             if expected != evt["hash"]:
                 return False

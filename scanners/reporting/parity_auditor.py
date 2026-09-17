@@ -110,7 +110,6 @@ class ParityAuditor:
                 documentation="docs/DATA_PROTECTION.md",
                 evidence="Zero secrets leak gate in release_gate.py verifies 0 credentials across all generated evidence items.",
             ),
-
             # =========================================================================
             # DOMAIN 2: Cryptographic Bill of Materials (CBOM) Generation
             # =========================================================================
@@ -156,7 +155,6 @@ class ParityAuditor:
                 documentation="docs/CI_CD.md",
                 evidence="artifacts/sbom/ contains valid ecdat_cyclonedx_1.6.json and ecdat_spdx_2.3.json validated on every release.",
             ),
-
             # =========================================================================
             # DOMAIN 3: Reachability Analysis & Call Graph Tracing
             # =========================================================================
@@ -203,7 +201,6 @@ class ParityAuditor:
                 documentation="docs/ARCHITECTURE.md",
                 evidence="CryptoGraph UI renders nodes, edges, reachability status, and blast radius overlays.",
             ),
-
             # =========================================================================
             # DOMAIN 4: Dynamic Network & PCAP Scanning
             # =========================================================================
@@ -228,7 +225,6 @@ class ParityAuditor:
                 documentation="docs/NETWORK_SCANNER.md",
                 evidence="Network tests verify zero crash behavior when inspecting hostile TLS certificates and corrupt PCAPs.",
             ),
-
             # =========================================================================
             # DOMAIN 5: Runtime Observability & Kernel Monitoring
             # =========================================================================
@@ -268,7 +264,6 @@ class ParityAuditor:
                 documentation="docs/ARCHITECTURE.md",
                 evidence="Explicitly documented as non-goal in target architecture; cloud-native standard APIs used instead.",
             ),
-
             # =========================================================================
             # DOMAIN 6: Certificate Intelligence & Lifecycle Management
             # =========================================================================
@@ -294,7 +289,6 @@ class ParityAuditor:
                 documentation="docs/CERTIFICATE_INTELLIGENCE.md",
                 evidence="Executive report domain 5 strictly verifies expiring, expired, and weak-signature certificate evidence.",
             ),
-
             # =========================================================================
             # DOMAIN 7: Policy As Code & Multi-Framework Governance
             # =========================================================================
@@ -344,7 +338,6 @@ class ParityAuditor:
                 documentation="docs/VULNERABILITY_RELEASE_GATE.md",
                 evidence="Release gate verifies expired exceptions are immediately rejected as critical blockers.",
             ),
-
             # =========================================================================
             # DOMAIN 8: PQC Readiness & Mosca Calculus
             # =========================================================================
@@ -391,7 +384,6 @@ class ParityAuditor:
                 documentation="docs/PQC_HYBRID_ANALYSIS.md",
                 evidence="Technical drill-down reports classify FIPS 203 algorithms with full OID mapping.",
             ),
-
             # =========================================================================
             # DOMAIN 9: Automated Remediation & Patch Generation
             # =========================================================================
@@ -439,7 +431,6 @@ class ParityAuditor:
                 documentation="docs/OPERATOR_RUNBOOKS.md",
                 evidence="Audit trail logged via defaultAuditService on every approval status transition.",
             ),
-
             # =========================================================================
             # DOMAIN 10: Enterprise Ecosystem, CI/CD Gate, & Evidence Integrity
             # =========================================================================
@@ -559,22 +550,30 @@ class ParityAuditor:
                     verified = False
                     missing_items.append("Missing evidence description")
 
-            results.append({
-                "capability": cap.to_dict(),
-                "verified": verified,
-                "missing_items": missing_items,
-            })
+            results.append(
+                {
+                    "capability": cap.to_dict(),
+                    "verified": verified,
+                    "missing_items": missing_items,
+                }
+            )
 
         total_evaluated = len(self.capabilities)
-        parity_score = ((counts["FULL PARITY"] + counts["ECDAT ADVANTAGE"]) / (total_evaluated - counts["NOT IMPLEMENTED"])) * 10.0
+        parity_score = (
+            (counts["FULL PARITY"] + counts["ECDAT ADVANTAGE"]) / (total_evaluated - counts["NOT IMPLEMENTED"])
+        ) * 10.0
 
         return {
             "audit_summary": {
                 "total_capabilities_evaluated": total_evaluated,
                 "counts": counts,
                 "parity_score_out_of_10": round(parity_score, 1),
-                "certification_verdict": "10/10 ENTERPRISE PARITY CERTIFIED" if parity_score >= 9.5 else "PARITY DEFICIT",
-                "all_full_parity_claims_verified": all(r["verified"] for r in results if r["capability"]["status"] in {"FULL PARITY", "ECDAT ADVANTAGE"}),
+                "certification_verdict": "10/10 ENTERPRISE PARITY CERTIFIED"
+                if parity_score >= 9.5
+                else "PARITY DEFICIT",
+                "all_full_parity_claims_verified": all(
+                    r["verified"] for r in results if r["capability"]["status"] in {"FULL PARITY", "ECDAT ADVANTAGE"}
+                ),
             },
             "capabilities": results,
         }

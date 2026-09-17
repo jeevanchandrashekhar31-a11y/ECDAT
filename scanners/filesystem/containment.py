@@ -15,8 +15,9 @@ from pathlib import Path
 from typing import Set, Tuple, Optional, List
 
 
-class ContainmentViolationError(SecurityError if "SecurityError" in globals() else ValueError):
+class ContainmentViolationError(ValueError):
     """Raised when a path traversal or symlink escape violates the scan-root containment."""
+
     pass
 
 
@@ -114,7 +115,10 @@ class FilesystemSecurityGuard:
         try:
             file_size = file_path.stat().st_size
             if file_size > self.max_file_size_bytes:
-                return False, f"GIANT_FILE: File size ({file_size} bytes) exceeds limit ({self.max_file_size_bytes} bytes)."
+                return (
+                    False,
+                    f"GIANT_FILE: File size ({file_size} bytes) exceeds limit ({self.max_file_size_bytes} bytes).",
+                )
         except (PermissionError, OSError) as e:
             return False, f"PERMISSION_ERROR: Unable to get file size ({e})."
 

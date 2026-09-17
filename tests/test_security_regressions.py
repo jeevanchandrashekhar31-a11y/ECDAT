@@ -46,12 +46,17 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # POLICY ENGINE ENFORCEMENT TESTS
 # ============================================================================
 
+
 def test_regression_policy_mandate_passes_on_registry():
     """Verifies that rules/security_regressions.json satisfies the 5-point policy for 100% of bugs."""
     engine = SecurityRegressionPolicyEngine()
     verdict = engine.enforce_policy()
-    assert verdict.passed, f"Regression policy check failed with {len(verdict.violations)} violations: {verdict.violations}"
-    assert verdict.total_regressions >= 10, f"Expected at least 10 registered regressions, got {verdict.total_regressions}"
+    assert verdict.passed, (
+        f"Regression policy check failed with {len(verdict.violations)} violations: {verdict.violations}"
+    )
+    assert verdict.total_regressions >= 10, (
+        f"Expected at least 10 registered regressions, got {verdict.total_regressions}"
+    )
     assert verdict.verified_regressions == verdict.total_regressions
     assert len(verdict.violations) == 0
 
@@ -66,9 +71,23 @@ def test_regression_policy_mandate_rejects_missing_root_cause():
         "status": "closed_verified",
         "affected_component": "scanners/test.py",
         # missing root_cause
-        "fix": {"fix_summary": "fixed safely with validation", "mitigation_strategy": "sanitize input", "modified_files": ["scanners/test.py"]},
-        "test": {"test_file": "tests/test_security_regressions.py", "test_name": "test_regression_policy_mandate_passes_on_registry", "assertion_type": "unit", "automated": True},
-        "threat_model_update": {"stride_category": ["Tampering"], "threat_model_section": "API abuse", "residual_risk_impact": "residual risk eliminated", "threat_model_doc_updated": True},
+        "fix": {
+            "fix_summary": "fixed safely with validation",
+            "mitigation_strategy": "sanitize input",
+            "modified_files": ["scanners/test.py"],
+        },
+        "test": {
+            "test_file": "tests/test_security_regressions.py",
+            "test_name": "test_regression_policy_mandate_passes_on_registry",
+            "assertion_type": "unit",
+            "automated": True,
+        },
+        "threat_model_update": {
+            "stride_category": ["Tampering"],
+            "threat_model_section": "API abuse",
+            "residual_risk_impact": "residual risk eliminated",
+            "threat_model_doc_updated": True,
+        },
         "release_note": {"applicable": False, "advisory_summary": "Internal bug fix.", "version_fixed": "v1.0.0"},
     }
     violations = engine.validate_single_entry(bad_entry)
@@ -84,10 +103,25 @@ def test_regression_policy_mandate_rejects_missing_fix():
         "severity": "high",
         "status": "closed_verified",
         "affected_component": "scanners/test.py",
-        "root_cause": {"technical_summary": "Flaw in memory buffer parsing", "cwe_id": "CWE-119", "flaw_type": "Buffer Overflow", "vulnerable_code_location": "scanners/test.py:10"},
+        "root_cause": {
+            "technical_summary": "Flaw in memory buffer parsing",
+            "cwe_id": "CWE-119",
+            "flaw_type": "Buffer Overflow",
+            "vulnerable_code_location": "scanners/test.py:10",
+        },
         # missing fix
-        "test": {"test_file": "tests/test_security_regressions.py", "test_name": "test_regression_policy_mandate_passes_on_registry", "assertion_type": "unit", "automated": True},
-        "threat_model_update": {"stride_category": ["Tampering"], "threat_model_section": "API abuse", "residual_risk_impact": "residual risk eliminated", "threat_model_doc_updated": True},
+        "test": {
+            "test_file": "tests/test_security_regressions.py",
+            "test_name": "test_regression_policy_mandate_passes_on_registry",
+            "assertion_type": "unit",
+            "automated": True,
+        },
+        "threat_model_update": {
+            "stride_category": ["Tampering"],
+            "threat_model_section": "API abuse",
+            "residual_risk_impact": "residual risk eliminated",
+            "threat_model_doc_updated": True,
+        },
         "release_note": {"applicable": False, "advisory_summary": "Internal bug fix.", "version_fixed": "v1.0.0"},
     }
     violations = engine.validate_single_entry(bad_entry)
@@ -103,10 +137,29 @@ def test_regression_policy_mandate_rejects_nonexistent_test():
         "severity": "high",
         "status": "closed_verified",
         "affected_component": "scanners/test.py",
-        "root_cause": {"technical_summary": "Flaw in memory buffer parsing", "cwe_id": "CWE-119", "flaw_type": "Buffer Overflow", "vulnerable_code_location": "scanners/test.py:10"},
-        "fix": {"fix_summary": "fixed safely with validation", "mitigation_strategy": "sanitize input", "modified_files": ["scanners/test.py"]},
-        "test": {"test_file": "tests/nonexistent_test_file_xyz.py", "test_name": "test_fake", "assertion_type": "unit", "automated": True},
-        "threat_model_update": {"stride_category": ["Tampering"], "threat_model_section": "API abuse", "residual_risk_impact": "residual risk eliminated", "threat_model_doc_updated": True},
+        "root_cause": {
+            "technical_summary": "Flaw in memory buffer parsing",
+            "cwe_id": "CWE-119",
+            "flaw_type": "Buffer Overflow",
+            "vulnerable_code_location": "scanners/test.py:10",
+        },
+        "fix": {
+            "fix_summary": "fixed safely with validation",
+            "mitigation_strategy": "sanitize input",
+            "modified_files": ["scanners/test.py"],
+        },
+        "test": {
+            "test_file": "tests/nonexistent_test_file_xyz.py",
+            "test_name": "test_fake",
+            "assertion_type": "unit",
+            "automated": True,
+        },
+        "threat_model_update": {
+            "stride_category": ["Tampering"],
+            "threat_model_section": "API abuse",
+            "residual_risk_impact": "residual risk eliminated",
+            "threat_model_doc_updated": True,
+        },
         "release_note": {"applicable": False, "advisory_summary": "Internal bug fix.", "version_fixed": "v1.0.0"},
     }
     violations = engine.validate_single_entry(bad_entry)
@@ -122,9 +175,23 @@ def test_regression_policy_mandate_rejects_missing_threat_model():
         "severity": "high",
         "status": "closed_verified",
         "affected_component": "scanners/test.py",
-        "root_cause": {"technical_summary": "Flaw in memory buffer parsing", "cwe_id": "CWE-119", "flaw_type": "Buffer Overflow", "vulnerable_code_location": "scanners/test.py:10"},
-        "fix": {"fix_summary": "fixed safely with validation", "mitigation_strategy": "sanitize input", "modified_files": ["scanners/test.py"]},
-        "test": {"test_file": "tests/test_security_regressions.py", "test_name": "test_regression_policy_mandate_passes_on_registry", "assertion_type": "unit", "automated": True},
+        "root_cause": {
+            "technical_summary": "Flaw in memory buffer parsing",
+            "cwe_id": "CWE-119",
+            "flaw_type": "Buffer Overflow",
+            "vulnerable_code_location": "scanners/test.py:10",
+        },
+        "fix": {
+            "fix_summary": "fixed safely with validation",
+            "mitigation_strategy": "sanitize input",
+            "modified_files": ["scanners/test.py"],
+        },
+        "test": {
+            "test_file": "tests/test_security_regressions.py",
+            "test_name": "test_regression_policy_mandate_passes_on_registry",
+            "assertion_type": "unit",
+            "automated": True,
+        },
         # missing threat_model_update
         "release_note": {"applicable": False, "advisory_summary": "Internal bug fix.", "version_fixed": "v1.0.0"},
     }
@@ -141,10 +208,29 @@ def test_regression_policy_mandate_rejects_missing_release_note():
         "severity": "high",
         "status": "closed_verified",
         "affected_component": "scanners/test.py",
-        "root_cause": {"technical_summary": "Flaw in memory buffer parsing", "cwe_id": "CWE-119", "flaw_type": "Buffer Overflow", "vulnerable_code_location": "scanners/test.py:10"},
-        "fix": {"fix_summary": "fixed safely with validation", "mitigation_strategy": "sanitize input", "modified_files": ["scanners/test.py"]},
-        "test": {"test_file": "tests/test_security_regressions.py", "test_name": "test_regression_policy_mandate_passes_on_registry", "assertion_type": "unit", "automated": True},
-        "threat_model_update": {"stride_category": ["Tampering"], "threat_model_section": "API abuse", "residual_risk_impact": "residual risk eliminated", "threat_model_doc_updated": True},
+        "root_cause": {
+            "technical_summary": "Flaw in memory buffer parsing",
+            "cwe_id": "CWE-119",
+            "flaw_type": "Buffer Overflow",
+            "vulnerable_code_location": "scanners/test.py:10",
+        },
+        "fix": {
+            "fix_summary": "fixed safely with validation",
+            "mitigation_strategy": "sanitize input",
+            "modified_files": ["scanners/test.py"],
+        },
+        "test": {
+            "test_file": "tests/test_security_regressions.py",
+            "test_name": "test_regression_policy_mandate_passes_on_registry",
+            "assertion_type": "unit",
+            "automated": True,
+        },
+        "threat_model_update": {
+            "stride_category": ["Tampering"],
+            "threat_model_section": "API abuse",
+            "residual_risk_impact": "residual risk eliminated",
+            "threat_model_doc_updated": True,
+        },
         "release_note": {"applicable": True, "advisory_summary": "", "version_fixed": "v1.0.0"},
     }
     violations = engine.validate_single_entry(bad_entry)
@@ -155,6 +241,7 @@ def test_regression_policy_mandate_rejects_missing_release_note():
 # PERMANENT REGRESSION TESTS FOR REGISTERED VULNERABILITIES (SEC-REG-001 - 010)
 # ============================================================================
 
+
 def test_regression_sec_reg_001_xml_bomb_rejection():
     """
     Permanent Regression Test: SEC-REG-001
@@ -163,12 +250,12 @@ def test_regression_sec_reg_001_xml_bomb_rejection():
     """
     xml_bomb = (
         '<?xml version="1.0"?>\n'
-        '<!DOCTYPE lolz [\n'
+        "<!DOCTYPE lolz [\n"
         ' <!ENTITY lol "lol">\n'
-        ' <!ELEMENT lolz (#PCDATA)>\n'
+        " <!ELEMENT lolz (#PCDATA)>\n"
         ' <!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">\n'
         ' <!ENTITY lol2 "&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;">\n'
-        ']>\n'
+        "]>\n"
         '<bom xmlns="http://cyclonedx.org/schema/bom/1.6"><serialNumber>&lol2;</serialNumber></bom>'
     )
     with tempfile.NamedTemporaryFile("w", suffix=".xml", delete=False, encoding="utf-8") as tf:
@@ -283,11 +370,7 @@ def test_regression_sec_reg_006_cert_parser_private_key_rejection():
     Vulnerability: Private Key Accidental Ingestion in Certificate Parser (CWE-312)
     Asserts: parse_cert_bytes strictly raises CertSecurityError when passed private key PEM.
     """
-    private_key_pem = (
-        b"-----BEGIN RSA PRIVATE KEY-----\n"
-        b"MIIEowIBAAKCAQEA0Y3wVb1X...\n"
-        b"-----END RSA PRIVATE KEY-----\n"
-    )
+    private_key_pem = b"-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0Y3wVb1X...\n-----END RSA PRIVATE KEY-----\n"
     with pytest.raises(CertSecurityError) as exc_info:
         parse_cert_bytes(private_key_pem)
     assert "private key" in str(exc_info.value).lower()
@@ -370,6 +453,7 @@ def test_regression_sec_reg_010_jwt_algorithm_pinning_and_none_rejection():
     Vulnerability: JWT Algorithm Confusion & 'none' Algorithm Bypass (CWE-327)
     Asserts: Unsigned tokens or tokens specifying 'none' algorithm are strictly rejected.
     """
+
     # Simulate JWT header check invariant enforced in backend/src/middleware/auth.js
     def verify_token_header(header: dict) -> bool:
         alg = header.get("alg", "").upper()

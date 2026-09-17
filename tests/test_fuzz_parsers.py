@@ -114,8 +114,8 @@ class TestFuzzSourceParsers:
             "import hashlib\nh = hashlib.md5(b'test').hexdigest()\n",
             "const crypto = require('crypto');\ncrypto.createCipheriv('des', k, iv);\n",
             "int main() { EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new(); return 0; }\n",
-            "package main\nimport \"crypto/des\"\nfunc main() { des.NewCipher([]byte(\"key\")) }\n",
-            "public class A { void test() { MessageDigest md = MessageDigest.getInstance(\"MD5\"); } }\n",
+            'package main\nimport "crypto/des"\nfunc main() { des.NewCipher([]byte("key")) }\n',
+            'public class A { void test() { MessageDigest md = MessageDigest.getInstance("MD5"); } }\n',
         ]
 
         dummy_path = tmp_path / f"target{ext}"
@@ -326,7 +326,7 @@ class TestFuzzPcapParser:
     """Fuzz testing SafePcapParser on corrupted PCAP byte streams and packets."""
 
     def _make_minimal_pcap(self) -> bytes:
-        magic = 0xa1b2c3d4
+        magic = 0xA1B2C3D4
         hdr = struct.pack("<IHHiIII", magic, 2, 4, 0, 0, 65535, LINKTYPE_ETHERNET)
         pkt_data = b"\x00" * 54  # Ethernet + IP + TCP stub
         pkt_hdr = struct.pack("<IIII", int(time.time()), 0, len(pkt_data), len(pkt_data))
@@ -382,11 +382,11 @@ class TestFuzzCbomParser:
                         "assetType": "algorithm",
                         "algorithmProperties": {
                             "parameterSetIdentifier": "256",
-                            "cryptoFunctions": ["encrypt", "decrypt"]
-                        }
-                    }
+                            "cryptoFunctions": ["encrypt", "decrypt"],
+                        },
+                    },
                 }
-            ]
+            ],
         }
         base_json = json.dumps(base_cbom)
 
@@ -408,11 +408,11 @@ class TestFuzzCbomParser:
     def test_cbom_xml_entity_expansion_bomb_blocked(self):
         xml_bomb = (
             '<?xml version="1.0"?>'
-            '<!DOCTYPE bom ['
+            "<!DOCTYPE bom ["
             '<!ENTITY lol "lol">'
             '<!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">'
-            ']>'
-            '<bom><components>&lol2;</components></bom>'
+            "]>"
+            "<bom><components>&lol2;</components></bom>"
         )
         with pytest.raises(ValueError) as exc:
             import_cbom(xml_bomb, format="xml")
@@ -420,14 +420,18 @@ class TestFuzzCbomParser:
 
     def test_cbom_private_key_material_rejected_no_leak(self, assertion):
         canary = assertion.canary_secrets[0]
-        cbom_with_key = json.dumps({
-            "bomFormat": "CycloneDX",
-            "specVersion": "1.7",
-            "components": [{
-                "name": "RSA-Key",
-                "properties": [{"name": "private_key", "value": f"-----BEGIN RSA PRIVATE KEY-----\n{canary}"}]
-            }]
-        })
+        cbom_with_key = json.dumps(
+            {
+                "bomFormat": "CycloneDX",
+                "specVersion": "1.7",
+                "components": [
+                    {
+                        "name": "RSA-Key",
+                        "properties": [{"name": "private_key", "value": f"-----BEGIN RSA PRIVATE KEY-----\n{canary}"}],
+                    }
+                ],
+            }
+        )
 
         with pytest.raises(ValueError) as exc:
             import_cbom(cbom_with_key)
@@ -470,7 +474,7 @@ class TestFuzzBinaryParsers:
 
     def test_fuzz_macho_parser(self, mutator, assertion):
         parser = SafeMachoParser()
-        base_macho = struct.pack("<IIIIIIII", 0xfeedfacf, 0x01000007, 3, 2, 1, 64, 0, 0) + b"\x00" * 128
+        base_macho = struct.pack("<IIIIIIII", 0xFEEDFACF, 0x01000007, 3, 2, 1, 64, 0, 0) + b"\x00" * 128
 
         for _ in range(15):
             fuzzed = mutator.mutate_bytes(base_macho, num_mutations=4)
@@ -521,7 +525,7 @@ class TestFuzzPolicyParser:
                     "algorithms": ["MD5", "DES"],
                     "reason": "Cryptographically broken",
                 }
-            ]
+            ],
         }
         valid_json = json.dumps(valid_policy)
 
@@ -548,11 +552,9 @@ class TestFuzzPolicyParser:
                     "name": "ReDoS Rule",
                     "category": "algorithm",
                     "action": "BLOCK",
-                    "algorithms": {
-                        "prohibited": [redos_pattern]
-                    },
+                    "algorithms": {"prohibited": [redos_pattern]},
                 }
-            ]
+            ],
         }
         engine.load_policy(policy)
 
@@ -583,11 +585,9 @@ class TestFuzzPolicyParser:
                     "name": "Canary Rule",
                     "category": "algorithm",
                     "action": "BLOCK",
-                    "algorithms": {
-                        "prohibited": [f"CANARY_ALGO_{canary}"]
-                    },
+                    "algorithms": {"prohibited": [f"CANARY_ALGO_{canary}"]},
                 }
-            ]
+            ],
         }
 
         # Create draft policy with canary
@@ -602,4 +602,3 @@ class TestFuzzPolicyParser:
             # Ensure no secret in details error messages
             if "error" in record.get("details", {}):
                 assertion.assert_no_secret_leak(details_str)
-

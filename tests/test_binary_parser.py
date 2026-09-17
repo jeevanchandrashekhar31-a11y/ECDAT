@@ -75,7 +75,9 @@ def build_synthetic_elf() -> bytes:
     sh_text = struct.pack("<IIQQQQIIQQ", shstrtab.find(b".text"), 1, 6, 0x401000, text_offset, text_size, 0, 0, 16, 0)
     sh_shstr = struct.pack("<IIQQQQIIQQ", shstrtab.find(b".shstrtab"), 3, 0, 0, shstr_offset, shstr_size, 0, 0, 1, 0)
     sh_dynstr = struct.pack("<IIQQQQIIQQ", shstrtab.find(b".dynstr"), 3, 2, 0, dynstr_offset, dynstr_size, 0, 0, 1, 0)
-    sh_dynamic = struct.pack("<IIQQQQIIQQ", shstrtab.find(b".dynamic"), 6, 3, 0, dynamic_offset, dynamic_size, 3, 0, 8, 16)
+    sh_dynamic = struct.pack(
+        "<IIQQQQIIQQ", shstrtab.find(b".dynamic"), 6, 3, 0, dynamic_offset, dynamic_size, 3, 0, 8, 16
+    )
     sh_dynsym = struct.pack("<IIQQQQIIQQ", shstrtab.find(b".dynsym"), 11, 2, 0, dynsym_offset, dynsym_size, 3, 1, 8, 24)
 
     shdrs = sh_null + sh_text + sh_shstr + sh_dynstr + sh_dynamic + sh_dynsym
@@ -86,19 +88,19 @@ def build_synthetic_elf() -> bytes:
     elf_hdr = struct.pack(
         "<16sHHIQQQIHHHHHH",
         e_ident,
-        2,       # ET_EXEC
-        0x3E,    # EM_X86_64
-        1,       # EV_CURRENT
-        0x401000,# e_entry
-        0,       # e_phoff
-        shoff,   # e_shoff
-        0,       # e_flags
-        64,      # e_ehsize
-        0,       # e_phentsize
-        0,       # e_phnum
-        64,      # e_shentsize
-        6,       # e_shnum
-        2,       # e_shstrndx (.shstrtab is section index 2)
+        2,  # ET_EXEC
+        0x3E,  # EM_X86_64
+        1,  # EV_CURRENT
+        0x401000,  # e_entry
+        0,  # e_phoff
+        shoff,  # e_shoff
+        0,  # e_flags
+        64,  # e_ehsize
+        0,  # e_phentsize
+        0,  # e_phnum
+        64,  # e_shentsize
+        6,  # e_shnum
+        2,  # e_shstrndx (.shstrtab is section index 2)
     )
 
     return elf_hdr + text_data + shstrtab + dynstr + dynamic_data + dynsym_data + shdrs
@@ -114,17 +116,20 @@ def build_synthetic_pe() -> bytes:
 
     # 2. PE Signature
     pe_off = 0x80
-    buf[pe_off:pe_off + 4] = b"PE\x00\x00"
+    buf[pe_off : pe_off + 4] = b"PE\x00\x00"
 
     # 3. COFF Header (20 bytes)
     coff_off = pe_off + 4
     struct.pack_into(
-        "<HHIIIHH", buf, coff_off,
+        "<HHIIIHH",
+        buf,
+        coff_off,
         0x8664,  # Machine: AMD64
-        2,       # NumberOfSections = 2 (.text, .rdata)
+        2,  # NumberOfSections = 2 (.text, .rdata)
         0x65000000,  # TimeDateStamp
-        0, 0,    # Symbols
-        240,     # SizeOfOptionalHeader (PE32+ standard is 240)
+        0,
+        0,  # Symbols
+        240,  # SizeOfOptionalHeader (PE32+ standard is 240)
         0x0002,  # Characteristics: EXECUTABLE_IMAGE
     )
 
@@ -149,7 +154,7 @@ def build_synthetic_pe() -> bytes:
 
     # 6. Put code/string in .text (raw offset 0x200)
     text_payload = b"Microsoft Enhanced Cryptographic Provider RSA-2048\x00"
-    buf[0x200:0x200 + len(text_payload)] = text_payload
+    buf[0x200 : 0x200 + len(text_payload)] = text_payload
 
     # 7. Import Directory at .rdata (raw offset 0x400)
     # IMAGE_IMPORT_DESCRIPTOR: OriginalFirstThunk (0x2030), TimeDate, Forwarder, NameRVA (0x2040), FirstThunk (0x2030)
@@ -164,18 +169,18 @@ def build_synthetic_pe() -> bytes:
 
     # DLL Name at RVA 0x2040 -> raw offset 0x440
     dll_name = b"bcrypt.dll\x00"
-    buf[0x440:0x440 + len(dll_name)] = dll_name
+    buf[0x440 : 0x440 + len(dll_name)] = dll_name
 
     # Hint/Name at RVA 0x2050 -> raw offset 0x450
     # Hint (2 bytes) + "BCryptEncrypt\x00"
     struct.pack_into("<H", buf, 0x450, 1)
     func_name = b"BCryptEncrypt\x00"
-    buf[0x452:0x452 + len(func_name)] = func_name
+    buf[0x452 : 0x452 + len(func_name)] = func_name
 
     # 8. Security Directory at raw file offset 0x600 (WIN_CERTIFICATE)
     # dwLength (uint32), wRevision (uint16), wCertificateType (uint16)
     struct.pack_into("<IIH", buf, 0x600, 64, 0x0200, 0x0002)  # WIN_CERT_TYPE_PKCS_SIGNED_DATA
-    buf[0x608:0x608 + 16] = b"SAMPLE_AUTH_CERT"
+    buf[0x608 : 0x608 + 16] = b"SAMPLE_AUTH_CERT"
 
     return bytes(buf)
 
@@ -194,20 +199,34 @@ def build_synthetic_macho() -> bytes:
         "<16s16sQQIIIIIIII",
         b"__text\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
         b"__TEXT\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
-        0x1000, 0x100, 0x100, 2, 0, 0, 0, 0, 0, 0
+        0x1000,
+        0x100,
+        0x100,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     )
-    seg_cmd = struct.pack(
-        "<II16sQQQQIIII",
-        0x19,       # LC_SEGMENT_64
-        72 + 80,    # cmdsize
-        b"__TEXT\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
-        0x1000,     # vmaddr
-        0x1000,     # vmsize
-        0,          # fileoff
-        0x400,      # filesize
-        7, 5,       # maxprot, initprot
-        1, 0        # nsects = 1, flags = 0
-    ) + sec_cmd
+    seg_cmd = (
+        struct.pack(
+            "<II16sQQQQIIII",
+            0x19,  # LC_SEGMENT_64
+            72 + 80,  # cmdsize
+            b"__TEXT\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+            0x1000,  # vmaddr
+            0x1000,  # vmsize
+            0,  # fileoff
+            0x400,  # filesize
+            7,
+            5,  # maxprot, initprot
+            1,
+            0,  # nsects = 1, flags = 0
+        )
+        + sec_cmd
+    )
 
     # Command 2: LC_LOAD_DYLIB
     dylib_path = b"/usr/lib/libcrypto.dylib\x00\x00\x00"
@@ -222,18 +241,18 @@ def build_synthetic_macho() -> bytes:
 
     buf = bytearray(0x500)
     payload = hdr + seg_cmd + dylib_cmd + symtab_cmd
-    buf[:len(payload)] = payload
+    buf[: len(payload)] = payload
 
     # Add symbol table at offset 0x200: nlist_64 (16 bytes: n_strx, n_type, n_sect, n_desc, n_value)
     struct.pack_into("<IBBHQ", buf, 0x200, 1, 0x01, 0, 0, 0x1000)
 
     # Add string table at offset 0x220: "\x00_EVP_EncryptInit\x00"
     str_data = b"\x00_EVP_EncryptInit\x00"
-    buf[0x220:0x220 + len(str_data)] = str_data
+    buf[0x220 : 0x220 + len(str_data)] = str_data
 
     # Add crypto banner string in data area
     crypto_str = b"ChaCha20-Poly1305 Apple CommonCrypto\x00"
-    buf[0x300:0x300 + len(crypto_str)] = crypto_str
+    buf[0x300 : 0x300 + len(crypto_str)] = crypto_str
 
     return bytes(buf)
 
@@ -335,7 +354,6 @@ def test_macho_parser_metadata():
     sec_names = [s.name for s in meta.sections]
     assert "__text" in sec_names
 
-
     # Verify crypto strings
     assert any("ChaCha20-Poly1305" in s for s in meta.strings)
 
@@ -359,6 +377,7 @@ def test_never_execute_target_binary(monkeypatch):
     Guarantees that analyzing a binary NEVER calls subprocess, exec, or spawns the target file.
     """
     import subprocess
+
     def forbidden_call(*args, **kwargs):
         raise AssertionError("SECURITY VIOLATION: Execution of target binary was attempted!")
 
@@ -386,7 +405,7 @@ def test_worker_isolation_and_resilience():
     recovering safely from malformed binaries or corrupt inputs.
     """
     # Write a malformed binary with invalid offsets
-    corrupt_data = b"\x7fELF\x02\x01\x01\x00" + b"\xFF" * 128
+    corrupt_data = b"\x7fELF\x02\x01\x01\x00" + b"\xff" * 128
     with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as tf:
         tf.write(corrupt_data)
         tf_path = tf.name
@@ -438,6 +457,7 @@ def test_binary_metadata_to_cbom_mapping():
 
     assert validate_cbom_json(json_str) is True
     import json
+
     data = json.loads(json_str)
 
     # Verify root target application component
@@ -459,5 +479,3 @@ def test_binary_metadata_to_cbom_mapping():
     c_props = {p["name"]: p["value"] for p in crypto_comp.get("properties", [])}
     assert c_props["ecdat:confidence"] in ["high", "medium", "low"]
     assert "Static binary" in c_props["ecdat:reason"]
-
-

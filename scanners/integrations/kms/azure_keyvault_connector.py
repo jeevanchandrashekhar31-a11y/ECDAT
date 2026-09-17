@@ -84,7 +84,9 @@ class AzureKeyVaultConnector(BaseKmsConnector):
 
         return self._map_to_kms_metadata(key_bundle, rotation_policy)
 
-    def _map_to_kms_metadata(self, key_bundle: Dict[str, Any], rotation_policy: Optional[Dict[str, Any]] = None) -> KmsKeyMetadata:
+    def _map_to_kms_metadata(
+        self, key_bundle: Dict[str, Any], rotation_policy: Optional[Dict[str, Any]] = None
+    ) -> KmsKeyMetadata:
         key = key_bundle.get("key", key_bundle)
         properties = key_bundle.get("properties", key_bundle)
         kty = str(key.get("kty", "RSA")).upper()
@@ -113,7 +115,8 @@ class AzureKeyVaultConnector(BaseKmsConnector):
             "period_days": period_days,
             "last_rotated_at": attributes.get("created"),
             "next_rotation_at": attributes.get("exp"),
-            "version": properties.get("version") or (properties.get("id", "").split("/")[-1] if properties.get("id") else "1"),
+            "version": properties.get("version")
+            or (properties.get("id", "").split("/")[-1] if properties.get("id") else "1"),
         }
 
         key_ops = key.get("key_ops", ["encrypt", "decrypt"])
@@ -125,7 +128,8 @@ class AzureKeyVaultConnector(BaseKmsConnector):
         }
 
         return KmsKeyMetadata(
-            key_id=properties.get("id") or f"{self.config.get('vault_url')}/keys/{properties.get('name', 'key')}/{rotation['version']}",
+            key_id=properties.get("id")
+            or f"{self.config.get('vault_url')}/keys/{properties.get('name', 'key')}/{rotation['version']}",
             algorithm=algorithm,
             size=size,
             state=state,

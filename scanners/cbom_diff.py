@@ -50,7 +50,7 @@ def _extract_component_map(bom_or_data: Union[Bom, dict, str], policy_profile: s
         ref = a.get("bom_ref") or a.get("name")
         comp = components_by_ref.get(ref, {})
         props = {p.get("name"): p.get("value") for p in comp.get("properties", []) if isinstance(p, dict)}
-        
+
         # Build normalized comparable representation
         asset_map[ref] = {
             "bom_ref": ref,
@@ -63,7 +63,12 @@ def _extract_component_map(bom_or_data: Union[Bom, dict, str], policy_profile: s
             "quantum_vulnerable": a.get("quantum_vulnerable"),
             "reachability": a.get("reachability"),
             "reasons": a.get("reasons", []),
-            "location": props.get("location") or (comp.get("evidence", {}).get("occurrences", [{}])[0].get("location") if comp.get("evidence", {}).get("occurrences") else "unknown"),
+            "location": props.get("location")
+            or (
+                comp.get("evidence", {}).get("occurrences", [{}])[0].get("location")
+                if comp.get("evidence", {}).get("occurrences")
+                else "unknown"
+            ),
             "properties": props,
         }
     return asset_map
@@ -153,7 +158,9 @@ def diff_cboms(
             if base.get("key_size") != cur.get("key_size"):
                 tech_changes.append(f"Key size changed: '{base.get('key_size')}' -> '{cur.get('key_size')}'")
             if base.get("reachability") != cur.get("reachability"):
-                tech_changes.append(f"Reachability changed: '{base.get('reachability')}' -> '{cur.get('reachability')}'")
+                tech_changes.append(
+                    f"Reachability changed: '{base.get('reachability')}' -> '{cur.get('reachability')}'"
+                )
             if base.get("location") != cur.get("location"):
                 tech_changes.append(f"Location changed: '{base.get('location')}' -> '{cur.get('location')}'")
 
@@ -161,10 +168,14 @@ def diff_cboms(
             if base.get("risk_level") != cur.get("risk_level"):
                 risk_changes.append(f"Risk level changed: '{base.get('risk_level')}' -> '{cur.get('risk_level')}'")
             if base.get("quantum_vulnerable") != cur.get("quantum_vulnerable"):
-                risk_changes.append(f"Quantum vulnerability status changed: '{base.get('quantum_vulnerable')}' -> '{cur.get('quantum_vulnerable')}'")
+                risk_changes.append(
+                    f"Quantum vulnerability status changed: '{base.get('quantum_vulnerable')}' -> '{cur.get('quantum_vulnerable')}'"
+                )
 
             if base.get("policy_status") != cur.get("policy_status"):
-                policy_changes.append(f"Policy compliance changed: '{base.get('policy_status')}' -> '{cur.get('policy_status')}'")
+                policy_changes.append(
+                    f"Policy compliance changed: '{base.get('policy_status')}' -> '{cur.get('policy_status')}'"
+                )
 
             if tech_changes:
                 status = DiffStatus.CHANGED
@@ -176,17 +187,19 @@ def diff_cboms(
                 status = DiffStatus.UNCHANGED
 
             summary[status.value] += 1
-            diff_items.append({
-                "bom_ref": ref,
-                "name": cur.get("name"),
-                "status": status.value,
-                "asset_type": cur.get("asset_type"),
-                "baseline": base,
-                "current": cur,
-                "technical_changes": tech_changes,
-                "risk_changes": risk_changes,
-                "policy_changes": policy_changes,
-            })
+            diff_items.append(
+                {
+                    "bom_ref": ref,
+                    "name": cur.get("name"),
+                    "status": status.value,
+                    "asset_type": cur.get("asset_type"),
+                    "baseline": base,
+                    "current": cur,
+                    "technical_changes": tech_changes,
+                    "risk_changes": risk_changes,
+                    "policy_changes": policy_changes,
+                }
+            )
 
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),

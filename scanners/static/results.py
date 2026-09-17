@@ -36,4 +36,3 @@ class StaticFinding(BaseModel):
         if self.secret_type:
             d["secret_type"] = self.secret_type
         return d
-

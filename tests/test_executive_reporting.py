@@ -114,17 +114,17 @@ class TestExecutiveReporting:
         """Report must identify broken, deprecated, and short-key assets."""
         weak = report["weak_deprecated_assets"]
         assert weak["total_weak_count"] == 3  # RSA-1024, MD5, SHA-1
-        assert weak["broken_count"] == 1       # MD5
-        assert weak["deprecated_count"] == 1   # SHA-1
-        assert weak["short_key_count"] == 1    # RSA-1024
+        assert weak["broken_count"] == 1  # MD5
+        assert weak["deprecated_count"] == 1  # SHA-1
+        assert weak["short_key_count"] == 1  # RSA-1024
         assert len(weak["evidence_items"]) == 3
 
     def test_pqc_readiness_and_mosca_calculus_covered(self, report):
         """Report must evaluate PQC readiness, quantum vulnerability, and Mosca delta."""
         pqc = report["pqc_readiness"]
         assert pqc["quantum_vulnerable_count"] == 1  # RSA-1024
-        assert pqc["hybrid_count"] == 1              # X25519+ML-KEM-768
-        assert pqc["quantum_safe_count"] == 1        # AES-256-GCM
+        assert pqc["hybrid_count"] == 1  # X25519+ML-KEM-768
+        assert pqc["quantum_safe_count"] == 1  # AES-256-GCM
         assert pqc["pqc_readiness_percentage"] > 0
         assert pqc["mosca_calculus"]["in_quantum_deficit"] is True
         assert pqc["mosca_calculus"]["quantum_collapse_year"] == 2033

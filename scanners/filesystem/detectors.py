@@ -72,27 +72,37 @@ class FilesystemAssetDetector:
         sha256_hash = hashlib.sha256(content_sample).hexdigest()
 
         # 1. Detect Certificate Files
-        cert_asset = self._detect_certificate(file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash)
+        cert_asset = self._detect_certificate(
+            file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash
+        )
         if cert_asset:
             assets.append(cert_asset)
 
         # 2. Detect Public Keys
-        pubkey_asset = self._detect_public_key(file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash)
+        pubkey_asset = self._detect_public_key(
+            file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash
+        )
         if pubkey_asset:
             assets.append(pubkey_asset)
 
         # 3. Detect Key Stores and Key Store References
-        keystore_asset = self._detect_key_store(file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash)
+        keystore_asset = self._detect_key_store(
+            file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash
+        )
         if keystore_asset:
             assets.append(keystore_asset)
 
         # 4. Detect Crypto Configurations
-        crypto_cfg_asset = self._detect_crypto_config(file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash)
+        crypto_cfg_asset = self._detect_crypto_config(
+            file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash
+        )
         if crypto_cfg_asset:
             assets.append(crypto_cfg_asset)
 
         # 5. Detect TLS Configurations
-        tls_cfg_asset = self._detect_tls_config(file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash)
+        tls_cfg_asset = self._detect_tls_config(
+            file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash
+        )
         if tls_cfg_asset:
             assets.append(tls_cfg_asset)
 
@@ -190,9 +200,8 @@ class FilesystemAssetDetector:
             key_type = "SEC1 EC Public Key (PEM)"
         elif "-----BEGIN DSA PUBLIC KEY-----" in text:
             key_type = "DSA Public Key (PEM)"
-        elif (
-            (file_name.endswith(".pub") or file_name in ["authorized_keys", "known_hosts"])
-            and any(proto in text for proto in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256"])
+        elif (file_name.endswith(".pub") or file_name in ["authorized_keys", "known_hosts"]) and any(
+            proto in text for proto in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256"]
         ):
             key_type = "OpenSSH Public Key"
         elif file_name.endswith(".json") and '"kty":' in text and '"d":' not in text:
@@ -233,7 +242,12 @@ class FilesystemAssetDetector:
         store_type = None
 
         # 1. Java KeyStore binary magic (0xFEEDFEED) or extensions
-        if content.startswith(b"\xfe\xed\xfe\xed") or file_name.endswith(".jks") or file_name.endswith(".keystore") or file_name.endswith(".truststore"):
+        if (
+            content.startswith(b"\xfe\xed\xfe\xed")
+            or file_name.endswith(".jks")
+            or file_name.endswith(".keystore")
+            or file_name.endswith(".truststore")
+        ):
             store_type = "Java KeyStore (JKS)"
 
         # 2. PKCS#12 bundle

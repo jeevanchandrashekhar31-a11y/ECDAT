@@ -60,7 +60,11 @@ def test_dockerfile_non_root_user(auditor):
 
 def test_dockerfile_healthchecks(auditor):
     """All production Dockerfiles must declare an explicit HEALTHCHECK."""
-    for df in [REPO_ROOT / "backend" / "Dockerfile", REPO_ROOT / "frontend" / "Dockerfile", REPO_ROOT / "docker" / "scanner.Dockerfile"]:
+    for df in [
+        REPO_ROOT / "backend" / "Dockerfile",
+        REPO_ROOT / "frontend" / "Dockerfile",
+        REPO_ROOT / "docker" / "scanner.Dockerfile",
+    ]:
         res = auditor.audit_dockerfile(df)
         assert "health_checks" in res.passed_rules
 
@@ -101,7 +105,9 @@ def test_seccomp_and_apparmor_profiles_exist():
 def test_kubernetes_manifests_restricted_security_context(auditor):
     """Kubernetes Deployment and CronJob manifests must satisfy restricted PodSecurityStandards."""
     k8s_dir = REPO_ROOT / "deploy" / "k8s"
-    ns_file = k8s_dir / "00-namespaces.yaml" if (k8s_dir / "00-namespaces.yaml").exists() else k8s_dir / "namespace.yaml"
+    ns_file = (
+        k8s_dir / "00-namespaces.yaml" if (k8s_dir / "00-namespaces.yaml").exists() else k8s_dir / "namespace.yaml"
+    )
     assert ns_file.exists()
     ns_content = ns_file.read_text(encoding="utf-8")
     assert "pod-security.kubernetes.io/enforce: restricted" in ns_content

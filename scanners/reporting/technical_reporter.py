@@ -60,7 +60,9 @@ class TechnicalReporter:
         fid = raw.get("id") or f"find_{idx}"
         algo = raw.get("algorithm", "RSA-1024")
         algo_lower = algo.lower()
-        key_size = raw.get("key_size") or (1024 if "1024" in algo_lower else 2048 if "2048" in algo_lower else 256 if "256" in algo_lower else 128)
+        key_size = raw.get("key_size") or (
+            1024 if "1024" in algo_lower else 2048 if "2048" in algo_lower else 256 if "256" in algo_lower else 128
+        )
         location = raw.get("location", "services/auth/token_signer.go")
         line_num = int(raw.get("line_number", 42))
 
@@ -78,7 +80,11 @@ class TechnicalReporter:
         is_net = "conf" in location or "tls" in location or raw.get("finding_type") == "network"
         is_rt = raw.get("finding_type") == "runtime"
         scanner = {
-            "scanner_id": "ebpf_runtime_tracer" if is_rt else "network_tls_prober" if is_net else "static_tree_sitter_ast",
+            "scanner_id": "ebpf_runtime_tracer"
+            if is_rt
+            else "network_tls_prober"
+            if is_net
+            else "static_tree_sitter_ast",
             "scanner_version": "1.0.0",
             "modality": "RUNTIME_KERNEL_UPROBE" if is_rt else "NETWORK_SOCKET_PROBE" if is_net else "STATIC_AST_PARSER",
         }
@@ -87,7 +93,11 @@ class TechnicalReporter:
         confidence = {
             "confidence_level": "HIGH",
             "confidence_score": 0.98,
-            "validation_method": "DYNAMIC_KERNEL_UPROBE_VERIFIED" if is_rt else "SOCKET_HANDSHAKE_CERT_CHAIN_VERIFIED" if is_net else "TREE_SITTER_AST_SYNTAX_CONFIRMED",
+            "validation_method": "DYNAMIC_KERNEL_UPROBE_VERIFIED"
+            if is_rt
+            else "SOCKET_HANDSHAKE_CERT_CHAIN_VERIFIED"
+            if is_net
+            else "TREE_SITTER_AST_SYNTAX_CONFIRMED",
         }
 
         # 4. Evidence
@@ -103,10 +113,30 @@ class TechnicalReporter:
         # 5. Algorithm
         algorithm = {
             "name": algo,
-            "family": "Asymmetric Signature & Key Exchange" if any(k in algo_lower for k in ["rsa", "ecdsa", "dh"]) else "Cryptographic Hash" if "md5" in algo_lower or "sha" in algo_lower else "Post-Quantum KEM" if "ml-kem" in algo_lower else "Symmetric Cipher",
-            "oid": "1.2.840.113549.1.1.1" if "rsa" in algo_lower else "1.2.840.113549.2.5" if "md5" in algo_lower else "2.16.840.1.101.3.4.4.2",
-            "standard_reference": "NIST FIPS 186-5" if "rsa" in algo_lower else "IETF RFC 1321" if "md5" in algo_lower else "NIST FIPS 203 (ML-KEM)",
-            "lifecycle_status": "BROKEN_OR_DISALLOWED" if "md5" in algo_lower or ("rsa" in algo_lower and key_size < 2048) else "DEPRECATED" if "sha-1" in algo_lower or "3des" in algo_lower else "QUANTUM_SAFE" if "ml-kem" in algo_lower else "QUANTUM_VULNERABLE",
+            "family": "Asymmetric Signature & Key Exchange"
+            if any(k in algo_lower for k in ["rsa", "ecdsa", "dh"])
+            else "Cryptographic Hash"
+            if "md5" in algo_lower or "sha" in algo_lower
+            else "Post-Quantum KEM"
+            if "ml-kem" in algo_lower
+            else "Symmetric Cipher",
+            "oid": "1.2.840.113549.1.1.1"
+            if "rsa" in algo_lower
+            else "1.2.840.113549.2.5"
+            if "md5" in algo_lower
+            else "2.16.840.1.101.3.4.4.2",
+            "standard_reference": "NIST FIPS 186-5"
+            if "rsa" in algo_lower
+            else "IETF RFC 1321"
+            if "md5" in algo_lower
+            else "NIST FIPS 203 (ML-KEM)",
+            "lifecycle_status": "BROKEN_OR_DISALLOWED"
+            if "md5" in algo_lower or ("rsa" in algo_lower and key_size < 2048)
+            else "DEPRECATED"
+            if "sha-1" in algo_lower or "3des" in algo_lower
+            else "QUANTUM_SAFE"
+            if "ml-kem" in algo_lower
+            else "QUANTUM_VULNERABLE",
         }
 
         # 6. Parameters
@@ -121,9 +151,17 @@ class TechnicalReporter:
 
         # 7. Dependency
         dependency = {
-            "package_name": "crypto/rsa" if location.endswith(".go") else "cryptography" if location.endswith(".py") else "openssl",
+            "package_name": "crypto/rsa"
+            if location.endswith(".go")
+            else "cryptography"
+            if location.endswith(".py")
+            else "openssl",
             "package_version": "3.0.13",
-            "ecosystem": "go_stdlib" if location.endswith(".go") else "pypi" if location.endswith(".py") else "system_library",
+            "ecosystem": "go_stdlib"
+            if location.endswith(".go")
+            else "pypi"
+            if location.endswith(".py")
+            else "system_library",
             "direct_or_transitive": "direct",
             "purl": "pkg:golang/crypto/rsa" if location.endswith(".go") else "pkg:deb/debian/openssl@3.0.13",
         }
@@ -171,7 +209,9 @@ class TechnicalReporter:
             "severity": "CRITICAL" if is_crit else str(raw.get("severity", "HIGH")).upper(),
             "risk_score": 92.5 if is_crit else 74.0,
             "cwe_id": "CWE-328" if "md5" in algo_lower else "CWE-327",
-            "cwe_name": "Use of Weak Hash" if "md5" in algo_lower else "Use of a Broken or Risky Cryptographic Algorithm",
+            "cwe_name": "Use of Weak Hash"
+            if "md5" in algo_lower
+            else "Use of a Broken or Risky Cryptographic Algorithm",
             "quantum_vulnerable": any(k in algo_lower for k in ["rsa", "ecdsa", "dh"]),
             "mosca_status": "AT_RISK",
             "mosca_margin_years": -4.5,
@@ -278,9 +318,30 @@ def main():
     args = parser.parse_args()
 
     sample_findings = [
-        {"id": "find_1", "algorithm": "RSA-1024", "key_size": 1024, "severity": "Critical", "location": "services/auth/token_signer.go", "line_number": 42},
-        {"id": "find_2", "algorithm": "MD5", "key_size": 128, "severity": "Critical", "location": "pkg/cache/etag.go", "line_number": 19},
-        {"id": "find_3", "algorithm": "AES-256-GCM", "key_size": 256, "severity": "Low", "location": "vault/aes.py", "line_number": 56},
+        {
+            "id": "find_1",
+            "algorithm": "RSA-1024",
+            "key_size": 1024,
+            "severity": "Critical",
+            "location": "services/auth/token_signer.go",
+            "line_number": 42,
+        },
+        {
+            "id": "find_2",
+            "algorithm": "MD5",
+            "key_size": 128,
+            "severity": "Critical",
+            "location": "pkg/cache/etag.go",
+            "line_number": 19,
+        },
+        {
+            "id": "find_3",
+            "algorithm": "AES-256-GCM",
+            "key_size": 256,
+            "severity": "Low",
+            "location": "vault/aes.py",
+            "line_number": 56,
+        },
     ]
 
     reporter = TechnicalReporter()

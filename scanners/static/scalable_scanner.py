@@ -40,13 +40,27 @@ from scanners.domain.errors import (
 )
 
 DEFAULT_INCLUDE_EXTS = {
-    ".c", ".h", ".cpp", ".hpp", ".cc", ".go", ".js", ".mjs", ".cjs",
-    ".py", ".pyw", ".java", ".kt", ".kts", ".ts", ".tsx", ".cs", ".rs",
+    ".c",
+    ".h",
+    ".cpp",
+    ".hpp",
+    ".cc",
+    ".go",
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".py",
+    ".pyw",
+    ".java",
+    ".kt",
+    ".kts",
+    ".ts",
+    ".tsx",
+    ".cs",
+    ".rs",
 }
 
-DEFAULT_EXCLUDE_DIRS = {
-    ".git", "node_modules", "vendor", "dist", "build", ".venv", "__pycache__", ".pytest_cache"
-}
+DEFAULT_EXCLUDE_DIRS = {".git", "node_modules", "vendor", "dist", "build", ".venv", "__pycache__", ".pytest_cache"}
 
 
 def scan_single_file(
@@ -305,9 +319,7 @@ class ScalableScanner:
         if self.concurrency > 1 and len(files_to_scan) > 1:
             with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
                 future_to_file = {
-                    executor.submit(
-                        scan_single_file, fp, self.target_dir, registry, self.cache
-                    ): fp
+                    executor.submit(scan_single_file, fp, self.target_dir, registry, self.cache): fp
                     for fp in files_to_scan
                 }
                 for future in as_completed(future_to_file):
@@ -333,9 +345,7 @@ class ScalableScanner:
             for fp in files_to_scan:
                 scanned_count += 1
                 try:
-                    file_findings, file_err, loc = scan_single_file(
-                        fp, self.target_dir, registry, self.cache
-                    )
+                    file_findings, file_err, loc = scan_single_file(fp, self.target_dir, registry, self.cache)
                     all_findings.extend(file_findings)
                     total_loc += loc
                     if file_err:

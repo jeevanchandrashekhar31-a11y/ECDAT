@@ -37,9 +37,7 @@ class StructuredError:
     message: str
     fatal: bool = False
     details: Dict[str, Any] = field(default_factory=dict)
-    timestamp: str = field(
-        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -50,6 +48,7 @@ class EngineJobReport:
     """
     Structured execution report emitted by each isolated discovery engine.
     """
+
     engine_name: str
     status: ScanStatus
     findings: List[Dict[str, Any]] = field(default_factory=list)
@@ -78,6 +77,7 @@ class EngineJob:
     """
     Defines a discovery task to be executed within an isolated job boundary.
     """
+
     engine_name: str
     task: Callable[[], Any]
     timeout_seconds: float = 60.0
@@ -220,9 +220,7 @@ class CompositeScanReport:
             "total_findings": self.total_findings,
             "total_errors": self.total_errors,
             "duration_seconds": round(self.duration_seconds, 4),
-            "engine_reports": {
-                name: r.to_dict() for name, r in self.engine_reports.items()
-            },
+            "engine_reports": {name: r.to_dict() for name, r in self.engine_reports.items()},
             "findings": self.all_findings,
             "errors": self.all_errors,
         }

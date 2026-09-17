@@ -51,17 +51,19 @@ def test_cli_authorized_target_with_allowed_hosts(tmp_path):
         tls_versions=["TLSv1.3"],
         cipher_suites=["TLS_AES_128_GCM_SHA256"],
         scan_status="success",
-        cert_chain=[{
-            "subjectName": "CN=service.corp.internal",
-            "issuerName": "CN=service.corp.internal",
-            "notValidBefore": "2026-01-01T00:00:00+00:00",
-            "notValidAfter": "2027-01-01T00:00:00+00:00",
-            "isExpired": False,
-            "isSelfSigned": True,
-            "algo_family": "RSA",
-            "key_size": 2048,
-            "signature_algorithm": "sha256WithRSAEncryption",
-        }],
+        cert_chain=[
+            {
+                "subjectName": "CN=service.corp.internal",
+                "issuerName": "CN=service.corp.internal",
+                "notValidBefore": "2026-01-01T00:00:00+00:00",
+                "notValidAfter": "2027-01-01T00:00:00+00:00",
+                "isExpired": False,
+                "isSelfSigned": True,
+                "algo_family": "RSA",
+                "key_size": 2048,
+                "signature_algorithm": "sha256WithRSAEncryption",
+            }
+        ],
     )
 
     with (

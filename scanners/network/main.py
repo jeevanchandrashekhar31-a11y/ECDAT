@@ -119,9 +119,7 @@ def main():
         max_rate_per_host_rps=args.rate_limit_host,
         max_global_rps=args.rate_limit_global,
     )
-    rate_limiter = RateLimiter(
-        host_rate_rps=policy.max_rate_per_host_rps, global_rate_rps=policy.max_global_rps
-    )
+    rate_limiter = RateLimiter(host_rate_rps=policy.max_rate_per_host_rps, global_rate_rps=policy.max_global_rps)
 
     normalized_targets: List[NormalizedTarget] = []
     target_meta: Dict[str, Tuple[Optional[str], Optional[str]]] = {}
@@ -137,7 +135,6 @@ def main():
             # Early authorization check (avoids DNS queries for unauthorized targets)
             if not scope or (scope.allowed_hostnames and not scope.allowed_subnets):
                 authorizer.authorize(target_supplied=t, hostname=target_hostname, port=target_port, record_audit=False)
-
 
             pinned_ip, _ = DNSRebindingGuard.resolve_and_pin(
                 hostname=target_hostname,
@@ -212,13 +209,10 @@ def main():
             )
             findings.append(f)
 
-
     # 4. Invoke Scanner Plugin
     scanner = get_scanner(args.protocol)
     if normalized_targets:
-        plugin_findings = scanner.scan(
-            normalized_targets, max_concurrency=args.max_concurrency, timeout=args.timeout
-        )
+        plugin_findings = scanner.scan(normalized_targets, max_concurrency=args.max_concurrency, timeout=args.timeout)
         for pf in plugin_findings:
             scope_id, audit_id = target_meta.get(f"{pf.host}:{pf.port}", (None, None))
             pf.authorization_id = scope_id
@@ -261,7 +255,5 @@ def main():
         logging.info("No successful scans completed.")
 
 
-
 if __name__ == "__main__":
     main()
-

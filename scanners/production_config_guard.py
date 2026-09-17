@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 class InsecureProductionConfigError(Exception):
     """Raised when an insecure development setting or flag is detected in production."""
+
     def __init__(self, message: str, violations: Optional[List[str]] = None):
         super().__init__(message)
         self.violations = violations or []
@@ -25,6 +26,7 @@ class InsecureProductionConfigError(Exception):
 
 class MissingMandatorySecurityConfigError(InsecureProductionConfigError):
     """Raised when mandatory security configuration is missing in production."""
+
     def __init__(self, missing_keys: List[str]):
         msg = f"Mandatory security configuration is missing in production: {missing_keys}"
         super().__init__(msg, [f"Missing mandatory key: '{k}'" for k in missing_keys])
@@ -33,6 +35,7 @@ class MissingMandatorySecurityConfigError(InsecureProductionConfigError):
 
 class UnsafeDevelopmentDefaultDetectedError(InsecureProductionConfigError):
     """Raised when a development default secret or bypass flag is detected in production."""
+
     def __init__(self, unsafe_defaults: List[str]):
         msg = f"Unsafe development setting detected in production: {unsafe_defaults}"
         super().__init__(msg, [f"Unsafe development setting: '{d}'" for d in unsafe_defaults])
@@ -95,7 +98,12 @@ class ProductionConfigGuard:
         clean = val.strip().lower()
         if clean in KNOWN_INSECURE_DEV_SECRETS:
             return True
-        if clean.startswith("change-this-") or clean.startswith("dummy") or clean.startswith("mock") or clean.startswith("test-"):
+        if (
+            clean.startswith("change-this-")
+            or clean.startswith("dummy")
+            or clean.startswith("mock")
+            or clean.startswith("test-")
+        ):
             return True
         return False
 
@@ -134,7 +142,9 @@ class ProductionConfigGuard:
         if cls.is_known_dev_secret(api_key):
             violations.append("ECDAT_API_KEY is using a known development default or mock secret.")
         if len(api_key.strip()) < 32:
-            violations.append(f"ECDAT_API_KEY must be at least 32 characters in production (provided: {len(api_key.strip())}).")
+            violations.append(
+                f"ECDAT_API_KEY must be at least 32 characters in production (provided: {len(api_key.strip())})."
+            )
 
         dek = env_dict.get("DATA_ENCRYPTION_KEY", "")
         if cls.is_known_dev_secret(dek):
@@ -145,7 +155,12 @@ class ProductionConfigGuard:
         # Database URL check if defined
         db_url = env_dict.get("DATABASE_URL", "")
         if db_url:
-            if "localhost:5432" in db_url or "127.0.0.1:5432" in db_url or "postgres:postgres@" in db_url or "change-this-" in db_url:
+            if (
+                "localhost:5432" in db_url
+                or "127.0.0.1:5432" in db_url
+                or "postgres:postgres@" in db_url
+                or "change-this-" in db_url
+            ):
                 violations.append("DATABASE_URL cannot use localhost or default development credentials in production.")
 
         # 3. Prohibited development bypass flags
@@ -175,7 +190,7 @@ def main():
     parser.add_argument("--env", default="production", help="Environment to validate (production/development)")
     args = parser.parse_args()
 
-    is_prod_required = (args.env.lower() == "production")
+    is_prod_required = args.env.lower() == "production"
 
     try:
         res = ProductionConfigGuard.validate_environment(require_production=is_prod_required)

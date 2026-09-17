@@ -91,7 +91,9 @@ class SarifEngine:
                 df_obj = DeveloperFeedbackGenerator.generate(finding, target_root=target_root)
 
             safe_fix = df_dict.get("safe_fix", {})
-            safe_fix_summary = safe_fix.get("summary") if isinstance(safe_fix, dict) else str(finding.get("remediation", ""))
+            safe_fix_summary = (
+                safe_fix.get("summary") if isinstance(safe_fix, dict) else str(finding.get("remediation", ""))
+            )
             why_it_matters = str(df_dict.get("why_it_matters", ""))
 
             # 2. Rule Definition (Help & Remediation Guidance)
@@ -100,11 +102,12 @@ class SarifEngine:
                 rule_def = {
                     "id": rule_id,
                     "name": rule_id.replace("-", "_").replace(":", "_"),
-                    "shortDescription": {
-                        "text": f"Cryptographic finding: {finding.get('algorithm', rule_id)}"
-                    },
+                    "shortDescription": {"text": f"Cryptographic finding: {finding.get('algorithm', rule_id)}"},
                     "fullDescription": {
-                        "text": str(finding.get("description") or f"Detected {finding.get('finding_type')} ({finding.get('algorithm')})")
+                        "text": str(
+                            finding.get("description")
+                            or f"Detected {finding.get('finding_type')} ({finding.get('algorithm')})"
+                        )
                     },
                     "defaultConfiguration": {
                         "level": level,
@@ -128,7 +131,9 @@ class SarifEngine:
             # 3. Location & Evidence
             file_path = str(finding.get("file_path") or finding.get("filePath") or "unknown").replace("\\", "/")
             line_no = max(1, int(finding.get("line_number") or finding.get("lineNumber") or finding.get("line") or 1))
-            col_no = max(1, int(finding.get("column_number") or finding.get("columnNumber") or finding.get("column") or 1))
+            col_no = max(
+                1, int(finding.get("column_number") or finding.get("columnNumber") or finding.get("column") or 1)
+            )
 
             raw_evidence = str(finding.get("evidence") or "")
             # Ensure zero secret leakage in snippet
@@ -285,7 +290,11 @@ class SarifEngine:
                     errors.append(f"Rule '{rid}' has invalid level '{lvl}'. Must be one of {VALID_SARIF_LEVELS}")
 
             help_obj = rule.get("help")
-            if not help_obj or not isinstance(help_obj, dict) or (not help_obj.get("text") and not help_obj.get("markdown")):
+            if (
+                not help_obj
+                or not isinstance(help_obj, dict)
+                or (not help_obj.get("text") and not help_obj.get("markdown"))
+            ):
                 errors.append(f"Rule '{rid}' missing required 'help' guidance text/markdown")
 
         # 3. Validate Results
@@ -294,7 +303,9 @@ class SarifEngine:
             errors.append("Run 'results' must be a list")
             return False, errors
 
-        pem_leak_regex = re.compile(r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----(?!.*\[REDACTED_)", re.DOTALL)
+        pem_leak_regex = re.compile(
+            r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----(?!.*\[REDACTED_)", re.DOTALL
+        )
 
         for idx, res in enumerate(results):
             r_id = res.get("ruleId")
@@ -336,7 +347,9 @@ class SarifEngine:
                             snip_text = str(snippet.get("text", ""))
                             # Zero Secret Leakage Invariant: Check for raw private key leaks
                             if pem_leak_regex.search(snip_text):
-                                errors.append(f"CRITICAL: Result '{r_id}' snippet contains unredacted raw secret material!")
+                                errors.append(
+                                    f"CRITICAL: Result '{r_id}' snippet contains unredacted raw secret material!"
+                                )
 
         return len(errors) == 0, errors
 

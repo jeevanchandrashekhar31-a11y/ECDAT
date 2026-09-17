@@ -80,8 +80,12 @@ class GenericASTNormalizer(ASTNormalizer):
                 for node in match[1].get("call", []):
                     line_no = node.start_point[0] + 1
                     snippet = lines[line_no - 1].strip() if line_no <= len(lines) else ""
-                    callee_text = node.children[0].text.decode("utf-8", errors="replace") if node.children else "unknown"
-                    calls.append(NormalizedCallNode(callee=callee_text, arguments=[], line_number=line_no, raw_snippet=snippet))
+                    callee_text = (
+                        node.children[0].text.decode("utf-8", errors="replace") if node.children else "unknown"
+                    )
+                    calls.append(
+                        NormalizedCallNode(callee=callee_text, arguments=[], line_number=line_no, raw_snippet=snippet)
+                    )
         except Exception:
             pass
         return calls
@@ -94,6 +98,7 @@ class GenericASTNormalizer(ASTNormalizer):
 class GenericDataFlowProvider(DataFlowProvider):
     def __init__(self):
         from scanners.static.ast.dataflow_interprocedural import BoundedDataFlowEngine
+
         self.engine = BoundedDataFlowEngine()
 
     def resolve_constant(self, var_name: str, assignments: List[NormalizedAssignmentNode]) -> Optional[Any]:
@@ -176,22 +181,26 @@ _DEFAULT_REGISTRY.register(GoLanguageAdapter(), [".go"])
 _DEFAULT_REGISTRY.register(JavascriptLanguageAdapter(), [".js", ".mjs", ".cjs"])
 
 from scanners.static.ast.python_handler import PythonLanguageAdapter
+
 _DEFAULT_REGISTRY.register(PythonLanguageAdapter(), [".py", ".pyw"])
 
 from scanners.static.ast.java_handler import JavaLanguageAdapter, KotlinLanguageAdapter
+
 _DEFAULT_REGISTRY.register(JavaLanguageAdapter(), [".java"])
 _DEFAULT_REGISTRY.register(KotlinLanguageAdapter(), [".kt", ".kts"])
 
 from scanners.static.ast.javascript_handler import TypescriptLanguageAdapter
+
 _DEFAULT_REGISTRY.register(TypescriptLanguageAdapter(), [".ts", ".tsx"])
 
 from scanners.static.ast.csharp_handler import CSharpLanguageAdapter
+
 _DEFAULT_REGISTRY.register(CSharpLanguageAdapter(), [".cs"])
 
 from scanners.static.ast.rust_handler import RustLanguageAdapter
+
 _DEFAULT_REGISTRY.register(RustLanguageAdapter(), [".rs"])
 
 
 def get_default_adapter_registry() -> AdapterRegistry:
     return _DEFAULT_REGISTRY
-

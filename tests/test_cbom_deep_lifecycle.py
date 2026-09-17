@@ -67,6 +67,7 @@ def validator_v16():
 # 1. Ingestion of CycloneDX 1.6 & 1.7 JSON & XML
 # ---------------------------------------------------------------------------
 
+
 def test_cbom_ingest_cyclonedx_17_json(validator_v17):
     """CycloneDX 1.7 JSON is ingested into a valid Bom object."""
     raw_cdx = {
@@ -149,6 +150,7 @@ def test_cbom_auto_format_detection():
 # 2. Multi-Scanner Merging and Collision-Free bom-ref Resolution
 # ---------------------------------------------------------------------------
 
+
 def test_multi_scanner_merging_collision_free():
     """Multi-scanner findings merge without bom-ref collisions adhering to contract."""
     # Finding from Static Code Scanner
@@ -225,6 +227,7 @@ def test_multi_scanner_merging_collision_free():
 # 3. Full Lifecycle Pipeline: Ingest -> Normalize -> Correlate -> Diff -> Export
 # ---------------------------------------------------------------------------
 
+
 def test_cbom_lifecycle_pipeline():
     """Complete CBOM lifecycle pipeline executes seamlessly."""
     raw_data = {
@@ -245,9 +248,7 @@ def test_cbom_lifecycle_pipeline():
                         "nistQuantumSecurityLevel": 0,
                     },
                 },
-                "evidence": {
-                    "occurrences": [{"location": "src/crypto.py", "line": 20}]
-                },
+                "evidence": {"occurrences": [{"location": "src/crypto.py", "line": 20}]},
             }
         ],
     }
@@ -286,6 +287,7 @@ def test_cbom_lifecycle_pipeline():
 # ---------------------------------------------------------------------------
 # 4. CBOM Diff Engine & Absence-of-Finding Guarantee
 # ---------------------------------------------------------------------------
+
 
 def test_cbom_diff_categorization_and_absence_invariant():
     """CBOM diff accurately categorizes changes and protects absence invariant."""
@@ -361,12 +363,13 @@ def test_cbom_diff_categorization_and_absence_invariant():
 # 5. Schema Strictness and Zero Secret Exposure
 # ---------------------------------------------------------------------------
 
+
 def test_cbom_zero_secret_exposure():
     """Private key material, passwords, or seeds must never be serialized in CBOM."""
     from cyclonedx.model.crypto import RelatedCryptoMaterialProperties, RelatedCryptoMaterialType
 
     secret_raw = "SECRET_SUPER_CONFIDENTIAL_PRIVATE_KEY_BYTES_12345"
-    
+
     # RelatedCryptoMaterial must only store metadata (type, identifier), NOT raw key bytes
     rcm_prop = RelatedCryptoMaterialProperties(
         type=RelatedCryptoMaterialType.PRIVATE_KEY,
@@ -393,6 +396,7 @@ def test_cbom_zero_secret_exposure():
 # ---------------------------------------------------------------------------
 # 6. Malformed & Resilient Parsing Under Stress
 # ---------------------------------------------------------------------------
+
 
 def test_cbom_malformed_json_handling():
     """Malformed JSON triggers clean error without unhandled crashes."""

@@ -58,11 +58,13 @@ class KmsDiscoveryService:
                 keys = connector.discover_all()
                 all_keys.extend(keys)
             except Exception as e:
-                errors.append({
-                    "connector_name": connector.name,
-                    "provider": connector.provider,
-                    "error": str(e),
-                })
+                errors.append(
+                    {
+                        "connector_name": connector.name,
+                        "provider": connector.provider,
+                        "error": str(e),
+                    }
+                )
 
         return {
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),

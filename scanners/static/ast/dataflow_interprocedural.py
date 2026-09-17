@@ -298,7 +298,11 @@ class BoundedDataFlowEngine:
                 # Resolve argument passed to crypto call
                 arg_val = curr_val
                 if direct_call.arguments:
-                    raw_arg = direct_call.arguments[param_index] if param_index < len(direct_call.arguments) else direct_call.arguments[0]
+                    raw_arg = (
+                        direct_call.arguments[param_index]
+                        if param_index < len(direct_call.arguments)
+                        else direct_call.arguments[0]
+                    )
                     # If raw_arg references a local assignment in this function
                     if raw_arg in fn.body_assignments:
                         arg_val = fn.body_assignments[raw_arg]
@@ -338,7 +342,11 @@ class BoundedDataFlowEngine:
 
             if next_call is None:
                 # If there are calls, but none are in self.functions or target, report unresolved function call
-                unresolved = [c.callee_name for c in fn.body_calls if c.callee_name != target_crypto_api and c.callee_name not in visited_functions]
+                unresolved = [
+                    c.callee_name
+                    for c in fn.body_calls
+                    if c.callee_name != target_crypto_api and c.callee_name not in visited_functions
+                ]
                 trace.is_certain = False
                 trace.confidence = "LOW"
                 if unresolved:

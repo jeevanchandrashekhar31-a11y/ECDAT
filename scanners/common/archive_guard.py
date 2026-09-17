@@ -26,38 +26,37 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 # Security limits
-DEFAULT_MAX_TOTAL_UNCOMPRESSED_BYTES = 100 * 1024 * 1024   # 100 MB total extraction limit
-DEFAULT_MAX_ENTRY_SIZE_BYTES = 25 * 1024 * 1024             # 25 MB max per entry
-DEFAULT_MAX_FILES_COUNT = 1000                              # 1,000 max extracted files
-DEFAULT_MAX_COMPRESSION_RATIO = 100.0                       # 100:1 max ratio
+DEFAULT_MAX_TOTAL_UNCOMPRESSED_BYTES = 100 * 1024 * 1024  # 100 MB total extraction limit
+DEFAULT_MAX_ENTRY_SIZE_BYTES = 25 * 1024 * 1024  # 25 MB max per entry
+DEFAULT_MAX_FILES_COUNT = 1000  # 1,000 max extracted files
+DEFAULT_MAX_COMPRESSION_RATIO = 100.0  # 100:1 max ratio
 
-NESTED_ARCHIVE_EXTS = {
-    ".zip", ".tar", ".gz", ".tgz", ".bz2", ".tbz2", ".xz", ".txz", ".7z", ".rar", ".iso"
-}
+NESTED_ARCHIVE_EXTS = {".zip", ".tar", ".gz", ".tgz", ".bz2", ".tbz2", ".xz", ".txz", ".7z", ".rar", ".iso"}
 
-WINDOWS_DEVICE_NAMES = re.compile(
-    r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$",
-    re.IGNORECASE
-)
+WINDOWS_DEVICE_NAMES = re.compile(r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$", re.IGNORECASE)
 
 
 class ArchiveSecurityError(Exception):
     """Base exception for archive security violations."""
+
     pass
 
 
 class DecompressionBombError(ArchiveSecurityError):
     """Raised when an archive exceeds size, count, or compression ratio limits."""
+
     pass
 
 
 class PathTraversalError(ArchiveSecurityError):
     """Raised when an archive entry attempts path traversal (ZipSlip/TarSlip)."""
+
     pass
 
 
 class NestedArchiveError(ArchiveSecurityError):
     """Raised when an unpermitted nested archive is encountered."""
+
     pass
 
 
@@ -296,7 +295,9 @@ class ArchiveSecurityGuard:
                         bytes_written += len(chunk)
                         if bytes_written > self.max_entry_size:
                             target_path.unlink(missing_ok=True)
-                            raise DecompressionBombError(f"Entry '{member.name}' exceeded size limit during extraction.")
+                            raise DecompressionBombError(
+                                f"Entry '{member.name}' exceeded size limit during extraction."
+                            )
                         out_f.write(chunk)
 
                 extracted_files.append(target_path)
@@ -337,7 +338,7 @@ def main():
         max_total_bytes=args.max_size_mb * 1024 * 1024,
         max_entry_size=args.max_entry_mb * 1024 * 1024,
         max_files_count=args.max_files,
-        allow_nested=args.allow_nested
+        allow_nested=args.allow_nested,
     )
 
     archive_path = Path(args.archive)

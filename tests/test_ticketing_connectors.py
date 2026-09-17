@@ -308,6 +308,7 @@ def test_generic_webhook_connector_signing_and_dispatch(sample_ticket_request):
 
 def test_ticketing_service_multi_dispatch_and_batch():
     """TicketingService dispatches tickets across connectors and handles batching from findings."""
+
     def mock_jira_http(*args, **kwargs):
         return {"key": "SEC-55"}
 

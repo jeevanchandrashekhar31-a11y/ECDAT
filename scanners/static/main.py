@@ -108,7 +108,9 @@ def main():
             try:
                 ast_findings = adapter.extract_findings(source_code, fpath, discovery.root_dir)
             except Exception as e:
-                scan_errors.append(ParserFailureError(f"AST parsing failed for {fpath}: {e}", {"file": str(fpath)}, fatal=False))
+                scan_errors.append(
+                    ParserFailureError(f"AST parsing failed for {fpath}: {e}", {"file": str(fpath)}, fatal=False)
+                )
 
         raw_matches = apply_regex_rules(content)
         regex_findings = []
@@ -145,7 +147,10 @@ def main():
 
         # Secret-safe candidate detection
         from scanners.static.secret_detector import SecretSafeDetector
-        _, secret_candidates = SecretSafeDetector.detect_and_redact(content, file_path=str(fpath.relative_to(discovery.root_dir)))
+
+        _, secret_candidates = SecretSafeDetector.detect_and_redact(
+            content, file_path=str(fpath.relative_to(discovery.root_dir))
+        )
         secret_findings = SecretSafeDetector.create_static_findings(secret_candidates)
         for sf in secret_findings:
             key_algo = f"{sf.file_path}:{sf.line_number}:{sf.algorithm}"
@@ -157,7 +162,6 @@ def main():
         findings.extend(file_results)
 
     print(f"Found {len(findings)} potential cryptographic usage sites.")
-
 
     if args.llm_verify:
         from scanners.static.llm_verifier import LLMVerifier
@@ -221,7 +225,6 @@ def main():
         )
 
         cboms.append(code_finding_to_cbom(ccf))
-
 
     out_dir = Path(args.output).parent
     out_dir.mkdir(parents=True, exist_ok=True)

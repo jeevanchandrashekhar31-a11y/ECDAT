@@ -25,6 +25,7 @@ from scanners.policy_engine import PolicyEngine, PolicyValidationError
 
 class PolicySecurityError(Exception):
     """Raised when an unauthorized or invalid governance action is attempted."""
+
     pass
 
 
@@ -134,7 +135,9 @@ class PolicySecurityController:
             raise PolicySecurityError("Invalid actor identity: must provide credentials/identity dictionary.")
         role = actor_info.get("role", "").lower()
         if role != "admin":
-            raise PolicySecurityError(f"Unauthorized: actor '{actor_info.get('username', 'unknown')}' with role '{role}' is not an authorized policy administrator.")
+            raise PolicySecurityError(
+                f"Unauthorized: actor '{actor_info.get('username', 'unknown')}' with role '{role}' is not an authorized policy administrator."
+            )
 
     # =========================================================================
     # 3. Policy Lifecycle & Four-Eyes Approval Workflow
@@ -468,7 +471,10 @@ class PolicySecurityController:
 
         # Constant-time comparison
         if not hmac.compare_digest(bundle["signature"], expected_sig):
-            return False, "Cryptographic signature verification FAILED. Policy artifact has been tampered with or signature key mismatch."
+            return (
+                False,
+                "Cryptographic signature verification FAILED. Policy artifact has been tampered with or signature key mismatch.",
+            )
 
         # Re-validate schema
         valid, errors = self.engine.validate_policy(policy_data)
@@ -520,4 +526,3 @@ if __name__ == "__main__":
         else:
             print(f"[FAIL] Verification FAILED: {err}", file=sys.stderr)
             sys.exit(1)
-

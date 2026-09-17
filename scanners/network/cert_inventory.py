@@ -448,12 +448,8 @@ class CertificateInventory:
         }
 
         for item in self._inventory.values():
-            summary["renewal_states"][item.renewal_state] = (
-                summary["renewal_states"].get(item.renewal_state, 0) + 1
-            )
-            summary["environments"][item.environment] = (
-                summary["environments"].get(item.environment, 0) + 1
-            )
+            summary["renewal_states"][item.renewal_state] = summary["renewal_states"].get(item.renewal_state, 0) + 1
+            summary["environments"][item.environment] = summary["environments"].get(item.environment, 0) + 1
 
             for a in item.detected_anomalies:
                 prefix = a.split(":")[0]

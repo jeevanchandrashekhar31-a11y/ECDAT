@@ -31,6 +31,7 @@ class EvidenceSource(str, Enum):
     Differentiates static configuration, active network handshake observation,
     and running process / memory runtime evidence.
     """
+
     STATIC_CONFIGURATION = "static_configuration"
     NETWORK_HANDSHAKE = "network_handshake"
     RUNTIME = "runtime"
@@ -52,6 +53,7 @@ class HybridRelationshipType(str, Enum):
 
 class PlaintextExposureError(ValueError):
     """Raised when an analyzer or user falsely claims passive packet capture reveals plaintext."""
+
     pass
 
 
@@ -61,6 +63,7 @@ class HybridRelationship:
     Represents a first-class graph relationship connecting a composite/hybrid mechanism
     to its constituent classical algorithm, post-quantum algorithm, or combiner.
     """
+
     source_id: str
     target_id: str
     relationship_type: HybridRelationshipType
@@ -80,6 +83,7 @@ class TlsHandshakeProperties:
     """
     Explicit model of TLS / SSH handshake cryptographic properties.
     """
+
     endpoint: str
     tls_version: str
     cipher_suite: str
@@ -149,7 +153,7 @@ class PqcCatalog:
             # Default to rules/pqc_algorithm_catalog.json
             repo_root = Path(__file__).resolve().parent.parent.parent
             catalog_path = repo_root / "rules" / "pqc_algorithm_catalog.json"
-        
+
         self.catalog_path = catalog_path
         self.version: str = "0.0.0"
         self.algorithms: Dict[str, Dict[str, Any]] = {}
@@ -160,10 +164,10 @@ class PqcCatalog:
     def load_catalog(self) -> None:
         if not self.catalog_path.exists():
             raise FileNotFoundError(f"PQC algorithm catalog not found at: {self.catalog_path}")
-        
+
         with open(self.catalog_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        
+
         self.version = data.get("catalog_version", "1.0.0")
         self.last_updated = data.get("last_updated", "")
         self.algorithms.clear()
@@ -173,14 +177,14 @@ class PqcCatalog:
         for algo in data.get("algorithms", []):
             algo_id = algo["id"]
             self.algorithms[algo_id] = algo
-            
+
             # Map standard name and id (case-insensitive)
             self.alias_map[algo_id.lower()] = algo_id
             self.alias_map[algo["standard_name"].lower()] = algo_id
-            
+
             for alias in algo.get("aliases", []):
                 self.alias_map[alias.lower()] = algo_id
-            
+
             if algo.get("ssh_name"):
                 self.alias_map[algo["ssh_name"].lower()] = algo_id
 
@@ -285,12 +289,8 @@ class HybridHandshakeAnalyzer:
             props.standard_reference = kex_algo.get("standard_reference")
             props.iana_group_id = kex_algo.get("iana_tls_group_id")
             props.nist_quantum_level = kex_algo.get("nist_quantum_security_level")
-            props.harvest_now_decrypt_later_resilient = kex_algo.get(
-                "harvest_now_decrypt_later_resilient", False
-            )
-            props.quantum_authentication_resilient = kex_algo.get(
-                "quantum_authentication_resilient", False
-            )
+            props.harvest_now_decrypt_later_resilient = kex_algo.get("harvest_now_decrypt_later_resilient", False)
+            props.quantum_authentication_resilient = kex_algo.get("quantum_authentication_resilient", False)
 
         # Signature algorithm check for quantum authentication resilience
         if signature_algorithm:
@@ -347,7 +347,7 @@ class HybridHandshakeAnalyzer:
         # If hybrid, decompose into first-class components
         if kex_algo.get("category") == "hybrid" and "hybrid_components" in kex_algo:
             components = kex_algo["hybrid_components"]
-            
+
             classical = components.get("classical_component")
             if classical:
                 classical_meta = self.catalog.lookup(classical) or {}
@@ -433,6 +433,4 @@ def assert_no_pcap_plaintext_claim(finding: Dict[str, Any]) -> None:
                 "Packet capture alone cannot reveal plaintext."
             )
     if finding.get("packet_capture_can_reveal_plaintext") is True:
-        raise PlaintextExposureError(
-            "Cryptographic error: packet_capture_can_reveal_plaintext flag is set to True."
-        )
+        raise PlaintextExposureError("Cryptographic error: packet_capture_can_reveal_plaintext flag is set to True.")

@@ -52,7 +52,15 @@ def test_evaluates_prohibited_algorithms(engine):
 def test_evaluates_key_sizes(engine):
     key_assets = [
         {"asset_id": "weak-rsa", "algorithm": "RSA", "key_size": 1024, "type": "key", "environment": "production"},
-        {"asset_id": "strong-rsa", "algorithm": "RSA", "key_size": 2048, "type": "key", "environment": "production", "is_quantum_safe": True, "is_hybrid": True},
+        {
+            "asset_id": "strong-rsa",
+            "algorithm": "RSA",
+            "key_size": 2048,
+            "type": "key",
+            "environment": "production",
+            "is_quantum_safe": True,
+            "is_hybrid": True,
+        },
     ]
 
     result = engine.evaluate(key_assets)
@@ -67,7 +75,13 @@ def test_evaluates_key_sizes(engine):
 def test_evaluates_protocols_and_ciphers(engine):
     proto_assets = [
         {"asset_id": "legacy-web", "protocol": "TLS 1.0", "type": "protocol", "environment": "production"},
-        {"asset_id": "modern-tls", "protocol": "TLS 1.3", "cipher_suite": "TLS_AES_256_GCM_SHA384", "type": "protocol", "environment": "production"},
+        {
+            "asset_id": "modern-tls",
+            "protocol": "TLS 1.3",
+            "cipher_suite": "TLS_AES_256_GCM_SHA384",
+            "type": "protocol",
+            "environment": "production",
+        },
     ]
 
     result = engine.evaluate(proto_assets)

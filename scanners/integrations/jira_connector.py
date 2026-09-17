@@ -107,7 +107,8 @@ class JiraConnector(BaseTicketingConnector):
 
         fields = {
             "project": {"key": self.project_key},
-            "summary": ticket_request.title or f"[{ticket_request.severity}] Finding: {ticket_request.finding_id} on {ticket_request.asset_id}",
+            "summary": ticket_request.title
+            or f"[{ticket_request.severity}] Finding: {ticket_request.finding_id} on {ticket_request.asset_id}",
             "description": "\n".join(description_lines),
             "issuetype": {"name": issue_type},
             "priority": {"name": priority},
@@ -125,13 +126,13 @@ class JiraConnector(BaseTicketingConnector):
 
         return {"fields": fields}
 
-    def send_create_request(
-        self, ticket_request: TicketRequest, payload: Dict[str, Any]
-    ) -> TicketResponse:
+    def send_create_request(self, ticket_request: TicketRequest, payload: Dict[str, Any]) -> TicketResponse:
         endpoint = f"{self.normalized_host}/rest/api/2/issue"
 
         if self.http_client:
-            data = self.http_client(endpoint, method="POST", json_payload=payload, headers={"Authorization": self.get_auth_header()})
+            data = self.http_client(
+                endpoint, method="POST", json_payload=payload, headers={"Authorization": self.get_auth_header()}
+            )
         else:
             req = urllib.request.Request(
                 endpoint,

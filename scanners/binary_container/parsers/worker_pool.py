@@ -174,7 +174,9 @@ class WorkerIsolatedBinaryAnalyzer:
         sections = [
             SectionMetadata(
                 name=sec["name"],
-                virtual_address=int(sec["virtual_address"], 16) if isinstance(sec["virtual_address"], str) else sec["virtual_address"],
+                virtual_address=int(sec["virtual_address"], 16)
+                if isinstance(sec["virtual_address"], str)
+                else sec["virtual_address"],
                 raw_size=sec["raw_size"],
                 entropy=sec.get("entropy", 0.0),
             )

@@ -58,7 +58,9 @@ class ExecutiveReporter:
         self.scan_name = scan_name
         self.scan_id = scan_id
 
-    def generate_from_findings(self, findings: List[Dict[str, Any]], policy_profile: str = "regulated_bfsi") -> Dict[str, Any]:
+    def generate_from_findings(
+        self, findings: List[Dict[str, Any]], policy_profile: str = "regulated_bfsi"
+    ) -> Dict[str, Any]:
         evidence_index: Dict[str, Dict[str, Any]] = {}
         all_evidence: List[Dict[str, Any]] = []
 
@@ -254,10 +256,12 @@ class ExecutiveReporter:
         for f, ref in zip(findings, all_evidence):
             algo = str(f.get("algorithm", "")).lower()
             if any(b in algo for b in ["md5", "des", "sha-1", "3des"]):
-                violations.append({
-                    "rule": f"Disallowed primitive '{f.get('algorithm')}' under NIST SP 800-131A",
-                    "evidence": ref,
-                })
+                violations.append(
+                    {
+                        "rule": f"Disallowed primitive '{f.get('algorithm')}' under NIST SP 800-131A",
+                        "evidence": ref,
+                    }
+                )
 
         policy_violations = {
             "total_violations": len(violations),
@@ -300,7 +304,12 @@ class ExecutiveReporter:
             "historical_periods": [
                 {"period": "2026-07", "total_assets": 20, "weak_assets": 8, "risk_score": 75.0},
                 {"period": "2026-08", "total_assets": 22, "weak_assets": 6, "risk_score": 62.5},
-                {"period": "2026-09", "total_assets": len(all_evidence), "weak_assets": len(weak_ev), "risk_score": 48.0},
+                {
+                    "period": "2026-09",
+                    "total_assets": len(all_evidence),
+                    "weak_assets": len(weak_ev),
+                    "risk_score": 48.0,
+                },
             ],
             "velocity_summary": {
                 "weak_assets_reduction_pct": -50.0,
@@ -370,10 +379,38 @@ def main():
     args = parser.parse_args()
 
     sample_findings = [
-        {"id": "f1", "algorithm": "RSA-1024", "key_size": 1024, "severity": "Critical", "location": "auth.go", "line_number": 42},
-        {"id": "f2", "algorithm": "MD5", "key_size": 128, "severity": "Critical", "location": "hash.c", "line_number": 19},
-        {"id": "f3", "algorithm": "AES-256-GCM", "key_size": 256, "severity": "Low", "location": "cipher.py", "line_number": 56},
-        {"id": "f4", "algorithm": "X25519+ML-KEM-768", "key_size": 256, "severity": "Low", "location": "tls.go", "line_number": 31},
+        {
+            "id": "f1",
+            "algorithm": "RSA-1024",
+            "key_size": 1024,
+            "severity": "Critical",
+            "location": "auth.go",
+            "line_number": 42,
+        },
+        {
+            "id": "f2",
+            "algorithm": "MD5",
+            "key_size": 128,
+            "severity": "Critical",
+            "location": "hash.c",
+            "line_number": 19,
+        },
+        {
+            "id": "f3",
+            "algorithm": "AES-256-GCM",
+            "key_size": 256,
+            "severity": "Low",
+            "location": "cipher.py",
+            "line_number": 56,
+        },
+        {
+            "id": "f4",
+            "algorithm": "X25519+ML-KEM-768",
+            "key_size": 256,
+            "severity": "Low",
+            "location": "tls.go",
+            "line_number": 31,
+        },
     ]
 
     reporter = ExecutiveReporter()

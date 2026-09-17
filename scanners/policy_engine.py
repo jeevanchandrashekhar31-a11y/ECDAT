@@ -47,6 +47,7 @@ PREFERENCE_ORDER = {
 
 class PolicyValidationError(Exception):
     """Raised when a policy document fails JSON schema validation."""
+
     def __init__(self, message: str, errors: Optional[List[str]] = None):
         super().__init__(message)
         self.errors = errors or []
@@ -118,7 +119,7 @@ class PolicyEngine:
         """
         if not isinstance(policy, dict):
             return False, ["Policy must be a JSON/dict object."]
-        
+
         # Prototype pollution protection
         if "__proto__" in policy or "constructor" in policy:
             return False, ["Policy contains forbidden prototype properties."]
@@ -166,7 +167,9 @@ class PolicyEngine:
             )
         return policy
 
-    def normalize_asset(self, raw_asset: Dict[str, Any], default_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def normalize_asset(
+        self, raw_asset: Dict[str, Any], default_context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         Normalizes CBOM components, findings, or plain assets into a canonical asset representation.
         """
@@ -200,12 +203,18 @@ class PolicyEngine:
         is_self_signed = (
             raw_asset.get("is_self_signed")
             or cert_info.get("is_self_signed")
-            or (raw_asset.get("issuer") and raw_asset.get("subject") and raw_asset.get("issuer") == raw_asset.get("subject"))
+            or (
+                raw_asset.get("issuer")
+                and raw_asset.get("subject")
+                and raw_asset.get("issuer") == raw_asset.get("subject")
+            )
             or False
         )
         validity_days = raw_asset.get("validity_days") or cert_info.get("validity_days")
         has_ct_logs = raw_asset.get("has_ct_logs", cert_info.get("has_ct_logs", False))
-        sig_algo = raw_asset.get("signature_algorithm") or cert_info.get("signature_algorithm") or raw_asset.get("sig_algo")
+        sig_algo = (
+            raw_asset.get("signature_algorithm") or cert_info.get("signature_algorithm") or raw_asset.get("sig_algo")
+        )
 
         # PQC & Quantum
         pqc_type = raw_asset.get("pqc_type") or raw_asset.get("quantum_category")
@@ -219,8 +228,19 @@ class PolicyEngine:
         algo_upper = str(raw_asset.get("algorithm") or asset_name).upper()
         if not is_quantum_safe:
             qs_patterns = [
-                "ML-KEM", "ML-DSA", "SLH-DSA", "FALCON", "SPHINCS", "KYBER", "DILITHIUM",
-                "AES-256", "CHACHA20", "SHA-256", "SHA-384", "SHA-512", "SHA3",
+                "ML-KEM",
+                "ML-DSA",
+                "SLH-DSA",
+                "FALCON",
+                "SPHINCS",
+                "KYBER",
+                "DILITHIUM",
+                "AES-256",
+                "CHACHA20",
+                "SHA-256",
+                "SHA-384",
+                "SHA-512",
+                "SHA3",
             ]
             if any(p in algo_upper for p in qs_patterns):
                 is_quantum_safe = True
@@ -375,7 +395,9 @@ class PolicyEngine:
         # 2. Key Sizes
         if "key_sizes" in rule:
             ks_rule = rule["key_sizes"]
-            if ("RSA" in algo or asset["asset_type"] in ["key", "asymmetric_key", "certificate"]) and key_size is not None:
+            if (
+                "RSA" in algo or asset["asset_type"] in ["key", "asymmetric_key", "certificate"]
+            ) and key_size is not None:
                 min_rsa = ks_rule.get("min_rsa_bits")
                 if min_rsa and "RSA" in algo and key_size < min_rsa:
                     violations.append(f"RSA key size {key_size} bits is below minimum required {min_rsa} bits")
@@ -388,7 +410,9 @@ class PolicyEngine:
             if ("DH" in algo or "DIFFIE" in algo) and key_size is not None:
                 min_dh = ks_rule.get("min_dh_bits")
                 if min_dh and key_size < min_dh:
-                    violations.append(f"Diffie-Hellman key size {key_size} bits is below minimum required {min_dh} bits")
+                    violations.append(
+                        f"Diffie-Hellman key size {key_size} bits is below minimum required {min_dh} bits"
+                    )
 
             if ("AES" in algo or "CHACHA" in algo) and key_size is not None:
                 min_sym = ks_rule.get("min_symmetric_bits")
@@ -455,7 +479,11 @@ class PolicyEngine:
             if pqc_rule.get("require_pqc") and not asset["is_quantum_safe"]:
                 violations.append("Asset lacks required Post-Quantum Cryptographic protection")
 
-            if pqc_rule.get("require_hybrid") and not asset["is_hybrid"] and asset["asset_type"] in ["key_exchange", "protocol", "kex", "key_establishment"]:
+            if (
+                pqc_rule.get("require_hybrid")
+                and not asset["is_hybrid"]
+                and asset["asset_type"] in ["key_exchange", "protocol", "kex", "key_establishment"]
+            ):
                 violations.append("Policy requires hybrid classical + post-quantum key exchange")
 
             max_gap = pqc_rule.get("max_mosca_gap_years")
@@ -551,9 +579,7 @@ class PolicyEngine:
                 raw_action = violation["action"]
 
                 # Check for active exception
-                matching_exc, exc_status_note = self._find_matching_exception(
-                    rule, asset, exceptions, eval_time
-                )
+                matching_exc, exc_status_note = self._find_matching_exception(rule, asset, exceptions, eval_time)
 
                 if matching_exc:
                     final_action = "EXCEPTION"
@@ -571,11 +597,13 @@ class PolicyEngine:
                 else:
                     final_action = raw_action
                     if exc_status_note and "EXPIRED" in exc_status_note:
-                        expired_exceptions.append({
-                            "rule_id": rule["id"],
-                            "asset_id": asset["asset_id"],
-                            "note": exc_status_note,
-                        })
+                        expired_exceptions.append(
+                            {
+                                "rule_id": rule["id"],
+                                "asset_id": asset["asset_id"],
+                                "note": exc_status_note,
+                            }
+                        )
 
                 rule_record = {
                     "rule_id": rule["id"],
@@ -602,16 +630,18 @@ class PolicyEngine:
                 asset_verdict = "ALLOW"
 
             overall_verdicts.append(asset_verdict)
-            evaluated_assets.append({
-                "asset_id": asset["asset_id"],
-                "name": asset["name"],
-                "verdict": asset_verdict,
-                "environment": asset["environment"],
-                "application": asset["application"],
-                "business_unit": asset["business_unit"],
-                "violations_count": len(asset_rule_results),
-                "rule_results": asset_rule_results,
-            })
+            evaluated_assets.append(
+                {
+                    "asset_id": asset["asset_id"],
+                    "name": asset["name"],
+                    "verdict": asset_verdict,
+                    "environment": asset["environment"],
+                    "application": asset["application"],
+                    "business_unit": asset["business_unit"],
+                    "violations_count": len(asset_rule_results),
+                    "rule_results": asset_rule_results,
+                }
+            )
 
         # 4. Evaluation-Level Precedence Resolution
         if any(v == "BLOCK" for v in overall_verdicts):
@@ -625,7 +655,7 @@ class PolicyEngine:
 
         # Passed boolean definition
         # ALLOW passes; EXCEPTION passes under conditional supervision; WARN passes unless fail_on_warn is configured; BLOCK fails.
-        passed = (policy_verdict != "BLOCK")
+        passed = policy_verdict != "BLOCK"
         if ctx.get("fail_on_warn") and policy_verdict == "WARN":
             passed = False
 
@@ -704,4 +734,3 @@ if __name__ == "__main__":
         print(f"Audit Digest: {res['audit_digest']}")
 
     sys.exit(0 if res["passed"] else 1)
-

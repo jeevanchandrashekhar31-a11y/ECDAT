@@ -103,7 +103,10 @@ def test_integrity_builder_all_mandated_fields():
     # Default independent audit status
     assert block["independent_attestation"]["independent_audit_obtained"] is False
     assert block["independent_attestation"]["certification_status"] == "UNATTESTED_AUTOMATED_EVALUATION"
-    assert "does NOT constitute an independent third-party audit" in block["independent_attestation"]["attestation_statement"]
+    assert (
+        "does NOT constitute an independent third-party audit"
+        in block["independent_attestation"]["attestation_statement"]
+    )
 
 
 def test_validate_evidence_integrity_success():
@@ -149,8 +152,20 @@ def test_executive_reporter_embeds_integrity():
     """Verify that ExecutiveReporter automatically embeds valid evidence_integrity block."""
     reporter = ExecutiveReporter(scan_id="scan_exec_test")
     sample_findings = [
-        {"id": "find_rsa", "algorithm": "RSA-1024", "severity": "Critical", "location": "auth/token.go", "line_number": 42},
-        {"id": "find_md5", "algorithm": "MD5", "severity": "Critical", "location": "cache/hasher.go", "line_number": 19},
+        {
+            "id": "find_rsa",
+            "algorithm": "RSA-1024",
+            "severity": "Critical",
+            "location": "auth/token.go",
+            "line_number": 42,
+        },
+        {
+            "id": "find_md5",
+            "algorithm": "MD5",
+            "severity": "Critical",
+            "location": "cache/hasher.go",
+            "line_number": 19,
+        },
     ]
     report = reporter.generate_from_findings(sample_findings)
 
@@ -165,7 +180,13 @@ def test_technical_reporter_embeds_integrity():
     """Verify that TechnicalReporter automatically embeds valid evidence_integrity block."""
     reporter = TechnicalReporter(scan_id="scan_tech_test")
     sample_findings = [
-        {"id": "find_rsa", "algorithm": "RSA-1024", "severity": "Critical", "location": "auth/token.go", "line_number": 42},
+        {
+            "id": "find_rsa",
+            "algorithm": "RSA-1024",
+            "severity": "Critical",
+            "location": "auth/token.go",
+            "line_number": 42,
+        },
     ]
     report = reporter.generate_report(sample_findings)
 
@@ -189,7 +210,12 @@ def test_cli_demo_and_verify(tmp_path):
     report_file = tmp_path / "valid_report.json"
     report_file.write_text(json.dumps({"evidence_integrity": data}), encoding="utf-8")
 
-    cmd_verify = [sys.executable, str(REPO_ROOT / "scanners" / "reporting" / "evidence_integrity.py"), "--verify-file", str(report_file)]
+    cmd_verify = [
+        sys.executable,
+        str(REPO_ROOT / "scanners" / "reporting" / "evidence_integrity.py"),
+        "--verify-file",
+        str(report_file),
+    ]
     proc_verify = subprocess.run(cmd_verify, cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=15)
     assert proc_verify.returncode == 0
     assert "PASSED" in proc_verify.stdout

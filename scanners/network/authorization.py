@@ -21,6 +21,7 @@ logger = logging.getLogger("ECDAT.NetworkAudit")
 
 class ScopeAuthorizationError(PermissionError):
     """Raised when a scan target is outside the explicitly authorized target scope."""
+
     pass
 
 
@@ -29,7 +30,7 @@ class TargetScope:
     scope_id: str = field(default_factory=lambda: f"scope-{uuid.uuid4().hex[:8]}")
     authorized_by: str = "security-admin"
     allowed_hostnames: Set[str] = field(default_factory=set)  # Exact or *.example.com
-    allowed_subnets: List[str] = field(default_factory=list)   # CIDR strings e.g. 93.184.216.0/24
+    allowed_subnets: List[str] = field(default_factory=list)  # CIDR strings e.g. 93.184.216.0/24
     allowed_ports: Set[int] = field(default_factory=lambda: {443, 8443, 22, 636, 993, 995, 465})
     allow_private_ips: bool = False
     valid_until: Optional[str] = None  # ISO 8601 timestamp
@@ -227,12 +228,18 @@ class TargetScopeAuthorizer:
                         "disallows private network scanning."
                     )
                     rec = self.audit_logger.record(
-                        target_supplied, hostname, port, resolved_ip, False, self.scope, reason, ["PRIVATE_IP_UNAUTHORIZED"]
+                        target_supplied,
+                        hostname,
+                        port,
+                        resolved_ip,
+                        False,
+                        self.scope,
+                        reason,
+                        ["PRIVATE_IP_UNAUTHORIZED"],
                     )
                     raise ScopeAuthorizationError(reason)
             except ValueError:
                 pass
-
 
         reason = f"Target '{hostname}:{port}' successfully authorized under scope '{self.scope.scope_id}'."
         audit_id = None
@@ -240,4 +247,3 @@ class TargetScopeAuthorizer:
             rec = self.audit_logger.record(target_supplied, hostname, port, resolved_ip, True, self.scope, reason)
             audit_id = rec.audit_id
         return True, reason, audit_id
-
