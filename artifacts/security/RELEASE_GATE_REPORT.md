@@ -1,6 +1,6 @@
 # ECDAT Supply-Chain Release Gate Audit Report
 
-**Execution Timestamp**: `2026-09-16T21:14:47.047615+00:00`  
+**Execution Timestamp**: `2026-09-17T01:10:57.452181+00:00`  
 **Verdict**: **`PASS`** (7/7 gates passed)  
 
 ---
@@ -14,7 +14,7 @@
 | Gate 3 | `Regression Policy Mandate` | **PASS** | All 10 registered security bugs satisfy 5-point closure standard. |
 | Gate 4 | `Critical Security Tests` | **PASS** | All critical security and cryptographic test suites PASSED successfully. |
 | Gate 5 | `Artifact Integrity Verification` | **PASS** | Ed25519 digital signature and SHA-256/SHA-512 artifact checksums are VALID. |
-| Gate 6 | `Silent Scanner Crash Detection` | **PASS** | Scanner deterministically caught error with non-zero exit code (2); never conflates crashes with 0. |
+| Gate 6 | `Silent Scanner Crash Detection` | **PASS** | Scanner deterministically caught error with non-zero exit code (2); zero shell=True list invocations detected. |
 | Gate 7 | `Required SBOM Verification` | **PASS** | Required CycloneDX 1.6 (705 components) and SPDX 2.3 SBOMs are present, non-empty, and schema-valid. |
 
 ---

@@ -7,8 +7,8 @@ This document provides a comprehensive, ecosystem-wide catalog of direct and tra
 ## 1. Python Ecosystem
 
 ### 1.1 Root Package Configuration
-- **Manifest**: [`requirements.txt`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/requirements.txt)
-- **Linter Config**: [`pyproject.toml`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/pyproject.toml) (targets Python 3.12, ruff line length 120)
+- **Manifest**: [`requirements.txt`](requirements.txt)
+- **Linter Config**: [`pyproject.toml`](pyproject.toml) (targets Python 3.12, ruff line length 120)
 - **Lockfile Status**: **MISSING** (No `poetry.lock`, `Pipfile.lock`, or `requirements.lock` exists).
 
 ### 1.2 Direct Dependencies (`requirements.txt`)
@@ -45,8 +45,8 @@ This document provides a comprehensive, ecosystem-wide catalog of direct and tra
 ## 2. Node.js Backend Ecosystem
 
 ### 2.1 Manifests & Lockfiles
-- **Manifest**: [`backend/package.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/package.json)
-- **Lockfile**: [`backend/package-lock.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/package-lock.json) (Lockfile version 3, npm 10+ compliant)
+- **Manifest**: [`backend/package.json`](backend/package.json)
+- **Lockfile**: [`backend/package-lock.json`](backend/package-lock.json) (Lockfile version 3, npm 10+ compliant)
 - **Dependency Counts**: 125 production dependencies, 117 dev dependencies (243 total in tree)
 
 ### 2.2 Production Dependencies (`backend/package.json`)
@@ -73,8 +73,8 @@ This document provides a comprehensive, ecosystem-wide catalog of direct and tra
 ## 3. React Frontend Ecosystem
 
 ### 3.1 Manifests & Lockfiles
-- **Manifest**: [`frontend/package.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/frontend/package.json)
-- **Lockfile**: [`frontend/package-lock.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/frontend/package-lock.json) (Lockfile version 3)
+- **Manifest**: [`frontend/package.json`](frontend/package.json)
+- **Lockfile**: [`frontend/package-lock.json`](frontend/package-lock.json) (Lockfile version 3)
 - **Dependency Counts**: 47 production dependencies, 371 dev dependencies (419 total in tree)
 
 ### 3.2 Production Dependencies (`frontend/package.json`)

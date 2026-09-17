@@ -9,7 +9,7 @@ In strict compliance with enterprise security governance and release qualificati
 ECDAT explicitly rejects marketing statements claiming "zero vulnerabilities". Instead, the platform maintains a transparent, empirical vulnerability inventory across its Python, Node.js, and React ecosystems:
 
 - **Zero Vulnerability Claim:** `FALSE` (Strictly prohibited).
-- **Tracked Known Advisories:** `19` (Cataloged with documented risk acceptances in [`rules/vulnerability_risk_acceptance.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/vulnerability_risk_acceptance.json)).
+- **Tracked Known Advisories:** `19` (Cataloged with documented risk acceptances in [`rules/vulnerability_risk_acceptance.json`](rules/vulnerability_risk_acceptance.json)).
 - **Unaccepted CRITICAL Blockers:** `0`
 - **Unaccepted HIGH Blockers:** `0`
 - **Tampering Violations:** `0` (Strict cryptographic digest verification prevents unauthorized severity downgrades).
@@ -21,16 +21,18 @@ ECDAT explicitly rejects marketing statements claiming "zero vulnerabilities". I
 
 | Ecosystem | Manifest / Lockfile | Scanned Components | Tracked Advisories | Unaccepted CRITICALs | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Python Core & Scanners** | `requirements.lock` | 64 packages | 0 | 0 | **CLEAN** |
+| **Python Core & Scanners** | `requirements.lock` | 64 packages | 0 *(7 remediated in cryptography 50.0.1)* | 0 | **CLEAN** (Verified via pip-audit) |
 | **Node.js Backend REST API** | `backend/package-lock.json` | 312 packages | 9 | 0 | **RISK ACCEPTED** (Dev/test dependencies) |
 | **React Frontend Dashboard** | `frontend/package-lock.json` | 329 packages | 10 | 0 | **RISK ACCEPTED** (Build tooling / Vite mock redirect) |
 | **TOTAL** | | **705 components** | **19** | **0** | **APPROVED** |
+
+> **Audit Note on Python Dependencies**: Prior to release verification, `requirements.lock` pinned `cryptography==46.0.7`, which had 7 known security advisories (`PYSEC-2026-3552`, `PYSEC-2026-3553`, `PYSEC-2026-3554`, `GHSA-537c-gmf6-5ccf`). A real-execution audit with `pip-audit` identified these advisories. Following the verification finding, `cryptography` was upgraded to `50.0.1` across `requirements.txt`, `requirements.lock`, and `requirements-lock.txt`, alongside upgrades for `requests` (2.34.2), `idna` (3.19), and `urllib3` (2.8.0). Re-audit via `pip-audit -r requirements.lock --no-deps --disable-pip` confirmed all 7 advisories resolved with 0 remaining vulnerabilities in Python core.
 
 ### Documented Risk Acceptance Criteria
 All 19 tracked items satisfy enterprise exception criteria:
 1. **Scope Restriction**: Confined strictly to development test runners (`vitest`, `mocha`, `supertest`) or build-time bundlers; never packaged into runtime container images.
 2. **Attack Surface**: No remote network listener or untrusted public input path touches affected dev tooling components.
-3. **Formal SLA**: Tracked in `rules/vulnerability_risk_acceptance.json` with defined expiration dates, cryptographic evidence hashes, and review owners.
+3. **Formal SLA**: Tracked in `rules/security_exceptions.json` with defined expiration dates, cryptographic evidence hashes, and review owners.
 
 ---
 
@@ -40,7 +42,7 @@ The automated secret scanner evaluated all source files, configurations, scripts
 - **Private Keys**: RSA (`BEGIN RSA PRIVATE KEY`), EC (`BEGIN EC PRIVATE KEY`), OpenSSH, Ed25519.
 - **Tokens & Credentials**: AWS access keys, GitHub tokens, Slack webhooks, JWT test secrets, and database credentials.
 - **Findings**: **Zero (0) leaked secrets or unredacted keys detected.**
-- **Verification Proof**: Gate 2 of [`scripts/release_gate.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scripts/release_gate.py) passed cleanly across 100% of tracked repository files.
+- **Verification Proof**: Gate 2 of [`scripts/release_gate.py`](scripts/release_gate.py) passed cleanly across 100% of tracked repository files.
 
 ---
 
@@ -61,20 +63,20 @@ The automated secret scanner evaluated all source files, configurations, scripts
 
 ## 5. Security Regression Verification (The 5-Point Standard)
 
-All 10 registered security bugs in [`rules/security_regressions.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/security_regressions.json) are guarded by automated regression test suites and verified by [`scanners/regression_policy.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/regression_policy.py):
+All 10 registered security bugs in [`rules/security_regressions.json`](rules/security_regressions.json) are guarded by automated regression test suites and verified by [`scanners/regression_policy.py`](scanners/regression_policy.py):
 
 | Bug ID | Vulnerability Title | Category | Severity | Regression Test File | Status |
 | :--- | :--- | :--- | :---: | :--- | :---: |
-| **SEC-REG-001** | Path Traversal via Malicious Archive (Zip Slip) | Path Traversal | CRITICAL | [`tests/test_archive_safety.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_archive_safety.py) | **VERIFIED** |
-| **SEC-REG-002** | Command Injection in Scanner Pipeline | Command Injection | CRITICAL | [`tests/redteam/test_appsec_assessment.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/redteam/test_appsec_assessment.py) | **VERIFIED** |
-| **SEC-REG-003** | Prototype Pollution in CBOM Normalizer | Prototype Pollution | HIGH | [`backend/tests/security/prototype_pollution.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/security/prototype_pollution.test.js) | **VERIFIED** |
-| **SEC-REG-004** | Secret Key Leakage in AST Evidence Snippets | Information Disclosure | HIGH | [`tests/test_security_regressions.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_security_regressions.py) | **VERIFIED** |
-| **SEC-REG-005** | Regular Expression Denial of Service (ReDoS) | DoS | HIGH | [`tests/test_adversarial_scanner.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_adversarial_scanner.py) | **VERIFIED** |
-| **SEC-REG-006** | Symlink Loop Trap during Filesystem Scanning | DoS / Loop Trap | HIGH | [`tests/test_adversarial_scanner.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_adversarial_scanner.py) | **VERIFIED** |
-| **SEC-REG-007** | SQL Parameter Injection in Raw Query Handlers | SQL Injection | HIGH | [`backend/tests/api/api_hardening.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/api/api_hardening.test.js) | **VERIFIED** |
-| **SEC-REG-008** | Multi-Tenant IDOR Data Leakage | Authorization Bypass | HIGH | [`tests/test_multi_tenancy_isolation.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_multi_tenancy_isolation.py) | **VERIFIED** |
-| **SEC-REG-009** | Malformed PCAP Memory Exhaustion | DoS | MEDIUM | [`tests/test_pcap_safety.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_pcap_safety.py) | **VERIFIED** |
-| **SEC-REG-010** | JWT Algorithm Confusion ("none" algorithm attack) | Auth Bypass | HIGH | [`tests/test_authentication_hardening.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_authentication_hardening.py) | **VERIFIED** |
+| **SEC-REG-001** | Path Traversal via Malicious Archive (Zip Slip) | Path Traversal | CRITICAL | [`tests/test_archive_safety.py`](tests/test_archive_safety.py) | **VERIFIED** |
+| **SEC-REG-002** | Command Injection in Scanner Pipeline | Command Injection | CRITICAL | [`tests/redteam/test_appsec_assessment.py`](tests/redteam/test_appsec_assessment.py) | **VERIFIED** |
+| **SEC-REG-003** | Prototype Pollution in CBOM Normalizer | Prototype Pollution | HIGH | [`backend/tests/security/security_regressions.test.js`](backend/tests/security/security_regressions.test.js) | **VERIFIED** |
+| **SEC-REG-004** | Secret Key Leakage in AST Evidence Snippets | Information Disclosure | HIGH | [`tests/test_security_regressions.py`](tests/test_security_regressions.py) | **VERIFIED** |
+| **SEC-REG-005** | Regular Expression Denial of Service (ReDoS) | DoS | HIGH | [`tests/test_adversarial_scanner.py`](tests/test_adversarial_scanner.py) | **VERIFIED** |
+| **SEC-REG-006** | Symlink Loop Trap during Filesystem Scanning | DoS / Loop Trap | HIGH | [`tests/test_adversarial_scanner.py`](tests/test_adversarial_scanner.py) | **VERIFIED** |
+| **SEC-REG-007** | SQL Parameter Injection in Raw Query Handlers | SQL Injection | HIGH | [`backend/tests/api/api_hardening.test.js`](backend/tests/api/api_hardening.test.js) | **VERIFIED** |
+| **SEC-REG-008** | Multi-Tenant IDOR Data Leakage | Authorization Bypass | HIGH | [`tests/test_multi_tenancy_isolation.py`](tests/test_multi_tenancy_isolation.py) | **VERIFIED** |
+| **SEC-REG-009** | Malformed PCAP Memory Exhaustion | DoS | MEDIUM | [`tests/test_pcap_safety.py`](tests/test_pcap_safety.py) | **VERIFIED** |
+| **SEC-REG-010** | JWT Algorithm Confusion ("none" algorithm attack) | Auth Bypass | HIGH | [`tests/test_authentication_hardening.py`](tests/test_authentication_hardening.py) | **VERIFIED** |
 
 ---
 
@@ -89,7 +91,7 @@ All 10 registered security bugs in [`rules/security_regressions.json`](file:///c
    - NetworkPolicies: Default-deny ingress and egress across all namespaces; explicit whitelists for intra-cluster communication.
    - RBAC: Dedicated `ServiceAccount` tokens with zero wildcard `*` permissions.
 3. **Production Startup Guard**:
-   - [`backend/src/config/production_guard.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/config/production_guard.js) and [`scanners/production_config_guard.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/production_config_guard.py) deterministically halt server startup if default credentials, demo API keys, or unsafe bypass flags are detected in `NODE_ENV=production`.
+   - [`backend/src/config/production_guard.js`](backend/src/config/production_guard.js) and [`scanners/production_config_guard.py`](scanners/production_config_guard.py) deterministically halt server startup if default credentials, demo API keys, or unsafe bypass flags are detected in `NODE_ENV=production`.
 
 ---
 

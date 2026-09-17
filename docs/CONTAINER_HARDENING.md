@@ -70,7 +70,7 @@ flowchart LR
 
 ### 5. Seccomp Syscall Filtering
 * **Implementation**:
-  * Production seccomp profile: [`docker/security/seccomp-profile.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docker/security/seccomp-profile.json)
+  * Production seccomp profile: [`docker/security/seccomp-profile.json`](docker/security/seccomp-profile.json)
   * Default action: `SCMP_ACT_ERRNO` (blocks all unwhitelisted system calls).
   * Blocked dangerous syscalls include: `ptrace`, `sys_admin`, `bpf`, `reboot`, `mount`, `kexec_load`, `open_by_handle_at`, `process_vm_readv`, `process_vm_writev`.
   * Docker Compose configures `seccomp=docker/security/seccomp-profile.json`; `seccomp:unconfined` is strictly forbidden.
@@ -78,7 +78,7 @@ flowchart LR
 
 ### 6. AppArmor & SELinux Hardening
 * **Implementation**:
-  * Custom AppArmor profile: [`docker/security/apparmor-ecdat.profile`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docker/security/apparmor-ecdat.profile)
+  * Custom AppArmor profile: [`docker/security/apparmor-ecdat.profile`](docker/security/apparmor-ecdat.profile)
   * Denies raw network socket creation (`deny network raw`).
   * Denies write operations to system binary and library paths (`/bin/**`, `/sbin/**`, `/usr/**`, `/etc/**`).
   * Enforces `security_opt: [no-new-privileges:true]` across all containers to block setuid/setgid binary escalation.
@@ -115,7 +115,7 @@ flowchart LR
 
 ## 3. Automated Container Hardening Auditor
 
-The programmatic audit tool [`scanners/container_hardening_auditor.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/container_hardening_auditor.py) continuously inspects all container artifacts:
+The programmatic audit tool [`scanners/container_hardening_auditor.py`](scanners/container_hardening_auditor.py) continuously inspects all container artifacts:
 
 ```bash
 python scanners/container_hardening_auditor.py
@@ -144,6 +144,6 @@ Status                   : ALL HARDENED (PASS)
 
 | Test Suite | Focus Area | Tests | Result |
 |---|---|---|---|
-| **Python Pytest** | [`tests/test_container_hardening.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_container_hardening.py) | **7 / 7** | **PASS** (0.06s) |
-| **Node.js Test** | [`backend/tests/security/container_hardening.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/security/container_hardening.test.js) | **9 / 9** | **PASS** (86ms) |
-| **Release Gate** | [`scripts/release_gate.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scripts/release_gate.py) | **All 6 Gates** | **PASS** (code 0) |
+| **Python Pytest** | [`tests/test_container_hardening.py`](tests/test_container_hardening.py) | **7 / 7** | **PASS** (0.06s) |
+| **Node.js Test** | [`backend/tests/security/container_hardening.test.js`](backend/tests/security/container_hardening.test.js) | **9 / 9** | **PASS** (86ms) |
+| **Release Gate** | [`scripts/release_gate.py`](scripts/release_gate.py) | **All 6 Gates** | **PASS** (code 0) |

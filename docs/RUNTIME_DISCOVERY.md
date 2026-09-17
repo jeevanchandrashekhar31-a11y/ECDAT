@@ -36,7 +36,7 @@ Under no circumstances does ECDAT capture, buffer, or record sensitive payload m
   - Cipher mode, curve name, TLS version, cipher suite identifier
   - Timestamp and execution duration
 - **Enforcement Mechanism**:
-  - Validated by [assert_metadata_only()](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/runtime/engine.py#L65) and [assertMetadataOnly()](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/domain/runtime_discovery.js#L55).
+  - Validated by [assert_metadata_only()](scanners/runtime/engine.py#L65) and [assertMetadataOnly()](backend/src/domain/runtime_discovery.js#L55).
   - Triggers immediate `SensitiveDataExposureError` if forbidden field names or key content patterns are detected.
 
 ---

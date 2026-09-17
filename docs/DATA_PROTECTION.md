@@ -141,7 +141,7 @@ For operational scenarios where secret credentials are unavoidable (e.g. authent
 
 ## 5. Authenticated Encryption at Rest Architecture (AES-256-GCM)
 
-ECDAT includes a dedicated authenticated encryption service [`backend/src/security/encryption_at_rest.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/security/encryption_at_rest.js):
+ECDAT includes a dedicated authenticated encryption service [`backend/src/security/encryption_at_rest.js`](backend/src/security/encryption_at_rest.js):
 
 ### Cryptographic Parameters
 - **Cipher**: AES-256-GCM (`aes-256-gcm`, NIST SP 800-38D).
@@ -175,7 +175,7 @@ The keyring maintains key identifiers (`kid`). During key rotation:
 All data in transit is protected using TLS:
 
 ### 6.1 PostgreSQL Database Connection TLS
-- Configured via [`backend/src/security/transit_security.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/security/transit_security.js) and utilized by [`backend/knexfile.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/knexfile.js).
+- Configured via [`backend/src/security/transit_security.js`](backend/src/security/transit_security.js) and utilized by [`backend/knexfile.js`](backend/knexfile.js).
 - In production (`NODE_ENV=production`), TLS is strictly mandatory:
   ```javascript
   DATABASE_SSL=true

@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "ECDAT-1.0.0-SBOM",
-  "documentNamespace": "https://github.com/jeevanchandrashekhar31-a11y/ECDAT/spdx/1.0.0/8e59b6a8-b407-404d-be92-8d2455328d14",
+  "documentNamespace": "https://github.com/jeevanchandrashekhar31-a11y/ECDAT/spdx/1.0.0/f3b34cc7-24dc-4a37-9b0b-5ddb0d3667bf",
   "creationInfo": {
-    "created": "2026-09-16T21:14:30Z",
+    "created": "2026-09-17T01:11:42Z",
     "creators": [
       "Tool: ECDAT-SBOM-Generator-1.0.0",
       "Organization: ECDAT Security Team"
@@ -72,9 +72,9 @@
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-Py-cryptography-46.0.7",
+      "SPDXID": "SPDXRef-Package-Py-cryptography-50.0.1",
       "name": "cryptography",
-      "versionInfo": "46.0.7",
+      "versionInfo": "50.0.1",
       "downloadLocation": "https://github.com/pyca/cryptography",
       "filesAnalyzed": false,
       "licenseConcluded": "Apache-2.0",
@@ -83,7 +83,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:pypi/cryptography@46.0.7"
+          "referenceLocator": "pkg:pypi/cryptography@50.0.1"
         }
       ]
     },
@@ -328,9 +328,9 @@
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-Py-requests-2.32.5",
+      "SPDXID": "SPDXRef-Package-Py-requests-2.34.2",
       "name": "requests",
-      "versionInfo": "2.32.5",
+      "versionInfo": "2.34.2",
       "downloadLocation": "https://github.com/psf/requests",
       "filesAnalyzed": false,
       "licenseConcluded": "Apache-2.0",
@@ -339,7 +339,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:pypi/requests@2.32.5"
+          "referenceLocator": "pkg:pypi/requests@2.34.2"
         }
       ]
     },
@@ -696,18 +696,18 @@
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-Py-tomli-1.0.0",
+      "SPDXID": "SPDXRef-Package-Py-tomli-2.4.1",
       "name": "tomli",
-      "versionInfo": "1.0.0",
-      "downloadLocation": "NOASSERTION",
+      "versionInfo": "2.4.1",
+      "downloadLocation": "https://github.com/hukkin/tomli",
       "filesAnalyzed": false,
-      "licenseConcluded": "NOASSERTION",
-      "licenseDeclared": "NOASSERTION",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:pypi/tomli@1.0.0"
+          "referenceLocator": "pkg:pypi/tomli@2.4.1"
         }
       ]
     },
@@ -808,10 +808,10 @@
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-Py-idna-3.11",
+      "SPDXID": "SPDXRef-Package-Py-idna-3.19",
       "name": "idna",
-      "versionInfo": "3.11",
-      "downloadLocation": "https://github.com/kjd/idna/blob/master/HISTORY.rst",
+      "versionInfo": "3.19",
+      "downloadLocation": "https://github.com/kjd/idna/blob/master/HISTORY.md",
       "filesAnalyzed": false,
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "BSD-3-Clause",
@@ -819,14 +819,14 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:pypi/idna@3.11"
+          "referenceLocator": "pkg:pypi/idna@3.19"
         }
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-Py-urllib3-2.5.0",
+      "SPDXID": "SPDXRef-Package-Py-urllib3-2.8.0",
       "name": "urllib3",
-      "versionInfo": "2.5.0",
+      "versionInfo": "2.8.0",
       "downloadLocation": "https://github.com/urllib3/urllib3/blob/main/CHANGES.rst",
       "filesAnalyzed": false,
       "licenseConcluded": "MIT",
@@ -835,7 +835,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:pypi/urllib3@2.5.0"
+          "referenceLocator": "pkg:pypi/urllib3@2.8.0"
         }
       ]
     },
@@ -15157,7 +15157,7 @@
     {
       "spdxElementId": "SPDXRef-Package-ECDAT",
       "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-Py-cryptography-46.0.7"
+      "relatedSpdxElement": "SPDXRef-Package-Py-cryptography-50.0.1"
     },
     {
       "spdxElementId": "SPDXRef-Package-ECDAT",
@@ -15237,7 +15237,7 @@
     {
       "spdxElementId": "SPDXRef-Package-ECDAT",
       "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-Py-requests-2.32.5"
+      "relatedSpdxElement": "SPDXRef-Package-Py-requests-2.34.2"
     },
     {
       "spdxElementId": "SPDXRef-Package-ECDAT",
@@ -15352,7 +15352,7 @@
     {
       "spdxElementId": "SPDXRef-Package-ECDAT",
       "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-Py-tomli-1.0.0"
+      "relatedSpdxElement": "SPDXRef-Package-Py-tomli-2.4.1"
     },
     {
       "spdxElementId": "SPDXRef-Package-ECDAT",
@@ -15387,12 +15387,12 @@
     {
       "spdxElementId": "SPDXRef-Package-ECDAT",
       "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-Py-idna-3.11"
+      "relatedSpdxElement": "SPDXRef-Package-Py-idna-3.19"
     },
     {
       "spdxElementId": "SPDXRef-Package-ECDAT",
       "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-Py-urllib3-2.5.0"
+      "relatedSpdxElement": "SPDXRef-Package-Py-urllib3-2.8.0"
     },
     {
       "spdxElementId": "SPDXRef-Package-ECDAT",

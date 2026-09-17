@@ -22,7 +22,7 @@ No blind dependency upgrades are performed. All findings below detail the securi
 ## 3. Unpinned Dependencies & Supply Chain Integrity
 
 ### 3.1 Python Ecosystem Lack of Lockfile
-- **Exposure**: [`requirements.txt`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/requirements.txt) specifies unbounded open ranges:
+- **Exposure**: [`requirements.txt`](requirements.txt) specifies unbounded open ranges:
   - `cyclonedx-python-lib>=7.0.0`
   - `pydantic>=2.0.0`
   - `jsonschema>=4.0.0`
@@ -36,7 +36,7 @@ No blind dependency upgrades are performed. All findings below detail the securi
 - **Remediation Constraint**: Generate a pinned lockfile (`requirements.lock` or `pip-compile` output) pinning exact cryptographic hashes (`--generate-hashes`) for CI and production Docker builds.
 
 ### 3.2 Node.js Backend & Frontend Lockfile Compliance
-- **Compliance**: Both [`backend/package-lock.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/package-lock.json) and [`frontend/package-lock.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/frontend/package-lock.json) are committed with SHA-512 subresource integrity (`integrity: sha512-...`) hashes.
+- **Compliance**: Both [`backend/package-lock.json`](backend/package-lock.json) and [`frontend/package-lock.json`](frontend/package-lock.json) are committed with SHA-512 subresource integrity (`integrity: sha512-...`) hashes.
 - **Gate**: CI uses `npm ci` / `npm install --no-audit` with deterministic lockfile enforcement.
 
 ---
@@ -54,8 +54,8 @@ No blind dependency upgrades are performed. All findings below detail the securi
 - **Remediation**: Make `groq` an optional extra (e.g. `pip install .[llm]`) rather than a mandatory requirement in base `requirements.txt`.
 
 ### 4.2 Obsolete Database Modules
-- **File**: [`backend/src/db/database.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/db/database.js)
-- **Analysis**: Imports `pg.Pool` with hardcoded local credentials `postgres://postgres:postgres@localhost:5432/ecdat`. This module is never imported; Knex via [`backend/src/db/connection.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/db/connection.js) manages the entire DB lifecycle.
+- **File**: [`backend/src/db/database.js`](backend/src/db/database.js)
+- **Analysis**: Imports `pg.Pool` with hardcoded local credentials `postgres://postgres:postgres@localhost:5432/ecdat`. This module is never imported; Knex via [`backend/src/db/connection.js`](backend/src/db/connection.js) manages the entire DB lifecycle.
 - **Remediation**: Remove dead file to eliminate dual-connection configuration confusion.
 
 ---

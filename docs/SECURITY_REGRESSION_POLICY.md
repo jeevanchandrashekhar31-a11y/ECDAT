@@ -18,7 +18,7 @@ No security issue, vulnerability report, or CVE remediation may be marked resolv
 
 ## 2. The 5-Point Security Bug Closure Standard
 
-Every security bug closure must be recorded in [`rules/security_regressions.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/security_regressions.json) adhering to [`rules/schemas/security_regression.schema.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/schemas/security_regression.schema.json).
+Every security bug closure must be recorded in [`rules/security_regressions.json`](rules/security_regressions.json) adhering to [`rules/schemas/security_regression.schema.json`](rules/schemas/security_regression.schema.json).
 
 ```mermaid
 flowchart TD
@@ -44,16 +44,16 @@ flowchart TD
 - **Modified Files**: Complete list of all source files updated as part of the remediation.
 
 ### 2.3 Permanent Regression Test (`test`)
-- **Physical Test File**: Absolute or repo-relative path to the permanent automated test file (e.g., [`tests/test_security_regressions.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_security_regressions.py)).
+- **Physical Test File**: Absolute or repo-relative path to the permanent automated test file (e.g., [`tests/test_security_regressions.py`](tests/test_security_regressions.py)).
 - **Test Function Name**: Specific test function executing the regression verification. The policy engine verifies that this function physically exists within the target file.
 - **Assertion Type**: What the test asserts (e.g., `rejects_xml_bomb_without_uncontrolled_recursion_or_memory_blowup`, `asserts_canary_tokens_never_present_in_error_message`).
 - **Automated**: Strictly `true`. Manual or non-automated tests do not qualify for security bug closure.
 
 ### 2.4 Threat Model Update (`threat_model_update`)
 - **STRIDE Classification**: Minimum one STRIDE category (`Spoofing`, `Tampering`, `Repudiation`, `Information Disclosure`, `Denial of Service`, `Elevation of Privilege`).
-- **Threat Model Section**: Reference to the affected trust boundary or mitigation section in [`docs/THREAT_MODEL.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/THREAT_MODEL.md).
+- **Threat Model Section**: Reference to the affected trust boundary or mitigation section in [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
 - **Residual Risk Impact**: Explicit documentation of how the fix alters the system's residual risk profile.
-- **Threat Model Doc Updated**: Flag confirming [`docs/THREAT_MODEL.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/THREAT_MODEL.md) was updated.
+- **Threat Model Doc Updated**: Flag confirming [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) was updated.
 
 ### 2.5 Release Note / Security Advisory (`release_note`)
 - **Applicable**: Boolean indicating whether this fix affects public-facing APIs, CLI users, or deployment configurations.
@@ -64,7 +64,7 @@ flowchart TD
 
 ## 3. Automated Enforcement Engine
 
-The regression policy is automated and enforced by [`scanners/regression_policy.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/regression_policy.py).
+The regression policy is automated and enforced by [`scanners/regression_policy.py`](scanners/regression_policy.py).
 
 ### Verification CLI
 ```bash
@@ -82,7 +82,7 @@ if not verdict.passed:
 ```
 
 The engine verifies:
-1. Complete schema compliance of [`rules/security_regressions.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/security_regressions.json).
+1. Complete schema compliance of [`rules/security_regressions.json`](rules/security_regressions.json).
 2. Presence and validity of all 5 mandatory sections for every registered bug.
 3. Physical existence of every referenced test file and test function on disk.
 

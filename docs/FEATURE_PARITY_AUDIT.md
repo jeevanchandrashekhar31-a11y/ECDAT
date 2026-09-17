@@ -64,18 +64,18 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT utilizes Tree-sitter semantic Abstract Syntax Tree (AST) parsing across Python, Go, C/C++, Java, Rust, and JavaScript/TypeScript. It extracts function identifiers, key sizes, block cipher modes, and initialization vectors directly from AST nodes.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`scanners/static/discovery.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/discovery.py)
-    - [`scanners/static/scalable_scanner.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/scalable_scanner.py)
-    - [`scanners/static/regex_rules.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/regex_rules.py)
+    - [`scanners/static/discovery.py`](scanners/static/discovery.py)
+    - [`scanners/static/scalable_scanner.py`](scanners/static/scalable_scanner.py)
+    - [`scanners/static/regex_rules.py`](scanners/static/regex_rules.py)
   - **Tests**:
-    - [`tests/test_golden_corpus.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_golden_corpus.py)
-    - [`tests/test_fuzz_parsers.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_fuzz_parsers.py)
-    - [`tests/test_large_repo_scaling.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_large_repo_scaling.py)
+    - [`tests/test_golden_corpus.py`](tests/test_golden_corpus.py)
+    - [`tests/test_fuzz_parsers.py`](tests/test_fuzz_parsers.py)
+    - [`tests/test_large_repo_scaling.py`](tests/test_large_repo_scaling.py)
   - **Demo Command**:
     ```bash
     python scanners/static/main.py --repo testing/corpora/crypto_samples/ --output artifacts/cbom.json
     ```
-  - **Documentation**: [`docs/STATIC_SCANNER.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/STATIC_SCANNER.md)
+  - **Documentation**: [`docs/STATIC_SCANNER.md`](docs/STATIC_SCANNER.md)
   - **Evidence**: Golden corpus test suite evaluates 42 diverse language test cases with 98.4% precision and 100% recall for deprecated algorithms (MD5, SHA-1, DES, RSA-1024).
 
 ---
@@ -85,10 +85,10 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Parity Status**: `ECDAT ADVANTAGE`
 - **Technical Analysis**: ECDAT enforces automated, multi-stage regex and Shannon entropy redaction on all extracted evidence snippets before serializing them to CBOMs, reports, or logs. Credentials matching high-entropy blocks (`-----BEGIN PRIVATE KEY-----`, API tokens, hex keys) are replaced with cryptographic placeholders (`[REDACTED_SECRET:sha256_hash]`).
 - **Verification References**:
-  - **ECDAT Source Files**: [`scanners/static/sanitization.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/sanitization.py), [`backend/src/services/evidence_integrity_service.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/evidence_integrity_service.js)
-  - **Tests**: [`tests/test_archive_safety.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_archive_safety.py), [`tests/test_security_regressions.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_security_regressions.py)
+  - **ECDAT Source Files**: [`scanners/static/sanitization.py`](scanners/static/sanitization.py), [`backend/src/services/evidence_integrity_service.js`](backend/src/services/evidence_integrity_service.js)
+  - **Tests**: [`tests/test_archive_safety.py`](tests/test_archive_safety.py), [`tests/test_security_regressions.py`](tests/test_security_regressions.py)
   - **Demo Command**: `python -m pytest tests/test_security_regressions.py`
-  - **Documentation**: [`docs/DATA_PROTECTION.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/DATA_PROTECTION.md)
+  - **Documentation**: [`docs/DATA_PROTECTION.md`](docs/DATA_PROTECTION.md)
   - **Evidence**: Release gate script Gate 2 scans all tracked files and generated artifacts, ensuring zero hardcoded secrets or unredacted keys exist.
 
 ---
@@ -101,17 +101,17 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT generates and validates complete CycloneDX 1.6 CBOM documents. Every component contains full `cryptoProperties` (assetType, algorithmProperties, certificateProperties, relatedCryptoMaterial) conforming strictly to the official CycloneDX 1.6 JSON schema.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`scanners/cbom_io.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/cbom_io.py)
-    - [`backend/src/services/cbom_ingestion.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/cbom_ingestion.js)
-    - [`backend/src/services/cbom_validation.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/cbom_validation.js)
+    - [`scanners/cbom_io.py`](scanners/cbom_io.py)
+    - [`backend/src/services/cbom_ingestion.js`](backend/src/services/cbom_ingestion.js)
+    - [`backend/src/services/cbom_validation.js`](backend/src/services/cbom_validation.js)
   - **Tests**:
-    - [`tests/test_cbom_deep_lifecycle.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_cbom_deep_lifecycle.py)
-    - [`backend/tests/reporting/executive_reports.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/reporting/executive_reports.test.js)
+    - [`tests/test_cbom_deep_lifecycle.py`](tests/test_cbom_deep_lifecycle.py)
+    - [`backend/tests/reporting/executive_reports.test.js`](backend/tests/reporting/executive_reports.test.js)
   - **Demo Command**:
     ```bash
     python scripts/generate_sbom.py
     ```
-  - **Documentation**: [`docs/PHASE1_CBOM_CORE.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/PHASE1_CBOM_CORE.md)
+  - **Documentation**: [`docs/PHASE1_CBOM_CORE.md`](docs/PHASE1_CBOM_CORE.md)
   - **Evidence**: `scripts/release_gate.py` Gate 6 validates 705 cryptographic and software components in `artifacts/sbom/ecdat_cyclonedx_1.6.json` against the schema with 0 validation errors.
 
 ---
@@ -121,10 +121,10 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Parity Status**: `ECDAT ADVANTAGE`
 - **Technical Analysis**: ECDAT natively generates both CycloneDX 1.6 (with full cryptographic annotations) and SPDX 2.3 (ISO/IEC 5962:2021) in a single unified execution, fulfilling both cryptographic posture analysis and US Executive Order 14028 federal SBOM mandates.
 - **Verification References**:
-  - **ECDAT Source Files**: [`scripts/generate_sbom.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scripts/generate_sbom.py), [`scanners/cbom_io.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/cbom_io.py)
-  - **Tests**: [`tests/test_cbom_deep_lifecycle.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_cbom_deep_lifecycle.py)
+  - **ECDAT Source Files**: [`scripts/generate_sbom.py`](scripts/generate_sbom.py), [`scanners/cbom_io.py`](scanners/cbom_io.py)
+  - **Tests**: [`tests/test_cbom_deep_lifecycle.py`](tests/test_cbom_deep_lifecycle.py)
   - **Demo Command**: `python scripts/generate_sbom.py`
-  - **Documentation**: [`docs/CI_CD.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/CI_CD.md)
+  - **Documentation**: [`docs/CI_CD.md`](docs/CI_CD.md)
   - **Evidence**: Both `ecdat_cyclonedx_1.6.json` and `ecdat_spdx_2.3.json` are generated simultaneously and cryptographically signed with Ed25519 in `artifacts/sbom/`.
 
 ---
@@ -137,16 +137,16 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT implements automated reachability correlation. It constructs an execution graph mapping entry points $\rightarrow$ intermediate functions $\rightarrow$ crypto library calls, classifying each finding as `DIRECT_RUNTIME_EXECUTION`, `STATICALLY_REACHABLE`, or `UNREACHABLE_DEAD_CODE`. Reachability status directly adjusts risk severity without masking underlying findings.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`backend/src/correlation/reachability.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/correlation/reachability.js)
-    - [`backend/src/services/crypto_graph_service.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/crypto_graph_service.js)
+    - [`backend/src/correlation/reachability.js`](backend/src/correlation/reachability.js)
+    - [`backend/src/services/crypto_graph_service.js`](backend/src/services/crypto_graph_service.js)
   - **Tests**:
-    - [`backend/tests/domain/reachability_correlation.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/domain/reachability_correlation.test.js)
-    - [`backend/tests/api/crypto_graph.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/api/crypto_graph.test.js)
+    - [`backend/tests/domain/reachability_correlation.test.js`](backend/tests/domain/reachability_correlation.test.js)
+    - [`backend/tests/api/crypto_graph.test.js`](backend/tests/api/crypto_graph.test.js)
   - **Demo Command**:
     ```bash
     node --test backend/tests/domain/reachability_correlation.test.js
     ```
-  - **Documentation**: [`docs/CORRELATION_ENGINE.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/CORRELATION_ENGINE.md)
+  - **Documentation**: [`docs/CORRELATION_ENGINE.md`](docs/CORRELATION_ENGINE.md)
   - **Evidence**: Test suite proves that unreachable findings are downgraded to tracked improvements (`LOW`), while reachable findings trigger release gate blockers (`CRITICAL`).
 
 ---
@@ -157,17 +157,17 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT provides a production-grade React / Cytoscape interactive graph visualization. It displays hosts, services, cryptographic algorithms, certificates, and datastores with real-time reachability filtering, blast radius calculation, and detailed node drawers.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`frontend/src/pages/CryptoGraph.tsx`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/frontend/src/pages/CryptoGraph.tsx)
-    - [`backend/src/services/crypto_graph_service.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/crypto_graph_service.js)
-    - [`backend/src/routes/graph.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/graph.js)
+    - [`frontend/src/pages/CryptoGraph.tsx`](frontend/src/pages/CryptoGraph.tsx)
+    - [`backend/src/services/crypto_graph_service.js`](backend/src/services/crypto_graph_service.js)
+    - [`backend/src/routes/graph.js`](backend/src/routes/graph.js)
   - **Tests**:
-    - [`frontend/src/pages/CryptoGraph.test.tsx`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/frontend/src/pages/CryptoGraph.test.tsx)
-    - [`backend/tests/api/crypto_graph.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/api/crypto_graph.test.js)
+    - [`frontend/src/pages/CryptoGraph.test.tsx`](frontend/src/pages/CryptoGraph.test.tsx)
+    - [`backend/tests/api/crypto_graph.test.js`](backend/tests/api/crypto_graph.test.js)
   - **Demo Command**:
     ```bash
     node --test backend/tests/api/crypto_graph.test.js
     ```
-  - **Documentation**: [`docs/ARCHITECTURE.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/ARCHITECTURE.md)
+  - **Documentation**: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
   - **Evidence**: Visual graph rendering passes UI tests with full node search, clustering, and reachability toggle.
 
 ---
@@ -180,16 +180,16 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT performs dynamic socket handshakes and PCAP analysis to extract negotiated TLS protocol versions (TLS 1.0–1.3), cipher suites, ALPN values, and complete X.509 certificate chains with SHA-256 fingerprints.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`scanners/network/cert_parser.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/network/cert_parser.py)
-    - [`scanners/network/pcap_parser.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/network/pcap_parser.py)
+    - [`scanners/network/cert_parser.py`](scanners/network/cert_parser.py)
+    - [`scanners/network/pcap_parser.py`](scanners/network/pcap_parser.py)
   - **Tests**:
-    - [`tests/test_pcap_safety.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_pcap_safety.py)
-    - [`tests/test_parsers_deep_resilience.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_parsers_deep_resilience.py)
+    - [`tests/test_pcap_safety.py`](tests/test_pcap_safety.py)
+    - [`tests/test_parsers_deep_resilience.py`](tests/test_parsers_deep_resilience.py)
   - **Demo Command**:
     ```bash
     pytest tests/test_pcap_safety.py
     ```
-  - **Documentation**: [`docs/NETWORK_SCANNER.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/NETWORK_SCANNER.md)
+  - **Documentation**: [`docs/NETWORK_SCANNER.md`](docs/NETWORK_SCANNER.md)
   - **Evidence**: Test suite demonstrates zero-crash parsing on corrupt and truncated PCAP streams, extracting TLS cipher parameters deterministically.
 
 ---
@@ -202,16 +202,16 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT models and integrates eBPF userspace probes targeting OpenSSL symbols (`EVP_EncryptInit_ex`, `RSA_generate_key`). It captures PID, UID, container ID, invocation timestamps, and operational frequency per minute, linking dynamic observations to static CBOM assets.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`docs/RUNTIME_DISCOVERY.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/RUNTIME_DISCOVERY.md)
-    - [`backend/src/services/technical_report_service.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/technical_report_service.js)
+    - [`docs/RUNTIME_DISCOVERY.md`](docs/RUNTIME_DISCOVERY.md)
+    - [`backend/src/services/technical_report_service.js`](backend/src/services/technical_report_service.js)
   - **Tests**:
-    - [`backend/tests/reporting/technical_reports.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/reporting/technical_reports.test.js)
-    - [`tests/test_technical_reporting.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_technical_reporting.py)
+    - [`backend/tests/reporting/technical_reports.test.js`](backend/tests/reporting/technical_reports.test.js)
+    - [`tests/test_technical_reporting.py`](tests/test_technical_reporting.py)
   - **Demo Command**:
     ```bash
     pytest tests/test_technical_reporting.py
     ```
-  - **Documentation**: [`docs/RUNTIME_DISCOVERY.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/RUNTIME_DISCOVERY.md)
+  - **Documentation**: [`docs/RUNTIME_DISCOVERY.md`](docs/RUNTIME_DISCOVERY.md)
   - **Evidence**: Dimension 10 (`runtime_evidence`) is populated and validated across all drill-down finding items.
 
 ---
@@ -231,17 +231,17 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT maintains an enterprise certificate intelligence inventory tracking Subject DN, Issuer DN, validity windows, 30/90-day expiration countdowns, expired certificates, self-signed warnings, and SHA-256 fingerprints.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`backend/src/domain/certificate_inventory.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/domain/certificate_inventory.js)
-    - [`scanners/network/cert_parser.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/network/cert_parser.py)
-    - [`backend/src/services/executive_report_service.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/executive_report_service.js)
+    - [`backend/src/domain/certificate_inventory.js`](backend/src/domain/certificate_inventory.js)
+    - [`scanners/network/cert_parser.py`](scanners/network/cert_parser.py)
+    - [`backend/src/services/executive_report_service.js`](backend/src/services/executive_report_service.js)
   - **Tests**:
-    - [`backend/tests/reporting/executive_reports.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/reporting/executive_reports.test.js)
-    - [`tests/test_executive_reporting.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_executive_reporting.py)
+    - [`backend/tests/reporting/executive_reports.test.js`](backend/tests/reporting/executive_reports.test.js)
+    - [`tests/test_executive_reporting.py`](tests/test_executive_reporting.py)
   - **Demo Command**:
     ```bash
     node --test backend/tests/reporting/executive_reports.test.js
     ```
-  - **Documentation**: [`docs/CERTIFICATE_INTELLIGENCE.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/CERTIFICATE_INTELLIGENCE.md)
+  - **Documentation**: [`docs/CERTIFICATE_INTELLIGENCE.md`](docs/CERTIFICATE_INTELLIGENCE.md)
   - **Evidence**: Executive report domain 5 validates 100% certificate inventory metrics against underlying X.509 certificate evidence.
 
 ---
@@ -254,19 +254,19 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT policy engine evaluates findings against 5 global standards: NIST SP 800-131A Rev 2, BSI TR-02102-1, PCI-DSS v4.0 Requirement 12.3.3, CNSA 2.0, and FIPS 140-3. Rules feature strict precedence (`BLOCK`, `WARN`, `EXCEPTION`, `ALLOW`) with JSON Schema validation.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`rules/policy_as_code.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/policy_as_code.json)
-    - [`rules/compliance_catalog.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/compliance_catalog.json)
-    - [`scanners/policy_engine.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/policy_engine.py)
-    - [`scanners/compliance_mapping.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/compliance_mapping.py)
+    - [`rules/policy_as_code.json`](rules/policy_as_code.json)
+    - [`rules/compliance_catalog.json`](rules/compliance_catalog.json)
+    - [`scanners/policy_engine.py`](scanners/policy_engine.py)
+    - [`scanners/compliance_mapping.py`](scanners/compliance_mapping.py)
   - **Tests**:
-    - [`tests/test_compliance_mapping.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_compliance_mapping.py)
-    - [`tests/test_policy_engine.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_policy_engine.py)
-    - [`backend/tests/rules_validation.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/rules_validation.test.js)
+    - [`tests/test_compliance_mapping.py`](tests/test_compliance_mapping.py)
+    - [`tests/test_policy_engine.py`](tests/test_policy_engine.py)
+    - [`backend/tests/rules_validation.test.js`](backend/tests/rules_validation.test.js)
   - **Demo Command**:
     ```bash
     pytest tests/test_compliance_mapping.py
     ```
-  - **Documentation**: [`docs/IDENTITY_RULES.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/IDENTITY_RULES.md)
+  - **Documentation**: [`docs/IDENTITY_RULES.md`](docs/IDENTITY_RULES.md)
   - **Evidence**: Compliance test suite executes 10/10 assertions mapping algorithms to specific section numbers of each regulatory standard.
 
 ---
@@ -277,17 +277,17 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT provides formal exception management with ticket tracking, business justification, expiry date enforcement, and release gate verification. Expired exceptions automatically block releases.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`rules/security_exceptions.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/security_exceptions.json)
-    - [`scanners/policy_security.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/policy_security.py)
-    - [`backend/src/policy/policy_security.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/policy/policy_security.js)
+    - [`rules/security_exceptions.json`](rules/security_exceptions.json)
+    - [`scanners/policy_security.py`](scanners/policy_security.py)
+    - [`backend/src/policy/policy_security.js`](backend/src/policy/policy_security.js)
   - **Tests**:
-    - [`tests/test_policy_security.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_policy_security.py)
-    - [`tests/test_vulnerability_release_gate.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_vulnerability_release_gate.py)
+    - [`tests/test_policy_security.py`](tests/test_policy_security.py)
+    - [`tests/test_vulnerability_release_gate.py`](tests/test_vulnerability_release_gate.py)
   - **Demo Command**:
     ```bash
     pytest tests/test_policy_security.py
     ```
-  - **Documentation**: [`docs/VULNERABILITY_RELEASE_GATE.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/VULNERABILITY_RELEASE_GATE.md)
+  - **Documentation**: [`docs/VULNERABILITY_RELEASE_GATE.md`](docs/VULNERABILITY_RELEASE_GATE.md)
   - **Evidence**: Release gate verifies expired exceptions are immediately rejected as critical blockers.
 
 ---
@@ -302,17 +302,17 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
   When $\Delta M > 0$, ECDAT flags **Quantum Deficit**, categorizing urgency as `IMMEDIATE_PQC_MIGRATION_REQUIRED`.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`backend/src/risk_engine/index.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/risk_engine/index.js)
-    - [`scanners/reporting/executive_reporter.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/reporting/executive_reporter.py)
-    - [`backend/src/services/executive_report_service.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/executive_report_service.js)
+    - [`backend/src/risk_engine/index.js`](backend/src/risk_engine/index.js)
+    - [`scanners/reporting/executive_reporter.py`](scanners/reporting/executive_reporter.py)
+    - [`backend/src/services/executive_report_service.js`](backend/src/services/executive_report_service.js)
   - **Tests**:
-    - [`backend/tests/reporting/executive_reports.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/reporting/executive_reports.test.js)
-    - [`tests/test_executive_reporting.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_executive_reporting.py)
+    - [`backend/tests/reporting/executive_reports.test.js`](backend/tests/reporting/executive_reports.test.js)
+    - [`tests/test_executive_reporting.py`](tests/test_executive_reporting.py)
   - **Demo Command**:
     ```bash
     pytest tests/test_executive_reporting.py
     ```
-  - **Documentation**: [`docs/EXECUTIVE_REPORTING.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/EXECUTIVE_REPORTING.md)
+  - **Documentation**: [`docs/EXECUTIVE_REPORTING.md`](docs/EXECUTIVE_REPORTING.md)
   - **Evidence**: Executive report Domain 3 calculates Mosca delta and verifies quantum deficit status across all assessed algorithms.
 
 ---
@@ -323,16 +323,16 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT identifies and classifies quantum-vulnerable, quantum-safe (ML-KEM, ML-DSA, SLH-DSA), and transitional dual-use hybrid key exchanges (`X25519+ML-KEM-768`).
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`backend/src/services/technical_report_service.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/technical_report_service.js)
-    - [`scanners/reporting/technical_reporter.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/reporting/technical_reporter.py)
+    - [`backend/src/services/technical_report_service.js`](backend/src/services/technical_report_service.js)
+    - [`scanners/reporting/technical_reporter.py`](scanners/reporting/technical_reporter.py)
   - **Tests**:
-    - [`tests/test_technical_reporting.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_technical_reporting.py)
-    - [`backend/tests/reporting/technical_reports.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/reporting/technical_reports.test.js)
+    - [`tests/test_technical_reporting.py`](tests/test_technical_reporting.py)
+    - [`backend/tests/reporting/technical_reports.test.js`](backend/tests/reporting/technical_reports.test.js)
   - **Demo Command**:
     ```bash
     pytest tests/test_technical_reporting.py
     ```
-  - **Documentation**: [`docs/PQC_HYBRID_ANALYSIS.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/PQC_HYBRID_ANALYSIS.md)
+  - **Documentation**: [`docs/PQC_HYBRID_ANALYSIS.md`](docs/PQC_HYBRID_ANALYSIS.md)
   - **Evidence**: Technical report verifies FIPS 203 ML-KEM OIDs and hybrid wire protocol configurations.
 
 ---
@@ -345,17 +345,17 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT automatically generates syntactic unified Git patch diffs (`--- a/ +++ b/`) with 3-phase staged rollouts and verified rollback configurations ready for automated application (`git apply`).
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`scanners/patch_generator.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/patch_generator.py)
-    - [`backend/src/remediation/patch_generator.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/remediation/patch_generator.js)
-    - [`backend/src/services/technical_report_service.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/technical_report_service.js)
+    - [`scanners/patch_generator.py`](scanners/patch_generator.py)
+    - [`backend/src/remediation/patch_generator.js`](backend/src/remediation/patch_generator.js)
+    - [`backend/src/services/technical_report_service.js`](backend/src/services/technical_report_service.js)
   - **Tests**:
-    - [`tests/test_patch_generator.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_patch_generator.py)
-    - [`backend/tests/remediation/patch_generator.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/remediation/patch_generator.test.js)
+    - [`tests/test_patch_generator.py`](tests/test_patch_generator.py)
+    - [`backend/tests/remediation/patch_generator.test.js`](backend/tests/remediation/patch_generator.test.js)
   - **Demo Command**:
     ```bash
     pytest tests/test_patch_generator.py
     ```
-  - **Documentation**: [`docs/TECHNICAL_REPORTING.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/TECHNICAL_REPORTING.md)
+  - **Documentation**: [`docs/TECHNICAL_REPORTING.md`](docs/TECHNICAL_REPORTING.md)
   - **Evidence**: Technical reports include unified diffs replacing RSA-1024 with RSA-3072 / ML-KEM-768 with rollback configurations.
 
 ---
@@ -366,17 +366,17 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT implements a 4-state approval lifecycle (`PENDING`, `APPROVED`, `REJECTED`, `APPLIED`) backed by RBAC permissions, tamper-evident audit logging, and automated rejection handling.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`scanners/approval_workflow.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/approval_workflow.py)
-    - [`backend/src/remediation/approval_workflow.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/remediation/approval_workflow.js)
-    - [`backend/src/routes/remediation.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/remediation.js)
+    - [`scanners/approval_workflow.py`](scanners/approval_workflow.py)
+    - [`backend/src/remediation/approval_workflow.js`](backend/src/remediation/approval_workflow.js)
+    - [`backend/src/routes/remediation.js`](backend/src/routes/remediation.js)
   - **Tests**:
-    - [`tests/test_approval_workflow.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_approval_workflow.py)
-    - [`backend/tests/remediation/approval_workflow.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/remediation/approval_workflow.test.js)
+    - [`tests/test_approval_workflow.py`](tests/test_approval_workflow.py)
+    - [`backend/tests/remediation/approval_workflow.test.js`](backend/tests/remediation/approval_workflow.test.js)
   - **Demo Command**:
     ```bash
     pytest tests/test_approval_workflow.py
     ```
-  - **Documentation**: [`docs/OPERATOR_RUNBOOKS.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/OPERATOR_RUNBOOKS.md)
+  - **Documentation**: [`docs/OPERATOR_RUNBOOKS.md`](docs/OPERATOR_RUNBOOKS.md)
   - **Evidence**: Audit service records every state transition with actor ID, IP address, and cryptographic patch ID.
 
 ---
@@ -388,10 +388,10 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Parity Status**: `ECDAT ADVANTAGE`
 - **Technical Analysis**: ECDAT includes `scripts/release_gate.py` enforcing 6 deterministic supply chain security gates: Critical vulnerability blocker, secret leak detection, 5-point regression policy, Ed25519 digital signature validation, crash interception, and CycloneDX/SPDX SBOM schema compliance.
 - **Verification References**:
-  - **ECDAT Source Files**: [`scripts/release_gate.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scripts/release_gate.py), [`scanners/vulnerability_release_gate.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/vulnerability_release_gate.py)
-  - **Tests**: [`tests/test_vulnerability_release_gate.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_vulnerability_release_gate.py), [`tests/test_security_regressions.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_security_regressions.py)
+  - **ECDAT Source Files**: [`scripts/release_gate.py`](scripts/release_gate.py), [`scanners/vulnerability_release_gate.py`](scanners/vulnerability_release_gate.py)
+  - **Tests**: [`tests/test_vulnerability_release_gate.py`](tests/test_vulnerability_release_gate.py), [`tests/test_security_regressions.py`](tests/test_security_regressions.py)
   - **Demo Command**: `python scripts/release_gate.py`
-  - **Documentation**: [`docs/VULNERABILITY_RELEASE_GATE.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/VULNERABILITY_RELEASE_GATE.md)
+  - **Documentation**: [`docs/VULNERABILITY_RELEASE_GATE.md`](docs/VULNERABILITY_RELEASE_GATE.md)
   - **Evidence**: `release_gate.py` outputs formal markdown report and halts CI/CD builds on any gate violation.
 
 ---
@@ -401,10 +401,10 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Parity Status**: `ECDAT ADVANTAGE`
 - **Technical Analysis**: ECDAT guarantees that every metric is backed by a concrete evidence item and SHA-256 Merkle root. It enforces the **Anti-Deception Mandate**: strictly blocks reports from falsely claiming third-party audits or certifications without accredited external attestation.
 - **Verification References**:
-  - **ECDAT Source Files**: [`backend/src/services/evidence_integrity_service.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/evidence_integrity_service.js), [`scanners/reporting/evidence_integrity.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/reporting/evidence_integrity.py)
-  - **Tests**: [`backend/tests/reporting/evidence_integrity.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/reporting/evidence_integrity.test.js), [`tests/test_evidence_integrity.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_evidence_integrity.py)
+  - **ECDAT Source Files**: [`backend/src/services/evidence_integrity_service.js`](backend/src/services/evidence_integrity_service.js), [`scanners/reporting/evidence_integrity.py`](scanners/reporting/evidence_integrity.py)
+  - **Tests**: [`backend/tests/reporting/evidence_integrity.test.js`](backend/tests/reporting/evidence_integrity.test.js), [`tests/test_evidence_integrity.py`](tests/test_evidence_integrity.py)
   - **Demo Command**: `pytest tests/test_evidence_integrity.py`
-  - **Documentation**: [`docs/EVIDENCE_INTEGRITY.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/EVIDENCE_INTEGRITY.md)
+  - **Documentation**: [`docs/EVIDENCE_INTEGRITY.md`](docs/EVIDENCE_INTEGRITY.md)
   - **Evidence**: Test suite verifies rejection of unauthorized certification phrases and validates all 6 required metadata dimensions.
 
 ---
@@ -415,18 +415,18 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
 - **Technical Analysis**: ECDAT provides connectors for Jira, ServiceNow, AWS KMS, Azure Key Vault, HashiCorp Vault, and CEF / Splunk SIEM event logging.
 - **Five-Point Verification**:
   - **ECDAT Source Files**:
-    - [`backend/src/integrations/`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/integrations/)
-    - [`backend/src/siem/`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/siem/)
-    - [`backend/src/routes/kms.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/kms.js)
+    - [`backend/src/integrations/`](backend/src/integrations/)
+    - [`backend/src/siem/`](backend/src/siem/)
+    - [`backend/src/routes/kms.js`](backend/src/routes/kms.js)
   - **Tests**:
-    - [`tests/test_ticketing_connectors.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_ticketing_connectors.py)
-    - [`tests/test_kms_connectors.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_kms_connectors.py)
-    - [`backend/tests/siem/`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/siem/)
+    - [`tests/test_ticketing_connectors.py`](tests/test_ticketing_connectors.py)
+    - [`tests/test_kms_connectors.py`](tests/test_kms_connectors.py)
+    - [`backend/tests/siem/`](backend/tests/siem/)
   - **Demo Command**:
     ```bash
     pytest tests/test_ticketing_connectors.py tests/test_kms_connectors.py
     ```
-  - **Documentation**: [`docs/API_DOCUMENTATION.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/API_DOCUMENTATION.md)
+  - **Documentation**: [`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md)
   - **Evidence**: Test suites verify mock ticket lifecycle, KMS key discovery, and SIEM CEF format emissions.
 
 ---

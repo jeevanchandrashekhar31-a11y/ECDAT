@@ -151,8 +151,8 @@ Every relationship edge in the graph and every merged evidence item maintains an
 
 Implemented in both Python (`scanners/domain/correlation_engine.py`) and Node.js (`backend/src/domain/correlation_engine.js`).
 
-- **Python Tests**: [tests/domain/test_correlation_engine.py](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/domain/test_correlation_engine.py) (7 passing tests)
-- **Node.js Tests**: [backend/tests/domain/correlation_engine.test.js](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/domain/correlation_engine.test.js) (8 passing tests)
+- **Python Tests**: [tests/domain/test_correlation_engine.py](tests/domain/test_correlation_engine.py) (7 passing tests)
+- **Node.js Tests**: [backend/tests/domain/correlation_engine.test.js](backend/tests/domain/correlation_engine.test.js) (8 passing tests)
 - **Full Python Suite**: 225 passing tests
 - **Full Node.js Suite**: 160 passing tests
 - **Total Passing Tests**: 385 passing tests across ECDAT

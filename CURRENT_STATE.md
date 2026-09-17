@@ -4,7 +4,7 @@
 
 This forensic baseline establishes the verified, non-fictional operational status of the ECDAT repository as of commit `f74add7e` on branch `main`.
 
-Every finding in this document is derived from direct static analysis of code paths, test runs, CI inspection, and the machine-readable inventory [`REPO_INVENTORY.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/REPO_INVENTORY.json).
+Every finding in this document is derived from direct static analysis of code paths, test runs, CI inspection, and the machine-readable inventory [`REPO_INVENTORY.json`](REPO_INVENTORY.json).
 
 ---
 
@@ -46,32 +46,32 @@ Every finding in this document is derived from direct static analysis of code pa
 
 ### 3.1 Dead Code
 The following files are verified to be completely unreferenced and never invoked by any production runtime, CLI, or test harness:
-1. [`scanners/static/parsers/ast_parser.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/parsers/ast_parser.py): Superseded by the tree-sitter AST handlers under [`scanners/static/ast/`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/ast/).
-2. [`scanners/static/parsers/groq_verifier.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/parsers/groq_verifier.py): Superseded by [`scanners/static/llm_verifier.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/llm_verifier.py).
-3. [`scanners/static/parsers/regex_parser.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/parsers/regex_parser.py): Superseded by [`scanners/static/regex_rules.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/regex_rules.py).
-4. [`backend/risk_engine/merger.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/risk_engine/merger.py): Phase 1 prototype Python script left in backend; superseded by Node.js risk engine and [`scanners/cbom_mapping.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/cbom_mapping.py).
-5. [`backend/src/db/database.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/db/database.js): Legacy raw `pg.Pool` connection wrapper; all database queries use Knex via [`backend/src/db/connection.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/db/connection.js).
-6. [`examples/real_target/examples/real_target/wolfssl`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/examples/real_target/examples/real_target/wolfssl): Dangling gitlink submodule entry in Git tree without `.gitmodules`.
-7. [`testing/examples/real_targets/mbedtls`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/testing/examples/real_targets/mbedtls): Dangling gitlink submodule entry in Git tree without `.gitmodules`.
+1. [`scanners/static/parsers/ast_parser.py`](scanners/static/parsers/ast_parser.py): Superseded by the tree-sitter AST handlers under [`scanners/static/ast/`](scanners/static/ast/).
+2. [`scanners/static/parsers/groq_verifier.py`](scanners/static/parsers/groq_verifier.py): Superseded by [`scanners/static/llm_verifier.py`](scanners/static/llm_verifier.py).
+3. [`scanners/static/parsers/regex_parser.py`](scanners/static/parsers/regex_parser.py): Superseded by [`scanners/static/regex_rules.py`](scanners/static/regex_rules.py).
+4. [`backend/risk_engine/merger.py`](backend/risk_engine/merger.py): Phase 1 prototype Python script left in backend; superseded by Node.js risk engine and [`scanners/cbom_mapping.py`](scanners/cbom_mapping.py).
+5. [`backend/src/db/database.js`](backend/src/db/database.js): Legacy raw `pg.Pool` connection wrapper; all database queries use Knex via [`backend/src/db/connection.js`](backend/src/db/connection.js).
+6. [`examples/real_target/examples/real_target/wolfssl`](examples/real_target/examples/real_target/wolfssl): Dangling gitlink submodule entry in Git tree without `.gitmodules`.
+7. [`testing/examples/real_targets/mbedtls`](testing/examples/real_targets/mbedtls): Dangling gitlink submodule entry in Git tree without `.gitmodules`.
 
 ### 3.2 Duplicate Implementations
 1. **Static CBOM Generation**:
-   - Primary: [`scanners/cbom_mapping.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/cbom_mapping.py) (uses `cyclonedx-python-lib` 1.6 models).
-   - Duplicate/Dead: [`scanners/static/parsers/ast_parser.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/parsers/ast_parser.py) (direct dict manipulation).
+   - Primary: [`scanners/cbom_mapping.py`](scanners/cbom_mapping.py) (uses `cyclonedx-python-lib` 1.6 models).
+   - Duplicate/Dead: [`scanners/static/parsers/ast_parser.py`](scanners/static/parsers/ast_parser.py) (direct dict manipulation).
 2. **CBOM Merging**:
-   - Active Backend: Node.js risk engine normalizer [`backend/src/risk_engine/normalizer.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/risk_engine/normalizer.js).
-   - Active Python Scanner: `merge_cboms` in [`scanners/cbom_mapping.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/cbom_mapping.py).
-   - Duplicate/Dead: [`backend/risk_engine/merger.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/risk_engine/merger.py).
+   - Active Backend: Node.js risk engine normalizer [`backend/src/risk_engine/normalizer.js`](backend/src/risk_engine/normalizer.js).
+   - Active Python Scanner: `merge_cboms` in [`scanners/cbom_mapping.py`](scanners/cbom_mapping.py).
+   - Duplicate/Dead: [`backend/risk_engine/merger.py`](backend/risk_engine/merger.py).
 
 ### 3.3 Legacy Code
-1. [`backend/src/api/server.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/api/server.js): Retained strictly as a compatibility wrapper for `backend/src/app.js`. Production entry point is [`backend/src/server.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/server.js).
+1. [`backend/src/api/server.js`](backend/src/api/server.js): Retained strictly as a compatibility wrapper for `backend/src/app.js`. Production entry point is [`backend/src/server.js`](backend/src/server.js).
 
 ### 3.4 TODO / FIXME / HACK
-1. [`scanners/cbom_mapping.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/cbom_mapping.py#L219):
+1. [`scanners/cbom_mapping.py`](scanners/cbom_mapping.py#L219):
    - Line 219: `# To maintain schema compliance, we inject it manually using a hack similar to the original scanner.` (Handles CycloneDX 1.6 property injection for certificate validation flags).
 
 ### 3.5 Stubs & Mock-Only Implementations
-1. **Network Scanner Mock-Bypass** in [`scanners/network/plugins/tls.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/network/plugins/tls.py#L56-L61):
+1. **Network Scanner Mock-Bypass** in [`scanners/network/plugins/tls.py`](scanners/network/plugins/tls.py#L56-L61):
    - Check: `is_mocked = getattr(Scanner, "__name__", "") == "FakeScanner" or "test" in getattr(Scanner, "__module__", "")`
    - Real execution branches to `_scan_direct_ssl()` which disables TLS certificate verification (`ctx.verify_mode = ssl.CERT_NONE; ctx.check_hostname = False`).
 
@@ -80,50 +80,50 @@ The following files are verified to be completely unreferenced and never invoked
 ## 4. Operational Boundaries & Security Characteristics
 
 ### 4.1 External Network Calls
-- [`backend/src/routes/scanner_pipeline.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/scanner_pipeline.js): Executes `git clone` via child process to clone external Git URLs.
-- [`scanners/network/plugins/tls.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/network/plugins/tls.py): Opens TCP sockets and TLS sessions to user-specified IP/ports.
-- [`scanners/network/plugins/ssh.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/network/plugins/ssh.py): Establishes SSH banner exchange sockets.
-- [`scanners/static/llm_verifier.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/llm_verifier.py): Dispatches HTTP POST requests to Groq API endpoint (`https://api.groq.com/openai/v1/chat/completions`) when `--llm-verify` is enabled.
-- [`frontend/src/api/client.ts`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/frontend/src/api/client.ts): Executes `fetch()` requests against ECDAT backend API.
+- [`backend/src/routes/scanner_pipeline.js`](backend/src/routes/scanner_pipeline.js): Executes `git clone` via child process to clone external Git URLs.
+- [`scanners/network/plugins/tls.py`](scanners/network/plugins/tls.py): Opens TCP sockets and TLS sessions to user-specified IP/ports.
+- [`scanners/network/plugins/ssh.py`](scanners/network/plugins/ssh.py): Establishes SSH banner exchange sockets.
+- [`scanners/static/llm_verifier.py`](scanners/static/llm_verifier.py): Dispatches HTTP POST requests to Groq API endpoint (`https://api.groq.com/openai/v1/chat/completions`) when `--llm-verify` is enabled.
+- [`frontend/src/api/client.ts`](frontend/src/api/client.ts): Executes `fetch()` requests against ECDAT backend API.
 
 ### 4.2 Subprocess Calls
-- [`backend/src/routes/scanner_pipeline.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/scanner_pipeline.js):
+- [`backend/src/routes/scanner_pipeline.js`](backend/src/routes/scanner_pipeline.js):
   - `spawn('git', ['clone', ...])`
   - `spawn('python', ['-m', 'scanners.static.main', ...])`
   - `spawn('python', ['-m', 'scanners.network.main', ...])`
   - `spawn('python', ['-m', 'scanners.binary_container.main', ...])`
   - `spawn('python', ['-m', 'zipfile', '-e', ...])`
-- [`scanners/binary_container/syft_runner.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/binary_container/syft_runner.py):
+- [`scanners/binary_container/syft_runner.py`](scanners/binary_container/syft_runner.py):
   - `subprocess.run(["syft", "version"], ...)`
   - `subprocess.run(["syft", target, "-o", "cyclonedx-json"], ...)`
-- [`tests/test_static_scanner.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_static_scanner.py):
+- [`tests/test_static_scanner.py`](tests/test_static_scanner.py):
   - Spawns scanner CLI for test fixture validation.
 
 ### 4.3 Filesystem Writes
-- [`backend/src/routes/scanner_pipeline.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/scanner_pipeline.js): Writes uploaded ZIPs and extracted files to `artifacts/uploads/scan_<timestamp>/`.
-- [`backend/src/routes/cbom.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/cbom.js): Writes CBOM files via ingestion service.
-- [`scanners/static/main.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/main.py): Writes CBOM JSON and SARIF 2.1.0 output files to `--output` path.
-- [`scanners/network/main.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/network/main.py): Writes CBOM JSON to `-o` path.
-- [`scanners/binary_container/main.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/binary_container/main.py): Writes CBOM JSON to `-o` path.
+- [`backend/src/routes/scanner_pipeline.js`](backend/src/routes/scanner_pipeline.js): Writes uploaded ZIPs and extracted files to `artifacts/uploads/scan_<timestamp>/`.
+- [`backend/src/routes/cbom.js`](backend/src/routes/cbom.js): Writes CBOM files via ingestion service.
+- [`scanners/static/main.py`](scanners/static/main.py): Writes CBOM JSON and SARIF 2.1.0 output files to `--output` path.
+- [`scanners/network/main.py`](scanners/network/main.py): Writes CBOM JSON to `-o` path.
+- [`scanners/binary_container/main.py`](scanners/binary_container/main.py): Writes CBOM JSON to `-o` path.
 
 ### 4.4 Deserialization
 - Untrusted JSON deserialization:
-  - `JSON.parse()` on CBOM payloads in [`backend/src/services/cbom_validation.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/cbom_validation.js) (guarded by size bounds, prototype pollution defense, and depth recursion checks).
-  - `json.loads()` on Syft scanner output in [`scanners/binary_container/syft_runner.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/binary_container/syft_runner.py).
-  - `json.loads()` in rule loaders ([`rules_loader.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/risk_engine/rules_loader.js), [`scanners/cbom_mapping.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/cbom_mapping.py)).
+  - `JSON.parse()` on CBOM payloads in [`backend/src/services/cbom_validation.js`](backend/src/services/cbom_validation.js) (guarded by size bounds, prototype pollution defense, and depth recursion checks).
+  - `json.loads()` on Syft scanner output in [`scanners/binary_container/syft_runner.py`](scanners/binary_container/syft_runner.py).
+  - `json.loads()` in rule loaders ([`rules_loader.js`](backend/src/risk_engine/rules_loader.js), [`scanners/cbom_mapping.py`](scanners/cbom_mapping.py)).
 
 ### 4.5 Database Access
 - Knex / PostgreSQL access in:
-  - [`backend/src/services/cbom_ingestion.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/cbom_ingestion.js) (writes to `scans`, `cboms`, `assets`, `findings`, `pqc_recommendations`).
-  - [`backend/src/routes/assets.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/assets.js) (reads `assets`).
-  - [`backend/src/routes/findings.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/findings.js) (reads `findings`).
-  - [`backend/src/routes/scans.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/scans.js) (reads/deletes `scans`).
-  - [`backend/src/db/migrations/20260905000000_create_ecdat_schema.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/db/migrations/20260905000000_create_ecdat_schema.js).
+  - [`backend/src/services/cbom_ingestion.js`](backend/src/services/cbom_ingestion.js) (writes to `scans`, `cboms`, `assets`, `findings`, `pqc_recommendations`).
+  - [`backend/src/routes/assets.js`](backend/src/routes/assets.js) (reads `assets`).
+  - [`backend/src/routes/findings.js`](backend/src/routes/findings.js) (reads `findings`).
+  - [`backend/src/routes/scans.js`](backend/src/routes/scans.js) (reads/deletes `scans`).
+  - [`backend/src/db/migrations/20260905000000_create_ecdat_schema.js`](backend/src/db/migrations/20260905000000_create_ecdat_schema.js).
 
 ### 4.6 Credential & Key Handling
-- [`backend/src/middleware/auth.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/middleware/auth.js): Handles API keys with `crypto.timingSafeEqual` constant-time verification.
-- [`backend/src/services/cbom_validation.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/cbom_validation.js): Scans ingested CBOMs for private keys (`BEGIN RSA/EC/OPENSSH/PGP/DSA PRIVATE KEY`) and redacts them prior to storage or display.
-- [`scanners/static/sanitization.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/sanitization.py): Sanitizes static scanner code snippets, stripping passwords, tokens, and raw private key bodies into SHA-256 fingerprint masks.
+- [`backend/src/middleware/auth.js`](backend/src/middleware/auth.js): Handles API keys with `crypto.timingSafeEqual` constant-time verification.
+- [`backend/src/services/cbom_validation.js`](backend/src/services/cbom_validation.js): Scans ingested CBOMs for private keys (`BEGIN RSA/EC/OPENSSH/PGP/DSA PRIVATE KEY`) and redacts them prior to storage or display.
+- [`scanners/static/sanitization.py`](scanners/static/sanitization.py): Sanitizes static scanner code snippets, stripping passwords, tokens, and raw private key bodies into SHA-256 fingerprint masks.
 
 ---
 

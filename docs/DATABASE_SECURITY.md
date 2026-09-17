@@ -7,7 +7,7 @@ ECDAT stores critical cryptographic posture data, bills of materials (CBOM/SBOM)
 ### Core Security Controls
 1. **Parameterized Queries**: All database queries strictly utilize parameter binding. Raw string interpolation is prohibited.
 2. **Least-Privilege Database Roles**: Separation of migration DDL privileges (`ecdat_migrator`) from runtime application DML (`ecdat_app`), read-only replicas (`ecdat_readonly`), and audit collectors (`ecdat_auditor`).
-3. **Automated Migration Lifecycle**: Versioned schema migrations in [`backend/src/db/migrations/`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/db/migrations/) with programmatic rollback and verification.
+3. **Automated Migration Lifecycle**: Versioned schema migrations in [`backend/src/db/migrations/`](backend/src/db/migrations/) with programmatic rollback and verification.
 4. **Encrypted Backups**: Logical database snapshots encrypted using AES-256-GCM with SHA-256 cryptographic checksums.
 5. **Data Retention & Batched Pruning**: Configurable lifecycle retention windows with chunked deletions to prevent table locking.
 6. **Audit Event Logging**: Tamper-resistant database audit trails with automated secret scrubbing.
@@ -31,7 +31,7 @@ const rows = await db("scans")
 ```
 
 ### Safe Raw Query Execution (`safeRaw`)
-When raw SQL queries are required, [`backend/src/db/secure_query.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/db/secure_query.js) enforces strict parameterization:
+When raw SQL queries are required, [`backend/src/db/secure_query.js`](backend/src/db/secure_query.js) enforces strict parameterization:
 - Validates that the number of `?` placeholders matches the parameter bindings array.
 - Disallows semicolon-separated multi-statement executions (`ERR_MULTIPLE_STATEMENTS`).
 
@@ -72,7 +72,7 @@ ECDAT generates a ready-to-run PostgreSQL provisioning script via `generateLeast
 
 ## 4. Database Migrations & Security Indexing
 
-Schema evolution is tracked using Knex migrations under [`backend/src/db/migrations/`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/db/migrations/):
+Schema evolution is tracked using Knex migrations under [`backend/src/db/migrations/`](backend/src/db/migrations/):
 
 - **`20260905000000_create_ecdat_schema.js`**: Core tables (`scans`, `cboms`, `assets`, `components`, `findings`, `risk_assessments`, `recommendations`, `scan_errors`, `policy_profiles`, `rule_versions`).
 - **`20260914000001_database_security_hardening.js`**: Security audit log table and composite indexes.
@@ -95,7 +95,7 @@ To eliminate unindexed full table scans and speed up tenant-isolated queries:
 
 ## 5. Encrypted Database Backups
 
-Database backups are managed by [`backend/src/db/backup_service.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/db/backup_service.js):
+Database backups are managed by [`backend/src/db/backup_service.js`](backend/src/db/backup_service.js):
 
 ### Backup Lifecycle
 1. **Extraction**: Collects application tables into a structured logical snapshot.

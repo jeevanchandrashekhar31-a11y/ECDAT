@@ -16,7 +16,7 @@ The ECDAT performance engineering and scalability suite validates that the platf
 
 ## 2. Static Code Scanning Scalability Benchmarks
 
-Evaluated using [`tests/test_large_repo_scaling.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_large_repo_scaling.py) across synthetic and golden enterprise repositories:
+Evaluated using [`tests/test_large_repo_scaling.py`](tests/test_large_repo_scaling.py) across synthetic and golden enterprise repositories:
 
 | Repository Size | File Count | Lines of Code | AST Traversal Time | Throughput | Peak RSS Memory |
 | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -39,7 +39,7 @@ Verdict: Sub-linear scaling confirmed; zero unbounded memory leaks detected.
 
 ## 3. Network & TLS Probing Latency
 
-Evaluated across local and wide-area endpoints using [`tests/test_pcap_safety.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_pcap_safety.py) and network scanner plugins:
+Evaluated across local and wide-area endpoints using [`tests/test_pcap_safety.py`](tests/test_pcap_safety.py) and network scanner plugins:
 
 | Probing Operation | Concurrency | Mean Latency | p95 Latency | p99 Latency | Socket Timeout Rate |
 | :--- | :---: | :---: | :---: | :---: | :---: |

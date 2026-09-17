@@ -18,6 +18,7 @@ import argparse
 import datetime
 import json
 import os
+import shutil
 import subprocess
 import sys
 import urllib.request
@@ -129,14 +130,14 @@ def run_npm_audit(directory: Path, ecosystem_name: str) -> List[Dict[str, Any]]:
         print(f"   [SKIP] Lockfile missing in {directory}")
         return []
 
+    npm_bin = shutil.which("npm") or "npm"
     try:
         proc = subprocess.run(
-            ["npm", "audit", "--json"],
+            [npm_bin, "audit", "--json"],
             cwd=str(directory),
             capture_output=True,
             text=True,
             timeout=30,
-            shell=True
         )
         # npm audit exits with non-zero if vulnerabilities are found
         raw_output = proc.stdout.strip()
@@ -144,11 +145,14 @@ def run_npm_audit(directory: Path, ecosystem_name: str) -> List[Dict[str, Any]]:
             raw_output = proc.stderr.strip()
 
         if not raw_output:
+            if proc.returncode != 0:
+                print(f"   [ERROR] npm audit exited with {proc.returncode} but produced no output.")
             return []
 
         try:
             audit_json = json.loads(raw_output)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            print(f"   [ERROR] Failed to parse npm audit JSON output in {directory.name}: {e}")
             return []
 
         vulns = []

@@ -25,7 +25,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -287,8 +287,7 @@ class ReleaseGateEvaluator:
     # ------------------------------------------------------------------------
     def check_silent_scanner_crash_gate(self) -> bool:
         print("\n>> [GATE 5/6] Verifying Scanner Exit Code Integrity & Crash Interception...")
-        # Verify that scanner error codes (exit code 2) are NEVER conflated with 0 (clean).
-        # We test deterministic exit code behavior:
+        # 1. Verify that scanner error codes (exit code 2) are NEVER conflated with 0 (clean).
         ci_scanner_file = REPO_ROOT / "scanners" / "ci_scanner.py"
         if not ci_scanner_file.exists():
             self.record_check("Silent Scanner Crash Detection", False, "scanners/ci_scanner.py missing.")
@@ -302,8 +301,36 @@ class ReleaseGateEvaluator:
             self.record_check("Silent Scanner Crash Detection", False, "Scanner silently exited with 0 on invalid command line arguments!")
             return False
 
-        # Verify exit code is strictly non-zero
-        self.record_check("Silent Scanner Crash Detection", True, f"Scanner deterministically caught error with non-zero exit code ({proc.returncode}); never conflates crashes with 0.")
+        # 2. Verify no subprocess invocations in scripts or scanners use POSIX-broken shell=True with list args
+        import ast
+        dangerous_calls = []
+        for search_dir in ["scripts", "scanners"]:
+            for py_file in (REPO_ROOT / search_dir).rglob("*.py"):
+                try:
+                    tree = ast.parse(py_file.read_text(encoding="utf-8"))
+                    for node in ast.walk(tree):
+                        if isinstance(node, ast.Call):
+                            is_shell_true = any(k.arg == "shell" and isinstance(k.value, ast.Constant) and k.value.value is True for k in node.keywords)
+                            has_list_arg = node.args and isinstance(node.args[0], (ast.List, ast.Tuple))
+                            if is_shell_true and has_list_arg:
+                                dangerous_calls.append(f"{py_file.relative_to(REPO_ROOT)}:{node.lineno}")
+                except Exception:
+                    pass
+
+        if dangerous_calls:
+            self.record_check(
+                "Silent Scanner Crash Detection",
+                False,
+                f"POSIX-broken subprocess.run(list, shell=True) detected in: {', '.join(dangerous_calls)}"
+            )
+            return False
+
+        # Verify exit code is strictly non-zero and subprocess calls are clean
+        self.record_check(
+            "Silent Scanner Crash Detection",
+            True,
+            f"Scanner deterministically caught error with non-zero exit code ({proc.returncode}); zero shell=True list invocations detected."
+        )
         return True
 
     # ------------------------------------------------------------------------

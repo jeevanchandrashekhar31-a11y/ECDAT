@@ -1,10 +1,10 @@
 {
   "qualification_metadata": {
-    "evaluation_timestamp": "2026-09-16T21:14:30.659766+00:00",
+    "evaluation_timestamp": "2026-09-17T01:11:43.677064+00:00",
     "ecdat_version": "1.0.0",
     "total_domains_evaluated": 17,
     "domains_passed": 17,
-    "total_duration_sec": 40.53,
+    "total_duration_sec": 41.7,
     "overall_verdict": "QUALIFIED_FOR_ENTERPRISE_PRODUCTION",
     "vulnerability_posture": {
       "claim_zero_vulnerabilities": false,
@@ -18,67 +18,67 @@
       "domain_id": 1,
       "name": "Unit Tests",
       "passed": true,
-      "duration_sec": 4.36,
+      "duration_sec": 4.52,
       "summary": "All cryptographic unit tests PASSED successfully.",
       "details": {
-        "stdout": "................                                                         [100%]\n"
+        "stdout": "................                                                         [100%]\n16 passed in 3.97s\n"
       }
     },
     {
       "domain_id": 2,
       "name": "Integration Tests",
       "passed": true,
-      "duration_sec": 0.94,
+      "duration_sec": 1.22,
       "summary": "Enterprise integration test suites PASSED.",
       "details": {
-        "stdout": ".........................................                                [100%]\n"
+        "stdout": ".........................................                                [100%]\n41 passed in 0.65s\n"
       }
     },
     {
       "domain_id": 3,
       "name": "E2E Tests",
       "passed": true,
-      "duration_sec": 3.91,
+      "duration_sec": 4.72,
       "summary": "Full end-to-end scanning and reporting pipelines PASSED.",
       "details": {
-        "stdout": "\u00e2\u2013\u00b6 Evidence Integrity & Audit Attestation Subsystem (Phase 26.3)\n  \u00e2\u0153\u201d Executive reports strictly identify all 6 mandated metadata dimensions (78.6252ms)\n  \u00e2\u0153\u201d Technical drill-down reports strictly identify all 6 mandated metadata dimensions (5.0577ms)\n  \u00e2\u0153\u201d validateEvidenceIntegrity confirms valid"
+        "stdout": "\u00e2\u2013\u00b6 Evidence Integrity & Audit Attestation Subsystem (Phase 26.3)\n  \u00e2\u0153\u201d Executive reports strictly identify all 6 mandated metadata dimensions (148.0085ms)\n  \u00e2\u0153\u201d Technical drill-down reports strictly identify all 6 mandated metadata dimensions (7.9883ms)\n  \u00e2\u0153\u201d validateEvidenceIntegrity confirms vali"
       }
     },
     {
       "domain_id": 4,
       "name": "Fuzz Tests",
       "passed": true,
-      "duration_sec": 1.9,
+      "duration_sec": 1.93,
       "summary": "Zero crash or panic behavior on malformed payloads; fuzz tests PASSED.",
       "details": {
-        "stdout": "............................................................             [100%]\n"
+        "stdout": "............................................................             [100%]\n60 passed in 1.30s\n"
       }
     },
     {
       "domain_id": 5,
       "name": "Adversarial Tests",
       "passed": true,
-      "duration_sec": 1.93,
+      "duration_sec": 2.57,
       "summary": "All hostile scan inputs safely intercepted and neutralized; adversarial tests PASSED.",
       "details": {
-        "stdout": ".................................                                        [100%]\n"
+        "stdout": ".................................                                        [100%]\n33 passed in 1.99s\n"
       }
     },
     {
       "domain_id": 6,
       "name": "SAST",
       "passed": true,
-      "duration_sec": 1.35,
+      "duration_sec": 2.12,
       "summary": "Static AST discovery across 6 languages PASSED with zero false negatives.",
       "details": {
-        "stdout": ".............................                                            [100%]\n"
+        "stdout": ".............................                                            [100%]\n29 passed in 1.22s\n"
       }
     },
     {
       "domain_id": 7,
       "name": "Dependency Scan",
       "passed": true,
-      "duration_sec": 15.64,
+      "duration_sec": 12.11,
       "summary": "Identified 19 known advisory findings (19 tracked remediations, 0 unaccepted CRITICAL blockers). Transparently recorded without claiming 'zero vulnerabilities'.",
       "details": {
         "total_findings": 19,
@@ -91,7 +91,7 @@
       "domain_id": 8,
       "name": "Secret Scan",
       "passed": true,
-      "duration_sec": 2.16,
+      "duration_sec": 1.84,
       "summary": "Zero leaked credentials or private keys detected across tracked files.",
       "details": {}
     },
@@ -99,7 +99,7 @@
       "domain_id": 9,
       "name": "Container Scan",
       "passed": true,
-      "duration_sec": 0.39,
+      "duration_sec": 0.42,
       "summary": "All production containers satisfy CIS/NIST non-root and minimal attack surface standards.",
       "details": {}
     },
@@ -107,7 +107,7 @@
       "domain_id": 10,
       "name": "IaC Scan",
       "passed": true,
-      "duration_sec": 0.4,
+      "duration_sec": 0.42,
       "summary": "Kubernetes manifests satisfy Pod Security Standards 'Restricted' and NetworkPolicies.",
       "details": {}
     },
@@ -115,7 +115,7 @@
       "domain_id": 11,
       "name": "API Security Tests",
       "passed": true,
-      "duration_sec": 0.81,
+      "duration_sec": 0.86,
       "summary": "API security, authentication rate limits, and secure headers verified PASSED.",
       "details": {}
     },
@@ -123,7 +123,7 @@
       "domain_id": 12,
       "name": "Authorization Tests",
       "passed": true,
-      "duration_sec": 0.42,
+      "duration_sec": 0.45,
       "summary": "RBAC least privilege and multi-tenant tenant_id isolation strictly verified PASSED.",
       "details": {}
     },
@@ -131,7 +131,7 @@
       "domain_id": 13,
       "name": "Performance Benchmarks",
       "passed": true,
-      "duration_sec": 4.73,
+      "duration_sec": 6.31,
       "summary": "Throughput exceeds 500 files/sec with sub-linear memory footprint; benchmark PASSED.",
       "details": {}
     },
@@ -139,7 +139,7 @@
       "domain_id": 14,
       "name": "CBOM Validation",
       "passed": true,
-      "duration_sec": 0.74,
+      "duration_sec": 1.0,
       "summary": "Cryptographic Bill of Materials conforms 100% to CycloneDX 1.6 cryptoProperties schema.",
       "details": {}
     },
@@ -147,7 +147,7 @@
       "domain_id": 15,
       "name": "SBOM Generation",
       "passed": true,
-      "duration_sec": 0.22,
+      "duration_sec": 0.3,
       "summary": "Dual-standard CycloneDX 1.6 and SPDX 2.3 SBOMs generated successfully.",
       "details": {}
     },
@@ -155,7 +155,7 @@
       "domain_id": 16,
       "name": "Reproducibility/Provenance Checks",
       "passed": true,
-      "duration_sec": 0.63,
+      "duration_sec": 0.91,
       "summary": "Ed25519 digital signatures and SLSA v1.0 build provenance verified VALID.",
       "details": {}
     },

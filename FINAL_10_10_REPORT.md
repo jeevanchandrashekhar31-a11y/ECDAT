@@ -25,7 +25,7 @@ In strict alignment with enterprise security governance:
 
 ECDAT explicitly does **NOT** claim "zero vulnerabilities". The platform maintains a transparent, empirical vulnerability inventory:
 - **Zero Vulnerability Claim:** `FALSE` (Strictly prohibited).
-- **Tracked Known Advisories:** `19` (All non-critical development/test tooling dependencies, documented in [`rules/vulnerability_risk_acceptance.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/vulnerability_risk_acceptance.json)).
+- **Tracked Known Advisories:** `19` (All non-critical development/test tooling dependencies, documented in [`rules/vulnerability_risk_acceptance.json`](rules/vulnerability_risk_acceptance.json)).
 - **Unaccepted CRITICAL Blockers:** `0`
 - **Unaccepted HIGH Blockers:** `0`
 - **Tampering Violations:** `0` (Cryptographic hash digest protects severity ratings).
@@ -434,15 +434,15 @@ Every phase from Phase 0 to Phase 27 was executed in strict dependency order, ve
 
 All 9 required master deliverables are generated and physically verified on disk in the root workspace:
 
-1. **[`FINAL_10_10_REPORT.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/FINAL_10_10_REPORT.md)**: Overarching certification report, phase execution audit, and release sign-off.
-2. **[`FINAL_FEATURE_PARITY_MATRIX.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/FINAL_FEATURE_PARITY_MATRIX.md)**: Definitive 19-capability comparison with complete 5-point proofs and 10.0/10.0 score.
-3. **[`FINAL_SECURITY_ASSESSMENT.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/FINAL_SECURITY_ASSESSMENT.md)**: AppSec audit, 19 tracked advisories, zero-secrets guarantee, container/K8s hardening.
-4. **[`FINAL_THREAT_MODEL.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/FINAL_THREAT_MODEL.md)**: Comprehensive STRIDE threat model across all trust boundaries.
-5. **[`FINAL_TEST_REPORT.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/FINAL_TEST_REPORT.md)**: Complete test inventory (1,281 tests, 100% pass rate).
-6. **[`FINAL_BENCHMARK_REPORT.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/FINAL_BENCHMARK_REPORT.md)**: Scalability benchmarks (584 files/s, sub-linear memory scaling).
-7. **[`FINAL_CBOM_SAMPLE.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/FINAL_CBOM_SAMPLE.json)**: Canonical CycloneDX 1.6 Cryptographic Bill of Materials sample.
-8. **[`FINAL_SBOM_SAMPLE.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/FINAL_SBOM_SAMPLE.json)**: Canonical CycloneDX 1.6 Software Bill of Materials sample (705 components).
-9. **[`FINAL_ARCHITECTURE.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/FINAL_ARCHITECTURE.md)**: Authoritative architecture specification covering all 10 architectural pillars.
+1. **[`FINAL_10_10_REPORT.md`](FINAL_10_10_REPORT.md)**: Overarching certification report, phase execution audit, and release sign-off.
+2. **[`FINAL_FEATURE_PARITY_MATRIX.md`](FINAL_FEATURE_PARITY_MATRIX.md)**: Definitive 19-capability comparison with complete 5-point proofs and 10.0/10.0 score.
+3. **[`FINAL_SECURITY_ASSESSMENT.md`](FINAL_SECURITY_ASSESSMENT.md)**: AppSec audit, 19 tracked advisories, zero-secrets guarantee, container/K8s hardening.
+4. **[`FINAL_THREAT_MODEL.md`](FINAL_THREAT_MODEL.md)**: Comprehensive STRIDE threat model across all trust boundaries.
+5. **[`FINAL_TEST_REPORT.md`](FINAL_TEST_REPORT.md)**: Complete test inventory (1,281 tests, 100% pass rate).
+6. **[`FINAL_BENCHMARK_REPORT.md`](FINAL_BENCHMARK_REPORT.md)**: Scalability benchmarks (584 files/s, sub-linear memory scaling).
+7. **[`FINAL_CBOM_SAMPLE.json`](FINAL_CBOM_SAMPLE.json)**: Canonical CycloneDX 1.6 Cryptographic Bill of Materials sample.
+8. **[`FINAL_SBOM_SAMPLE.json`](FINAL_SBOM_SAMPLE.json)**: Canonical CycloneDX 1.6 Software Bill of Materials sample (705 components).
+9. **[`FINAL_ARCHITECTURE.md`](FINAL_ARCHITECTURE.md)**: Authoritative architecture specification covering all 10 architectural pillars.
 
 ---
 

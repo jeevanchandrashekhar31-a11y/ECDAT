@@ -136,7 +136,7 @@ deploy/
 
 ## 4. Automated Kubernetes Hardening Auditor
 
-The programmatic audit tool [`scanners/k8s_hardening_auditor.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/k8s_hardening_auditor.py) verifies all 7 mandates:
+The programmatic audit tool [`scanners/k8s_hardening_auditor.py`](scanners/k8s_hardening_auditor.py) verifies all 7 mandates:
 
 ```bash
 python scanners/k8s_hardening_auditor.py
@@ -165,6 +165,6 @@ Status           : ALL 7 MANDATES HARDENED (PASS)
 
 | Test Suite | Scope | File | Result |
 |---|---|---|---|
-| **Python Pytest** | 9 unit tests verifying RBAC, NetworkPolicies, Pod Security Standards, secrets, quotas, security contexts, and eBPF agent segregation | [`tests/test_k8s_hardening.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_k8s_hardening.py) | **9 / 9 PASSED** (0.08s) |
-| **Node.js Test** | 8 backend tests asserting manifest syntax, namespaces, and Helm chart coverage | [`backend/tests/security/k8s_hardening.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/security/k8s_hardening.test.js) | **8 / 8 PASSED** (60ms) |
-| **Release Gate** | End-to-end supply-chain release gate across all 6 gates | [`scripts/release_gate.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scripts/release_gate.py) | **ALL 6 GATES PASSED** (code 0) |
+| **Python Pytest** | 9 unit tests verifying RBAC, NetworkPolicies, Pod Security Standards, secrets, quotas, security contexts, and eBPF agent segregation | [`tests/test_k8s_hardening.py`](tests/test_k8s_hardening.py) | **9 / 9 PASSED** (0.08s) |
+| **Node.js Test** | 8 backend tests asserting manifest syntax, namespaces, and Helm chart coverage | [`backend/tests/security/k8s_hardening.test.js`](backend/tests/security/k8s_hardening.test.js) | **8 / 8 PASSED** (60ms) |
+| **Release Gate** | End-to-end supply-chain release gate across all 6 gates | [`scripts/release_gate.py`](scripts/release_gate.py) | **ALL 6 GATES PASSED** (code 0) |

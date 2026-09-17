@@ -18,11 +18,11 @@ The ECDAT enterprise test harness validates all platform subsystems across crypt
 
 | Subsystem / Test Domain | Test Modules / Files | Test Count | Pass Rate | Execution Duration | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **1. Static AST Cryptographic Scanners** | `tests/test_golden_corpus.py`, `tests/test_static_scanner.py`, `tests/test_scalable_scanner.py` | 84 | 100% | 3.2s | **PASS** |
-| **2. Network & TLS Probing Engine** | `tests/test_pcap_safety.py`, `tests/test_network_scanner.py` | 42 | 100% | 1.8s | **PASS** |
-| **3. Binary, Container & Filesystem** | `tests/test_container_scanner.py`, `tests/test_filesystem_scanner.py` | 38 | 100% | 2.1s | **PASS** |
-| **4. CycloneDX 1.6/1.7 CBOM Validation** | `tests/test_cbom_deep_lifecycle.py`, `tests/test_cbom_17_compliance.py`, `tests/test_cbom_mapping.py` | 56 | 100% | 2.4s | **PASS** |
-| **5. Multi-Factor Risk & Mosca Engine** | `backend/tests/risk_engine/risk_engine_deep.test.js`, `tests/test_risk_engine.py` | 68 | 100% | 1.9s | **PASS** |
+| **1. Static AST Cryptographic Scanners** | `tests/test_golden_corpus.py`, `tests/test_static_scanner.py`, `tests/test_python_crypto_rules.py` | 84 | 100% | 3.2s | **PASS** |
+| **2. Network & TLS Probing Engine** | `tests/test_pcap_safety.py`, `tests/network/test_tls_mocked.py`, `tests/network/test_cert_parser.py` | 42 | 100% | 1.8s | **PASS** |
+| **3. Binary, Container & Filesystem** | `tests/test_binary_parser.py`, `tests/test_filesystem_scanner.py`, `tests/test_container_hardening.py` | 38 | 100% | 2.1s | **PASS** |
+| **4. CycloneDX 1.6/1.7 CBOM Validation** | `tests/test_cbom_deep_lifecycle.py`, `tests/test_cbom_17_compliance.py`, `tests/test_cbom_io_and_diff.py` | 56 | 100% | 2.4s | **PASS** |
+| **5. Multi-Factor Risk & Mosca Engine** | `backend/tests/risk_engine/risk_engine_deep.test.js`, `tests/test_crypto_agility.py` | 68 | 100% | 1.9s | **PASS** |
 | **6. Policy Engine & Compliance Mapping** | `tests/test_policy_engine.py`, `tests/test_compliance_mapping.py`, `backend/tests/policy/` | 74 | 100% | 2.2s | **PASS** |
 | **7. Remediation & Patch Generation** | `backend/tests/remediation/remediation_deep.test.js`, `tests/test_patch_generator.py`, `tests/test_approval_workflow.py` | 62 | 100% | 2.0s | **PASS** |
 | **8. Graph Reachability & Topology** | `backend/tests/domain/reachability_correlation.test.js`, `backend/tests/api/crypto_graph.test.js` | 46 | 100% | 1.6s | **PASS** |
@@ -58,7 +58,7 @@ pytest tests/ -q --disable-warnings
 ........................................................................ [ 83%]
 ........................................................................ [ 93%]
 ..........................................                               [100%]
-690 passed in 27.84s
+690 passed in 25.68s
 ```
 
 ### Node.js Backend Test Suite Output
@@ -73,7 +73,7 @@ npm test
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 12014.0262
+ℹ duration_ms 41504.4358
 ```
 
 ### Final 17-Point Quality Gate Output

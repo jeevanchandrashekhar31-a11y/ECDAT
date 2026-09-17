@@ -13,10 +13,10 @@ Instead, ECDAT’s defensible superiority is founded on **7 core engineering pil
 
 | Standard | Commercial Legacy Approach | The ECDAT Defensible Advantage | Implementation in ECDAT | Verification Proof |
 | :--- | :--- | :--- | :--- | :--- |
-| **CBOM** | Proprietary internal database schemas; export to CycloneDX is often lossy or an afterthought. | **Native CycloneDX 1.6 & 1.7 CBOM** as the primary first-class data model with `cryptoProperties` for algorithms, protocols, keys, and certificates. | [`scanners/cbom_io.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/cbom_io.py), [`backend/src/services/cbom_validation.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/cbom_validation.js) | [`tests/test_cbom_deep_lifecycle.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_cbom_deep_lifecycle.py) |
-| **SARIF** | Proprietary dashboard alerts requiring specialized browser consoles. | **OASIS SARIF v2.1.0 standard** emitting direct native GitHub/GitLab Code Scanning annotations. | [`scanners/sarif_engine.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/sarif_engine.py), [`backend/src/routes/ci.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/routes/ci.js) | [`tests/test_sarif_engine.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_sarif_engine.py) |
-| **SBOM** | Single-ecosystem or single-standard output requiring paid add-on modules. | **Simultaneous Dual-Standard Generation**: Generates CycloneDX 1.6 AND SPDX 2.3 JSON across Python, Node.js, and React in a single pass. | [`scripts/generate_sbom.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scripts/generate_sbom.py) | Verified 705 packages cataloged in [`FINAL_SBOM_SAMPLE.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/FINAL_SBOM_SAMPLE.json). |
-| **APIs** | Proprietary SOAP/RPC protocols or closed appliance interfaces. | **RESTful OpenAPI / JSON Schema Contract Architecture** with Knex abstraction for PostgreSQL/SQLite. | [`backend/src/domain/contracts.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/domain/contracts.js), [`docs/API_DOCUMENTATION.md`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/API_DOCUMENTATION.md) | [`backend/tests/api/api_contracts_comprehensive.test.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/tests/api/api_contracts_comprehensive.test.js) |
+| **CBOM** | Proprietary internal database schemas; export to CycloneDX is often lossy or an afterthought. | **Native CycloneDX 1.6 & 1.7 CBOM** as the primary first-class data model with `cryptoProperties` for algorithms, protocols, keys, and certificates. | [`scanners/cbom_io.py`](scanners/cbom_io.py), [`backend/src/services/cbom_validation.js`](backend/src/services/cbom_validation.js) | [`tests/test_cbom_deep_lifecycle.py`](tests/test_cbom_deep_lifecycle.py) |
+| **SARIF** | Proprietary dashboard alerts requiring specialized browser consoles. | **OASIS SARIF v2.1.0 standard** emitting direct native GitHub/GitLab Code Scanning annotations. | [`scanners/sarif_engine.py`](scanners/sarif_engine.py), [`backend/src/routes/ci.js`](backend/src/routes/ci.js) | [`tests/test_sarif_engine.py`](tests/test_sarif_engine.py) |
+| **SBOM** | Single-ecosystem or single-standard output requiring paid add-on modules. | **Simultaneous Dual-Standard Generation**: Generates CycloneDX 1.6 AND SPDX 2.3 JSON across Python, Node.js, and React in a single pass. | [`scripts/generate_sbom.py`](scripts/generate_sbom.py) | Verified 705 packages cataloged in [`FINAL_SBOM_SAMPLE.json`](FINAL_SBOM_SAMPLE.json). |
+| **APIs** | Proprietary SOAP/RPC protocols or closed appliance interfaces. | **RESTful OpenAPI / JSON Schema Contract Architecture** with Knex abstraction for PostgreSQL/SQLite. | [`backend/src/domain/contracts.js`](backend/src/domain/contracts.js), [`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md) | [`backend/tests/api/api_contracts_comprehensive.test.js`](backend/tests/api/api_contracts_comprehensive.test.js) |
 
 ---
 
@@ -29,7 +29,7 @@ Legacy tools output arbitrary 1-to-10 risk scores and opaque "at risk" flags wit
    - Example: Line 48 in `hybrid_kem.js` calling `crypto.kem.encapsulate('ML-KEM-768')`.
 2. **Every Correlation Has Provenance**:
    - Correlated assets maintain cryptographic provenance chains. Evidence is protected by SHA-256 Merkle tree root hashes; any tampering invalidates the evidence chain.
-   - Tested by [`tests/test_evidence_integrity.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_evidence_integrity.py).
+   - Tested by [`tests/test_evidence_integrity.py`](tests/test_evidence_integrity.py).
 3. **Every Risk Score Has an Explicit Factor Breakdown**:
    $$\text{Composite Risk} = \text{Algorithm Deprecation} \times \text{Reachability} \times \text{Network Exposure} \times \text{Data Shelf-Life}$$
    - Accompanied by human-readable "Why Now" reasoning explaining Shor's algorithm threat, Harvest-Now-Decrypt-Later (HNDL) exposure, and Mosca timeline deficit.
@@ -115,7 +115,7 @@ Legacy vendors make marketing claims of "superior AI accuracy" without published
 
 ECDAT proves its accuracy transparently using a **permanent, public Golden Corpus**:
 
-- **Golden Corpus Manifest**: 42 ground-truth test cases covering 11 standardized categories across 6 programming languages ([`testing/corpora/golden_corpus/manifest.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/testing/corpora/golden_corpus/manifest.json)).
+- **Golden Corpus Manifest**: 42 ground-truth test cases covering 11 standardized categories across 6 programming languages ([`testing/corpora/golden_corpus/manifest.json`](testing/corpora/golden_corpus/manifest.json)).
 - **Empirical Accuracy Metrics**:
   - **Precision:** `88.6%` (Zero false positives on clean negative examples)
   - **Recall:** `98.6%` (100% recall on deprecated algorithms)
@@ -125,7 +125,7 @@ ECDAT proves its accuracy transparently using a **permanent, public Golden Corpu
   ```bash
   python testing/corpora/golden_corpus/evaluator.py
   ```
-- **Performance Benchmarks**: Sustained throughput of **`584 files/second`** with sub-linear heap memory scaling (< 42MB growth over 10,000 files) proven via [`tests/test_large_repo_scaling.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/tests/test_large_repo_scaling.py).
+- **Performance Benchmarks**: Sustained throughput of **`584 files/second`** with sub-linear heap memory scaling (< 42MB growth over 10,000 files) proven via [`tests/test_large_repo_scaling.py`](tests/test_large_repo_scaling.py).
 
 ---
 
@@ -150,7 +150,7 @@ In ECDAT:
 - **CI Release Gate Enforcement**: Exit code 2 is deterministically caught as an unconditional release blocker. A broken scan never silently allows insecure software into production.
 
 ### Rule 4: Rejection of "Zero Vulnerabilities"
-ECDAT explicitly disclaims "zero vulnerabilities". The platform openly documents its exact empirical inventory of 19 tracked non-critical dependency advisories in [`rules/vulnerability_risk_acceptance.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/vulnerability_risk_acceptance.json), with **0 unaccepted CRITICAL blockers** and **0 unaccepted HIGH blockers**.
+ECDAT explicitly disclaims "zero vulnerabilities". The platform openly documents its exact empirical inventory of 19 tracked non-critical dependency advisories in [`rules/vulnerability_risk_acceptance.json`](rules/vulnerability_risk_acceptance.json), with **0 unaccepted CRITICAL blockers** and **0 unaccepted HIGH blockers**.
 
 ---
 

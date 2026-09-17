@@ -61,13 +61,13 @@ graph TD
 ### 3.1 Cryptographic Discovery Tier (`scanners/`)
 
 #### A. Static Code Scanner (`scanners/static/`)
-- **AST Handlers** ([`scanners/static/ast/`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/ast/)):
+- **AST Handlers** ([`scanners/static/ast/`](scanners/static/ast/)):
   - `c_handler.py`: OpenSSL EVP, legacy MD5/SHA-1 calls, RSA/EC key generation, and hardcoded PEM literals.
   - `cpp_handler.py`: C++ bindings to crypto APIs.
   - `go_handler.py`: `crypto/md5`, `crypto/sha1`, `crypto/rsa`, `crypto/ecdsa`.
   - `javascript_handler.py`: Node.js `crypto.createHash`, `createCipheriv`, SubtleCrypto.
-- **Regex Patterns** ([`scanners/static/regex_rules.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/regex_rules.py)): High-confidence regex fallbacks for files without full AST coverage.
-- **Sanitization & Redaction** ([`scanners/static/sanitization.py`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/static/sanitization.py)): Strips private keys and secret values into `[REDACTED_SECRET SHA256:<hash>]` before snippet embedding.
+- **Regex Patterns** ([`scanners/static/regex_rules.py`](scanners/static/regex_rules.py)): High-confidence regex fallbacks for files without full AST coverage.
+- **Sanitization & Redaction** ([`scanners/static/sanitization.py`](scanners/static/sanitization.py)): Strips private keys and secret values into `[REDACTED_SECRET SHA256:<hash>]` before snippet embedding.
 - **Output**: Generates valid CycloneDX 1.6 CBOM and SARIF 2.1.0 logs.
 
 #### B. Network & Endpoint Scanner (`scanners/network/`)
@@ -79,15 +79,15 @@ graph TD
 
 #### C. Binary & Container Scanner (`scanners/binary_container/`)
 - **Syft Wrapper** (`syft_runner.py`): Executes `syft <target> -o cyclonedx-json` in an isolated subprocess with 100MB output limit.
-- **Classifier** (`component_classifier.py`): Matches extracted packages against [`rules/crypto_library_catalog.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/crypto_library_catalog.json) to identify crypto providers (OpenSSL, mbedTLS, BouncyCastle, libsodium).
+- **Classifier** (`component_classifier.py`): Matches extracted packages against [`rules/crypto_library_catalog.json`](rules/crypto_library_catalog.json) to identify crypto providers (OpenSSL, mbedTLS, BouncyCastle, libsodium).
 
 ---
 
 ### 3.2 Ingestion & Control Tier (`backend/src/services/`, `backend/src/middleware/`)
 
-- **Security Headers & CORS** ([`security.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/middleware/security.js)): Helmet enabled; CORS restricted to explicit origin list (wildcard `*` disallowed).
-- **Authentication** ([`auth.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/middleware/auth.js)): `crypto.timingSafeEqual` constant-time API key verification for write routes.
-- **Schema Validation** ([`cbom_validation.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/services/cbom_validation.js)):
+- **Security Headers & CORS** ([`security.js`](backend/src/middleware/security.js)): Helmet enabled; CORS restricted to explicit origin list (wildcard `*` disallowed).
+- **Authentication** ([`auth.js`](backend/src/middleware/auth.js)): `crypto.timingSafeEqual` constant-time API key verification for write routes.
+- **Schema Validation** ([`cbom_validation.js`](backend/src/services/cbom_validation.js)):
   - Validates `bomFormat === 'CycloneDX'` and `specVersion === '1.6'`.
   - Prototype pollution protection (rejects `__proto__`, `constructor.prototype`).
   - Strict size bounds (default 10MB payload limit).
@@ -98,10 +98,10 @@ graph TD
 ### 3.3 Deterministic Risk Engine (`backend/src/risk_engine/`)
 
 - **Rule Loader** (`rules_loader.js`): Caches and schema-validates rules at startup:
-  - [`rules/algorithm_risk.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/algorithm_risk.json): Classical and quantum vulnerability profiles.
-  - [`rules/mosca_config.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/mosca_config.json): Asset shelf life ($X$), migration time ($Y$), quantum collapse threshold ($Z$).
-  - [`rules/policy_profiles.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/policy_profiles.json): 5 profiles (`nist_cnsa_2_0`, `regulated_bfsi`, `critical_infrastructure`, `internal_enterprise`, `permissive_legacy`).
-  - [`rules/pqc_recommendations.json`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/rules/pqc_recommendations.json): Context-aware migration steps (e.g. FIPS 203 ML-KEM, FIPS 204 ML-DSA, hybrid X25519+ML-KEM-768).
+  - [`rules/algorithm_risk.json`](rules/algorithm_risk.json): Classical and quantum vulnerability profiles.
+  - [`rules/mosca_config.json`](rules/mosca_config.json): Asset shelf life ($X$), migration time ($Y$), quantum collapse threshold ($Z$).
+  - [`rules/policy_profiles.json`](rules/policy_profiles.json): 5 profiles (`nist_cnsa_2_0`, `regulated_bfsi`, `critical_infrastructure`, `internal_enterprise`, `permissive_legacy`).
+  - [`rules/pqc_recommendations.json`](rules/pqc_recommendations.json): Context-aware migration steps (e.g. FIPS 203 ML-KEM, FIPS 204 ML-DSA, hybrid X25519+ML-KEM-768).
 - **Mosca Calculator** (`mosca_calculator.js`): Computes $(X + Y) > Z$, calculating the exact quantum vulnerability gap.
 
 ---
@@ -109,7 +109,7 @@ graph TD
 ### 3.4 Persistence Tier (`backend/src/db/`)
 
 - **Database**: PostgreSQL 16 (via Knex query builder).
-- **Migration**: Schema migration [`20260905000000_create_ecdat_schema.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/db/migrations/20260905000000_create_ecdat_schema.js) creating tables:
+- **Migration**: Schema migration [`20260905000000_create_ecdat_schema.js`](backend/src/db/migrations/20260905000000_create_ecdat_schema.js) creating tables:
   - `scans`
   - `cboms`
   - `assets`

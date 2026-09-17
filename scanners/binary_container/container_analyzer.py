@@ -27,7 +27,7 @@ import re
 import tarfile
 import tempfile
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Dict, Any, Optional, Set, Tuple
 
 from cyclonedx.model.bom import Bom
 from cyclonedx.model.component import Component, ComponentType

@@ -5,7 +5,7 @@ Extracts metadata only without executing the binary.
 
 import hashlib
 import struct
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from scanners.binary_container.parsers.base import (
     BinaryFormat,

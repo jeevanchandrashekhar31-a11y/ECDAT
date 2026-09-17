@@ -1,5 +1,26 @@
 import re
 
+# Regex patterns for static parser
+MD5_RE = re.compile(r"\b(md5|MD5|EVP_md5)\b")
+SHA1_RE = re.compile(r"\b(sha1|SHA1|EVP_sha1)\b")
+RSA_KEYGEN_RE = re.compile(r"\b(?:RSA_generate_key(?:_ex)?|generate_private_key|RSA\.generate|KeyPairGenerator\.getInstance\(['\"]RSA['\"]\))\b[^\n]*?(\d{3,4})?", re.IGNORECASE)
+ECDH_KEYGEN_RE = re.compile(r"\b(ECDH|ecdh|ECDHE|ec_key_new_by_curve_name)\b", re.IGNORECASE)
+PEM_PRIVATE_KEY_RE = re.compile(r"-----BEGIN (.*?)(?:KEY|CERTIFICATE|PARAMETERS)-----")
+
+def strip_comments(text: str) -> str:
+    """Safely strip single-line and multi-line comments for static regex scanning."""
+    pattern = re.compile(
+        r'//.*?$|/\*.*?\*/|#.*?$|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+        re.DOTALL | re.MULTILINE
+    )
+    def replacer(match):
+        s = match.group(0)
+        if s.startswith('/') or s.startswith('#'):
+            return " "
+        return s
+    return pattern.sub(replacer, text)
+
+
 RULES = [
     {
         "id": "R_MD5",

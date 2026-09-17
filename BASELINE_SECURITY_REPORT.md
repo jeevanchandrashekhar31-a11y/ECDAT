@@ -47,13 +47,13 @@ A scan across all 188 tracked git assets evaluated against high-entropy literal 
 Running `python -m ruff check --select S scanners` yielded **2 findings** in production code:
 
 1. **S607 (Low)**: Starting a process with a partial executable path
-   - **Location**: [`scanners/binary_container/syft_runner.py:9`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/binary_container/syft_runner.py#L9)
+   - **Location**: [`scanners/binary_container/syft_runner.py:9`](scanners/binary_container/syft_runner.py#L9)
    - **Code**: `subprocess.run(["syft", "version"], ...)`
    - **Risk**: Relies on system `PATH` resolution rather than an absolute binary path.
    - **Remediation**: Use `shutil.which("syft")` to resolve the full executable path before spawning.
 
 2. **S603 (Medium)**: Subprocess call checking for execution of untrusted input
-   - **Location**: [`scanners/binary_container/syft_runner.py:32`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/scanners/binary_container/syft_runner.py#L32)
+   - **Location**: [`scanners/binary_container/syft_runner.py:32`](scanners/binary_container/syft_runner.py#L32)
    - **Code**: `result = subprocess.run(cmd, shell=False, capture_output=True, ...)`
    - **Risk**: If `target` is not rigorously sanitized, arguments could be manipulated.
    - **Current Mitigation**: `target_validation.validate_target()` applies regex constraints before reaching `run_syft_scan()`.
@@ -99,7 +99,7 @@ Running ECDAT's own static CBOM and SARIF scanner on the repository source tree:
   - Informational: 31
 - **Quantum Risk Count**: 0 assets at quantum threat horizon.
 - **Root Cause Analysis**:
-  - The Critical findings are triggered by algorithm names (e.g. `"DES"`, `"MD5"`, `"SHA-1"`) appearing as string literals inside the risk engine's own rule matchers and HTML report generators ([`html_reporter.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/risk_engine/html_reporter.js), [`recommendations.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/risk_engine/recommendations.js), [`classifier.js`](file:///c:/Users/Jeevan%20c/Documents/ECDAT/backend/src/risk_engine/classifier.js)).
+  - The Critical findings are triggered by algorithm names (e.g. `"DES"`, `"MD5"`, `"SHA-1"`) appearing as string literals inside the risk engine's own rule matchers and HTML report generators ([`html_reporter.js`](backend/src/risk_engine/html_reporter.js), [`recommendations.js`](backend/src/risk_engine/recommendations.js), [`classifier.js`](backend/src/risk_engine/classifier.js)).
   - The static scanner's AST handlers correctly identify that the application code itself does not use weak crypto for its own operations, but regex fallbacks flag string literals in rulesets.
 
 ---

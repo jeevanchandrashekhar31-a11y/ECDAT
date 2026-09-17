@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-16T21:14:47.047615+00:00",
+  "timestamp": "2026-09-17T01:10:57.452181+00:00",
   "overall_status": "PASS",
   "total_gates": 7,
   "passed_gates": 7,
@@ -38,7 +38,7 @@
     {
       "gate_name": "Silent Scanner Crash Detection",
       "status": "PASS",
-      "message": "Scanner deterministically caught error with non-zero exit code (2); never conflates crashes with 0.",
+      "message": "Scanner deterministically caught error with non-zero exit code (2); zero shell=True list invocations detected.",
       "details": {}
     },
     {

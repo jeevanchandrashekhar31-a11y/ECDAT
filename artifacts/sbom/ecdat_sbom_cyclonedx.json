@@ -2,10 +2,10 @@
   "$schema": "https://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:eed57878-eed9-4663-8d7f-8d17a4383d37",
+  "serialNumber": "urn:uuid:a4ae4a40-42d3-48dd-a623-a6064f24f128",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-09-16T21:14:29.985577+00:00",
+    "timestamp": "2026-09-17T01:11:42.708743+00:00",
     "tools": {
       "components": [
         {
@@ -199,12 +199,12 @@
       ]
     },
     {
-      "bom-ref": "pkg:pypi/cryptography@46.0.7#python",
+      "bom-ref": "pkg:pypi/cryptography@50.0.1#python",
       "type": "library",
       "name": "cryptography",
-      "version": "46.0.7",
+      "version": "50.0.1",
       "scope": "required",
-      "purl": "pkg:pypi/cryptography@46.0.7",
+      "purl": "pkg:pypi/cryptography@50.0.1",
       "properties": [
         {
           "name": "ecdat:ecosystem",
@@ -759,12 +759,12 @@
       ]
     },
     {
-      "bom-ref": "pkg:pypi/requests@2.32.5#python",
+      "bom-ref": "pkg:pypi/requests@2.34.2#python",
       "type": "library",
       "name": "requests",
-      "version": "2.32.5",
+      "version": "2.34.2",
       "scope": "required",
-      "purl": "pkg:pypi/requests@2.32.5",
+      "purl": "pkg:pypi/requests@2.34.2",
       "properties": [
         {
           "name": "ecdat:ecosystem",
@@ -1536,12 +1536,12 @@
       ]
     },
     {
-      "bom-ref": "pkg:pypi/tomli@1.0.0#python",
+      "bom-ref": "pkg:pypi/tomli@2.4.1#python",
       "type": "library",
       "name": "tomli",
-      "version": "1.0.0",
+      "version": "2.4.1",
       "scope": "required",
-      "purl": "pkg:pypi/tomli@1.0.0",
+      "purl": "pkg:pypi/tomli@2.4.1",
       "properties": [
         {
           "name": "ecdat:ecosystem",
@@ -1555,11 +1555,15 @@
       "licenses": [
         {
           "license": {
-            "name": "NOASSERTION"
+            "id": "MIT"
           }
         }
       ],
       "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/hukkin/tomli"
+        },
         {
           "type": "package-manager",
           "url": "https://pypi.org/project/tomli/"
@@ -1777,12 +1781,12 @@
       ]
     },
     {
-      "bom-ref": "pkg:pypi/idna@3.11#python",
+      "bom-ref": "pkg:pypi/idna@3.19#python",
       "type": "library",
       "name": "idna",
-      "version": "3.11",
+      "version": "3.19",
       "scope": "required",
-      "purl": "pkg:pypi/idna@3.11",
+      "purl": "pkg:pypi/idna@3.19",
       "properties": [
         {
           "name": "ecdat:ecosystem",
@@ -1803,7 +1807,7 @@
       "externalReferences": [
         {
           "type": "vcs",
-          "url": "https://github.com/kjd/idna/blob/master/HISTORY.rst"
+          "url": "https://github.com/kjd/idna/blob/master/HISTORY.md"
         },
         {
           "type": "package-manager",
@@ -1812,12 +1816,12 @@
       ]
     },
     {
-      "bom-ref": "pkg:pypi/urllib3@2.5.0#python",
+      "bom-ref": "pkg:pypi/urllib3@2.8.0#python",
       "type": "library",
       "name": "urllib3",
-      "version": "2.5.0",
+      "version": "2.8.0",
       "scope": "required",
-      "purl": "pkg:pypi/urllib3@2.5.0",
+      "purl": "pkg:pypi/urllib3@2.8.0",
       "properties": [
         {
           "name": "ecdat:ecosystem",
@@ -28529,7 +28533,7 @@
         "pkg:pypi/cyclonedx-python-lib@11.12.0#python",
         "pkg:pypi/pydantic@2.13.5#python",
         "pkg:pypi/jsonschema@4.26.0#python",
-        "pkg:pypi/cryptography@46.0.7#python",
+        "pkg:pypi/cryptography@50.0.1#python",
         "pkg:pypi/sslyze@6.3.1#python",
         "pkg:pypi/pytest@9.1.1#python",
         "pkg:pypi/pytest-cov@7.1.0#python",
@@ -28545,7 +28549,7 @@
         "pkg:pypi/tree-sitter-c-sharp@0.23.5#python",
         "pkg:pypi/tree-sitter-rust@0.24.2#python",
         "pkg:pypi/groq@1.7.0#python",
-        "pkg:pypi/requests@2.32.5#python"
+        "pkg:pypi/requests@2.34.2#python"
       ]
     },
     {
@@ -28622,7 +28626,7 @@
       ]
     },
     {
-      "ref": "pkg:pypi/cryptography@46.0.7#python",
+      "ref": "pkg:pypi/cryptography@50.0.1#python",
       "dependsOn": [
         "pkg:pypi/cffi@2.1.1#python",
         "pkg:pypi/typing-extensions@4.15.0#python"
@@ -28631,7 +28635,7 @@
     {
       "ref": "pkg:pypi/sslyze@6.3.1#python",
       "dependsOn": [
-        "pkg:pypi/cryptography@46.0.7#python",
+        "pkg:pypi/cryptography@50.0.1#python",
         "pkg:pypi/nassl@5.4.0#python",
         "pkg:pypi/pydantic@2.13.5#python",
         "pkg:pypi/tls-parser@2.0.2#python"
@@ -28646,7 +28650,7 @@
         "pkg:pypi/packaging@25.0#python",
         "pkg:pypi/pluggy@1.6.0#python",
         "pkg:pypi/pygments@2.21.0#python",
-        "pkg:pypi/tomli@1.0.0#python"
+        "pkg:pypi/tomli@2.4.1#python"
       ]
     },
     {
@@ -28669,12 +28673,12 @@
       ]
     },
     {
-      "ref": "pkg:pypi/requests@2.32.5#python",
+      "ref": "pkg:pypi/requests@2.34.2#python",
       "dependsOn": [
         "pkg:pypi/certifi@2025.11.12#python",
         "pkg:pypi/charset-normalizer@3.4.4#python",
-        "pkg:pypi/idna@3.11#python",
-        "pkg:pypi/urllib3@2.5.0#python"
+        "pkg:pypi/idna@3.19#python",
+        "pkg:pypi/urllib3@2.8.0#python"
       ]
     },
     {
@@ -28719,7 +28723,7 @@
       "ref": "pkg:pypi/anyio@4.11.0#python",
       "dependsOn": [
         "pkg:pypi/exceptiongroup@1.0.0#python",
-        "pkg:pypi/idna@3.11#python",
+        "pkg:pypi/idna@3.19#python",
         "pkg:pypi/sniffio@1.3.1#python",
         "pkg:pypi/typing-extensions@4.15.0#python"
       ]
@@ -28730,7 +28734,7 @@
         "pkg:pypi/anyio@4.11.0#python",
         "pkg:pypi/certifi@2025.11.12#python",
         "pkg:pypi/httpcore@1.0.9#python",
-        "pkg:pypi/idna@3.11#python"
+        "pkg:pypi/idna@3.19#python"
       ]
     },
     {
