@@ -26,6 +26,11 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
     return false;
   }
 
+  const hasScansTable = await db.schema.hasTable("scans").catch(() => false);
+  if (!hasScansTable) {
+    return false;
+  }
+
   await db.transaction(async (trx) => {
     // 1. Delete prior record if re-running scan with same ID (prevents duplicates)
     await trx("scans").where({ id: scanRecord.id }).del();
@@ -491,6 +496,8 @@ async function clearScans() {
   inMemoryScansStore.clear();
   const connected = await isDbConnected();
   if (connected) {
+    const hasScansTable = await db.schema.hasTable("scans").catch(() => false);
+    if (!hasScansTable) return;
     try {
       await db("risk_assessments").del().catch(() => {});
       await db("cboms").del().catch(() => {});

@@ -20,3 +20,4 @@ artifacts/*.txt
 artifacts/*.html
 network_cbom.json
 binary_cbom.json
+artifacts/ci/

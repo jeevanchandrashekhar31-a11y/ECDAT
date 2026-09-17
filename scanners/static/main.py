@@ -32,7 +32,7 @@ def main():
     )
     parser.add_argument(
         "--exclude-dir",
-        default=".git,node_modules,vendor,dist,build,.venv",
+        default=".git,node_modules,vendor,dist,build,.venv,fixtures,artifacts,examples,coverage",
         help="Comma-separated list of directories to exclude",
     )
     parser.add_argument("--max-file-size-mb", type=int, default=5, help="Maximum file size to scan in MB")

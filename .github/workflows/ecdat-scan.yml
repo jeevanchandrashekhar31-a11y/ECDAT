@@ -60,10 +60,15 @@ jobs:
           npm install --prefix backend --no-audit --no-fund
           npm install --prefix frontend --no-audit --no-fund
 
+      - name: Prepare database schema
+        run: |
+          npm run prepare-db --prefix backend
+
       - name: Generate static CBOM and SARIF
         run: |
           mkdir -p artifacts/ci
           python -m scanners.static.main . \
+            --exclude-dir .git,node_modules,vendor,dist,build,.venv,fixtures,artifacts,examples,coverage \
             --output artifacts/ci/static_cbom.json \
             --output-sarif artifacts/ci/static_results.sarif \
             --policy-profile regulated_bfsi \
