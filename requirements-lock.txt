@@ -25,7 +25,7 @@ tree-sitter-typescript==0.23.2
 
 # Transitive Dependencies
 annotated-types==0.7.0
-anyio==4.11.0
+anyio==4.15.1
 attrs==26.1.0
 boolean.py==5.0
 certifi==2025.11.12
