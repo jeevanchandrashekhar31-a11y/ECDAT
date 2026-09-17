@@ -2,7 +2,7 @@
 # Ecosystem: Python 3.12+
 
 # Direct Dependencies
-cryptography==46.0.7
+cryptography==50.0.1
 cyclonedx-python-lib==11.12.0
 groq==1.7.0
 jsonschema==4.26.0
