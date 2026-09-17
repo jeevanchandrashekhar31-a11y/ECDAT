@@ -57,4 +57,4 @@ sortedcontainers==2.4.0
 tls-parser==2.0.2
 typing-extensions==4.15.0
 typing-inspection==0.4.2
-urllib3==2.5.0
+urllib3==2.7.0
