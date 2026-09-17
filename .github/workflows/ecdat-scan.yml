@@ -15,10 +15,25 @@ jobs:
   scan-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ecdat
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       # Do not enable optional LLM verification in CI.
       ECDAT_LLM_VERIFY: "false"
       NODE_ENV: test
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/ecdat"
     steps:
       - uses: actions/checkout@v4
 
@@ -72,7 +87,7 @@ jobs:
 
       - name: Enforce no shell execution in scanners
         run: |
-          if rg -n "shell=True" scanners; then
+          if grep -rn "shell=True" scanners/; then
             echo "shell=True is forbidden in scanner code."
             exit 1
           fi
@@ -80,6 +95,7 @@ jobs:
       - name: Run backend tests
         run: |
           npm run lint --prefix backend
+          npm run prepare-db --prefix backend
           npm run test:coverage --prefix backend
 
       - name: Test and build frontend
