@@ -65,7 +65,9 @@ test("CBOM Upload API - Ingests CBOM via POST /api/v1/cboms with JSON body and m
     assert.strictEqual(body.metrics.total_findings, 1);
 
     // Verify GET /api/v1/scans/:scanId
-    const scanRes = await fetch(`${baseUrl}/api/v1/scans/${body.scan_id}`);
+    const scanRes = await fetch(`${baseUrl}/api/v1/scans/${body.scan_id}`, {
+      headers: { "X-API-Key": config.ECDAT_API_KEY },
+    });
     assert.strictEqual(scanRes.status, 200);
     const scanData = await scanRes.json();
     assert.strictEqual(scanData.id, body.scan_id);
@@ -76,6 +78,9 @@ test("CBOM Upload API - Ingests CBOM via POST /api/v1/cboms with JSON body and m
     // Verify GET /api/v1/scans/:scanId/errors
     const errRes = await fetch(
       `${baseUrl}/api/v1/scans/${body.scan_id}/errors`,
+      {
+        headers: { "X-API-Key": config.ECDAT_API_KEY },
+      },
     );
     assert.strictEqual(errRes.status, 200);
     const errData = await errRes.json();
@@ -239,7 +244,9 @@ test("CBOM Upload API - Detects and aggressively redacts private keys so they ar
     const scanId = body.scan_id;
 
     // 1. Verify scan errors records the redaction notice
-    const errRes = await fetch(`${baseUrl}/api/v1/scans/${scanId}/errors`);
+    const errRes = await fetch(`${baseUrl}/api/v1/scans/${scanId}/errors`, {
+      headers: { "X-API-Key": config.ECDAT_API_KEY },
+    });
     assert.strictEqual(errRes.status, 200);
     const errData = await errRes.json();
     assert.strictEqual(errData.total_errors, 1);
@@ -249,7 +256,9 @@ test("CBOM Upload API - Detects and aggressively redacts private keys so they ar
     );
 
     // 2. Fetch annotated CBOM and verify the private key NEVER appears
-    const cbomRes = await fetch(`${baseUrl}/api/v1/cboms/${scanId}`);
+    const cbomRes = await fetch(`${baseUrl}/api/v1/cboms/${scanId}`, {
+      headers: { "X-API-Key": config.ECDAT_API_KEY },
+    });
     assert.strictEqual(cbomRes.status, 200);
     const cbomText = await cbomRes.text();
     assert.strictEqual(

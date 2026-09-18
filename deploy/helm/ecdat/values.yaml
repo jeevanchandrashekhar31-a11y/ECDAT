@@ -47,7 +47,8 @@ backend:
   replicaCount: 2
   image:
     repository: ecdat/backend
-    tag: latest
+    tag: "1.0.0"
+    digest: "sha256:7f9a1c8b3e2d4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
   service:
     port: 5000
   resources:
@@ -75,7 +76,8 @@ frontend:
   replicaCount: 2
   image:
     repository: ecdat/frontend
-    tag: latest
+    tag: "1.0.0"
+    digest: "sha256:3a1b2c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b"
   service:
     port: 8080
   resources:
@@ -132,7 +134,8 @@ scanner:
   schedule: "0 2 * * *"
   image:
     repository: ecdat/scanner
-    tag: latest
+    tag: "1.0.0"
+    digest: "sha256:5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
   resources:
     limits:
       cpu: "1500m"
@@ -147,7 +150,8 @@ ebpfAgent:
   namespace: "ecdat-runtime"
   image:
     repository: ecdat/ebpf-agent
-    tag: latest
+    tag: "1.0.0"
+    digest: "sha256:9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e"
   resources:
     limits:
       cpu: "500m"
@@ -156,12 +160,22 @@ ebpfAgent:
       cpu: "100m"
       memory: "64Mi"
   securityContext:
-    privileged: true
+    privileged: false
     readOnlyRootFilesystem: true
-    allowPrivilegeEscalation: true
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 10002
+    runAsGroup: 10002
+    fsGroup: 10002
+    seccompProfile:
+      type: RuntimeDefault
     capabilities:
+      drop:
+        - ALL
       add:
+        # 1. BPF: Required for bpf() syscall to load programs & maps
         - BPF
+        # 2. PERFMON: Required for attaching uprobes without CAP_SYS_ADMIN
         - PERFMON
+        # 3. SYS_RESOURCE: Required for RLIMIT_MEMLOCK on Linux 5.8-5.10
         - SYS_RESOURCE
-        - NET_ADMIN

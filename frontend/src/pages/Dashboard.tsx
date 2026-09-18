@@ -258,7 +258,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
             <span className="text-[11px] font-mono uppercase tracking-widest text-cyan-400 font-semibold">
-              Enterprise Dashboard • Phase 17.1
+              Enterprise Cryptographic Intelligence
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">

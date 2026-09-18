@@ -123,16 +123,22 @@ export const AssetDetail: React.FC = () => {
           <ArrowLeft className="w-4 h-4" />
           Back to Asset Inventory
         </Link>
-        <div className="p-8 rounded-xl bg-red-950/20 border border-red-900/40 text-center space-y-4">
-          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto" />
-          <h2 className="text-xl font-semibold text-white">Asset Not Found or Telemetry Query Failed</h2>
+        <div className="p-8 rounded-xl bg-slate-900/60 border border-slate-800 text-center space-y-4">
+          <AlertTriangle className="w-12 h-12 text-cyan-400 mx-auto" />
+          <h2 className="text-xl font-semibold text-white">
+            {error && error.includes('No scan data available')
+              ? 'No Scan Data Available'
+              : 'Asset Not Found or Telemetry Query Failed'}
+          </h2>
           <p className="text-sm text-slate-400 max-w-md mx-auto">
-            {error || 'Unable to retrieve cryptographic telemetry for this asset.'}
+            {error && error.includes('No scan data available')
+              ? 'There are currently no completed cryptographic scans. Please upload or scan a repository archive to inspect cryptographic assets and telemetry.'
+              : error || 'Unable to retrieve cryptographic telemetry for this asset.'}
           </p>
           <div className="pt-2">
             <Link
               to="/assets"
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded-lg text-sm transition-colors inline-block"
             >
               Return to Cryptographic Inventory
             </Link>

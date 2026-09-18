@@ -16,6 +16,7 @@ const {
   defaultTenantExportEngine,
   defaultTenantAuditLogger,
 } = require("../tenancy");
+const { requireObjectAuthorization, OBJECT_TYPES } = require("../security/object_authorization");
 
 /**
  * GET /api/v1/tenancy/me
@@ -31,13 +32,46 @@ router.get("/me", (req, res) => {
   });
 });
 
+const ALLOWED_TENANCY_COLLECTIONS = Object.freeze(
+  new Set(["assets", "findings", "scans", "certificates", "policies", "reports"])
+);
+
 /**
  * Database Layer APIs
  */
 router.post("/database/records", async (req, res) => {
   try {
     const context = req.tenantContext || TenantContext.fromRequest(req);
+    if (!context.tenantId) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "Authentication with tenant scope required to insert database records.",
+      });
+    }
+
     const { collection = "assets", data = {} } = req.body || {};
+    if (!ALLOWED_TENANCY_COLLECTIONS.has(String(collection).toLowerCase())) {
+      return res.status(400).json({
+        error: "InvalidCollection",
+        message: `Collection '${collection}' is not permitted. Allowed: ${Array.from(ALLOWED_TENANCY_COLLECTIONS).join(", ")}`,
+      });
+    }
+
+    const userRoles = (context.roles || []).map((r) => String(r).toLowerCase().replace(/[-_]/g, " "));
+    const canWrite =
+      context.isPlatformAdmin ||
+      userRoles.includes("platform administrator") ||
+      userRoles.includes("admin") ||
+      userRoles.includes("security administrator") ||
+      userRoles.includes("developer");
+
+    if (!canWrite) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Insufficient role permissions to insert tenant database records.",
+      });
+    }
+
     const created = await defaultTenantDb.insert(collection, data, context);
     return res.status(201).json(created);
   } catch (err) {
@@ -74,6 +108,13 @@ router.get("/database/records/:id", async (req, res) => {
     }
     return res.json(record);
   } catch (err) {
+    if (err.name === "TenantBoundaryViolation") {
+      return res.status(403).json({
+        error: err.name,
+        code: "HORIZONTAL_TENANT_VIOLATION",
+        message: err.message,
+      });
+    }
     return res.status(500).json({ error: err.message });
   }
 });
@@ -135,11 +176,23 @@ router.get("/cache/:key", (req, res) => {
  * Background Jobs Layer APIs
  */
 router.post("/jobs", (req, res) => {
-  const context = req.tenantContext || TenantContext.fromRequest(req);
-  const { taskName = "pqc_scan", payload = {} } = req.body || {};
+  try {
+    const context = req.tenantContext || TenantContext.fromRequest(req);
+    const { taskName = "pqc_scan", payload = {} } = req.body || {};
 
-  const job = defaultTenantJobQueue.enqueue(taskName, payload, context);
-  return res.status(201).json(job);
+    const job = defaultTenantJobQueue.enqueue(taskName, payload, context);
+    return res.status(201).json(job);
+  } catch (err) {
+    if (err.name === "QueueDepthExceededError" || err.code === "QUEUE_DEPTH_EXCEEDED") {
+      return res.status(429).json({
+        error: "TooManyRequests",
+        code: err.code || "QUEUE_DEPTH_EXCEEDED",
+        message: err.message,
+        details: err.details,
+      });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 router.get("/jobs", (req, res) => {
@@ -147,6 +200,40 @@ router.get("/jobs", (req, res) => {
   const jobs = defaultTenantJobQueue.getJobs(context);
   return res.json({ tenantId: context.tenantId, jobs });
 });
+
+/**
+ * GET /api/v1/tenancy/jobs/:jobId
+ * Retrieves a specific background job enforcing server-side state verification and tenant isolation.
+ */
+router.get(
+  "/jobs/:jobId",
+  requireObjectAuthorization(OBJECT_TYPES.JOB, { idParam: "jobId" }),
+  (req, res) => {
+    const job = req.resolvedObject;
+    return res.json({
+      jobId: job.id,
+      tenantId: job.tenantId,
+      status: job.status,
+    });
+  }
+);
+
+/**
+ * DELETE /api/v1/tenancy/jobs/:jobId
+ * Cancels/removes a job enforcing server-side state verification and tenant isolation.
+ */
+router.delete(
+  "/jobs/:jobId",
+  requireObjectAuthorization(OBJECT_TYPES.JOB, { idParam: "jobId" }),
+  (req, res) => {
+    const job = req.resolvedObject;
+    defaultTenantJobQueue.jobs.delete(job.id);
+    return res.json({
+      success: true,
+      message: `Job '${job.id}' cancelled successfully`,
+    });
+  }
+);
 
 /**
  * Queues Layer APIs
@@ -208,6 +295,86 @@ router.get("/audit", (req, res) => {
     totalEvents: events.length,
     events,
   });
+});
+
+/**
+ * POST /api/v1/tenancy/switch
+ * Changes or switches active tenant context (enforces cross-tenant authorization and emits TENANT_CHANGED audit event).
+ */
+router.post("/switch", async (req, res) => {
+  try {
+    const context = req.tenantContext || TenantContext.fromRequest(req);
+    const { targetTenantId, tenantId, reason } = req.body || {};
+    const newTenant = String(targetTenantId || tenantId || "").trim().toLowerCase();
+
+    if (!newTenant) {
+      return res.status(400).json({
+        error: "ValidationError",
+        message: "Missing 'targetTenantId' in request body",
+      });
+    }
+
+    const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
+
+    // Enforce authorization: only platform admin or current tenant member can switch
+    if (!context.isPlatformAdmin && context.tenantId !== newTenant) {
+      await defaultAuditService.logEvent({
+        category: AUDIT_CATEGORIES.PERMISSION_CHANGE,
+        action: AUDIT_ACTIONS.AUTHORIZATION_FAILURE,
+        actor: {
+          id: context.userId || "anonymous",
+          username: context.userId || "anonymous",
+          role: context.roles?.[0] || "viewer",
+          ipAddress: req.ip,
+        },
+        tenant: context.tenantId,
+        target: { type: "tenant", id: newTenant, name: newTenant },
+        requestId: req.id || req.headers["x-request-id"],
+        result: AUDIT_STATUSES.DENIED,
+        reason: `Cross-tenant switch to '${newTenant}' denied: insufficient privileges`,
+        sourceIp: req.ip,
+      });
+
+      return res.status(403).json({
+        error: "Forbidden",
+        code: "CROSS_TENANT_ACCESS_DENIED",
+        message: "Only platform administrators can switch between different tenants.",
+      });
+    }
+
+    const oldTenant = context.tenantId;
+
+    await defaultAuditService.logEvent({
+      category: AUDIT_CATEGORIES.PERMISSION_CHANGE,
+      action: AUDIT_ACTIONS.TENANT_CHANGED,
+      actor: {
+        id: context.userId || "system",
+        username: context.userId || "system",
+        role: context.roles?.[0] || "admin",
+        ipAddress: req.ip,
+      },
+      tenant: newTenant,
+      target: { type: "tenant", id: newTenant, name: newTenant },
+      requestId: req.id || req.headers["x-request-id"],
+      result: AUDIT_STATUSES.SUCCESS,
+      reason: reason || `Active tenant context switched from '${oldTenant}' to '${newTenant}'`,
+      sourceIp: req.ip,
+      details: {
+        previousTenantId: oldTenant,
+        newTenantId: newTenant,
+        userId: context.userId,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Switched active tenant from '${oldTenant}' to '${newTenant}'`,
+      previousTenantId: oldTenant,
+      currentTenantId: newTenant,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

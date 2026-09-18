@@ -23,12 +23,14 @@ describe("Phase 24.1 — Container Hardening (Backend)", () => {
   const backendDockerfile = path.join(REPO_ROOT, "backend/Dockerfile");
   const frontendDockerfile = path.join(REPO_ROOT, "frontend/Dockerfile");
   const scannerDockerfile = path.join(REPO_ROOT, "docker/scanner.Dockerfile");
+  const ebpfAgentDockerfile = path.join(REPO_ROOT, "docker/ebpf-agent.Dockerfile");
   const composeFile = path.join(REPO_ROOT, "docker-compose.yml");
   const seccompFile = path.join(REPO_ROOT, "docker/security/seccomp-profile.json");
   const apparmorFile = path.join(REPO_ROOT, "docker/security/apparmor-ecdat.profile");
+  const allDockerfiles = [backendDockerfile, frontendDockerfile, scannerDockerfile, ebpfAgentDockerfile];
 
   test("Dockerfiles: Enforces minimal base images with immutable sha256 digests", () => {
-    for (const dfPath of [backendDockerfile, frontendDockerfile, scannerDockerfile]) {
+    for (const dfPath of allDockerfiles) {
       const content = fs.readFileSync(dfPath, "utf-8");
       assert.match(content, /FROM\s+[a-zA-Z0-9_\-\.\/:]+@sha256:[a-f0-9]{64}/i, `Missing pinned sha256 digest in ${dfPath}`);
       assert.match(content, /(alpine|slim|distroless)/i, `Base image is not minimal in ${dfPath}`);
@@ -44,13 +46,40 @@ describe("Phase 24.1 — Container Hardening (Backend)", () => {
 
     const scanner = fs.readFileSync(scannerDockerfile, "utf-8");
     assert.match(scanner, /USER\s+ecdat\b/);
+
+    const ebpfAgent = fs.readFileSync(ebpfAgentDockerfile, "utf-8");
+    assert.match(ebpfAgent, /USER\s+ecdat-agent\b/);
   });
 
   test("Dockerfiles: Enforces healthcheck instruction", () => {
-    for (const dfPath of [backendDockerfile, frontendDockerfile, scannerDockerfile]) {
+    for (const dfPath of allDockerfiles) {
       const content = fs.readFileSync(dfPath, "utf-8");
       assert.match(content, /HEALTHCHECK\s+/);
     }
+  });
+
+  test("Dockerfiles: Enforces zero compiler toolchain in runtime images", () => {
+    for (const dfPath of allDockerfiles) {
+      const content = fs.readFileSync(dfPath, "utf-8");
+      // Check that runtime stage does not execute package manager compiler installations
+      assert.ok(!content.match(/apt-get install.*(gcc|g\+\+|clang|build-essential)/i), `Compiler installed in ${dfPath}`);
+      assert.ok(!content.match(/apk add.*(gcc|g\+\+|clang|build-base)/i), `Compiler installed in ${dfPath}`);
+    }
+  });
+
+  test("Dockerfiles: Enforces zero secrets or private keys in build context (.dockerignore)", () => {
+    for (const dfPath of allDockerfiles) {
+      const content = fs.readFileSync(dfPath, "utf-8");
+      assert.ok(!content.match(/COPY\s+.*\.env\b/i), `Copying .env file in ${dfPath}`);
+      assert.ok(!content.match(/COPY\s+.*\.pem\b/i), `Copying .pem file in ${dfPath}`);
+      assert.ok(!content.match(/COPY\s+.*\.key\b/i), `Copying .key file in ${dfPath}`);
+    }
+
+    const dockerignore = fs.readFileSync(path.join(REPO_ROOT, ".dockerignore"), "utf-8");
+    assert.ok(dockerignore.includes(".env"), ".dockerignore must exclude .env");
+    assert.ok(dockerignore.includes("*.pem"), ".dockerignore must exclude *.pem");
+    assert.ok(dockerignore.includes("*.key"), ".dockerignore must exclude *.key");
+    assert.ok(dockerignore.includes(".keys"), ".dockerignore must exclude .keys");
   });
 
   test("docker-compose: read_only: true with tmpfs mounts", () => {

@@ -1,0 +1,161 @@
+{
+  "benchmark_run_metadata": {
+    "timestamp": "2026-09-18T17:06:57.965080+00:00",
+    "machine_specification": {
+      "processor_model": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+      "architecture": "AMD64",
+      "logical_cores": 12,
+      "total_ram_gb": 15.69
+    },
+    "os": {
+      "system": "Windows",
+      "release": "11",
+      "version": "10.0.26200",
+      "platform_string": "Windows-11-10.0.26200-SP0"
+    },
+    "runtime_versions": {
+      "python": "3.14.3",
+      "python_full": "3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]",
+      "node": "v24.11.1"
+    },
+    "dependency_versions": {
+      "cryptography": "50.0.1",
+      "cyclonedx-python-lib": "11.12.0",
+      "defusedxml": "0.7.1",
+      "pydantic": "2.13.5",
+      "jsonschema": "4.25.1",
+      "pytest": "9.1.1",
+      "ruff": "0.16.6",
+      "bandit": "1.9.4",
+      "semgrep": "1.177.0"
+    },
+    "execution_policy": {
+      "repetitions": 5,
+      "warmup_policy": "1 unmeasured execution to prime caches and memory pools"
+    }
+  },
+  "benchmarks": [
+    {
+      "benchmark_id": "BENCH-01-STATIC-SCANNER",
+      "benchmark_name": "Static Cryptographic Scanner Throughput & Latency",
+      "benchmark_script": "benchmarks/run_benchmarks.py::benchmark_static_scanner",
+      "input_dataset": {
+        "name": "ECDAT Standard Benchmark Source Corpus",
+        "path": "benchmarks\\datasets\\source_corpus",
+        "total_files": 150,
+        "total_loc": 19520,
+        "size_bytes": 572840,
+        "languages": [
+          "Python",
+          "C",
+          "JavaScript",
+          "Go"
+        ]
+      },
+      "number_of_repetitions": 5,
+      "warmup_policy": "1 unmeasured execution to prime OS disk cache and AST structures",
+      "raw_results": [
+        1.80614,
+        1.82033,
+        1.82833,
+        1.82803,
+        1.85029
+      ],
+      "median": 1.82803,
+      "p95": 1.845898,
+      "p99": 1.849412,
+      "throughput": "10,678.2 LOC/s (82.1 files/s)",
+      "throughput_loc_per_sec": 10678.2,
+      "throughput_files_per_sec": 82.1,
+      "failure_rate": "0.0%",
+      "failure_count": 0
+    },
+    {
+      "benchmark_id": "BENCH-02-CBOM-ENGINE",
+      "benchmark_name": "CycloneDX 1.6 CBOM Ingestion & Normalization Engine",
+      "benchmark_script": "benchmarks/run_benchmarks.py::benchmark_cbom_engine",
+      "input_dataset": {
+        "name": "CycloneDX 1.6 Standard Cryptographic Benchmark CBOM",
+        "path": "benchmarks\\datasets\\cbom_benchmark_1000.json",
+        "total_components": 1000,
+        "size_bytes": 1344861
+      },
+      "number_of_repetitions": 5,
+      "warmup_policy": "1 unmeasured execution to prime CycloneDX model registries",
+      "raw_results": [
+        2.01539,
+        1.90253,
+        1.96721,
+        1.96331,
+        1.89731
+      ],
+      "median": 1.96331,
+      "p95": 2.005754,
+      "p99": 2.013463,
+      "throughput": "509.3 components/s",
+      "throughput_components_per_sec": 509.3,
+      "failure_rate": "0.0%",
+      "failure_count": 0
+    },
+    {
+      "benchmark_id": "BENCH-03-INCREMENTAL-CACHE",
+      "benchmark_name": "Incremental Caching & 5-Dimensional Change Detection",
+      "benchmark_script": "benchmarks/run_benchmarks.py::benchmark_incremental_cache",
+      "input_dataset": {
+        "name": "ECDAT Standard Benchmark Source Corpus",
+        "path": "benchmarks\\datasets\\source_corpus",
+        "total_files": 150
+      },
+      "number_of_repetitions": 5,
+      "warmup_policy": "Self-priming: First scan establishes clean cold cache baseline",
+      "raw_results": [
+        0.18759,
+        0.18521,
+        0.18697,
+        0.21683,
+        0.23105
+      ],
+      "cold_results": [
+        2.28453,
+        2.27759,
+        2.33692,
+        2.30264,
+        2.29008
+      ],
+      "median": 0.18759,
+      "median_cold": 2.29008,
+      "speedup_factor": 12.21,
+      "p95": 0.228206,
+      "p99": 0.230481,
+      "throughput": "12.2x latency reduction (187.6ms warm)",
+      "failure_rate": "0.0%",
+      "failure_count": 0
+    },
+    {
+      "benchmark_id": "BENCH-04-SECRET-SCANNER",
+      "benchmark_name": "Secret Safe Entropy & Pattern Scanning Engine",
+      "benchmark_script": "benchmarks/run_benchmarks.py::benchmark_secret_scanner",
+      "input_dataset": {
+        "name": "Secret Scanning Benchmark Corpus",
+        "path": "benchmarks\\datasets\\secret_scan_corpus",
+        "total_files": 100
+      },
+      "number_of_repetitions": 5,
+      "warmup_policy": "1 unmeasured execution to compile high-entropy regex engines",
+      "raw_results": [
+        0.02734,
+        0.02716,
+        0.02735,
+        0.02838,
+        0.02829
+      ],
+      "median": 0.02735,
+      "p95": 0.028362,
+      "p99": 0.028376,
+      "throughput": "3,656.3 files/s",
+      "throughput_files_per_sec": 3656.3,
+      "failure_rate": "0.0%",
+      "failure_count": 0
+    }
+  ]
+}

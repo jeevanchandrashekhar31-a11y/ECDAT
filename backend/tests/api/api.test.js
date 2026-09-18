@@ -37,17 +37,23 @@ test("API - GET /health returns 200 with service status and version", async () =
   });
 });
 
-test("Scanner Pipeline - /cbom/risk, /cbom/merged, and /cbom/quantum-risk return 404 when no scan has run", async () => {
+test("Scanner Pipeline - /cbom/risk, /cbom/merged, and /cbom/quantum-risk require authentication and return 404 when no scan has run", async () => {
   await withServer(async (baseUrl) => {
+    // 0. Verify unauthenticated anonymous requests are rejected with 401
+    const anonRes = await fetch(`${baseUrl}/cbom/risk`);
+    assert.strictEqual(anonRes.status, 401);
+
+    const authHeaders = { "X-API-Key": config.ECDAT_API_KEY };
+
     // 1. GET /cbom/risk
-    const riskRes = await fetch(`${baseUrl}/cbom/risk`);
+    const riskRes = await fetch(`${baseUrl}/cbom/risk`, { headers: authHeaders });
     assert.strictEqual(riskRes.status, 404);
     const riskData = await riskRes.json();
     assert.strictEqual(riskData.error, "NotFound");
     assert.ok(riskData.message.toLowerCase().includes("no scan has been run yet"));
 
     // 2. GET /cbom/merged
-    const mergedRes = await fetch(`${baseUrl}/cbom/merged`);
+    const mergedRes = await fetch(`${baseUrl}/cbom/merged`, { headers: authHeaders });
     assert.strictEqual(mergedRes.status, 404);
     const mergedData = await mergedRes.json();
     assert.strictEqual(mergedData.error, "NotFound");
@@ -56,7 +62,7 @@ test("Scanner Pipeline - /cbom/risk, /cbom/merged, and /cbom/quantum-risk return
     // 3. POST /cbom/quantum-risk without prior scan or payload
     const qrRes = await fetch(`${baseUrl}/cbom/quantum-risk`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders },
       body: JSON.stringify({}),
     });
     assert.strictEqual(qrRes.status, 404);
@@ -152,9 +158,12 @@ test("API - CBOM Ingestion & Retrieval Pipeline", async () => {
     assert.strictEqual(ingestData.metrics.total_findings, 2);
 
     const scanId = ingestData.scan_id;
+    const authHeaders = { "X-API-Key": config.ECDAT_API_KEY };
 
     // 2. Fetch Annotated CBOM
-    const cbomRes = await fetch(`${baseUrl}/api/v1/cbom/${scanId}`);
+    const cbomRes = await fetch(`${baseUrl}/api/v1/cbom/${scanId}`, {
+      headers: authHeaders,
+    });
     assert.strictEqual(cbomRes.status, 200);
     const annotated = await cbomRes.json();
     assert.strictEqual(annotated.bomFormat, "CycloneDX");
@@ -168,6 +177,7 @@ test("API - CBOM Ingestion & Retrieval Pipeline", async () => {
     // 3. Fetch Findings with Filter
     const findingsRes = await fetch(
       `${baseUrl}/api/v1/findings?scanId=${scanId}&severity=critical`,
+      { headers: authHeaders },
     );
     assert.strictEqual(findingsRes.status, 200);
     const findingsData = await findingsRes.json();
@@ -175,7 +185,9 @@ test("API - CBOM Ingestion & Retrieval Pipeline", async () => {
     assert.strictEqual(findingsData.findings[0].algorithm, "TLS 1.0");
 
     // 4. Fetch Assets
-    const assetsRes = await fetch(`${baseUrl}/api/v1/assets?scanId=${scanId}`);
+    const assetsRes = await fetch(`${baseUrl}/api/v1/assets?scanId=${scanId}`, {
+      headers: authHeaders,
+    });
     assert.strictEqual(assetsRes.status, 200);
     const assetsData = await assetsRes.json();
     assert.strictEqual(assetsData.total, 2);
@@ -183,6 +195,7 @@ test("API - CBOM Ingestion & Retrieval Pipeline", async () => {
     // 5. Fetch Dashboard Summary
     const dashRes = await fetch(
       `${baseUrl}/api/v1/dashboard/summary?scanId=${scanId}`,
+      { headers: authHeaders },
     );
     assert.strictEqual(dashRes.status, 200);
     const dashData = await dashRes.json();
@@ -190,7 +203,9 @@ test("API - CBOM Ingestion & Retrieval Pipeline", async () => {
     assert.strictEqual(dashData.metrics.severity_counts.critical, 1);
 
     // 6. Fetch HTML Report
-    const htmlRes = await fetch(`${baseUrl}/api/v1/reports/${scanId}/html`);
+    const htmlRes = await fetch(`${baseUrl}/api/v1/reports/${scanId}/html`, {
+      headers: authHeaders,
+    });
     assert.strictEqual(htmlRes.status, 200);
     assert.ok(htmlRes.headers.get("content-type").includes("text/html"));
     const htmlContent = await htmlRes.text();

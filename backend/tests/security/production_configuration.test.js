@@ -1,3 +1,4 @@
+// @ecdat-synthetic-corpus
 const { test, describe } = require("node:test");
 const assert = require("node:assert/strict");
 
@@ -12,6 +13,7 @@ const {
 
 const { validateConfig } = require("../../src/config/schema");
 
+// ecdat:synthetic-fixture
 const VALID_PROD_CONFIG = {
   NODE_ENV: "production",
   PORT: 5000,

@@ -15,11 +15,17 @@ from scanners.runtime.security_boundary import (
     SecurityBoundaryViolation,
     KernelCompatibilityError,
     AgentResourceLimits,
+    RuntimeObservationProbe,
     ProbeAttachment,
+    ObservationProbeAttachment,
     BoundedEventBuffer,
     AgentWatchdog,
     KernelCompatibilityValidator,
     RuntimeSecurityAgent,
+)
+from scanners.runtime.ebpf_collector import (
+    LinuxEbpfProbeCollector,
+    EbpfDropAccounting,
 )
 
 __all__ = [
@@ -33,9 +39,13 @@ __all__ = [
     "SecurityBoundaryViolation",
     "KernelCompatibilityError",
     "AgentResourceLimits",
+    "RuntimeObservationProbe",
     "ProbeAttachment",
+    "ObservationProbeAttachment",
     "BoundedEventBuffer",
     "AgentWatchdog",
     "KernelCompatibilityValidator",
     "RuntimeSecurityAgent",
+    "LinuxEbpfProbeCollector",
+    "EbpfDropAccounting",
 ]

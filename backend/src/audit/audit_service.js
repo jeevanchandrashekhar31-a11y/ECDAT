@@ -54,32 +54,54 @@ class AuditService {
     const category = eventInput.category || ACTION_TO_CATEGORY_MAP[action] || AUDIT_CATEGORIES.CONFIG_CHANGE;
 
     // 2. Extract and format actor details safely
-    const actor = {
-      id: String(eventInput.actor?.id || eventInput.actor?.userId || "system").slice(0, 128),
-      username: String(eventInput.actor?.username || eventInput.actor?.name || "system").slice(0, 128),
+    const rawActor = {
+      id: String(eventInput.actor?.id || eventInput.actor?.userId || eventInput.actor?.username || "system").slice(0, 128),
+      username: String(eventInput.actor?.username || eventInput.actor?.name || eventInput.actor?.id || "system").slice(0, 128),
       role: String(eventInput.actor?.role || "viewer").slice(0, 64),
-      ipAddress: eventInput.ipAddress || eventInput.actor?.ipAddress || null,
+      ipAddress: eventInput.ipAddress || eventInput.sourceIp || eventInput.source_ip || eventInput.actor?.ipAddress || null,
       userAgent: eventInput.userAgent || eventInput.actor?.userAgent || null,
     };
+    const { sanitized: actor } = scrubSecrets(rawActor);
 
-    // 3. Extract target
-    const target = {
-      type: String(eventInput.target?.type || "system").slice(0, 64),
-      id: String(eventInput.target?.id || "none").slice(0, 256),
-      name: eventInput.target?.name ? String(eventInput.target.name).slice(0, 256) : null,
-    };
+    // 3. Extract target safely
+    let rawTarget;
+    if (typeof eventInput.target === "string") {
+      rawTarget = {
+        type: "resource",
+        id: eventInput.target,
+        name: eventInput.target,
+      };
+    } else if (eventInput.target && typeof eventInput.target === "object") {
+      rawTarget = {
+        type: String(eventInput.target.type || "system").slice(0, 64),
+        id: String(eventInput.target.id || "none").slice(0, 256),
+        name: eventInput.target.name ? String(eventInput.target.name).slice(0, 256) : null,
+      };
+    } else {
+      rawTarget = { type: "system", id: "none", name: null };
+    }
+    const { sanitized: target } = scrubSecrets(rawTarget);
 
-    // 4. Guaranteed Zero-Secret Scrubbing
+    // 4. Guaranteed Zero-Secret Scrubbing of details and reason
     const { sanitized: scrubbedDetails } = scrubSecrets(eventInput.details || {});
+    let reason = eventInput.reason || eventInput.details?.reason || null;
+    if (reason && typeof reason === "string") {
+      const { sanitized: cleanReason } = scrubSecrets(reason);
+      reason = cleanReason;
+    }
 
-    // 5. Build sequence and timestamps
+    // 5. Build sequence, identifiers, and timestamps
     this.sequenceCounter++;
     const sequenceNumber = this.sequenceCounter;
     const eventId = `audit_evt_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
     const timestamp = new Date().toISOString();
     const prevHash = this.lastHash;
-    const tenantId = eventInput.tenantId ? String(eventInput.tenantId).slice(0, 100) : "default";
-    const status = eventInput.status || AUDIT_STATUSES.SUCCESS;
+    const tenant = String(eventInput.tenant || eventInput.tenantId || "default").slice(0, 100);
+    const tenantId = tenant;
+    const status = eventInput.status || eventInput.result || AUDIT_STATUSES.SUCCESS;
+    const result = status;
+    const requestId = eventInput.requestId || eventInput.request_id || eventInput.details?.requestId || eventInput.details?.request_id || null;
+    const sourceIp = actor.ipAddress || null;
 
     // 6. Calculate cryptographic hash and HMAC signature
     const eventForHashing = {
@@ -89,9 +111,14 @@ class AuditService {
       category,
       action,
       actor,
+      tenant,
       tenantId,
       target,
+      requestId,
+      result,
       status,
+      reason,
+      sourceIp,
       details: scrubbedDetails,
     };
 
@@ -99,9 +126,12 @@ class AuditService {
     const signature = signHash(hash, this.secretKey);
     this.lastHash = hash;
 
-    // 7. Complete immutable record
+    // 7. Complete immutable record with all 9 mandated top-level fields and aliases
     const auditRecord = {
       ...eventForHashing,
+      request_id: requestId,
+      source_ip: sourceIp,
+      ipAddress: sourceIp,
       prevHash,
       previousHash: prevHash,
       hash,
@@ -235,16 +265,32 @@ class AuditService {
    * @returns {{ valid: boolean, totalVerified: number, lastHash: string, error: object|null }}
    */
   verifyIntegrity(tenantId = null) {
-    const list = tenantId ? this.events.filter((e) => e.tenantId === tenantId) : this.events;
-    const result = verifyAuditChain(list, {
+    // 1. Verify global chain contiguity and cryptographic integrity
+    const result = verifyAuditChain(this.events, {
       secretKey: this.secretKey,
       verifySignatures: true,
     });
+
+    if (!result.valid) {
+      return {
+        ...result,
+        tamperDetected: true,
+        verifiedRecords: result.totalVerified,
+        reason: result.error ? result.error.reason : "Audit chain integrity failure",
+      };
+    }
+
+    // 2. Count records belonging to specific tenant if requested
+    const verifiedCount = tenantId
+      ? this.events.filter((e) => e.tenantId === tenantId || e.tenant === tenantId).length
+      : result.totalVerified;
+
     return {
       ...result,
-      tamperDetected: !result.valid,
-      verifiedRecords: result.totalVerified,
-      reason: result.error ? result.error.reason : null,
+      tamperDetected: false,
+      verifiedRecords: verifiedCount,
+      totalVerified: verifiedCount,
+      reason: null,
     };
   }
 

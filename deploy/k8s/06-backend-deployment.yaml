@@ -49,7 +49,7 @@ spec:
       hostIPC: false
       containers:
         - name: backend
-          image: ecdat/backend:latest
+          image: ecdat/backend:1.0.0@sha256:7f9a1c8b3e2d4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

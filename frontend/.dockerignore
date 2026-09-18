@@ -2,3 +2,13 @@ node_modules
 dist
 .env
 .env.*
+.keys
+**/.keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cert
+*.log
+

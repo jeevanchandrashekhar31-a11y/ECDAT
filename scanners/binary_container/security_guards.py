@@ -12,6 +12,7 @@ import os
 import re
 import socket
 import tarfile
+import unicodedata
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Set, Tuple
 
@@ -301,11 +302,19 @@ class SafeArchiveExtractor:
                         f"Layer exceeds maximum file count limit ({self.max_files_count} files)."
                     )
 
-                # Path traversal / TarSlip protection
-                target_path = (extract_to_resolved / member.name).resolve()
+                # Unicode NFKC normalization and separator normalization
+                clean_name = unicodedata.normalize("NFKC", member.name).replace("\\", "/").strip("/")
+                if ":" in clean_name or clean_name.startswith(("/", "\\")):
+                    raise PathTraversalError(f"Blocked TarSlip path traversal attempt in archive member: {member.name}")
+
+                # Path traversal / TarSlip canonical containment check
+                target_path = (extract_to_resolved / clean_name).resolve()
                 try:
+                    common = os.path.commonpath([str(extract_to_resolved), str(target_path)])
+                    if common != str(extract_to_resolved):
+                        raise PathTraversalError(f"Blocked TarSlip path traversal attempt in archive member: {member.name}")
                     target_path.relative_to(extract_to_resolved)
-                except ValueError:
+                except (ValueError, OSError):
                     raise PathTraversalError(f"Blocked TarSlip path traversal attempt in archive member: {member.name}")
 
                 # Block special device nodes or FIFOs
@@ -314,10 +323,16 @@ class SafeArchiveExtractor:
 
                 # Symlink / Hardlink target validation
                 if member.issym() or member.islnk():
-                    link_target = (target_path.parent / member.linkname).resolve()
+                    norm_link = unicodedata.normalize("NFKC", member.linkname).replace("\\", "/")
+                    if ":" in norm_link or norm_link.startswith(("/", "\\")):
+                        continue
+                    link_target = (target_path.parent / norm_link).resolve()
                     try:
+                        common = os.path.commonpath([str(extract_to_resolved), str(link_target)])
+                        if common != str(extract_to_resolved):
+                            continue
                         link_target.relative_to(extract_to_resolved)
-                    except ValueError:
+                    except (ValueError, OSError):
                         # Symlink points outside target directory, skip extracting for safety
                         continue
 

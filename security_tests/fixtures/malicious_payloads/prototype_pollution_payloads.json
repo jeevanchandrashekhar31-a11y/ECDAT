@@ -1,0 +1,49 @@
+{
+  "positive": {
+    "title": "Clean Scan Job",
+    "algorithm": "AES-256-GCM",
+    "settings": {
+      "key_size": 256
+    }
+  },
+  "negative": null,
+  "boundary": {
+    "empty": {},
+    "deep": {
+      "a": {
+        "b": {
+          "c": {
+            "d": "val"
+          }
+        }
+      }
+    }
+  },
+  "malicious": [
+    {
+      "__proto__": {
+        "polluted": true,
+        "isAdmin": true
+      }
+    },
+    {
+      "constructor": {
+        "prototype": {
+          "polluted": true
+        }
+      }
+    },
+    {
+      "prototype": {
+        "isAdmin": true
+      }
+    }
+  ],
+  "regression": [
+    {
+      "__proto__": {
+        "polluted": true
+      }
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+# @ecdat-synthetic-corpus
 """
 Phase 22.1 — Subsystem 4: CBOM Deep Lifecycle Tests
 

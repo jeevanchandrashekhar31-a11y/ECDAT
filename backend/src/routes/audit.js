@@ -12,18 +12,40 @@
 const express = require("express");
 const router = express.Router();
 const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
+const { paginationBoundsMiddleware } = require("../security/input_validation");
 
 /**
  * GET /api/v1/audit/events
  * Query audit ledger records with parameterized filters.
  */
-router.get("/events", (req, res) => {
+router.get("/events", paginationBoundsMiddleware(), (req, res) => {
   try {
+    const isAnonymous = !req.user && (!req.auth || !req.auth.authenticated);
+    if (isAnonymous) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "Authentication required to query audit records",
+      });
+    }
+
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId;
+
+    if (req.query.tenantId && !isPlatformAdmin) {
+      if (String(req.query.tenantId).trim().toLowerCase() !== callerTenant) {
+        return res.status(403).json({
+          error: "HorizontalTenantViolation",
+          code: "HORIZONTAL_TENANT_VIOLATION",
+          message: `Cannot query audit records for foreign tenant '${req.query.tenantId}'`,
+        });
+      }
+    }
+
     const filter = {
       category: req.query.category,
       action: req.query.action,
       actor: req.query.actor,
-      tenantId: req.tenantContext?.tenantId || req.query.tenantId,
+      tenantId: isPlatformAdmin ? (req.query.tenantId || null) : callerTenant,
       status: req.query.status,
       startTime: req.query.startTime || req.query.start_time,
       endTime: req.query.endTime || req.query.end_time,
@@ -51,7 +73,32 @@ router.get("/events", (req, res) => {
  */
 router.get("/verify", (req, res) => {
   try {
-    const tenantId = req.tenantContext?.isPlatformAdmin ? null : req.tenantContext?.tenantId;
+    const isAnonymous = !req.user && (!req.auth || !req.auth.authenticated);
+    if (isAnonymous) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "Authentication required to verify audit integrity",
+      });
+    }
+
+    const isPlatformAdmin = Boolean(
+      req.tenantContext?.isPlatformAdmin ||
+      req.auth?.role === "admin" ||
+      (req.auth?.roles && req.auth.roles.includes("admin"))
+    );
+    const callerTenant = req.tenantContext?.tenantId;
+
+    if (req.query.tenantId && !isPlatformAdmin) {
+      if (String(req.query.tenantId).trim().toLowerCase() !== callerTenant) {
+        return res.status(403).json({
+          error: "HorizontalTenantViolation",
+          code: "HORIZONTAL_TENANT_VIOLATION",
+          message: `Cannot verify audit records for foreign tenant '${req.query.tenantId}'`,
+        });
+      }
+    }
+
+    const tenantId = isPlatformAdmin ? (req.query.tenantId || null) : callerTenant;
     const result = defaultAuditService.verifyIntegrity(tenantId);
 
     const statusCode = result.valid ? 200 : 409;
@@ -72,8 +119,16 @@ router.get("/verify", (req, res) => {
  * GET /api/v1/audit/summary
  * Returns category distribution and recent audit event stats.
  */
-router.get("/summary", (_req, res) => {
+router.get("/summary", (req, res) => {
   try {
+    const isAnonymous = !req.user && (!req.auth || !req.auth.authenticated);
+    if (isAnonymous) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "Authentication required to view audit summary",
+      });
+    }
+
     const summary = defaultAuditService.getSummaryStats();
     return res.status(200).json(summary);
   } catch (err) {
@@ -90,9 +145,30 @@ router.get("/summary", (_req, res) => {
  */
 router.get("/export", (req, res) => {
   try {
+    const isAnonymous = !req.user && (!req.auth || !req.auth.authenticated);
+    if (isAnonymous) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "Authentication required to export audit ledger",
+      });
+    }
+
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId;
+
+    if (req.query.tenantId && !isPlatformAdmin) {
+      if (String(req.query.tenantId).trim().toLowerCase() !== callerTenant) {
+        return res.status(403).json({
+          error: "HorizontalTenantViolation",
+          code: "HORIZONTAL_TENANT_VIOLATION",
+          message: `Cannot export audit records for foreign tenant '${req.query.tenantId}'`,
+        });
+      }
+    }
+
     const filter = {
       category: req.query.category,
-      tenantId: req.tenantContext?.tenantId || req.query.tenantId,
+      tenantId: isPlatformAdmin ? (req.query.tenantId || null) : callerTenant,
     };
 
     const auditTrail = defaultAuditService.exportAuditTrail(filter);

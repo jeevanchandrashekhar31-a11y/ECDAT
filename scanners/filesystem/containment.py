@@ -34,7 +34,7 @@ class FilesystemSecurityGuard:
         "/run",
         "/sys/fs/cgroup",
         "/dev/pts",
-        "/dev/shm",
+        "/dev/shm",  # nosec B108 - Blocked system path definition for containment
     }
 
     def __init__(

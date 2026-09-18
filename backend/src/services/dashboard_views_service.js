@@ -26,6 +26,179 @@ const { globalCertInventory } = require("../domain/certificate_inventory");
 const { getDbAuditLogs } = require("../db/audit_logger");
 const { evaluatePolicyProfile } = require("../policy/policy_engine");
 
+function getZeroViews(policyProfile = "regulated_bfsi", scenario = "baseline") {
+  const impactLevels = ["Critical", "High", "Medium", "Low"];
+  const likelihoodLevels = ["Urgent", "High", "Medium", "Low"];
+  const heatmapMatrix = [];
+  impactLevels.forEach((impact) => {
+    likelihoodLevels.forEach((likelihood) => {
+      heatmapMatrix.push({
+        key: `${impact.toLowerCase()}_${likelihood.toLowerCase()}`,
+        impact,
+        likelihood,
+        count: 0,
+        colorClass: "bg-slate-800/40 border-slate-700/50 text-slate-400",
+        evidence_items: [],
+        sample_evidence: [],
+      });
+    });
+  });
+
+  const kpis = [
+    {
+      id: "kpi_critical_findings",
+      title: "Critical Findings",
+      label: "Critical Findings",
+      value: 0,
+      change: "Zero",
+      status: "safe",
+      evidenceCount: 0,
+      evidence_items: [],
+      evidenceFilter: { severity: "Critical" },
+    },
+    {
+      id: "kpi_quantum_threat",
+      title: "At Quantum Threat Horizon",
+      label: "At Quantum Threat Horizon",
+      value: 0,
+      change: "Zero",
+      status: "safe",
+      evidenceCount: 0,
+      evidence_items: [],
+      evidenceFilter: { mosca_status: "AT_RISK" },
+    },
+    {
+      id: "kpi_crypto_assets",
+      title: "Discovered Crypto Assets",
+      label: "Discovered Crypto Assets",
+      value: 0,
+      change: "None",
+      status: "info",
+      evidenceCount: 0,
+      evidence_items: [],
+      evidenceFilter: {},
+    },
+    {
+      id: "kpi_pqc_readiness",
+      title: "PQC Migration Readiness",
+      label: "PQC Migration Readiness",
+      value: "100%",
+      change: "No vulnerable algorithms",
+      status: "safe",
+      evidenceCount: 0,
+      evidence_items: [],
+      evidenceFilter: {},
+    },
+  ];
+
+  return {
+    scan_id: null,
+    scan_name: "No Active Scan",
+    policy_profile: policyProfile,
+    scenario,
+    created_at: new Date().toISOString(),
+    views: {
+      executive_overview: {
+        posture_score: 100,
+        posture_rating: "UNASSESSED",
+        pqc_readiness_pct: 100,
+        total_assets: 0,
+        total_findings: 0,
+        critical_findings: 0,
+        high_findings: 0,
+        medium_findings: 0,
+        low_findings: 0,
+        info_findings: 0,
+        quantum_risk_count: 0,
+        overall_cicd_pass: true,
+        quick_wins_count: 0,
+        kpis,
+        kpi_cards: kpis,
+        severity_breakdown: [
+          { severity: "Critical", count: 0, color: "text-rose-400", evidence_items: [] },
+          { severity: "High", count: 0, color: "text-amber-400", evidence_items: [] },
+          { severity: "Medium", count: 0, color: "text-yellow-400", evidence_items: [] },
+          { severity: "Low", count: 0, color: "text-blue-400", evidence_items: [] },
+          { severity: "Informational", count: 0, color: "text-slate-400", evidence_items: [] },
+        ],
+      },
+      crypto_inventory: {
+        total_components: 0,
+        components: [],
+      },
+      application_inventory: {
+        total_applications: 0,
+        applications: [],
+      },
+      risk_heatmap: {
+        total_cells: heatmapMatrix.length,
+        active_hotspots_count: 0,
+        matrix: heatmapMatrix,
+      },
+      pqc_readiness: {
+        overall_readiness_score: 100,
+        shor_vulnerable_count: 0,
+        shor_evidence: [],
+        grover_vulnerable_count: 0,
+        grover_evidence: [],
+        pqc_safe_count: 0,
+        pqc_evidence: [],
+        hybrid_adoption_count: 0,
+        nist_standards_alignment: [
+          { standard: "NIST FIPS 203 (ML-KEM)", target: "General Encryption / KEX", status: "PLANNED", evidenceCount: 0 },
+          { standard: "NIST FIPS 204 (ML-DSA)", target: "Digital Signatures", status: "PLANNED", evidenceCount: 0 },
+          { standard: "NIST FIPS 205 (SLH-DSA)", target: "Stateless Hash Signatures", status: "EVALUATING", evidenceCount: 0 },
+        ],
+        mosca_timeline: [],
+        timeline: [],
+        mosca_summary: { critical_urgent: 0, at_risk: 0, watch: 0, safe: 0 },
+      },
+      certificates: {
+        total_certificates: 0,
+        expired_count: 0,
+        expiring_soon_count: 0,
+        weak_keys_count: 0,
+        certificates: [],
+      },
+      algorithms: {
+        total_distinct_algorithms: 0,
+        algorithms: [],
+      },
+      network_endpoints: {
+        total_endpoints: 0,
+        endpoints: [],
+      },
+      runtime_observations: {
+        total_observations: 0,
+        observations: [],
+      },
+      policy_violations: {
+        active_profile: policyProfile,
+        total_violations: 0,
+        blocking_violations_count: 0,
+        violations: [],
+      },
+      remediation: {
+        total_remediations: 0,
+        quick_wins_count: 0,
+        complex_migrations_count: 0,
+        quick_wins: [],
+        complex_migrations: [],
+      },
+      ownership: {
+        total_teams: 0,
+        unassigned_assets_count: 0,
+        teams: [],
+      },
+      audit_trail: {
+        total_events: 0,
+        events: [],
+      },
+    },
+    evidence_lookup: {},
+  };
+}
+
 /**
  * Builds the comprehensive 13-view dataset for a given scan and policy profile.
  *
@@ -67,6 +240,11 @@ async function getEnterpriseDashboardViews(options = {}) {
   let inMemoryScan = null;
   if (!scanRow) {
     inMemoryScan = requestedScanId ? await getScanById(requestedScanId) : getLatestScan();
+  }
+
+  // Pure clean state with zero scans: return zero views immediately
+  if (!scanRow && !inMemoryScan) {
+    return getZeroViews(policyProfile, scenario);
   }
 
   // Active scan ID and metadata
@@ -148,227 +326,9 @@ async function getEnterpriseDashboardViews(options = {}) {
     }));
   }
 
-  // If still empty (pure clean state with zero scans), provide rich synthetic inventory for demonstration
+  // If clean state with zero scans / zero findings, return pure authentic zero payload
   if (findings.length === 0) {
-    findings = [
-      {
-        id: "find_rsa_1024_auth",
-        scan_id: scanId,
-        asset_id: "svc_payment_gateway",
-        component_id: "comp_jwt_signer",
-        algorithm: "RSA-1024",
-        key_size: 1024,
-        category: "public-key-encryption",
-        finding_type: "static",
-        location: "services/auth/token_signer.go",
-        line_number: 88,
-        evidence_context: "rsa.GenerateKey(rand.Reader, 1024)",
-        severity: "Critical",
-        mosca_status: "CRITICAL_URGENT",
-        classical_risk: "Critical",
-        quantum_relevance: "Shor Vulnerable (Complete Break)",
-        mosca_margin_years: -4.5,
-      },
-      {
-        id: "find_md5_cache_hash",
-        scan_id: scanId,
-        asset_id: "svc_user_profile",
-        component_id: "comp_etag_hasher",
-        algorithm: "MD5",
-        key_size: 128,
-        category: "hash-function",
-        finding_type: "static",
-        location: "backend/src/cache/hasher.py",
-        line_number: 114,
-        evidence_context: "hashlib.md5(content).hexdigest()",
-        severity: "Critical",
-        mosca_status: "SAFE",
-        classical_risk: "Critical",
-        quantum_relevance: "None (Classical Collision Break)",
-        mosca_margin_years: 12.0,
-      },
-      {
-        id: "find_tls10_legacy_endpoint",
-        scan_id: scanId,
-        asset_id: "net_gateway_portal",
-        component_id: "comp_tls_session",
-        algorithm: "TLS 1.0",
-        key_size: 0,
-        category: "protocol",
-        finding_type: "network",
-        location: "https://legacy-partner.ecdat.corp:443",
-        line_number: 1,
-        evidence_context: "TLSv1.0 Negotiated with Cipher 0x002F (TLS_RSA_WITH_AES_128_CBC_SHA)",
-        severity: "Critical",
-        mosca_status: "CRITICAL_URGENT",
-        classical_risk: "Critical",
-        quantum_relevance: "Shor (Key Exchange) + Classical Weakness",
-        mosca_margin_years: -6.0,
-      },
-      {
-        id: "find_rsa_2048_cert",
-        scan_id: scanId,
-        asset_id: "net_api_gateway",
-        component_id: "comp_x509_cert",
-        algorithm: "RSA-2048",
-        key_size: 2048,
-        category: "public-key-encryption",
-        finding_type: "network",
-        location: "https://api.ecdat.io:443",
-        line_number: 1,
-        evidence_context: "X.509 Certificate Subject: CN=api.ecdat.io, Key: RSA 2048-bit",
-        severity: "High",
-        mosca_status: "AT_RISK",
-        classical_risk: "Medium",
-        quantum_relevance: "Shor Vulnerable (PQC Hybrid Target)",
-        mosca_margin_years: -2.0,
-      },
-      {
-        id: "find_p256_ecdsa_token",
-        scan_id: scanId,
-        asset_id: "svc_identity_provider",
-        component_id: "comp_oidc_issuer",
-        algorithm: "ECDSA P-256",
-        key_size: 256,
-        category: "signature",
-        finding_type: "static",
-        location: "backend/src/identity/token_service.js",
-        line_number: 145,
-        evidence_context: "jwt.sign(payload, privateKey, { algorithm: 'ES256' })",
-        severity: "High",
-        mosca_status: "AT_RISK",
-        classical_risk: "Low",
-        quantum_relevance: "Shor Vulnerable (Requires ML-DSA)",
-        mosca_margin_years: -1.5,
-      },
-      {
-        id: "find_aes_128_db_storage",
-        scan_id: scanId,
-        asset_id: "db_postgres_cluster",
-        component_id: "comp_column_encrypter",
-        algorithm: "AES-128-CBC",
-        key_size: 128,
-        category: "symmetric-cipher",
-        finding_type: "static",
-        location: "backend/src/persistence/legacy_encrypt.py",
-        line_number: 62,
-        evidence_context: "AES.new(key, AES.MODE_CBC, iv)",
-        severity: "Medium",
-        mosca_status: "WATCH",
-        classical_risk: "Low",
-        quantum_relevance: "Grover Vulnerable (64-bit Effective Security)",
-        mosca_margin_years: 1.0,
-      },
-      {
-        id: "find_sha1_git_signature",
-        scan_id: scanId,
-        asset_id: "repo_core_engine",
-        component_id: "comp_git_commit_hash",
-        algorithm: "SHA-1",
-        key_size: 160,
-        category: "hash-function",
-        finding_type: "static",
-        location: ".git/objects",
-        line_number: 1,
-        evidence_context: "git commit sha1 hash collision risk",
-        severity: "High",
-        mosca_status: "SAFE",
-        classical_risk: "High",
-        quantum_relevance: "None (Classical Collision Weakness)",
-        mosca_margin_years: 8.0,
-      },
-      {
-        id: "find_kyber768_hybrid_ingress",
-        scan_id: scanId,
-        asset_id: "net_ingress_edge",
-        component_id: "comp_pqc_kex",
-        algorithm: "X25519Kyber768Draft00",
-        key_size: 768,
-        category: "key-exchange",
-        finding_type: "network",
-        location: "https://edge.ecdat.corp:443",
-        line_number: 1,
-        evidence_context: "TLS 1.3 Key Share: Group 0x6399 (X25519Kyber768Draft00 Hybrid)",
-        severity: "Informational",
-        mosca_status: "SAFE",
-        classical_risk: "None",
-        quantum_relevance: "NIST FIPS 203 PQC Compliant",
-        mosca_margin_years: 15.0,
-      },
-    ];
-
-    assets = [
-      {
-        id: "svc_payment_gateway",
-        primary_identifier: "Payment Gateway Service",
-        asset_type: "microservice",
-        data_sensitivity: "financial_pci",
-        business_criticality: "critical",
-        highest_severity: "Critical",
-        at_quantum_risk: true,
-        metadata: { owner: "Fintech Core Team", blast_radius: 18, dependencies_count: 32 },
-      },
-      {
-        id: "svc_user_profile",
-        primary_identifier: "User Profile Service",
-        asset_type: "microservice",
-        data_sensitivity: "pii_sensitive",
-        business_criticality: "high",
-        highest_severity: "Critical",
-        at_quantum_risk: false,
-        metadata: { owner: "Identity & Accounts Team", blast_radius: 8, dependencies_count: 14 },
-      },
-      {
-        id: "net_gateway_portal",
-        primary_identifier: "Partner Portal Gateway",
-        asset_type: "network_endpoint",
-        data_sensitivity: "restricted_b2b",
-        business_criticality: "critical",
-        highest_severity: "Critical",
-        at_quantum_risk: true,
-        metadata: { owner: "Edge Infrastructure", blast_radius: 25, dependencies_count: 4 },
-      },
-      {
-        id: "net_api_gateway",
-        primary_identifier: "Public API Gateway",
-        asset_type: "network_endpoint",
-        data_sensitivity: "customer_facing",
-        business_criticality: "critical",
-        highest_severity: "High",
-        at_quantum_risk: true,
-        metadata: { owner: "API Platform Team", blast_radius: 40, dependencies_count: 12 },
-      },
-      {
-        id: "svc_identity_provider",
-        primary_identifier: "Corporate Identity Provider (OIDC)",
-        asset_type: "microservice",
-        data_sensitivity: "auth_credentials",
-        business_criticality: "critical",
-        highest_severity: "High",
-        at_quantum_risk: true,
-        metadata: { owner: "Identity & Accounts Team", blast_radius: 50, dependencies_count: 22 },
-      },
-      {
-        id: "db_postgres_cluster",
-        primary_identifier: "Main PostgreSQL Cluster",
-        asset_type: "database",
-        data_sensitivity: "confidential_enterprise",
-        business_criticality: "high",
-        highest_severity: "Medium",
-        at_quantum_risk: true,
-        metadata: { owner: "Database Engineering", blast_radius: 35, dependencies_count: 5 },
-      },
-      {
-        id: "net_ingress_edge",
-        primary_identifier: "Edge Ingress Load Balancer",
-        asset_type: "network_endpoint",
-        data_sensitivity: "internal_enterprise",
-        business_criticality: "high",
-        highest_severity: "Informational",
-        at_quantum_risk: false,
-        metadata: { owner: "Edge Infrastructure", blast_radius: 12, dependencies_count: 2 },
-      },
-    ];
+    return getEmptyViewsPayload(policyProfile);
   }
 
   // ==========================================================================
@@ -486,17 +446,23 @@ async function getEnterpriseDashboardViews(options = {}) {
       const appFindings = findings.filter((f) => f.asset_id === a.id);
       return {
         id: a.id,
-        name: a.primary_identifier,
-        asset_type: a.asset_type,
-        highest_severity: a.highest_severity,
-        data_sensitivity: a.data_sensitivity,
-        business_criticality: a.business_criticality,
+        name: a.primary_identifier || a.id,
+        type: a.asset_type || "service",
+        asset_type: a.asset_type || "service",
+        severity: a.highest_severity || "Low",
+        highest_severity: a.highest_severity || "Low",
+        sensitivity: a.data_sensitivity || "Internal",
+        data_sensitivity: a.data_sensitivity || "Internal",
+        criticality: a.business_criticality || "Tier 2",
+        business_criticality: a.business_criticality || "Tier 2",
         total_findings: appFindings.length,
+        crypto_findings_count: appFindings.length,
         critical_count: appFindings.filter((f) => f.severity === "Critical").length,
-        at_quantum_risk: a.at_quantum_risk,
+        at_quantum_risk: a.at_quantum_risk || false,
         owner: a.metadata?.owner || "Enterprise Security",
-        blast_radius: a.metadata?.blast_radius || appFindings.length * 3,
-        dependencies_count: a.metadata?.dependencies_count || 12,
+        blast_radius: a.metadata?.blast_radius || appFindings.length * 2,
+        dependencies: a.metadata?.dependencies_count || 0,
+        dependencies_count: a.metadata?.dependencies_count || 0,
         evidence_items: appFindings.map((f) => f.id),
       };
     }),
@@ -608,53 +574,34 @@ async function getEnterpriseDashboardViews(options = {}) {
   }
 
   if (certItems.length === 0) {
-    certItems = [
-      {
-        fingerprint_sha256: "9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08",
-        subject_dn: "CN=api.ecdat.io, O=ECDAT Corp",
-        issuer_dn: "CN=DigiCert Global Root G2",
-        validity_start: "2025-01-01T00:00:00Z",
-        validity_end: "2026-10-15T23:59:59Z",
-        days_remaining: 31,
-        algorithm: "RSA",
-        key_size: 2048,
-        renewal_state: "EXPIRING_SOON",
-        detected_anomalies: ["expiring_soon:31_days"],
-        evidence_link: "https://api.ecdat.io:443",
-      },
-      {
-        fingerprint_sha256: "5E884898DA28047151D0E56F8DC6292773603D0D6AABDD62A11EF721D1542D8",
-        subject_dn: "CN=legacy-partner.ecdat.corp",
-        issuer_dn: "CN=legacy-partner.ecdat.corp (Self-Signed)",
-        validity_start: "2023-01-01T00:00:00Z",
-        validity_end: "2026-03-01T00:00:00Z",
-        days_remaining: -195,
-        algorithm: "RSA",
-        key_size: 1024,
-        renewal_state: "EXPIRED",
-        detected_anomalies: ["expired", "weak_key:rsa_1024", "self_signed"],
-        evidence_link: "https://legacy-partner.ecdat.corp:443",
-      },
-      {
-        fingerprint_sha256: "4B227777D4DD1FC61C6F884F48641D02B4D121D3FD328CB08B5531FCACDABF8A",
-        subject_dn: "CN=edge.ecdat.corp",
-        issuer_dn: "CN=Let's Encrypt Authority X3",
-        validity_start: "2026-06-01T00:00:00Z",
-        validity_end: "2027-06-01T00:00:00Z",
-        days_remaining: 260,
-        algorithm: "ECDSA",
-        key_size: 384,
-        renewal_state: "OK",
-        detected_anomalies: [],
-        evidence_link: "https://edge.ecdat.corp:443",
-      },
-    ];
+    const certFindings = findings.filter(
+      (f) =>
+        f.category === "x509-certificate" ||
+        f.category === "certificate" ||
+        f.finding_type === "certificate" ||
+        (f.algorithm || "").toUpperCase().includes("CERT")
+    );
+    certItems = certFindings.map((cf) => ({
+      fingerprint_sha256: cf.metadata?.fingerprint || cf.id,
+      subject_dn: cf.metadata?.subject_dn || cf.location || `Certificate [${cf.algorithm}]`,
+      issuer_dn: cf.metadata?.issuer_dn || "Scanned Certificate Authority",
+      validity_start: cf.metadata?.validity_start || new Date().toISOString(),
+      validity_end: cf.metadata?.validity_end || new Date(Date.now() + 365 * 86400000).toISOString(),
+      days_remaining: cf.metadata?.days_remaining ?? 365,
+      algorithm: cf.algorithm || "RSA",
+      key_size: cf.key_size || 2048,
+      renewal_state: cf.metadata?.renewal_state || (cf.key_size < 2048 ? "WEAK_KEY" : "OK"),
+      detected_anomalies: cf.metadata?.anomalies || (cf.key_size < 2048 ? [`weak_key:${(cf.algorithm || '').toLowerCase()}_${cf.key_size}`] : []),
+      evidence_link: cf.location || cf.id,
+    }));
   }
 
   const certificates = {
     total_certificates: certItems.length,
     expired_count: certItems.filter((c) => c.renewal_state === "EXPIRED").length,
-    expiring_soon_count: certItems.filter((c) => c.renewal_state === "EXPIRING_SOON" || c.renewal_state === "CRITICAL_EXPIRING").length,
+    expiring_soon_count: certItems.filter(
+      (c) => c.renewal_state === "EXPIRING_SOON" || c.renewal_state === "CRITICAL_EXPIRING"
+    ).length,
     weak_keys_count: certItems.filter((c) => (c.key_size || 2048) < 2048).length,
     certificates: certItems,
   };
@@ -696,103 +643,58 @@ async function getEnterpriseDashboardViews(options = {}) {
   // ==========================================================================
   // VIEW 8: NETWORK ENDPOINTS
   // ==========================================================================
-  const networkFindings = findings.filter((f) => f.finding_type === "network" || f.location?.startsWith("http"));
+  const networkFindings = findings.filter(
+    (f) => f.finding_type === "network" || f.location?.startsWith("http") || f.category === "protocol"
+  );
   const networkEndpoints = {
-    total_endpoints: Math.max(3, networkFindings.length),
-    endpoints: [
-      {
-        id: "ep_api_public",
-        host: "api.ecdat.io",
-        port: 443,
-        protocol: "HTTPS",
-        tls_version: "TLS 1.3",
-        cipher_suites_count: 5,
-        weak_ciphers_detected: 0,
-        pfs_supported: true,
-        hybrid_supported: false,
-        cert_fingerprint: "9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08",
-        evidence_finding_id: "find_rsa_2048_cert",
-      },
-      {
-        id: "ep_legacy_partner",
-        host: "legacy-partner.ecdat.corp",
-        port: 443,
-        protocol: "HTTPS",
-        tls_version: "TLS 1.0 (Deprecated)",
-        cipher_suites_count: 14,
-        weak_ciphers_detected: 6,
-        pfs_supported: false,
-        hybrid_supported: false,
-        cert_fingerprint: "5E884898DA28047151D0E56F8DC6292773603D0D6AABDD62A11EF721D1542D8",
-        evidence_finding_id: "find_tls10_legacy_endpoint",
-      },
-      {
-        id: "ep_edge_hybrid",
-        host: "edge.ecdat.corp",
-        port: 443,
-        protocol: "HTTPS",
-        tls_version: "TLS 1.3",
-        cipher_suites_count: 8,
-        weak_ciphers_detected: 0,
-        pfs_supported: true,
-        hybrid_supported: true,
-        cert_fingerprint: "4B227777D4DD1FC61C6F884F48641D02B4D121D3FD328CB08B5531FCACDABF8A",
-        evidence_finding_id: "find_kyber768_hybrid_ingress",
-      },
-    ],
+    total_endpoints: networkFindings.length,
+    endpoints: networkFindings.map((nf, idx) => {
+      let host = nf.location || `endpoint-${idx + 1}`;
+      let port = 443;
+      let protocol = "HTTPS";
+      if (nf.location && nf.location.startsWith("http")) {
+        try {
+          const u = new URL(nf.location);
+          host = u.hostname || host;
+          port = Number(u.port) || (u.protocol === "http:" ? 80 : 443);
+          protocol = (u.protocol || "https").replace(":", "").toUpperCase();
+        } catch (_e) {
+          // ignore
+        }
+      }
+      return {
+        id: nf.id,
+        host,
+        port,
+        protocol,
+        tls_version: nf.algorithm || "TLS 1.3",
+        cipher_suites_count: nf.metadata?.cipher_suites_count || 1,
+        weak_ciphers_detected: nf.severity === "Critical" || nf.severity === "High" ? 1 : 0,
+        pfs_supported: !nf.algorithm?.includes("1.0"),
+        hybrid_supported: nf.algorithm?.toLowerCase().includes("kyber") || false,
+        cert_fingerprint: nf.metadata?.cert_fingerprint || `fp_${nf.id}`,
+        evidence_finding_id: nf.id,
+      };
+    }),
   };
 
   // ==========================================================================
   // VIEW 9: RUNTIME OBSERVATIONS
   // ==========================================================================
+  const runtimeFindings = findings.filter((f) => f.finding_type === "runtime");
   const runtimeObservations = {
-    total_observations: 4,
-    observations: [
-      {
-        id: "obs_tls_active_handshake",
-        observation_type: "NETWORK_HANDSHAKE",
-        target: "https://api.ecdat.io:443",
-        component: "OpenSSL 3.0.8",
-        details: "Dynamic TLS handshake negotiated with ECDHE-RSA-AES128-GCM-SHA256",
-        reachability_confirmed: true,
-        timestamp: new Date().toISOString(),
-        evidence_id: "find_rsa_2048_cert",
-        evidence_snippet: "ServerHello CipherSuite: 0xC02F, KeyShare: secp256r1",
-      },
-      {
-        id: "obs_process_crypto_call",
-        observation_type: "PROCESS_CALL",
-        target: "svc_payment_gateway",
-        component: "crypto/rsa",
-        details: "Live process call to rsa.GenerateKey(1024) intercepted in transaction worker",
-        reachability_confirmed: true,
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        evidence_id: "find_rsa_1024_auth",
-        evidence_snippet: "PID: 4091, Thread: 4, CallStack: token_signer.go:88",
-      },
-      {
-        id: "obs_runtime_cipher_init",
-        observation_type: "LIBRARY_INVOCATION",
-        target: "db_postgres_cluster",
-        component: "pycryptodome 3.19.0",
-        details: "AES-128-CBC cipher initialized with static IV",
-        reachability_confirmed: true,
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        evidence_id: "find_aes_128_db_storage",
-        evidence_snippet: "AES.new(b'***', AES.MODE_CBC)",
-      },
-      {
-        id: "obs_hybrid_pqc_negotiated",
-        observation_type: "PQC_RUNTIME_SESSION",
-        target: "edge.ecdat.corp",
-        component: "BoringSSL PQC",
-        details: "X25519Kyber768 hybrid key exchange successfully established by modern client",
-        reachability_confirmed: true,
-        timestamp: new Date(Date.now() - 10800000).toISOString(),
-        evidence_id: "find_kyber768_hybrid_ingress",
-        evidence_snippet: "ClientHello SupportedGroups: 0x6399, ServerHello SelectedGroup: 0x6399",
-      },
-    ],
+    total_observations: runtimeFindings.length,
+    observations: runtimeFindings.map((rf) => ({
+      id: rf.id,
+      observation_type: rf.metadata?.observation_type || "RUNTIME_CRYPTO_CALL",
+      target: rf.location || rf.asset_id,
+      component: rf.component_id || "Runtime Interceptor",
+      details: rf.evidence_context || `Runtime invocation of ${rf.algorithm}`,
+      reachability_confirmed: true,
+      timestamp: rf.metadata?.timestamp || new Date().toISOString(),
+      evidence_id: rf.id,
+      evidence_snippet: rf.evidence_context || rf.algorithm,
+    })),
   };
 
   // ==========================================================================
@@ -849,81 +751,91 @@ async function getEnterpriseDashboardViews(options = {}) {
   // ==========================================================================
   // VIEW 11: REMEDIATION
   // ==========================================================================
-  const quickWins = [
-    {
-      id: "rem_upgrade_rsa_1024",
-      finding_id: "find_rsa_1024_auth",
-      asset_id: "svc_payment_gateway",
-      algorithm: "RSA-1024",
-      recommended_target: "RSA-4096 or ML-KEM-768",
-      complexity: "LOW",
-      category: "Quick Win",
-      patch_available: true,
-      patch_diff: `--- a/services/auth/token_signer.go
-+++ b/services/auth/token_signer.go
-@@ -88,1 +88,1 @@
-- rsa.GenerateKey(rand.Reader, 1024)
-+ rsa.GenerateKey(rand.Reader, 4096)`,
-      rationale: "Immediate one-line key size upgrade eliminates critical classical exposure.",
-    },
-    {
-      id: "rem_replace_md5",
-      finding_id: "find_md5_cache_hash",
-      asset_id: "svc_user_profile",
-      algorithm: "MD5",
-      recommended_target: "SHA-256",
-      complexity: "LOW",
-      category: "Quick Win",
-      patch_available: true,
-      patch_diff: `--- a/backend/src/cache/hasher.py
-+++ b/backend/src/cache/hasher.py
-@@ -114,1 +114,1 @@
-- hashlib.md5(content).hexdigest()
-+ hashlib.sha256(content).hexdigest()`,
-      rationale: "Replacing MD5 with SHA-256 removes collision vulnerability without architectural refactoring.",
-    },
-    {
-      id: "rem_disable_tls10",
-      finding_id: "find_tls10_legacy_endpoint",
-      asset_id: "net_gateway_portal",
-      algorithm: "TLS 1.0",
-      recommended_target: "TLS 1.3 / TLS 1.2",
-      complexity: "LOW",
-      category: "Quick Win",
-      patch_available: true,
-      patch_diff: `--- a/nginx.conf
-+++ b/nginx.conf
-@@ -24,1 +24,1 @@
-- ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
-+ ssl_protocols TLSv1.2 TLSv1.3;`,
-      rationale: "Disables insecure legacy protocols and achieves immediate compliance with PCI-DSS 4.0.",
-    },
-  ];
+  const quickWins = findings
+    .filter((f) => {
+      const algo = (f.algorithm || "").toUpperCase();
+      return (
+        algo.includes("MD5") ||
+        algo.includes("SHA1") ||
+        algo.includes("SHA-1") ||
+        algo.includes("DES") ||
+        algo.includes("RC4") ||
+        (algo.includes("RSA") && f.key_size > 0 && f.key_size < 2048) ||
+        algo.includes("TLS 1.0") ||
+        algo.includes("TLS 1.1")
+      );
+    })
+    .slice(0, 10)
+    .map((f, idx) => {
+      const algo = (f.algorithm || "").toUpperCase();
+      let target = "SHA-256";
+      let rationale = `Deprecated ${f.algorithm} should be upgraded immediately to a modern standard.`;
+      if (algo.includes("RSA")) {
+        target = "RSA-3072 or ML-KEM-768";
+        rationale = "Increasing RSA key size eliminates immediate factorization exposure.";
+      } else if (algo.includes("TLS")) {
+        target = "TLS 1.3 / TLS 1.2";
+        rationale = "Disables insecure legacy protocols to enforce PFS and modern AEAD ciphers.";
+      } else if (algo.includes("MD5") || algo.includes("SHA")) {
+        target = "SHA-256 / SHA-3";
+        rationale = "Eliminates practical hash collision attacks without extensive architectural refactoring.";
+      }
 
-  const complexMigrations = [
-    {
-      id: "rem_pqc_p256_transition",
-      finding_id: "find_p256_ecdsa_token",
-      asset_id: "svc_identity_provider",
-      algorithm: "ECDSA P-256",
-      recommended_target: "ML-DSA-65 (FIPS 204) / Hybrid State",
-      complexity: "HIGH",
-      category: "PQC Migration",
-      pqc_migration: "Phase 1: Dual-sign JWTs with ES256 and ML-DSA-65. Phase 2: Deprecate ES256 verification after 18-month grace period.",
-      rationale: "Signatures on authentication tokens are vulnerable to retroactive forging under Shor's algorithm.",
-    },
-    {
-      id: "rem_pqc_api_gateway_hybrid",
-      finding_id: "find_rsa_2048_cert",
-      asset_id: "net_api_gateway",
-      algorithm: "RSA-2048",
-      recommended_target: "X25519Kyber768 Hybrid KEX",
-      complexity: "MEDIUM",
-      category: "PQC Migration",
-      pqc_migration: "Deploy hybrid key exchange at Nginx/Envoy ingress layer. Retain classical X.509 cert while securing sessions against HNDL.",
-      rationale: "Protects high-value customer API sessions against 'Harvest Now, Decrypt Later' adversaries.",
-    },
-  ];
+      return {
+        id: `rem_qw_${f.id || idx + 1}`,
+        finding_id: f.id,
+        asset_id: f.asset_id,
+        algorithm: f.algorithm,
+        recommended_target: target,
+        complexity: "LOW",
+        category: "Quick Win",
+        patch_available: false,
+        location: f.location,
+        line_number: f.line_number,
+        rationale,
+      };
+    });
+
+  const complexMigrations = findings
+    .filter((f) => {
+      return (
+        f.mosca_status === "CRITICAL_URGENT" ||
+        f.mosca_status === "AT_RISK" ||
+        f.quantum_relevance?.includes("Shor") ||
+        (f.algorithm || "").toUpperCase().includes("ECDSA") ||
+        (f.algorithm || "").toUpperCase().includes("RSA")
+      );
+    })
+    .filter((f) => !quickWins.some((qw) => qw.finding_id === f.id))
+    .slice(0, 10)
+    .map((f, idx) => {
+      const algo = (f.algorithm || "").toUpperCase();
+      let target = "NIST ML-KEM-768 (FIPS 203)";
+      let pqcMigration = "Adopt NIST FIPS 203 ML-KEM hybrid key encapsulation.";
+      if (
+        algo.includes("ECDSA") ||
+        algo.includes("SIGN") ||
+        algo.includes("ED25519") ||
+        algo.includes("RSA")
+      ) {
+        target = "ML-DSA-65 (FIPS 204) / Hybrid State";
+        pqcMigration = "Phase 1: Dual-sign with classical and ML-DSA-65. Phase 2: Complete PQC cutover.";
+      }
+
+      return {
+        id: `rem_pqc_${f.id || idx + 1}`,
+        finding_id: f.id,
+        asset_id: f.asset_id,
+        algorithm: f.algorithm,
+        recommended_target: target,
+        complexity: "HIGH",
+        category: "PQC Migration",
+        pqc_migration: pqcMigration,
+        location: f.location,
+        line_number: f.line_number,
+        rationale: `Cryptographic primitive ${f.algorithm} is vulnerable to quantum cryptanalysis (Shor's algorithm).`,
+      };
+    });
 
   const remediation = {
     total_remediations: quickWins.length + complexMigrations.length,

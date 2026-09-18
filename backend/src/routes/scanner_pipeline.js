@@ -3,6 +3,41 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { ingestCbom, getLatestScan, getAllScans } = require('../services/cbom_ingestion');
+const { defaultNetworkScanGuard } = require('../security/network_scan_guard');
+const { validateSafeGitUrlAsync } = require('../security/ssrf_protection');
+const {
+  executeHardenedGitClone,
+  validateSafeTargetDirectory,
+  validateGitCloneUrl,
+} = require('../security/git_clone_guard');
+const {
+  validateZipBufferSafety,
+  ArchiveSecurityError,
+} = require('../security/archive_guard');
+const { RATE_LIMITS, concurrencyQuotaMiddleware } = require('../security/resource_governance');
+const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require('../audit');
+
+function emitScanAudit({ action, status = AUDIT_STATUSES.SUCCESS, scanId, targetName, req, reason, details = {} }) {
+  try {
+    defaultAuditService.logEvent({
+      category: AUDIT_CATEGORIES.SCAN,
+      action: action || AUDIT_ACTIONS.SCAN_STARTED,
+      actor: {
+        id: req.user?.sub || req.auth?.user?.sub || 'operator',
+        username: req.user?.username || req.auth?.user?.name || 'operator',
+        role: req.auth?.role || 'analyst',
+        ipAddress: req.ip,
+      },
+      tenant: req.tenantContext?.tenantId || req.headers['x-tenant-id'] || 'default',
+      target: { type: 'scan', id: scanId, name: targetName || scanId },
+      requestId: req.id || req.headers['x-request-id'],
+      result: status,
+      reason: reason || null,
+      sourceIp: req.ip,
+      details,
+    }).catch(() => {});
+  } catch {}
+}
 
 const router = express.Router();
 
@@ -63,73 +98,10 @@ function runPythonCommand(args, timeoutMs = 15000) {
 }
 
 /**
- * Runs git clone asynchronously with timeout
+ * Runs git clone asynchronously with timeout, quota controls, and strict argument security
  */
-function runGitClone(repoUrl, targetDir, timeoutMs = 60000) {
-  return new Promise((resolve, reject) => {
-    let trimmed = String(repoUrl || '').trim();
-    if (!trimmed) {
-      return reject(new Error("Git repository URL cannot be empty."));
-    }
-
-    // Auto-normalize URLs missing protocol scheme (e.g. github.com/user/repo)
-    if (!trimmed.startsWith('https://') && !trimmed.startsWith('http://') && !trimmed.startsWith('git@') && !trimmed.startsWith('git://')) {
-      if (trimmed.includes('/') && !trimmed.startsWith('/')) {
-        trimmed = `https://${trimmed}`;
-      } else {
-        return reject(new Error(`Invalid Git repository URL: '${repoUrl}'. URL must start with https://, http://, or git@`));
-      }
-    }
-
-    // Strip web UI /tree/<branch> or /blob/<branch> patterns from browser copy-paste
-    let branch = null;
-    const treeMatch = trimmed.match(/^(https?:\/\/[^/]+\/[^/]+(?:\/[^/]+)?)\/(?:tree|blob)\/([^/]+)/);
-    if (treeMatch) {
-      trimmed = treeMatch[1];
-      branch = treeMatch[2];
-    }
-    // Remove trailing slashes
-    trimmed = trimmed.replace(/\/+$/, '');
-
-    // Ensure targetDir is clean and exists
-    try {
-      if (fs.existsSync(targetDir)) {
-        fs.rmSync(targetDir, { recursive: true, force: true });
-      }
-      fs.mkdirSync(targetDir, { recursive: true });
-    } catch {}
-
-    const cloneArgs = ['clone', '--depth', '1'];
-    if (branch) {
-      cloneArgs.push('-b', branch);
-    }
-    cloneArgs.push(trimmed, targetDir);
-
-    const child = spawn('git', cloneArgs, { shell: false });
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', data => { stdout += data.toString(); });
-    child.stderr.on('data', data => { stderr += data.toString(); });
-
-    const timer = setTimeout(() => {
-      try { child.kill('SIGKILL'); } catch {}
-      reject(new Error(`Git clone timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
-
-    child.on('close', code => {
-      clearTimeout(timer);
-      if (code === 0) {
-        resolve({ stdout, stderr });
-      } else {
-        reject(new Error(`Git clone failed (exit code ${code}): ${stderr || stdout}`));
-      }
-    });
-
-    child.on('error', err => {
-      clearTimeout(timer);
-      reject(err);
-    });
-  });
+async function runGitClone(repoUrl, targetDir, timeoutMs = 60000) {
+  return executeHardenedGitClone(repoUrl, targetDir, { timeoutMs });
 }
 
 /**
@@ -137,7 +109,13 @@ function runGitClone(repoUrl, targetDir, timeoutMs = 60000) {
  */
 async function extractZipArchive(zipFilePath, targetDir) {
   fs.mkdirSync(targetDir, { recursive: true });
-  await runPythonCommand(['-m', 'scanners.common.archive_guard', 'extract', zipFilePath, targetDir], 45000);
+  await runPythonCommand([
+    '-m', 'scanners.common.archive_guard',
+    'extract', zipFilePath, targetDir,
+    '--max-size-mb', '100',
+    '--max-entry-mb', '25',
+    '--max-files', '10000',
+  ], 180000);
 }
 
 /**
@@ -170,28 +148,37 @@ function parseNetworkTarget(inputTarget, defaultPort = 443) {
 
 const multer = require('multer');
 
-// Configure bounded upload storage supporting archives and multiple source files up to 50MB
+// Configure bounded upload storage supporting archives and multiple source files up to 100MB
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024, files: 250 }
+  limits: { fileSize: 100 * 1024 * 1024, files: 250 }
 });
 
 // --------------------------------------------------------------------------
 // 1. POST /scan/static
 // --------------------------------------------------------------------------
-router.post('/scan/static', upload.any(), async (req, res, next) => {
+router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmission.middleware(), upload.any(), async (req, res, next) => {
   const uploadSessionId = `scan_${Date.now()}`;
   const uploadDir = path.resolve(ARTIFACTS_DIR, 'uploads', uploadSessionId);
   let targetDir = null;
   let scanLabel = req.body?.scan_label;
+  let gitCloneHandle = null;
+
+  emitScanAudit({
+    action: AUDIT_ACTIONS.SCAN_STARTED,
+    status: AUDIT_STATUSES.SUCCESS,
+    scanId: uploadSessionId,
+    targetName: scanLabel || 'static_scan',
+    req,
+    reason: 'Static scan initiated',
+    details: { scanLabel },
+  });
 
   try {
     // Detect Git repository URL across all possible input properties
+    const explicitGitField = req.body?.git_url || req.body?.github_url || req.body?.repo_url || req.body?.repository;
     const candidateGitUrl = [
-      req.body?.github_url,
-      req.body?.git_url,
-      req.body?.repo_url,
-      req.body?.repository,
+      explicitGitField,
       req.body?.target,
       req.body?.target_dir,
       req.body?.url
@@ -209,17 +196,31 @@ router.post('/scan/static', upload.any(), async (req, res, next) => {
       );
     });
 
-    const isGitMode = Boolean(candidateGitUrl || (req.body?.github_url && String(req.body.github_url).trim()));
-    const gitRepoUrl = candidateGitUrl ? candidateGitUrl.trim() : (req.body?.github_url ? String(req.body.github_url).trim() : null);
+    const isGitMode = Boolean(explicitGitField || candidateGitUrl);
+    const gitRepoUrl = explicitGitField ? String(explicitGitField).trim() : (candidateGitUrl ? candidateGitUrl.trim() : null);
 
     // A. Git Repository Clone Mode
     if (isGitMode && gitRepoUrl) {
+      const gitCheck = RATE_LIMITS.gitScan.consume(req);
+      if (!gitCheck.allowed) {
+        return res.status(429).json({
+          error: 'TooManyRequests',
+          code: 'RATE_LIMIT_EXCEEDED',
+          operation: 'git_scan',
+          message: RATE_LIMITS.gitScan.message,
+          retryAfterSeconds: gitCheck.resetSeconds,
+        });
+      }
+
       targetDir = uploadDir;
       const cleanUrl = gitRepoUrl.replace(/\/+$/, '');
       const repoName = path.basename(cleanUrl.replace(/\.git$/, '')) || 'repository';
       scanLabel = scanLabel || `Git Repo: ${repoName}`;
       try {
-        await runGitClone(gitRepoUrl, targetDir, 60000);
+        gitCloneHandle = await executeHardenedGitClone(gitRepoUrl, targetDir, {
+          timeoutMs: 60000,
+          branch: req.body?.branch,
+        });
       } catch (cloneErr) {
         return res.status(400).json({
           success: false,
@@ -237,10 +238,40 @@ router.post('/scan/static', upload.any(), async (req, res, next) => {
       );
 
       if (zipFile) {
+        const archiveCheck = RATE_LIMITS.archiveUpload.consume(req);
+        if (!archiveCheck.allowed) {
+          try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+          return res.status(429).json({
+            error: 'TooManyRequests',
+            code: 'RATE_LIMIT_EXCEEDED',
+            operation: 'archive_upload',
+            message: RATE_LIMITS.archiveUpload.message,
+            retryAfterSeconds: archiveCheck.resetSeconds,
+          });
+        }
+
+        try {
+          validateZipBufferSafety(zipFile.buffer);
+        } catch (guardErr) {
+          try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+          return res.status(400).json({
+            success: false,
+            error: `Archive security rejection: ${guardErr.message}`
+          });
+        }
+
         const tempZipPath = path.resolve(ARTIFACTS_DIR, 'uploads', `${uploadSessionId}.zip`);
         fs.writeFileSync(tempZipPath, zipFile.buffer);
         try {
           await extractZipArchive(tempZipPath, uploadDir);
+        } catch (extractErr) {
+          try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+          const rawErr = extractErr.message || String(extractErr);
+          const cleanErr = rawErr.replace(/.*::error::/s, '').trim();
+          return res.status(400).json({
+            success: false,
+            error: `Archive extraction failed: ${cleanErr || rawErr}`
+          });
         } finally {
           try { fs.unlinkSync(tempZipPath); } catch {}
         }
@@ -264,11 +295,13 @@ router.post('/scan/static', upload.any(), async (req, res, next) => {
           error: "Please provide a Git repository URL, upload project files/ZIP, or specify a valid target directory."
         });
       }
-      explicitPath = explicitPath.trim().replace(/^['"]|['"]$/g, '');
-      if (!path.isAbsolute(explicitPath)) {
-        targetDir = path.resolve(REPO_ROOT, explicitPath);
-      } else {
-        targetDir = explicitPath;
+      try {
+        targetDir = validateSafeTargetDirectory(explicitPath, REPO_ROOT);
+      } catch (pathErr) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid target directory: ${pathErr.message}`
+        });
       }
       scanLabel = scanLabel || `Static Scan: ${path.basename(targetDir)}`;
     }
@@ -315,7 +348,8 @@ router.post('/scan/static', upload.any(), async (req, res, next) => {
       scannerType: 'static',
       scanName: scanLabel,
       policyProfile: req.body?.policy_profile || 'regulated_bfsi',
-      scenario: req.body?.scenario || 'baseline'
+      scenario: req.body?.scenario || 'baseline',
+      tenantContext: req.tenantContext
     });
 
     res.status(200).json({
@@ -329,47 +363,77 @@ router.post('/scan/static', upload.any(), async (req, res, next) => {
       recommendations: scanRecord.recommendations || []
     });
   } catch (err) {
+    emitScanAudit({
+      action: AUDIT_ACTIONS.SCAN_FAILED,
+      status: AUDIT_STATUSES.FAILURE,
+      scanId: uploadSessionId,
+      targetName: scanLabel || 'static_scan',
+      req,
+      reason: err.message || 'Static scan failed',
+      details: { error: err.message },
+    });
     next(err);
+  } finally {
+    // Guaranteed cleanup after scan completes or fails
+    if (gitCloneHandle && typeof gitCloneHandle.cleanup === 'function') {
+      gitCloneHandle.cleanup();
+    }
   }
 });
 
 // --------------------------------------------------------------------------
 // 2. POST /scan/network
 // --------------------------------------------------------------------------
-router.post('/scan/network', async (req, res, next) => {
+router.post('/scan/network', concurrencyQuotaMiddleware(), RATE_LIMITS.networkScan.middleware(), async (req, res, next) => {
   try {
-    const rawTarget = req.body?.url || req.body?.target || req.body?.host;
-    if (!rawTarget || !String(rawTarget).trim()) {
-      return res.status(400).json({
+    // 1. Enforce explicit authorization, tenant scoping, rate/concurrency limits, port bounding, SSRF & DNS resolution
+    const guardResult = await defaultNetworkScanGuard.validateAndAuthorizeScan(req);
+    if (!guardResult.authorized) {
+      return res.status(guardResult.status || 400).json({
         success: false,
-        error: "Please provide a target hostname or IP address to scan."
+        error: guardResult.error,
       });
     }
-    const rawPort = req.body?.port || 443;
-    const parsed = parseNetworkTarget(rawTarget, rawPort);
-    if (!parsed || !parsed.host) {
-      return res.status(400).json({
-        success: false,
-        error: `Invalid network target: '${rawTarget}'. Please provide a valid hostname or IP address.`
-      });
-    }
-    const { host, port } = parsed;
 
+    const { hostname: host, port, authorizedBy, timeoutSeconds } = guardResult.targetInfo;
     const tempOut = path.resolve(REPO_ROOT, `artifacts/temp_network_${Date.now()}.json`);
+    const networkScanId = `scan_net_${Date.now()}`;
+
+    emitScanAudit({
+      action: AUDIT_ACTIONS.SCAN_STARTED,
+      status: AUDIT_STATUSES.SUCCESS,
+      scanId: networkScanId,
+      targetName: req.body?.scan_label || `Network Scan: ${host}:${port}`,
+      req,
+      reason: 'Network scan initiated',
+      details: { host, port, authorizedBy },
+    });
 
     if (!fs.existsSync(path.dirname(tempOut))) {
       fs.mkdirSync(path.dirname(tempOut), { recursive: true });
     }
 
     try {
-      const authorizedBy = req.body?.authorized_by || 'ecdat-web-operator';
-      await runPythonCommand(['-m', 'scanners.network.main', `${host}:${port}`, '-o', tempOut, '--timeout', '10', '--authorized-by', authorizedBy, '--allowed-hosts', host], 20000);
+      await runPythonCommand(
+        [
+          '-m', 'scanners.network.main',
+          `${host}:${port}`,
+          '-o', tempOut,
+          '--timeout', String(timeoutSeconds),
+          '--authorized-by', authorizedBy,
+          '--allowed-hosts', host
+        ],
+        (timeoutSeconds + 5) * 1000
+      );
     } catch (scannerErr) {
-
       return res.status(400).json({
         success: false,
         error: `Network probe failed: ${scannerErr.message}. Ensure target host is reachable.`
       });
+    } finally {
+      if (typeof guardResult.releaseConcurrency === 'function') {
+        guardResult.releaseConcurrency();
+      }
     }
 
     const cbomData = loadJsonSafe(tempOut);
@@ -387,7 +451,8 @@ router.post('/scan/network', async (req, res, next) => {
       scannerType: 'network',
       scanName: req.body?.scan_label || `Network Scan: ${host}:${port}`,
       policyProfile: req.body?.policy_profile || 'regulated_bfsi',
-      scenario: req.body?.scenario || 'baseline'
+      scenario: req.body?.scenario || 'baseline',
+      tenantContext: req.tenantContext
     });
 
     res.status(200).json({
@@ -401,6 +466,15 @@ router.post('/scan/network', async (req, res, next) => {
       recommendations: scanRecord.recommendations || []
     });
   } catch (err) {
+    emitScanAudit({
+      action: AUDIT_ACTIONS.SCAN_FAILED,
+      status: AUDIT_STATUSES.FAILURE,
+      scanId: 'network_scan',
+      targetName: req.body?.scan_label || 'network_scan',
+      req,
+      reason: err.message || 'Network scan failed',
+      details: { error: err.message },
+    });
     next(err);
   }
 });
@@ -408,12 +482,22 @@ router.post('/scan/network', async (req, res, next) => {
 // --------------------------------------------------------------------------
 // 3. POST /scan/binary
 // --------------------------------------------------------------------------
-router.post('/scan/binary', upload.any(), async (req, res, next) => {
+router.post('/scan/binary', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmission.middleware(), upload.any(), async (req, res, next) => {
   const uploadSessionId = `scan_bin_${Date.now()}`;
   const uploadDir = path.resolve(ARTIFACTS_DIR, 'uploads', uploadSessionId);
   let target = null;
   let targetType = req.body?.target_type || 'directory';
   let scanLabel = req.body?.scan_label;
+
+  emitScanAudit({
+    action: AUDIT_ACTIONS.SCAN_STARTED,
+    status: AUDIT_STATUSES.SUCCESS,
+    scanId: uploadSessionId,
+    targetName: scanLabel || 'binary_scan',
+    req,
+    reason: 'Binary scan initiated',
+    details: { scanLabel, targetType },
+  });
 
   try {
     // A. File / ZIP Archive Upload Mode
@@ -426,10 +510,40 @@ router.post('/scan/binary', upload.any(), async (req, res, next) => {
       );
 
       if (zipFile) {
+        const archiveCheck = RATE_LIMITS.archiveUpload.consume(req);
+        if (!archiveCheck.allowed) {
+          try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+          return res.status(429).json({
+            error: 'TooManyRequests',
+            code: 'RATE_LIMIT_EXCEEDED',
+            operation: 'archive_upload',
+            message: RATE_LIMITS.archiveUpload.message,
+            retryAfterSeconds: archiveCheck.resetSeconds,
+          });
+        }
+
+        try {
+          validateZipBufferSafety(zipFile.buffer);
+        } catch (guardErr) {
+          try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+          return res.status(400).json({
+            success: false,
+            error: `Archive security rejection: ${guardErr.message}`
+          });
+        }
+
         const tempZipPath = path.resolve(ARTIFACTS_DIR, 'uploads', `${uploadSessionId}.zip`);
         fs.writeFileSync(tempZipPath, zipFile.buffer);
         try {
           await extractZipArchive(tempZipPath, uploadDir);
+        } catch (extractErr) {
+          try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+          const rawErr = extractErr.message || String(extractErr);
+          const cleanErr = rawErr.replace(/.*::error::/s, '').trim();
+          return res.status(400).json({
+            success: false,
+            error: `Archive extraction failed: ${cleanErr || rawErr}`
+          });
         } finally {
           try { fs.unlinkSync(tempZipPath); } catch {}
         }
@@ -517,12 +631,13 @@ router.post('/scan/binary', upload.any(), async (req, res, next) => {
       scannerType: 'binary_container',
       scanName: scanLabel || 'Binary/Container Library Inventory',
       policyProfile: req.body?.policy_profile || 'regulated_bfsi',
-      scenario: req.body?.scenario || 'baseline'
+      scenario: req.body?.scenario || 'baseline',
+      tenantContext: req.tenantContext
     });
 
     res.status(200).json({
       success: true,
-      message: 'Binary & container package analysis completed and evaluated',
+      message: 'Binary/Container cryptographic scan completed and evaluated',
       scan_source: 'live_scanner',
       scan_id: scanRecord.id,
       metrics: scanRecord.metrics,
@@ -531,6 +646,15 @@ router.post('/scan/binary', upload.any(), async (req, res, next) => {
       recommendations: scanRecord.recommendations || []
     });
   } catch (err) {
+    emitScanAudit({
+      action: AUDIT_ACTIONS.SCAN_FAILED,
+      status: AUDIT_STATUSES.FAILURE,
+      scanId: uploadSessionId,
+      targetName: scanLabel || 'binary_scan',
+      req,
+      reason: err.message || 'Binary scan failed',
+      details: { error: err.message },
+    });
     next(err);
   }
 });
@@ -538,7 +662,7 @@ router.post('/scan/binary', upload.any(), async (req, res, next) => {
 // --------------------------------------------------------------------------
 // 4. POST /cbom/merge
 // --------------------------------------------------------------------------
-router.post('/cbom/merge', async (req, res, next) => {
+router.post('/cbom/merge', RATE_LIMITS.cbomGeneration.middleware(), async (req, res, next) => {
   try {
     let components = [];
     const seenRefs = new Set();
@@ -557,8 +681,8 @@ router.post('/cbom/merge', async (req, res, next) => {
         }
       }
     } else {
-      // Collect from real scans run in this session
-      const allScans = await getAllScans();
+      // Collect from real scans run in this session scoped to tenant
+      const allScans = await getAllScans(req.tenantContext);
       if (allScans.length === 0) {
         return res.status(400).json({
           success: false,
@@ -612,7 +736,8 @@ router.post('/cbom/merge', async (req, res, next) => {
       scannerType: 'combined',
       scanName: req.body?.scan_name || 'Merged Multi-Vector CBOM',
       policyProfile: req.body?.policy_profile || 'regulated_bfsi',
-      scenario: req.body?.scenario || 'baseline'
+      scenario: req.body?.scenario || 'baseline',
+      tenantContext: req.tenantContext
     });
 
     res.status(200).json({
@@ -637,7 +762,7 @@ router.post('/cbom/quantum-risk', async (req, res, next) => {
   try {
     let cbom = req.body?.cbom;
     if (!cbom) {
-      const latest = getLatestScan();
+      const latest = getLatestScan(req.tenantContext);
       cbom = latest?.annotated_bom || latest?.raw_cbom || cachedMergedCbom;
     }
 
@@ -651,7 +776,8 @@ router.post('/cbom/quantum-risk', async (req, res, next) => {
     const scanRecord = await ingestCbom(cbom, {
       policyProfile: req.body?.policy_profile || 'regulated_bfsi',
       scenario: req.body?.scenario || 'baseline',
-      scanName: req.body?.scan_name || 'Quantum Risk Analysis'
+      scanName: req.body?.scan_name || 'Quantum Risk Analysis',
+      tenantContext: req.tenantContext
     });
 
     res.status(200).json({
@@ -675,7 +801,7 @@ router.post('/cbom/quantum-risk', async (req, res, next) => {
 // --------------------------------------------------------------------------
 router.get('/cbom/merged', async (req, res, next) => {
   try {
-    const latest = getLatestScan();
+    const latest = getLatestScan(req.tenantContext);
     const cbom = cachedMergedCbom || latest?.annotated_bom || latest?.raw_cbom;
     if (!cbom) {
       return res.status(404).json({
@@ -694,7 +820,7 @@ router.get('/cbom/merged', async (req, res, next) => {
 // --------------------------------------------------------------------------
 router.get('/cbom/risk', async (req, res, next) => {
   try {
-    const latest = getLatestScan();
+    const latest = getLatestScan(req.tenantContext);
     if (!latest) {
       return res.status(404).json({
         error: 'NotFound',
@@ -718,7 +844,7 @@ router.get('/cbom/risk', async (req, res, next) => {
 // --------------------------------------------------------------------------
 router.get('/cbom/pqc-report', async (req, res, next) => {
   try {
-    const latest = getLatestScan();
+    const latest = getLatestScan(req.tenantContext);
     if (!latest) {
       return res.status(404).json({ error: 'NotFound', message: 'No PQC report available yet.' });
     }

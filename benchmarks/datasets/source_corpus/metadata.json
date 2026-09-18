@@ -1,0 +1,13 @@
+{
+  "dataset_name": "ECDAT Standard Benchmark Source Corpus",
+  "seed": 42,
+  "total_files": 150,
+  "total_loc": 19520,
+  "total_bytes": 572840,
+  "languages": [
+    "Python",
+    "C",
+    "JavaScript",
+    "Go"
+  ]
+}

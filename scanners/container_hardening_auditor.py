@@ -124,6 +124,47 @@ class ContainerHardeningAuditor:
             failed.append("no_privileged_mode")
             details["no_privileged_mode"] = "sudo detected in Dockerfile commands."
 
+        # 10. No secrets copied into image
+        secret_patterns = [r"\.env", r"\.pem\b", r"\.key\b", r"id_rsa", r"id_ed25519"]
+        has_secret_copy = False
+        copy_lines = [l for l in lines if l.startswith("COPY ") or l.startswith("ADD ")]
+        for cl in copy_lines:
+            for sp in secret_patterns:
+                if re.search(sp, cl, re.IGNORECASE) and not any(safe in cl for safe in ["seccomp", "security", "knexfile"]):
+                    has_secret_copy = True
+
+        if not has_secret_copy:
+            passed.append("no_secrets_in_image")
+            details["no_secrets_in_image"] = "Zero credentials, private keys, or .env files copied into image."
+        else:
+            failed.append("no_secrets_in_image")
+            details["no_secrets_in_image"] = "Potential secret copy detected in COPY/ADD commands."
+
+        # 11. No compiler toolchain in runtime image
+        has_compiler_install = any(
+            any(tool in l.lower() for tool in ["gcc", "g++", "clang", "build-essential"])
+            and ("apt-get install" in l or "apk add" in l)
+            for l in lines
+        )
+        if not has_compiler_install:
+            passed.append("no_compiler_in_runtime")
+            details["no_compiler_in_runtime"] = "Runtime image contains zero unnecessary compiler toolchains."
+        else:
+            failed.append("no_compiler_in_runtime")
+            details["no_compiler_in_runtime"] = "Compiler toolchain installed directly in runtime stage."
+
+        # 12. Read-only filesystem compatibility
+        has_readonly_compat = any(
+            any(ro in l for ro in ["0555", "TMPDIR=", "NPM_CONFIG_CACHE=", "/tmp"])  # nosec B108
+            for l in lines
+        )
+        if has_readonly_compat:
+            passed.append("read_only_filesystem")
+            details["read_only_filesystem"] = "Read-only filesystem compatibility verified (tmpfs paths / read-only permissions)."
+        else:
+            failed.append("read_only_filesystem")
+            details["read_only_filesystem"] = "Missing read-only filesystem accommodation (tmpfs/0555 permissions)."
+
         score = (len(passed) / (len(passed) + len(failed))) * 100 if (passed or failed) else 0
 
         return ContainerAuditResult(
@@ -350,6 +391,7 @@ class ContainerHardeningAuditor:
             self.repo_root / "backend" / "Dockerfile",
             self.repo_root / "frontend" / "Dockerfile",
             self.repo_root / "docker" / "scanner.Dockerfile",
+            self.repo_root / "docker" / "ebpf-agent.Dockerfile",
         ]
         for df in dockerfiles:
             if df.exists():

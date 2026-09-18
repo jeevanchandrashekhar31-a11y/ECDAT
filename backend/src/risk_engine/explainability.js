@@ -42,9 +42,17 @@ function buildExplanation({
 
   // Recommendation highlight
   if (recommendation) {
+    const complexity =
+      recommendation.migration_complexity ||
+      recommendation.estimated_migration_complexity ||
+      "medium";
+    const latencyImpact =
+      recommendation.latency_impact ||
+      recommendation.latency_impact_category ||
+      "minor";
     lines.push(
-      `Recommended Action: ${recommendation.proposed_option} (${recommendation.standard_reference}). ` +
-        `Complexity: ${recommendation.estimated_migration_complexity}, Latency impact: ${recommendation.latency_impact_category}.`,
+      `Recommended Action: ${recommendation.proposed_option || recommendation.recommended_target} (${recommendation.standard_reference || "NIST PQC"}). ` +
+        `Complexity: ${complexity}, Latency impact: ${latencyImpact}.`,
     );
   }
 

@@ -133,3 +133,50 @@ The following table documents exactly which component requires elevated privileg
   2. If the observed application attempts to emit raw private keys, passwords, or oversized payloads, the agent's input validation immediately catches the violation.
   3. The **circuit breaker trips instantly**, detaching all active uprobes and isolating the agent.
   4. The ECDAT control plane remains unprivileged and unaffected.
+
+---
+
+## 7. Implementation Status & Truthful Architectural Separation (P1 Mandate)
+
+In strict adherence to the project's security integrity principles, ECDAT explicitly separates the in-memory observation abstraction from genuine in-kernel eBPF instrumentation:
+
+### A. Runtime Security Observation Abstraction
+- **Abstraction Classes**: `RuntimeSecurityAgent` and `RuntimeObservationProbe` (with `ProbeAttachment` retained as an alias for backward compatibility).
+- **Registration**: `register_observation_probe()` models the target registration against `rules/runtime_probes_catalog.json`.
+- **Status Reporting**: `get_status_report()` explicitly returns `architecture_type: "runtime_security_observation_abstraction"` and `is_live_ebpf_verified: false`.
+- **Truthfulness Guarantee**: This layer models the security boundary, bounded buffers, rate limiting, and circuit breakers in user space. It does NOT claim to compile or load in-kernel C bytecode directly.
+
+### B. Genuine In-Kernel eBPF Architecture
+For environments requiring genuine kernel-level cryptographic observation on Linux, ECDAT implements a complete, authentic 5-stage architecture:
+
+```text
+kernel eBPF program (bpf/crypto_observer.bpf.c)
+        ↓
+ring buffer (BPF_MAP_TYPE_RINGBUF - 256 KB)
+        ↓
+userspace collector (scanners/runtime/ebpf_collector.py)
+        ↓
+bounded queue (queue.Queue with backpressure)
+        ↓
+ECDAT event pipeline (assert_metadata_only -> correlation -> CBOM)
+```
+
+1. **Kernel eBPF Program (`bpf/crypto_observer.bpf.c`)**:
+   - Compilable, verifier-safe eBPF C program using BPF CO-RE (Compile Once - Run Everywhere).
+   - Declares `crypto_events` (`BPF_MAP_TYPE_RINGBUF`, 256 KB) and `drop_counters` (`BPF_MAP_TYPE_ARRAY`).
+   - Declares verified uprobes for OpenSSL (`EVP_EncryptInit_ex`, `EVP_DigestInit_ex`, `SSL_do_handshake`).
+   - **Strict Zero Key Material Invariant**: Key and IV buffer pointers are NEVER dereferenced or read into the ring buffer.
+2. **Minimal Linux Capabilities**:
+   - Requires only `CAP_BPF` + `CAP_PERFMON` (Linux kernel 5.8+).
+   - Does NOT require full root or `CAP_SYS_ADMIN`.
+3. **Explicit Kernel Requirements**:
+   - Host must run Linux kernel >= 5.8.0 with `/sys/fs/bpf` mounted.
+4. **Userspace Collector (`scanners/runtime/ebpf_collector.py`)**:
+   - `LinuxEbpfProbeCollector` drains the kernel ring buffer, deserializes metadata events, and pushes to a bounded queue.
+   - **Backpressure**: Triggers backpressure warnings when queue occupancy exceeds 80%.
+   - **Drop Accounting**: Accurately tracks `ringbuf_drops`, `queue_drops`, `rate_limit_drops`, and `validation_drops`.
+   - **Rate Limiting**: Enforces strict `max_events_per_second` (default 5,000 evt/s) with token-bucket accounting.
+   - **Active Watchdog**: Heartbeat monitor that trips the circuit breaker and safely detaches upon thread stall.
+   - **Graceful Failure**: Fails closed and reports `UNAVAILABLE` on non-Linux or unsupported kernels.
+   - **Zero False Claims**: `is_live_ebpf_verified` is strictly `false` until an actual probe is attached and verified in the kernel.
+

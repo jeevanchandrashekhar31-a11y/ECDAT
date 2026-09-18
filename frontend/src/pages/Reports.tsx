@@ -26,6 +26,7 @@ export const Reports: React.FC = () => {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [previewHeight, setPreviewHeight] = useState<'standard' | 'tall' | 'compact'>('standard');
   const [iframeKey, setIframeKey] = useState(0);
 
   useEffect(() => {
@@ -256,7 +257,7 @@ export const Reports: React.FC = () => {
       {/* HTML Report Embedded Viewer */}
       <div
         className={`bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl transition-all duration-300 flex flex-col ${
-          isFullscreen ? 'fixed inset-4 z-50 bg-slate-950 border-cyan-500/50 p-4' : 'p-6'
+          isFullscreen ? 'fixed inset-0 z-50 bg-slate-950 p-6 rounded-none border-0' : 'p-6'
         }`}
       >
         {/* Viewer Header */}
@@ -273,11 +274,53 @@ export const Reports: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Height Toggle (when not in fullscreen) */}
+            {!isFullscreen && (
+              <div className="flex items-center bg-slate-800/90 rounded-lg p-0.5 border border-slate-700/80 mr-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPreviewHeight('compact')}
+                  className={`px-2.5 py-1 rounded-md transition-all font-medium ${
+                    previewHeight === 'compact'
+                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Compact View (700px)"
+                >
+                  Compact
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewHeight('standard')}
+                  className={`px-2.5 py-1 rounded-md transition-all font-medium ${
+                    previewHeight === 'standard'
+                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Standard View (950px)"
+                >
+                  Standard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewHeight('tall')}
+                  className={`px-2.5 py-1 rounded-md transition-all font-medium ${
+                    previewHeight === 'tall'
+                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Expanded View (1350px)"
+                >
+                  Expanded
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => setIframeKey((prev) => prev + 1)}
               title="Reload preview"
-              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700/60"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -307,7 +350,7 @@ export const Reports: React.FC = () => {
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700/60"
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
@@ -316,17 +359,27 @@ export const Reports: React.FC = () => {
 
         {/* Embedded Iframe Container */}
         <div
-          className={`mt-4 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex-1 ${
-            isFullscreen ? 'h-[calc(100vh-140px)]' : 'h-[700px]'
+          className={`mt-4 rounded-xl overflow-hidden border border-slate-800/80 bg-slate-950 w-full shadow-inner ${
+            isFullscreen ? 'flex-1 min-h-0' : ''
           }`}
+          style={{
+            height: isFullscreen
+              ? 'calc(100vh - 120px)'
+              : previewHeight === 'tall'
+                ? '1350px'
+                : previewHeight === 'compact'
+                  ? '700px'
+                  : '950px',
+            minHeight: isFullscreen ? '0px' : '700px',
+          }}
         >
           <iframe
             id="report-iframe"
             key={iframeKey}
             src={htmlReportUrl}
             title="Executive Cryptographic Report"
-            className="w-full h-full border-0 bg-slate-950"
-            sandbox="allow-same-origin allow-modals"
+            className="w-full h-full border-0 bg-slate-950 block"
+            sandbox="allow-same-origin allow-modals allow-scripts allow-popups"
           />
         </div>
       </div>

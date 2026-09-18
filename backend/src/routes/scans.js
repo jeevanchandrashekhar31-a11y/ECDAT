@@ -5,16 +5,17 @@ const {
   getScanErrors,
   clearScans,
 } = require("../services/cbom_ingestion");
+const { requireRole } = require("../middleware/auth");
 
 const router = express.Router();
 
 /**
  * GET /api/v1/scans
- * Returns a list of all scans.
+ * Returns a list of all scans scoped to caller's tenant.
  */
 router.get("/", async (req, res, next) => {
   try {
-    const scans = await getAllScans();
+    const scans = await getAllScans(req.tenantContext);
     res.status(200).json({
       total: scans.length,
       scans,
@@ -26,14 +27,14 @@ router.get("/", async (req, res, next) => {
 
 /**
  * DELETE /api/v1/scans
- * Clears all scan records for a pure clean state.
+ * Clears scan records scoped to caller's tenant.
  */
-router.delete("/", async (req, res, next) => {
+router.delete("/", requireRole(["platform administrator", "security administrator"]), async (req, res, next) => {
   try {
-    await clearScans();
+    await clearScans(req.tenantContext);
     res.status(200).json({
       success: true,
-      message: "All scans and cryptographic inventory successfully cleared.",
+      message: "Scans and cryptographic inventory successfully cleared.",
     });
   } catch (err) {
     next(err);
@@ -46,7 +47,7 @@ router.delete("/", async (req, res, next) => {
  */
 router.get("/:scanId", async (req, res, next) => {
   try {
-    const scan = await getScanById(req.params.scanId);
+    const scan = await getScanById(req.params.scanId, req.tenantContext);
     if (!scan) {
       return res.status(404).json({
         error: "NotFound",
@@ -57,6 +58,7 @@ router.get("/:scanId", async (req, res, next) => {
     res.status(200).json({
       id: scan.id,
       name: scan.name,
+      tenantId: scan.tenantId,
       project_id: scan.project_id || "default_project",
       scanner_type: scan.scanner_type || "combined",
       policy_profile: scan.policy_profile,
@@ -81,13 +83,49 @@ router.get("/:scanId", async (req, res, next) => {
 });
 
 /**
+ * DELETE /api/v1/scans/:scanId
+ * Deletes a specific scan verifying caller's tenant boundary.
+ */
+router.delete("/:scanId", requireRole(["platform administrator", "security administrator"]), async (req, res, next) => {
+  try {
+    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+
+    // Lookup scan in system to verify existence and check cross-tenant boundary
+    const scan = await getScanById(req.params.scanId, { isPlatformAdmin: true });
+    if (!scan) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: `Scan '${req.params.scanId}' not found`,
+      });
+    }
+    if (!isPlatformAdmin && scan.tenantId && scan.tenantId !== callerTenant) {
+      return res.status(403).json({
+        error: "TenantBoundaryViolation",
+        code: "HORIZONTAL_TENANT_VIOLATION",
+        message: `Cannot delete scan belonging to tenant '${scan.tenantId}'`,
+      });
+    }
+
+    // Delete scan record
+    await clearScans(req.tenantContext);
+    res.status(200).json({
+      success: true,
+      message: `Scan '${req.params.scanId}' deleted successfully.`,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * GET /api/v1/scans/:scanId/errors
  * Returns non-fatal scanner errors, validation warnings, or security notices for a scan.
  */
 router.get("/:scanId/errors", async (req, res, next) => {
   try {
     const scanId = req.params.scanId;
-    const scan = await getScanById(scanId);
+    const scan = await getScanById(scanId, req.tenantContext);
     if (!scan) {
       return res.status(404).json({
         error: "NotFound",
@@ -95,7 +133,7 @@ router.get("/:scanId/errors", async (req, res, next) => {
       });
     }
 
-    const errors = await getScanErrors(scanId);
+    const errors = await getScanErrors(scanId, req.tenantContext);
     res.status(200).json({
       scan_id: scanId,
       total_errors: errors.length,

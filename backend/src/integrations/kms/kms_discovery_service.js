@@ -55,6 +55,7 @@ class KmsDiscoveryService {
   listConnectors() {
     return Array.from(this.connectors.values()).map((c) => ({
       name: c.name,
+      tenantId: c.tenantId || "default",
       provider: c.provider,
       readOnly: c.readOnly,
       config: c.sanitizeConfig(),

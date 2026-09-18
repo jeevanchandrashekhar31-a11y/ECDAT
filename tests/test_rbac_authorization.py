@@ -19,10 +19,13 @@ import pytest
 from scanners.identity.rbac import (
     Roles,
     Permissions,
+    Capabilities,
+    AUTHORIZATION_MATRIX,
     ROLE_PERMISSIONS,
     ENDPOINT_PERMISSIONS,
     RBACManager,
 )
+from scanners.identity.auth_audit import AuthAuditLogger
 
 
 class TestRbacRolesAndPermissions:
@@ -192,3 +195,101 @@ class TestEndpointDeclarations:
             assert " " in endpoint, f"Endpoint {endpoint} must specify METHOD PATH"
             assert isinstance(perm, str)
             assert ":" in perm, f"Permission {perm} must follow domain:action format"
+
+
+class TestAuthoritativeMatrix:
+    def test_matrix_dimensions_and_definitions(self):
+        capabilities = [
+            getattr(Capabilities, attr)
+            for attr in dir(Capabilities)
+            if not attr.startswith("_") and isinstance(getattr(Capabilities, attr), str)
+        ]
+        assert len(capabilities) == 11
+        roles = ["anonymous", "viewer", "analyst", "developer", "auditor", "admin", "platform_admin"]
+
+        for cap in capabilities:
+            assert cap in AUTHORIZATION_MATRIX, f"Missing matrix definition for capability '{cap}'"
+            cap_entry = AUTHORIZATION_MATRIX[cap]
+            for role in roles:
+                assert role in cap_entry, f"Missing role '{role}' in capability '{cap}'"
+                expected_val = cap_entry[role]
+                assert expected_val in {"YES", "NO", "scoped", "policy"}
+
+    def test_77_cell_matrix_evaluation(self):
+        capabilities = [
+            getattr(Capabilities, attr)
+            for attr in dir(Capabilities)
+            if not attr.startswith("_") and isinstance(getattr(Capabilities, attr), str)
+        ]
+        roles = ["anonymous", "viewer", "analyst", "developer", "auditor", "admin", "platform_admin"]
+
+        for cap in capabilities:
+            for role in roles:
+                expected_val = AUTHORIZATION_MATRIX[cap][role]
+                res = RBACManager.evaluate_capability(role, cap)
+
+                if expected_val == "NO":
+                    assert res["allowed"] is False
+                    expected_status = 401 if role == "anonymous" else 403
+                    assert res["status"] == expected_status
+                    assert "audit_event" in res
+                    assert res["audit_event"]["status"] == "DENIED"
+                elif expected_val == "scoped":
+                    assert res["allowed"] is True
+                    assert res["scope"] == "tenant"
+                elif expected_val == "policy":
+                    assert res["allowed"] is True
+                    assert res["scope"] == "policy_governed"
+                elif expected_val == "YES":
+                    assert res["allowed"] is True
+
+
+class TestDeniedPermissionAuditAndSideEffects:
+    def test_audit_event_logged_on_vertical_denial(self):
+        audit_logger = AuthAuditLogger()
+        res = RBACManager.verify_authorization(
+            user_roles=[Roles.VIEWER],
+            required_permission=Permissions.SECRETS_ROTATE,
+            user_id="usr_viewer_bob",
+            audit_logger=audit_logger,
+        )
+
+        assert res["allowed"] is False
+        assert res["code"] == "INSUFFICIENT_PERMISSIONS"
+        assert res["audit_event"]["status"] == "DENIED"
+
+        # Verify audit logger recorded event
+        assert len(audit_logger.events) == 1
+        entry = audit_logger.events[0]
+        assert entry["status"] == "DENIED"
+        assert entry["eventType"] == "PERMISSION_DENIED"
+        assert entry["userId"] == "usr_viewer_bob"
+
+        # Verify cryptographic tamper chain
+        integrity = audit_logger.verify_chain_integrity()
+        assert integrity["valid"] is True
+
+    def test_audit_event_logged_on_horizontal_tenant_denial(self):
+        audit_logger = AuthAuditLogger()
+        res = RBACManager.verify_authorization(
+            user_roles=[Roles.SECURITY_ADMIN],
+            required_permission=Permissions.ASSETS_READ,
+            user_tenant="tenant-alpha",
+            target_tenant="tenant-beta",
+            user_id="usr_admin_alice",
+            audit_logger=audit_logger,
+        )
+
+        assert res["allowed"] is False
+        assert res["code"] == "HORIZONTAL_TENANT_VIOLATION"
+        assert res["audit_event"]["status"] == "DENIED"
+
+        assert len(audit_logger.events) == 1
+        entry = audit_logger.events[0]
+        assert entry["status"] == "DENIED"
+        assert entry["eventType"] == "TENANT_ISOLATION_VIOLATION"
+        assert entry["userId"] == "usr_admin_alice"
+
+        integrity = audit_logger.verify_chain_integrity()
+        assert integrity["valid"] is True
+

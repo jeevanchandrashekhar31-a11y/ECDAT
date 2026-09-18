@@ -17,8 +17,19 @@ const {
   ProtectedKeyMaterialError,
 } = require("../integrations/kms");
 const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
+const { validateSafeUrlAsync } = require("../security/ssrf_protection");
+const { requireObjectAuthorization, OBJECT_TYPES } = require("../security/object_authorization");
+const {
+  validateLength,
+  validateEnum,
+  ALLOWED_KMS_PROVIDERS,
+} = require("../security/input_validation");
+const { RATE_LIMITS } = require("../security/resource_governance");
 
 const router = express.Router();
+
+// Apply integration calls rate limiter to all KMS/HSM operations
+router.use(RATE_LIMITS.integrationCalls.middleware());
 
 /**
  * GET /api/v1/integrations/kms/connectors
@@ -26,7 +37,16 @@ const router = express.Router();
  */
 router.get("/connectors", (req, res) => {
   try {
-    const connectors = defaultKmsDiscoveryService.listConnectors();
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId;
+
+    let connectors = defaultKmsDiscoveryService.listConnectors();
+    if (!isPlatformAdmin && callerTenant) {
+      connectors = connectors.filter((c) => !c.tenantId || c.tenantId === callerTenant);
+    } else if (!isPlatformAdmin && !callerTenant) {
+      connectors = [];
+    }
+
     res.json({
       count: connectors.length,
       connectors,
@@ -37,15 +57,76 @@ router.get("/connectors", (req, res) => {
 });
 
 /**
+ * GET /api/v1/integrations/kms/connectors/:id
+ * Retrieves a KMS connector enforcing server-side state verification and tenant boundaries.
+ */
+router.get(
+  "/connectors/:id",
+  requireObjectAuthorization(OBJECT_TYPES.INTEGRATION, { idParam: "id" }),
+  (req, res) => {
+    const connector = req.resolvedObject;
+    return res.json({
+      name: connector.id,
+      tenantId: connector.tenantId,
+      provider: connector.provider,
+    });
+  }
+);
+
+/**
+ * DELETE /api/v1/integrations/kms/connectors/:id
+ * Unregisters a KMS connector enforcing server-side state verification and tenant boundaries.
+ */
+router.delete(
+  "/connectors/:id",
+  requireObjectAuthorization(OBJECT_TYPES.INTEGRATION, { idParam: "id" }),
+  (req, res) => {
+    const connector = req.resolvedObject;
+    defaultKmsDiscoveryService.unregisterConnector(connector.id);
+    return res.json({
+      success: true,
+      message: `KMS connector '${connector.id}' deleted successfully`,
+    });
+  }
+);
+
+/**
  * POST /api/v1/integrations/kms/register
  * Registers a new KMS/HSM connector.
  */
-router.post("/register", (req, res) => {
+router.post("/register", async (req, res) => {
   try {
     const { name, provider, config = {} } = req.body || {};
 
     if (!name || !provider) {
       return res.status(400).json({ error: "Missing required fields: 'name' and 'provider'" });
+    }
+
+    if (typeof name !== "string" || typeof provider !== "string") {
+      return res.status(400).json({ error: "ValidationError", message: "'name' and 'provider' must be strings" });
+    }
+
+    const nameCheck = validateLength(name, { min: 2, max: 64, fieldName: "name" });
+    if (!nameCheck.valid) {
+      return res.status(400).json({ error: "ValidationError", message: nameCheck.error });
+    }
+
+    const provCheck = validateEnum(provider, ALLOWED_KMS_PROVIDERS, "provider");
+    if (!provCheck.valid) {
+      return res.status(400).json({
+        error: `Unsupported provider '${provider}'. Supported: ${ALLOWED_KMS_PROVIDERS.join(", ")}`,
+      });
+    }
+
+    const urlToCheck = config.endpoint || config.url || config.vaultUrl;
+    if (urlToCheck && urlToCheck !== "http://127.0.0.1:8200") {
+      const check = await validateSafeUrlAsync(urlToCheck);
+      if (!check.safe) {
+        return res.status(400).json({
+          error: "SSRFViolation",
+          message: `KMS connector endpoint '${urlToCheck}' rejected: ${check.error}`,
+        });
+      }
     }
 
     let connector;
@@ -73,6 +154,7 @@ router.post("/register", (req, res) => {
         });
     }
 
+    connector.tenantId = req.tenantContext?.tenantId || "default";
     defaultKmsDiscoveryService.registerConnector(connector);
 
     defaultAuditService.logEvent({
@@ -118,6 +200,16 @@ router.post("/test-connection", async (req, res) => {
       return res.status(404).json({ error: `Connector '${name}' not found` });
     }
 
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId;
+    if (!isPlatformAdmin && callerTenant && connector.tenantId && connector.tenantId !== callerTenant) {
+      return res.status(403).json({
+        error: "HorizontalTenantViolation",
+        code: "HORIZONTAL_TENANT_VIOLATION",
+        message: `Cannot access KMS connector belonging to foreign tenant '${connector.tenantId}'`,
+      });
+    }
+
     const result = await connector.testConnection();
     res.json(result);
   } catch (err) {
@@ -132,6 +224,20 @@ router.post("/test-connection", async (req, res) => {
 router.post("/discover", async (req, res) => {
   try {
     const { provider, connectorName } = req.body || {};
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId;
+
+    if (connectorName) {
+      const conn = defaultKmsDiscoveryService.getConnector(connectorName);
+      if (conn && !isPlatformAdmin && callerTenant && conn.tenantId && conn.tenantId !== callerTenant) {
+        return res.status(403).json({
+          error: "HorizontalTenantViolation",
+          code: "HORIZONTAL_TENANT_VIOLATION",
+          message: `Cannot access KMS connector belonging to foreign tenant '${conn.tenantId}'`,
+        });
+      }
+    }
+
     const discoveryResult = await defaultKmsDiscoveryService.discoverAll({ provider, connectorName });
     const summary = defaultKmsDiscoveryService.getSummary(discoveryResult.keys);
 

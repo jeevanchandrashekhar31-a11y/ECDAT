@@ -32,12 +32,21 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
   }
 
   await db.transaction(async (trx) => {
+    // Ensure tenant_id column exists for multi-tenant isolation
+    const hasTenantCol = await trx.schema.hasColumn("scans", "tenant_id").catch(() => false);
+    if (!hasTenantCol) {
+      await trx.schema.alterTable("scans", (table) => {
+        table.string("tenant_id", 100).defaultTo("default-tenant").index();
+      }).catch(() => {});
+    }
+
     // 1. Delete prior record if re-running scan with same ID (prevents duplicates)
     await trx("scans").where({ id: scanRecord.id }).del();
 
     // 2. Insert Scan record
-    await trx("scans").insert({
+    const scanRowData = {
       id: scanRecord.id,
+      tenant_id: scanRecord.tenantId || "default-tenant",
       project_id: scanRecord.project_id || "default_project",
       target_name: scanRecord.name,
       scanner_type: scanRecord.scanner_type || "combined",
@@ -55,7 +64,9 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       quantum_risk_count: scanRecord.metrics.assets_at_quantum_risk,
       created_at: scanRecord.created_at,
       completed_at: new Date().toISOString(),
-    });
+    };
+
+    await trx("scans").insert(scanRowData);
 
     // 3. Insert CBOM (raw and annotated - both guaranteed free of private keys)
     await trx("cboms").insert({
@@ -63,7 +74,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       scan_id: scanRecord.id,
       raw_json: JSON.stringify(rawCbom || {}),
       annotated_json: JSON.stringify(scanRecord.annotated_bom || {}),
-      spec_version: "1.6",
+      spec_version: rawCbom && rawCbom.specVersion ? String(rawCbom.specVersion) : "1.6",
       bom_format: "CycloneDX",
     });
 
@@ -293,10 +304,16 @@ async function ingestCbom(rawInputData, options = {}) {
   // 4. Generate HTML fallback report
   const htmlReport = generateHtmlReport(summary);
 
+  const tenantId =
+    options.tenantId ||
+    (options.tenantContext && options.tenantContext.tenantId) ||
+    "default-tenant";
+
   // 5. Assemble Ingested Scan Record
   const scanRecord = {
     id: scanId,
     name: scanName,
+    tenantId,
     scanner_type: scannerType,
     project_id: projectId,
     policy_profile: policyProfile,
@@ -318,11 +335,14 @@ async function ingestCbom(rawInputData, options = {}) {
   try {
     defaultAuditService.logEvent({
       category: AUDIT_CATEGORIES.SCAN,
-      action: AUDIT_ACTIONS.SCAN_COMPLETE,
+      action: AUDIT_ACTIONS.SCAN_COMPLETED,
       actor: { id: "scanner-pipeline", username: "scanner", role: "system" },
-      tenantId: options.tenantId || "default",
-      target: scanId,
+      tenant: tenantId,
+      tenantId: tenantId,
+      target: { type: "scan", id: scanId, name: options.scanName || scanId },
+      result: AUDIT_STATUSES.SUCCESS,
       status: AUDIT_STATUSES.SUCCESS,
+      reason: `Cryptographic scan completed with ${summary.metrics?.total_assets || 0} assets and ${summary.metrics?.total_findings || 0} findings`,
       details: {
         scanId,
         scannerType,
@@ -363,13 +383,33 @@ async function ingestCbom(rawInputData, options = {}) {
   return scanRecord;
 }
 
-async function getAllScans() {
+async function getAllScans(tenantContext = null) {
+  const isPlatformAdmin = tenantContext ? Boolean(tenantContext.isPlatformAdmin) : false;
+  const targetTenant = tenantContext ? tenantContext.tenantId : null;
+
+  // Anonymous user or principal with no tenant scope receives zero scans
+  if (!isPlatformAdmin && !targetTenant) {
+    return [];
+  }
+
   const connected = await isDbConnected();
   if (connected) {
     try {
-      const rows = await db("scans").select("*").orderBy("created_at", "desc");
+      const hasTenantCol = await db.schema.hasColumn("scans", "tenant_id").catch(() => false);
+      if (!hasTenantCol) {
+        await db.schema.alterTable("scans", (table) => {
+          table.string("tenant_id", 100).defaultTo("default-tenant").index();
+        }).catch(() => {});
+      }
+
+      let query = db("scans").select("*").orderBy("created_at", "desc");
+      if (targetTenant && !isPlatformAdmin) {
+        query = query.where({ tenant_id: targetTenant });
+      }
+      const rows = await query;
       return rows.map((s) => ({
         id: s.id,
+        tenantId: s.tenant_id || "default-tenant",
         project_id: s.project_id,
         name: s.target_name,
         scanner_type: s.scanner_type,
@@ -396,8 +436,14 @@ async function getAllScans() {
     }
   }
 
-  return Array.from(inMemoryScansStore.values()).map((s) => ({
+  let all = Array.from(inMemoryScansStore.values());
+  if (targetTenant && !isPlatformAdmin) {
+    all = all.filter((s) => (s.tenantId || "default-tenant") === targetTenant);
+  }
+
+  return all.map((s) => ({
     id: s.id,
+    tenantId: s.tenantId || "default-tenant",
     project_id: s.project_id,
     name: s.name,
     scanner_type: s.scanner_type,
@@ -409,16 +455,38 @@ async function getAllScans() {
   }));
 }
 
-async function getScanById(scanId) {
+async function getScanById(scanId, tenantContext = null) {
+  const isPlatformAdmin = tenantContext ? Boolean(tenantContext.isPlatformAdmin) : false;
+  const targetTenant = tenantContext ? tenantContext.tenantId : null;
+
+  if (!isPlatformAdmin && !targetTenant) {
+    return null;
+  }
+
   const inMem = inMemoryScansStore.get(scanId);
   if (inMem) {
+    if (targetTenant && !isPlatformAdmin) {
+      const scanTenant = inMem.tenantId || "default-tenant";
+      if (scanTenant !== targetTenant) {
+        return null;
+      }
+    }
     return inMem;
   }
 
   const connected = await isDbConnected();
   if (connected) {
     try {
-      const scanRow = await db("scans").where({ id: scanId }).first();
+      let query = db("scans").where({ id: scanId });
+      if (targetTenant && !isPlatformAdmin) {
+        const hasTenantCol = await db.schema.hasColumn("scans", "tenant_id").catch(() => false);
+        if (hasTenantCol) {
+          query = query.where({ tenant_id: targetTenant });
+        } else {
+          return null;
+        }
+      }
+      const scanRow = await query.first();
       const cbomRow = await db("cboms").where({ scan_id: scanId }).first();
       if (scanRow && cbomRow) {
         const annotatedBom =
@@ -428,6 +496,7 @@ async function getScanById(scanId) {
 
         return {
           id: scanRow.id,
+          tenantId: scanRow.tenant_id || "default-tenant",
           project_id: scanRow.project_id,
           name: scanRow.target_name,
           scanner_type: scanRow.scanner_type,
@@ -457,10 +526,19 @@ async function getScanById(scanId) {
     }
   }
 
-  return inMemoryScansStore.get(scanId) || null;
+  const scan = inMemoryScansStore.get(scanId);
+  if (scan && targetTenant && !isPlatformAdmin) {
+    if ((scan.tenantId || "default-tenant") !== targetTenant) {
+      return null;
+    }
+  }
+  return scan || null;
 }
 
-async function getScanErrors(scanId) {
+async function getScanErrors(scanId, tenantContext = null) {
+  const scan = await getScanById(scanId, tenantContext);
+  if (!scan) return [];
+
   const connected = await isDbConnected();
   if (connected) {
     try {
@@ -481,18 +559,49 @@ async function getScanErrors(scanId) {
     }
   }
 
-  const scan = inMemoryScansStore.get(scanId);
   return scan?.errors || [];
 }
 
-function getLatestScan() {
-  const all = Array.from(inMemoryScansStore.values());
+function getLatestScan(tenantContext = null) {
+  const isPlatformAdmin = tenantContext ? Boolean(tenantContext.isPlatformAdmin) : false;
+  const targetTenant = tenantContext ? tenantContext.tenantId : null;
+
+  let all = Array.from(inMemoryScansStore.values());
+  if (targetTenant && !isPlatformAdmin) {
+    all = all.filter((s) => (s.tenantId || "default-tenant") === targetTenant);
+  }
   if (all.length === 0) return null;
   all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   return all[0];
 }
 
-async function clearScans() {
+async function clearScans(tenantContext = null) {
+  const isPlatformAdmin = tenantContext ? Boolean(tenantContext.isPlatformAdmin) : false;
+  const targetTenant = tenantContext ? tenantContext.tenantId : null;
+
+  if (targetTenant && !isPlatformAdmin) {
+    for (const [id, s] of inMemoryScansStore.entries()) {
+      if ((s.tenantId || "default-tenant") === targetTenant) {
+        inMemoryScansStore.delete(id);
+      }
+    }
+    const connected = await isDbConnected();
+    if (connected) {
+      const hasScansTable = await db.schema.hasTable("scans").catch(() => false);
+      if (hasScansTable) {
+        try {
+          const hasTenantCol = await db.schema.hasColumn("scans", "tenant_id").catch(() => false);
+          if (hasTenantCol) {
+            await db("scans").where({ tenant_id: targetTenant }).del().catch(() => {});
+          }
+        } catch (_err) {
+          // ignore
+        }
+      }
+    }
+    return;
+  }
+
   inMemoryScansStore.clear();
   const connected = await isDbConnected();
   if (connected) {
@@ -511,6 +620,17 @@ async function clearScans() {
   }
 }
 
+const cbomIngestionService = {
+  ingestCbom,
+  getAllScans,
+  getScanById,
+  getScanErrors,
+  getLatestScan,
+  clearScans,
+  persistScanToPostgres,
+  _scans: inMemoryScansStore,
+};
+
 module.exports = {
   ingestCbom,
   getAllScans,
@@ -519,4 +639,6 @@ module.exports = {
   getLatestScan,
   clearScans,
   persistScanToPostgres,
+  inMemoryScansStore,
+  cbomIngestionService,
 };

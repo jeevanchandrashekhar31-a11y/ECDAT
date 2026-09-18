@@ -42,12 +42,14 @@ const {
 const { csrfProtectionMiddleware } = require("./middleware/cookie_csrf");
 const { tenantIsolationMiddleware } = require("./tenancy");
 const { tlsEnforcementMiddleware } = require("./security/transit_security");
+const { requestSizeLimitMiddleware } = require("./security/resource_governance");
 
 const app = express();
 
 
 // 1. Security & Standard Middleware
 app.use(tlsEnforcementMiddleware());
+app.use(requestSizeLimitMiddleware());
 app.use(helmetMiddleware);
 app.use(corsMiddleware);
 app.use(requestIdMiddleware);
@@ -64,13 +66,15 @@ app.use(injectionProtectionMiddleware);
 app.use(resourceExhaustionGuard());
 app.use(csrfProtectionMiddleware);
 
-// 3. Root and Top-Level Health & Metrics Routes
+// 3. Root and Top-Level Health Routes (Public Liveness/Readiness Probes)
 app.use("/health", healthRoutes);
-app.use("/metrics", metricsRoutes);
 
-// 4. API-Key Authentication Middleware (protects write routes and optional read protection)
+// 4. API-Key Authentication Middleware (protects write routes, scanner routes, and optional read protection)
 app.use(apiKeyAuthMiddleware);
 app.use(tenantIsolationMiddleware);
+
+// 4.1 Metrics & Observability Routes (GET is read telemetry; POST /record requires authentication)
+app.use("/metrics", metricsRoutes);
 
 // 5. Direct Scanner Pipeline Routes (root-level for /scan/* and /cbom/*)
 app.use(scannerPipeline);

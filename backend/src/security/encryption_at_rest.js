@@ -145,6 +145,33 @@ class EncryptionAtRestService {
   }
 
   /**
+   * Securely destroys and zeroizes a key buffer in memory.
+   * @param {string} kid
+   * @returns {boolean}
+   */
+  destroyKey(kid) {
+    const entry = this.keyring.get(kid);
+    if (!entry) return false;
+    if (Buffer.isBuffer(entry.keyBuffer)) {
+      entry.keyBuffer.fill(0);
+    }
+    this.keyring.delete(kid);
+    return true;
+  }
+
+  /**
+   * Securely wipes all key buffers in the keyring.
+   */
+  clearKeyring() {
+    for (const entry of this.keyring.values()) {
+      if (Buffer.isBuffer(entry.keyBuffer)) {
+        entry.keyBuffer.fill(0);
+      }
+    }
+    this.keyring.clear();
+  }
+
+  /**
    * Checks whether a value is already formatted as an ECDAT encrypted string.
    * @param {any} value
    * @returns {boolean}
@@ -233,7 +260,7 @@ class EncryptionAtRestService {
     }
 
     try {
-      const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+      const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, { authTagLength: TAG_LENGTH });
       decipher.setAuthTag(tag);
 
       if (options.aad) {

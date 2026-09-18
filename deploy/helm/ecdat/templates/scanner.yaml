@@ -32,7 +32,7 @@ spec:
           hostIPC: false
           containers:
             - name: scanner
-              image: "{{ .Values.scanner.image.repository }}:{{ .Values.scanner.image.tag }}"
+              image: "{{ .Values.scanner.image.repository }}:{{ .Values.scanner.image.tag }}{{ if .Values.scanner.image.digest }}@{{ .Values.scanner.image.digest }}{{ end }}"
               imagePullPolicy: {{ .Values.global.imagePullPolicy }}
               securityContext:
                 allowPrivilegeEscalation: false

@@ -12,6 +12,7 @@ import {
   ExternalLink,
   X,
   Lock,
+  Network,
 } from 'lucide-react';
 import { GraphNode, GraphEdge, GraphTier, EvidenceFinding, SeverityLevel } from '../../types';
 
@@ -289,6 +290,25 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
           </React.Fragment>
         ))}
       </div>
+
+      {/* Empty State Overlay when no nodes exist */}
+      {nodes.length === 0 && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-950/95 z-30">
+          <div className="w-16 h-16 rounded-2xl bg-cyan-950/50 border border-cyan-800/50 flex items-center justify-center mb-4 text-cyan-400">
+            <Network className="w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-100 mb-1">No Cryptographic Relationships Discovered</h3>
+          <p className="text-xs text-slate-400 max-w-md mb-6">
+            Upload or scan a repository to automatically construct and inspect the live 6-tier cryptographic lineage from applications to algorithms.
+          </p>
+          <a
+            href="/assets"
+            className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition-colors shadow-lg shadow-cyan-500/20"
+          >
+            Go to Asset Inventory &amp; Scans
+          </a>
+        </div>
+      )}
 
       {/* Interactive SVG Canvas */}
       <div

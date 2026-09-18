@@ -400,6 +400,11 @@ class LocalAuthManager {
     }
     return null;
   }
+
+  verifyPassword(user, candidatePassword) {
+    if (!user || !user.passwordHash || !candidatePassword) return false;
+    return this.policy.verifyPassword(candidatePassword, user.passwordHash);
+  }
 }
 
 const defaultLocalAuthManager = new LocalAuthManager();

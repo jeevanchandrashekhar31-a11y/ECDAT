@@ -18,17 +18,26 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "ecdat.name" . }}-ebpf-agent
         ecdat.io/tier: runtime-agent
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/ebpf-agent: runtime/default
     spec:
       serviceAccountName: {{ include "ecdat.fullname" . }}-ebpf-agent
       hostPID: true
       hostNetwork: false
       hostIPC: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.ebpfAgent.securityContext.runAsUser | default 10002 }}
+        runAsGroup: {{ .Values.ebpfAgent.securityContext.runAsGroup | default 10002 }}
+        fsGroup: {{ .Values.ebpfAgent.securityContext.fsGroup | default 10002 }}
+        seccompProfile:
+          type: RuntimeDefault
       tolerations:
         - operator: Exists
           effect: NoSchedule
       containers:
         - name: ebpf-agent
-          image: "{{ .Values.ebpfAgent.image.repository }}:{{ .Values.ebpfAgent.image.tag }}"
+          image: "{{ .Values.ebpfAgent.image.repository }}:{{ .Values.ebpfAgent.image.tag }}{{ if .Values.ebpfAgent.image.digest }}@{{ .Values.ebpfAgent.image.digest }}{{ end }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           securityContext:
             {{- toYaml .Values.ebpfAgent.securityContext | nindent 12 }}
@@ -44,7 +53,7 @@ spec:
           volumeMounts:
             - name: bpf-fs
               mountPath: /sys/fs/bpf
-              mountPropagation: Bidirectional
+              mountPropagation: HostToContainer
             - name: debugfs
               mountPath: /sys/kernel/debug
               readOnly: true

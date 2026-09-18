@@ -16,6 +16,7 @@ class StaticFinding(BaseModel):
     reason: Optional[str] = None
     fingerprint: Optional[str] = None
     secret_type: Optional[str] = None
+    is_synthetic: bool = False
 
     def to_dict(self):
         d = {
@@ -30,6 +31,7 @@ class StaticFinding(BaseModel):
             "analysis_source": self.analysis_source,
             "needs_human_review": self.needs_human_review,
             "reason": self.reason,
+            "is_synthetic": self.is_synthetic,
         }
         if self.fingerprint:
             d["fingerprint"] = self.fingerprint

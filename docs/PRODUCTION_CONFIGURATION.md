@@ -98,10 +98,10 @@ metadata:
   namespace: ecdat-prod
 type: Opaque
 stringData:
-  ECDAT_API_KEY: "prod-cluster-ecdat-api-key-9921471-enterprise-token"
-  DATA_ENCRYPTION_KEY: "prod-aes256-dek-master-encryption-key-entropy-k8s"
-  JWT_SECRET: "prod-jwt-signing-secret-key-32-chars-enterprise-k8s"
-  DATABASE_URL: "postgresql://ecdat_svc:ProdP@ssw0rd991!@aurora-cluster.internal:5432/ecdat_prod?sslmode=verify-full"
+  ECDAT_API_KEY: "change-this-prod-cluster-ecdat-api-key-enterprise-token"
+  DATA_ENCRYPTION_KEY: "change-this-prod-aes256-dek-master-encryption-key"
+  JWT_SECRET: "change-this-prod-jwt-signing-secret-key-32-chars"
+  DATABASE_URL: "postgresql://ecdat_svc:change-this-password@aurora-cluster.internal:5432/ecdat_prod?sslmode=verify-full"
 ```
 
 ### Kubernetes ConfigMap (`ecdat-production-config.yaml`)

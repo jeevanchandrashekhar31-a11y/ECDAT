@@ -1,0 +1,31 @@
+{
+  "positive": [
+    "tenant-alpha-001",
+    "scan_id_94829",
+    "user.name@example.com",
+    "algorithm-sha256"
+  ],
+  "negative": [
+    "",
+    null
+  ],
+  "boundary": [
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "ID_00000000000000000000000000000001"
+  ],
+  "malicious": [
+    "' OR '1'='1",
+    "' OR 1=1 --",
+    "admin'--",
+    "' UNION SELECT username, password FROM users --",
+    "'; DROP TABLE scans; --",
+    "1; EXEC xp_cmdshell('dir'); --",
+    "' OR 'a'='a' /*",
+    "\" OR \"1\"=\"1",
+    "admin') OR ('1'='1"
+  ],
+  "regression": [
+    "' OR 1=1 --",
+    "'; DROP TABLE users; --"
+  ]
+}

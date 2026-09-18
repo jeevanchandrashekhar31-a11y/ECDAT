@@ -1,0 +1,33 @@
+{
+  "positive": [
+    "safe_reports/summary.json",
+    "cbom/cyclonedx_1.6.json",
+    "scans/2026/09/scan_run.log"
+  ],
+  "negative": [
+    "",
+    "   "
+  ],
+  "boundary": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "nested/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/dir/file.txt"
+  ],
+  "malicious": [
+    "../../../../etc/passwd",
+    "..\\..\\..\\windows\\system32\\drivers\\etc\\hosts",
+    "/etc/shadow",
+    "C:\\Windows\\win.ini",
+    "safe/../../../../secret.pem",
+    "....//....//....//etc/passwd",
+    "%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+    "safe/file.txt\u0000/../../etc/passwd",
+    "CON",
+    "NUL",
+    "AUX",
+    "file.txt::$DATA"
+  ],
+  "regression": [
+    "../../etc/passwd",
+    "..\\..\\windows\\win.ini"
+  ]
+}

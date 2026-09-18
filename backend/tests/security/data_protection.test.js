@@ -1,3 +1,4 @@
+// @ecdat-synthetic-corpus
 /**
  * Test Suite: ECDAT Database and Data Security — Phase 16.1 Data Protection
  *

@@ -17,6 +17,7 @@
     "security:audit": "npm run vuln-scan",
     "sign": "python scripts/sign_artifacts.py",
     "provenance": "python scripts/generate_provenance.py",
-    "release-gate": "python scripts/release_gate.py"
+    "release-gate": "python scripts/release_gate.py",
+    "clear-data": "npm --prefix backend run clear-data"
   }
 }

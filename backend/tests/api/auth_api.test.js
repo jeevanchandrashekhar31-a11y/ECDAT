@@ -114,7 +114,10 @@ test("Auth API - POST /api/v1/auth/token/refresh performs RTR and POST /token/re
     // 2. Revoke token
     const revokeRes = await fetch(`${baseUrl}/api/v1/auth/token/revoke`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${refreshed.accessToken}`,
+      },
       body: JSON.stringify({
         jti: refreshed.jti,
         reason: "User signed out",

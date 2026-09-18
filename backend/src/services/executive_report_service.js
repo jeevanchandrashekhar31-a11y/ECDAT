@@ -17,6 +17,7 @@
  * concrete evidence items (finding ID, asset ID, file location, line number, or fingerprint).
  */
 
+const crypto = require("crypto");
 const { db, isDbConnected } = require("../db/connection");
 const { getScanById, getLatestScan } = require("./cbom_ingestion");
 const { getRules, calculateMosca } = require("../risk_engine");
@@ -36,7 +37,7 @@ function createEvidenceReference(item = {}) {
   const evidenceId =
     item.evidence_id ||
     item.evidenceId ||
-    `ev_${item.id || item.asset_id || Math.random().toString(36).substring(2, 9)}`;
+    `ev_${item.id || item.asset_id || crypto.randomBytes(4).toString("hex")}`;
 
   return {
     evidence_id: evidenceId,
@@ -78,6 +79,9 @@ async function generateExecutiveReport(options = {}) {
       if (requestedScanId) {
         q = q.where("id", requestedScanId);
       }
+      if (options.tenantContext && !options.tenantContext.isPlatformAdmin) {
+        q = q.where("tenant_id", options.tenantContext.tenantId);
+      }
       scanRow = await q.orderBy("created_at", "desc").first();
       if (scanRow) {
         const cbomRow = await db("cboms").where("scan_id", scanRow.id).first();
@@ -92,11 +96,18 @@ async function generateExecutiveReport(options = {}) {
 
   let inMemoryScan = null;
   if (!scanRow) {
-    inMemoryScan = requestedScanId ? await getScanById(requestedScanId) : getLatestScan();
+    inMemoryScan = requestedScanId ? await getScanById(requestedScanId, options.tenantContext) : getLatestScan(options.tenantContext);
   }
 
-  const scanId = scanRow?.id || inMemoryScan?.id || "scan_enterprise_core";
-  const scanName = scanRow?.target_name || inMemoryScan?.name || "Enterprise Core Banking & Payments";
+  if (!scanRow && !inMemoryScan) {
+    const notFoundErr = new Error(requestedScanId ? `Scan '${requestedScanId}' not found` : "No scan data available");
+    notFoundErr.statusCode = 404;
+    notFoundErr.name = "NotFoundError";
+    throw notFoundErr;
+  }
+
+  const scanId = scanRow?.id || inMemoryScan?.id;
+  const scanName = scanRow?.target_name || inMemoryScan?.name || "Enterprise Cryptographic Discovery";
 
   // Gather raw findings and assets
   let findings = [];

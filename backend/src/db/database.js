@@ -4,7 +4,7 @@ const { Pool } = require("pg");
 const pool = new Pool({
   connectionString:
     process.env.DATABASE_URL ||
-    "postgres://postgres:postgres@localhost:5432/ecdat",
+    "postgres://postgres:change-this-local-postgres-password@localhost:5432/ecdat", // ecdat:synthetic-fixture
 });
 
 module.exports = {

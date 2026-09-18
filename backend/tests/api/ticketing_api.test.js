@@ -46,7 +46,7 @@ test("Ticketing API - POST /api/v1/integrations/ticketing/register registers new
       name: "api-test-webhook",
       type: "webhook",
       config: {
-        url: "https://soar.corp.internal/events",
+        url: "https://hooks.slack.com/services/test-webhook",
         secret: "my-secret-key-123",
       },
     };

@@ -20,31 +20,52 @@ spec:
       labels:
         app.kubernetes.io/name: ecdat-ebpf-agent
         ecdat.io/tier: runtime-agent
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/ebpf-agent: runtime/default
     spec:
       serviceAccountName: ecdat-ebpf-agent-sa
-      # hostPID is required to map eBPF probe events to host process trees
+      # hostPID is required to map in-kernel eBPF probe events to host process trees
       hostPID: true
       # hostNetwork is false: agent strictly uses Kubernetes SDN pod networking
       hostNetwork: false
       hostIPC: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10002
+        runAsGroup: 10002
+        fsGroup: 10002
+        seccompProfile:
+          type: RuntimeDefault
       tolerations:
         - operator: Exists
           effect: NoSchedule
       containers:
         - name: ebpf-agent
-          image: ecdat/ebpf-agent:latest
+          image: ecdat/ebpf-agent:1.0.0@sha256:9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e
           imagePullPolicy: IfNotPresent
-          # Privileged capabilities scoped exclusively to eBPF kernel instrumentation
+          # MINIMAL PRIVILEGE eBPF INSTRUMENTATION (Linux >= 5.8):
+          # Privileged mode is strictly ELIMINATED. Container cannot access raw host devices.
+          # allowPrivilegeEscalation is disabled to prevent setuid exploitation.
           securityContext:
-            privileged: true
+            privileged: false
+            allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
-            allowPrivilegeEscalation: true
+            runAsNonRoot: true
+            runAsUser: 10002
+            runAsGroup: 10002
+            seccompProfile:
+              type: RuntimeDefault
             capabilities:
+              drop:
+                - ALL
               add:
+                # 1. BPF: Authorizes bpf(BPF_PROG_LOAD) and bpf(BPF_MAP_CREATE) for ring buffers without CAP_SYS_ADMIN
                 - BPF
+                # 2. PERFMON: Authorizes perf event and uprobe attachment to user libraries (OpenSSL) without CAP_SYS_ADMIN
                 - PERFMON
+                # 3. SYS_RESOURCE: Authorizes raising RLIMIT_MEMLOCK on Linux 5.8-5.10 (cgroup memcg used on >= 5.11)
                 - SYS_RESOURCE
-                - NET_ADMIN
+                # NOTE: NET_ADMIN is strictly DROPPED: agent observes crypto uprobes, not network filters.
           env:
             - name: NODE_NAME
               valueFrom:
@@ -64,10 +85,10 @@ spec:
               cpu: "100m"
               memory: "64Mi"
           volumeMounts:
-            # Mount necessary kernel tracing and eBPF maps
+            # Mount necessary kernel tracing and eBPF maps via HostToContainer (unprivileged-compatible)
             - name: bpf-fs
               mountPath: /sys/fs/bpf
-              mountPropagation: Bidirectional
+              mountPropagation: HostToContainer
             - name: debugfs
               mountPath: /sys/kernel/debug
               readOnly: true

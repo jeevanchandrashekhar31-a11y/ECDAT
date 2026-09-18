@@ -92,7 +92,7 @@ Every single finding item is formally tracked with CVE/GHSA identifiers, ecosyst
 | **3** | **E2E Tests** | `node --test backend/tests/reporting/*.test.js` | Complete scan-to-report pipelines pass | **PASS** |
 | **4** | **Fuzz Tests** | `pytest tests/test_fuzz_parsers.py ...` | Zero crash/panic on malformed inputs | **PASS** |
 | **5** | **Adversarial Tests** | `pytest tests/test_adversarial_scanner.py ...` | Neutralizes Zip Slip, symlinks, ReDoS attacks | **PASS** |
-| **6** | **SAST** | `pytest tests/test_golden_corpus.py ...` | 100% recall on deprecated algorithms | **PASS** |
+| **6** | **SAST** | `pytest tests/test_golden_corpus.py ...` | 100% golden corpus recall on deprecated algorithms fixture | **PASS** |
 | **7** | **Dependency Scan** | `python scripts/scan_vulnerabilities.py` | 0 unaccepted CRITICAL blockers | **PASS** |
 | **8** | **Secret Scan** | `SupplyChainSecurityGatePipeline` Gate 2 | 0 unredacted secrets or private keys | **PASS** |
 | **9** | **Container Scan** | `pytest tests/test_container_hardening.py` | Non-root, read-only rootfs, dropped caps | **PASS** |

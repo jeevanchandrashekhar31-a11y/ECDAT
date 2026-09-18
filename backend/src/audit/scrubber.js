@@ -16,53 +16,64 @@ const BEARER_AUTH_REGEX = /[Bb]earer\s+[A-Za-z0-9\-._~+/]+=*/g;
 
 // Normalized sensitive field names that must never be recorded in cleartext
 const SENSITIVE_FIELD_NAMES = new Set([
+  // Passwords
   "password",
   "passwd",
   "pass",
+  "passphrase",
+  "userpassword",
+
+  // MFA Secrets & Backup Codes
   "secret",
+  "totpsecret",
+  "totp",
+  "mfasecret",
+  "mfatoken",
+  "otptoken",
+  "backupcode",
+  "backupcodes",
+  "recoverycode",
+  "recoverycodes",
+
+  // API Keys & Tokens
   "token",
   "authorization",
   "auth",
   "apikey",
-  "api_key",
-  "x-api-key",
   "xapikey",
   "accesstoken",
-  "access_token",
   "refreshtoken",
-  "refresh_token",
+  "idtoken",
   "csrftoken",
-  "csrf_token",
-  "x-csrf-token",
+  "xcsrftoken",
   "clientsecret",
-  "client_secret",
+
+  // Private Keys & Key Material
   "privatekey",
-  "private_key",
+  "privatekeypem",
   "privatekeybytes",
-  "private_key_bytes",
   "rawkey",
-  "raw_key",
   "keymaterial",
-  "key_material",
   "secretbytes",
-  "secret_bytes",
   "privateexponent",
-  "private_exponent",
-  "rsa_d",
-  "ecc_d",
+  "rsad",
+  "eccd",
   "seedbytes",
-  "seed_bytes",
-  "totpsecret",
-  "totp_secret",
-  "backupcodes",
-  "backup_codes",
-  "cookie",
-  "cookies",
-  "set-cookie",
-  "set_cookie",
+  "symmetrickey",
+  "sharedsecret",
+
+  // Raw Credentials & Cookies
   "credential",
   "credentials",
+  "rawcredential",
+  "rawcredentials",
+  "cookie",
+  "cookies",
+  "setcookie",
 ]);
+
+const API_KEY_REGEX = /\b(?:ecdat-(?:live|test)-(?:sec|pub)-[a-f0-9]+|sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|xox[baprs]-[a-zA-Z0-9-]+)\b/g;
+const INLINE_SECRET_REGEX = /((?:password|passwd|api_key|apikey|secret|totp|backup_code|mfa_secret|private_key|token)\s*[:=]\s*)(['"][^'"]+['"]|[^\s,'"&]+)/gi;
 
 /**
  * Scrubs a string of inline sensitive tokens, PEM keys, and bearer tokens.
@@ -99,6 +110,22 @@ function scrubString(text) {
   if (BEARER_AUTH_REGEX.test(scrubbed)) {
     BEARER_AUTH_REGEX.lastIndex = 0;
     scrubbed = scrubbed.replace(BEARER_AUTH_REGEX, "Bearer [REDACTED_TOKEN]");
+    count++;
+  }
+
+  // 4. Redact known API key patterns
+  API_KEY_REGEX.lastIndex = 0;
+  if (API_KEY_REGEX.test(scrubbed)) {
+    API_KEY_REGEX.lastIndex = 0;
+    scrubbed = scrubbed.replace(API_KEY_REGEX, "[REDACTED_API_KEY]");
+    count++;
+  }
+
+  // 5. Redact inline key=value or key:value credentials
+  INLINE_SECRET_REGEX.lastIndex = 0;
+  if (INLINE_SECRET_REGEX.test(scrubbed)) {
+    INLINE_SECRET_REGEX.lastIndex = 0;
+    scrubbed = scrubbed.replace(INLINE_SECRET_REGEX, "$1[REDACTED_SECRET]");
     count++;
   }
 

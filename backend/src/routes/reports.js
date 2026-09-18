@@ -4,7 +4,7 @@ const { db, isDbConnected } = require("../db/connection");
 
 const router = express.Router();
 
-const { generateHtmlReport } = require("../risk_engine/html_reporter");
+const { generateHtmlReport, escapeHtml } = require("../risk_engine/html_reporter");
 const { generateSummary } = require("../risk_engine/summary_generator");
 const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
 const {
@@ -23,6 +23,10 @@ const {
   ECDAT_VERSION,
   DEFAULT_SCANNER_VERSIONS,
 } = require("../services/evidence_integrity_service");
+const { RATE_LIMITS } = require("../security/resource_governance");
+
+// Protect report generation from DoS resource exhaustion
+router.use(RATE_LIMITS.reportGeneration.middleware());
 
 /**
  * GET /api/v1/reports/summary
@@ -31,7 +35,7 @@ const {
 router.get("/summary", async (req, res, next) => {
   try {
     const scanId = req.query.scanId || req.query.scan_id;
-    const scan = scanId ? await getScanById(scanId) : getLatestScan();
+    const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
 
     if (!scan) {
       return res.status(404).json({
@@ -88,6 +92,7 @@ router.get("/executive", async (req, res, next) => {
       policyProfile,
       scenario,
       scope,
+      tenantContext: req.tenantContext,
     });
 
     defaultAuditService.logEvent({
@@ -107,6 +112,9 @@ router.get("/executive", async (req, res, next) => {
 
     res.status(200).json(report);
   } catch (err) {
+    if (err.statusCode === 404 || err.name === "NotFoundError") {
+      return res.status(404).json({ error: "NotFound", message: err.message });
+    }
     next(err);
   }
 });
@@ -125,6 +133,7 @@ router.get("/executive/html", async (req, res, next) => {
       scanId,
       policyProfile,
       scenario,
+      tenantContext: req.tenantContext,
     });
 
     const html = generateExecutiveHtmlReport(report);
@@ -147,6 +156,9 @@ router.get("/executive/html", async (req, res, next) => {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.status(200).send(html);
   } catch (err) {
+    if (err.statusCode === 404 || err.name === "NotFoundError") {
+      return res.status(404).json({ error: "NotFound", message: err.message });
+    }
     next(err);
   }
 });
@@ -158,13 +170,16 @@ router.get("/executive/html", async (req, res, next) => {
 router.get("/executive/export", async (req, res, next) => {
   try {
     const scanId = req.query.scanId || req.query.scan_id;
-    const report = await generateExecutiveReport({ scanId });
+    const report = await generateExecutiveReport({ scanId, tenantContext: req.tenantContext });
     const filename = `ecdat_executive_report_${report.report_metadata.scan_id}.json`;
 
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.setHeader("Content-Type", "application/json");
     res.status(200).send(JSON.stringify(report, null, 2));
   } catch (err) {
+    if (err.statusCode === 404 || err.name === "NotFoundError") {
+      return res.status(404).json({ error: "NotFound", message: err.message });
+    }
     next(err);
   }
 });
@@ -184,6 +199,7 @@ router.get("/technical", async (req, res, next) => {
       algorithm,
       limit,
       offset,
+      tenantContext: req.tenantContext,
     });
 
     defaultAuditService.logEvent({
@@ -203,6 +219,9 @@ router.get("/technical", async (req, res, next) => {
 
     res.status(200).json(report);
   } catch (err) {
+    if (err.statusCode === 404 || err.name === "NotFoundError") {
+      return res.status(404).json({ error: "NotFound", message: err.message });
+    }
     next(err);
   }
 });
@@ -219,6 +238,7 @@ router.get("/technical/html", async (req, res, next) => {
       severity,
       algorithm,
       limit,
+      tenantContext: req.tenantContext,
     });
 
     const html = generateTechnicalHtmlReport(report);
@@ -226,6 +246,9 @@ router.get("/technical/html", async (req, res, next) => {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.status(200).send(html);
   } catch (err) {
+    if (err.statusCode === 404 || err.name === "NotFoundError") {
+      return res.status(404).json({ error: "NotFound", message: err.message });
+    }
     next(err);
   }
 });
@@ -242,6 +265,7 @@ router.get("/technical/:findingId", async (req, res, next) => {
     const report = await generateTechnicalDrillDownReport({
       scanId,
       findingId,
+      tenantContext: req.tenantContext,
     });
 
     if (report.findings.length === 0) {
@@ -321,7 +345,16 @@ router.get("/cbom/:scanId", async (req, res, next) => {
     const connected = await isDbConnected();
     if (connected) {
       try {
-        const row = await db("cboms").where("scan_id", scanId).first();
+        let cbomQuery = db("cboms")
+          .join("scans", "cboms.scan_id", "scans.id")
+          .where("cboms.scan_id", scanId)
+          .select("cboms.*");
+
+        if (req.tenantContext && !req.tenantContext.isPlatformAdmin) {
+          cbomQuery = cbomQuery.andWhere("scans.tenant_id", req.tenantContext.tenantId);
+        }
+
+        const row = await cbomQuery.first();
         if (row) {
           const content =
             typeof row[type] === "string" ? JSON.parse(row[type]) : row[type];
@@ -336,7 +369,7 @@ router.get("/cbom/:scanId", async (req, res, next) => {
     }
 
     // In-memory fallback
-    const scan = await getScanById(scanId);
+    const scan = await getScanById(scanId, req.tenantContext);
     if (!scan) {
       return res.status(404).json({
         error: "NotFound",
@@ -369,30 +402,61 @@ router.get("/cbom/:scanId", async (req, res, next) => {
  * GET /api/v1/reports/:id/html
  * Serves the standalone static HTML risk assessment report.
  */
+function renderNotFoundHtml(id) {
+  const safeId = escapeHtml(id);
+  return (
+    "<!DOCTYPE html><html><head><title>Report Not Found</title></head>" +
+    '<body style="font-family:sans-serif; background:#0f172a; color:#fff; padding:2rem; text-align:center;">' +
+    "<h2>Report Not Found</h2>" +
+    "<p>No report exists for scan ID: <code>" +
+    safeId +
+    "</code></p></body></html>"
+  );
+}
+
+function renderFallbackHtml(scan) {
+  const safeName = escapeHtml(scan.name || scan.id || "Cryptographic Scan Report");
+  const safeId = escapeHtml(scan.id);
+  const safeProfile = escapeHtml(scan.policy_profile || "regulated_bfsi");
+  const safeScenario = escapeHtml(scan.scenario || "baseline");
+  const totalAssets = Number(scan.metrics?.total_assets) || 0;
+  const assetsQuantum = Number(scan.metrics?.assets_at_quantum_risk) || 0;
+  const critCount = Number(scan.metrics?.severity_counts?.critical) || 0;
+  const highCount = Number(scan.metrics?.severity_counts?.high) || 0;
+  const statusBadge = scan.metrics?.overall_cicd_pass
+    ? '<span class="badge-pass">PASS</span>'
+    : '<span class="badge-fail">FAIL</span>';
+
+  return (
+    "<!DOCTYPE html><html><head><meta charset=\"utf-8\">" +
+    "<title>ECDAT Cryptographic Report: " + safeName + "</title>" +
+    "<style>" +
+    "body { font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px 20px; line-height: 1.6; }" +
+    ".card { background: #1e293b; border-radius: 12px; padding: 24px; max-width: 900px; margin: 0 auto 20px; border: 1px solid #334155; }" +
+    "h1 { color: #38bdf8; margin-bottom: 8px; }" +
+    ".stat { font-size: 2rem; font-weight: bold; color: #38bdf8; }" +
+    ".badge-fail { background: #ef4444; color: white; padding: 4px 10px; border-radius: 9999px; font-weight: bold; font-size: 0.8rem; }" +
+    ".badge-pass { background: #10b981; color: white; padding: 4px 10px; border-radius: 9999px; font-weight: bold; font-size: 0.8rem; }" +
+    "</style></head><body>" +
+    "<div class=\"card\"><h1>" + safeName + "</h1>" +
+    "<p>Scan ID: <code>" + safeId + "</code> | Profile: <b>" + safeProfile + "</b> | Scenario: <b>" + safeScenario + "</b></p></div>" +
+    "<div class=\"card\"><h2>Telemetry & Post-Quantum Summary</h2>" +
+    "<p>Total Cryptographic Assets: <span class=\"stat\">" + totalAssets + "</span></p>" +
+    "<p>Assets at Quantum Threat: <b>" + assetsQuantum + "</b></p>" +
+    "<p>Critical Weaknesses: <b>" + critCount + "</b> | High: <b>" + highCount + "</b></p>" +
+    "<p>Status: " + statusBadge + "</p></div></body></html>"
+  );
+}
+
 router.get("/:id/html", async (req, res, next) => {
   try {
     const scan =
       req.params.id === "latest"
-        ? getLatestScan()
-        : await getScanById(req.params.id);
+        ? getLatestScan(req.tenantContext)
+        : await getScanById(req.params.id, req.tenantContext);
 
     if (!scan) {
-      return res.status(404).send(`
-        <!DOCTYPE html>
-        <html>
-        <head><title>Report Not Found</title></head>
-        <body style="font-family:sans-serif; background:#0f172a; color:#fff; padding:2rem; text-align:center;">
-          <h2>Report Not Found</h2>
-          <p>No report exists for scan ID: <code>${req.params.id}</code></p>
-        </body>
-        </html>
-      `);
-    }
-
-    // If pre-cached, send directly
-    if (scan.html_report) {
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      return res.status(200).send(scan.html_report);
+      return res.status(404).send(renderNotFoundHtml(req.params.id));
     }
 
     // Dynamically generate from summary or annotated CBOM
@@ -437,38 +501,8 @@ router.get("/:id/html", async (req, res, next) => {
     }
 
     // Fallback minimal HTML report if full summary generation failed
-    const fallbackHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>ECDAT Cryptographic Report: ${scan.name || scan.id}</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px 20px; line-height: 1.6; }
-          .card { background: #1e293b; border-radius: 12px; padding: 24px; max-width: 900px; margin: 0 auto 20px; border: 1px solid #334155; }
-          h1 { color: #38bdf8; margin-bottom: 8px; }
-          .stat { font-size: 2rem; font-weight: bold; color: #38bdf8; }
-          .badge-fail { background: #ef4444; color: white; padding: 4px 10px; border-radius: 9999px; font-weight: bold; font-size: 0.8rem; }
-          .badge-pass { background: #10b981; color: white; padding: 4px 10px; border-radius: 9999px; font-weight: bold; font-size: 0.8rem; }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <h1>${scan.name || 'Cryptographic Scan Report'}</h1>
-          <p>Scan ID: <code>${scan.id}</code> | Profile: <b>${scan.policy_profile || 'regulated_bfsi'}</b> | Scenario: <b>${scan.scenario || 'baseline'}</b></p>
-        </div>
-        <div class="card">
-          <h2>Telemetry & Post-Quantum Summary</h2>
-          <p>Total Cryptographic Assets: <span class="stat">${scan.metrics?.total_assets || 0}</span></p>
-          <p>Assets at Quantum Threat: <b>${scan.metrics?.assets_at_quantum_risk || 0}</b></p>
-          <p>Critical Weaknesses: <b>${scan.metrics?.severity_counts?.critical || 0}</b> | High: <b>${scan.metrics?.severity_counts?.high || 0}</b></p>
-          <p>Status: ${scan.metrics?.overall_cicd_pass ? '<span class="badge-pass">PASS</span>' : '<span class="badge-fail">FAIL</span>'}</p>
-        </div>
-      </body>
-      </html>
-    `;
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.status(200).send(fallbackHtml);
+    res.status(200).send(renderFallbackHtml(scan));
   } catch (err) {
     next(err);
   }
@@ -481,8 +515,8 @@ router.get("/:id/summary", async (req, res, next) => {
   try {
     const scan =
       req.params.id === "latest"
-        ? getLatestScan()
-        : await getScanById(req.params.id);
+        ? getLatestScan(req.tenantContext)
+        : await getScanById(req.params.id, req.tenantContext);
 
     if (!scan) {
       return res.status(404).json({

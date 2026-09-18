@@ -44,7 +44,7 @@ spec:
       hostIPC: false
       containers:
         - name: frontend
-          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}{{ if .Values.frontend.image.digest }}@{{ .Values.frontend.image.digest }}{{ end }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           securityContext:
             allowPrivilegeEscalation: false

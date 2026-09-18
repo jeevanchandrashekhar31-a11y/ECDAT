@@ -17,14 +17,36 @@ const {
   formatEvent,
   SUPPORTED_FORMATS,
 } = require("../siem");
+const { validateSafeUrlAsync } = require("../security/ssrf_protection");
+const {
+  paginationBoundsMiddleware,
+  validateEnum,
+  ALLOWED_SEVERITIES,
+} = require("../security/input_validation");
+const { RATE_LIMITS } = require("../security/resource_governance");
 
 /**
  * GET /api/v1/siem/events
  * Query structured security events suitable for SIEM ingestion.
  * Supports format=json|cef|syslog and filtering by severity, action, actor, tenant, status.
  */
-router.get("/events", (req, res) => {
+router.get("/events", paginationBoundsMiddleware(), (req, res) => {
   try {
+    const requestedFormat = (req.query.format || "json").toLowerCase();
+    if (!["json", "cef", "syslog"].includes(requestedFormat)) {
+      return res.status(400).json({
+        error: "ValidationError",
+        message: `Unsupported SIEM export format '${requestedFormat}'. Allowed: json, cef, syslog`,
+      });
+    }
+
+    if (req.query.severity) {
+      const sevCheck = validateEnum(req.query.severity, ALLOWED_SEVERITIES, "severity");
+      if (!sevCheck.valid) {
+        return res.status(400).json({ error: "ValidationError", message: sevCheck.error });
+      }
+    }
+
     const filter = {
       severity: req.query.severity,
       action: req.query.action,
@@ -33,10 +55,9 @@ router.get("/events", (req, res) => {
       status: req.query.status,
     };
 
-    const requestedFormat = (req.query.format || "json").toLowerCase();
     const options = {
-      limit: req.query.limit || 50,
-      offset: req.query.offset || 0,
+      limit: req.pagination ? req.pagination.limit : (req.query.limit || 50),
+      offset: req.pagination ? req.pagination.offset : (req.query.offset || 0),
       format: requestedFormat,
     };
 
@@ -61,7 +82,7 @@ router.get("/events", (req, res) => {
  * POST /api/v1/siem/forward
  * Manually flushes the queued SIEM events or ingests and dispatches an ad-hoc event.
  */
-router.post("/forward", async (req, res) => {
+router.post("/forward", RATE_LIMITS.integrationCalls.middleware(), async (req, res) => {
   try {
     const body = req.body;
     let ingestedEventId = null;
@@ -132,11 +153,22 @@ router.get("/config", (_req, res) => {
  * PUT /api/v1/siem/config
  * Updates destinations, batching, or forwarder parameters.
  */
-router.put("/config", (req, res) => {
+router.put("/config", async (req, res) => {
   try {
     const { endpoints, batchSize, flushIntervalMs } = req.body || {};
 
     if (Array.isArray(endpoints)) {
+      for (const ep of endpoints) {
+        if (ep && ep.url) {
+          const check = await validateSafeUrlAsync(ep.url);
+          if (!check.safe) {
+            return res.status(400).json({
+              error: "SSRFViolation",
+              message: `SIEM endpoint '${ep.url}' rejected: ${check.error}`,
+            });
+          }
+        }
+      }
       defaultSiemDispatcher.setEndpoints(endpoints);
     }
     if (typeof batchSize === "number" && batchSize > 0) {

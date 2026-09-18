@@ -76,7 +76,7 @@ $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT A
     python scanners/static/main.py --repo testing/corpora/crypto_samples/ --output artifacts/cbom.json
     ```
   - **Documentation**: [`docs/STATIC_SCANNER.md`](docs/STATIC_SCANNER.md)
-  - **Evidence**: Golden corpus test suite evaluates 42 diverse language test cases with 98.4% precision and 100% recall for deprecated algorithms (MD5, SHA-1, DES, RSA-1024).
+  - **Evidence**: Golden corpus test suite evaluates diverse multi-language test cases with empirical precision and recall verified directly against golden corpus fixtures (MD5, SHA-1, DES, RSA-1024, AES, PQC).
 
 ---
 

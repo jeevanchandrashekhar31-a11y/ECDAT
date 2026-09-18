@@ -24,6 +24,170 @@ const ROLES = Object.freeze({
   VIEWER: "viewer",
 });
 
+/**
+ * Enterprise Capabilities derived directly from ECDAT product requirements.
+ */
+const CAPABILITIES = Object.freeze({
+  READ_OWN_DATA: "read_own_data",
+  READ_TENANT_DATA: "read_tenant_data",
+  TRIGGER_SCANS: "trigger_scans",
+  TRIAGE_FINDINGS: "triage_findings",
+  PROPOSE_REMEDIATION: "propose_remediation",
+  APPROVE_REMEDIATION: "approve_remediation",
+  MANAGE_POLICIES: "manage_policies",
+  READ_COMPLIANCE_AUDIT: "read_compliance_audit",
+  MANAGE_USERS: "manage_users",
+  ROTATE_SECRETS: "rotate_secrets",
+  CROSS_TENANT_ACCESS: "cross_tenant_access",
+});
+
+/**
+ * Canonical Authorization Matrix:
+ * Maps each product capability to allowed access levels across all 7 enterprise roles:
+ * - Anonymous
+ * - Viewer
+ * - Analyst
+ * - Developer
+ * - Auditor
+ * - Admin (Security Administrator)
+ * - Platform Admin (Superuser)
+ *
+ * Permission values:
+ * - 'YES': Unrestricted access
+ * - 'NO': Access denied (HTTP 401 for anonymous, HTTP 403 for authenticated)
+ * - 'scoped': Permitted strictly within user's assigned tenant
+ * - 'policy': Governed by cryptographic policy/dual-control rules
+ */
+const AUTHORIZATION_MATRIX = Object.freeze({
+  [CAPABILITIES.READ_OWN_DATA]: {
+    anonymous: "NO",
+    viewer: "YES",
+    analyst: "YES",
+    developer: "YES",
+    auditor: "YES",
+    admin: "YES",
+    platform_admin: "YES",
+  },
+  [CAPABILITIES.READ_TENANT_DATA]: {
+    anonymous: "NO",
+    viewer: "scoped",
+    analyst: "scoped",
+    developer: "scoped",
+    auditor: "scoped",
+    admin: "scoped",
+    platform_admin: "YES",
+  },
+  [CAPABILITIES.TRIGGER_SCANS]: {
+    anonymous: "NO",
+    viewer: "NO",
+    analyst: "YES",
+    developer: "YES",
+    auditor: "NO",
+    admin: "YES",
+    platform_admin: "YES",
+  },
+  [CAPABILITIES.TRIAGE_FINDINGS]: {
+    anonymous: "NO",
+    viewer: "NO",
+    analyst: "YES",
+    developer: "YES",
+    auditor: "NO",
+    admin: "YES",
+    platform_admin: "YES",
+  },
+  [CAPABILITIES.PROPOSE_REMEDIATION]: {
+    anonymous: "NO",
+    viewer: "NO",
+    analyst: "YES",
+    developer: "YES",
+    auditor: "NO",
+    admin: "YES",
+    platform_admin: "YES",
+  },
+  [CAPABILITIES.APPROVE_REMEDIATION]: {
+    anonymous: "NO",
+    viewer: "NO",
+    analyst: "NO",
+    developer: "NO",
+    auditor: "NO",
+    admin: "YES",
+    platform_admin: "YES",
+  },
+  [CAPABILITIES.MANAGE_POLICIES]: {
+    anonymous: "NO",
+    viewer: "NO",
+    analyst: "NO",
+    developer: "NO",
+    auditor: "NO",
+    admin: "YES",
+    platform_admin: "YES",
+  },
+  [CAPABILITIES.READ_COMPLIANCE_AUDIT]: {
+    anonymous: "NO",
+    viewer: "scoped",
+    analyst: "scoped",
+    developer: "scoped",
+    auditor: "scoped",
+    admin: "scoped",
+    platform_admin: "YES",
+  },
+  [CAPABILITIES.MANAGE_USERS]: {
+    anonymous: "NO",
+    viewer: "NO",
+    analyst: "NO",
+    developer: "NO",
+    auditor: "NO",
+    admin: "scoped",
+    platform_admin: "YES",
+  },
+  [CAPABILITIES.ROTATE_SECRETS]: {
+    anonymous: "NO",
+    viewer: "NO",
+    analyst: "NO",
+    developer: "NO",
+    auditor: "NO",
+    admin: "policy",
+    platform_admin: "YES",
+  },
+  [CAPABILITIES.CROSS_TENANT_ACCESS]: {
+    anonymous: "NO",
+    viewer: "NO",
+    analyst: "NO",
+    developer: "NO",
+    auditor: "NO",
+    admin: "NO",
+    platform_admin: "YES",
+  },
+});
+
+/**
+ * Emits a structured audit event to defaultAuditService upon permission denial.
+ */
+function emitRbacAuditEvent({ action, status = "DENIED", actor, tenantId, target, details }) {
+  try {
+    const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
+    defaultAuditService
+      .logEvent({
+        category: AUDIT_CATEGORIES.PERMISSION_CHANGE,
+        action: action || AUDIT_ACTIONS.PERMISSION_DENIED,
+        status: status || AUDIT_STATUSES.DENIED,
+        actor: {
+          id: String(actor?.id || actor?.userId || actor?.sub || "anonymous").slice(0, 128),
+          username: String(actor?.username || actor?.name || "anonymous").slice(0, 128),
+          role: String(actor?.role || "viewer").slice(0, 64),
+          ipAddress: actor?.ipAddress || null,
+          userAgent: actor?.userAgent || null,
+        },
+        tenantId: tenantId ? String(tenantId).slice(0, 100) : "default",
+        target: target || { type: "endpoint", id: details?.path || "rbac_gate" },
+        details: details || {},
+      })
+      .catch(() => {});
+  } catch {
+    // Fail-safe: audit failure must not crash request flow
+  }
+}
+
 const ROLE_ALIASES = Object.freeze({
   "platform administrator": ROLES.PLATFORM_ADMIN,
   "platform_admin": ROLES.PLATFORM_ADMIN,
@@ -291,6 +455,21 @@ function requirePermission(permission, options = {}) {
   return (req, res, next) => {
     // 1. Authentication Check
     if (!req.auth || !req.auth.authenticated) {
+      emitRbacAuditEvent({
+        action: "AUTHORIZATION_FAILURE",
+        status: "DENIED",
+        actor: { id: "anonymous", username: "anonymous", role: "anonymous", ipAddress: req.ip },
+        tenantId: "default",
+        target: { type: "endpoint", id: req.originalUrl || req.path, name: req.method },
+        details: {
+          code: "AUTHENTICATION_REQUIRED",
+          requiredPermission: permission,
+          path: req.originalUrl || req.path,
+          method: req.method,
+          requestId: req.id,
+        },
+      });
+
       return res.status(401).json({
         error: "Unauthorized",
         code: "AUTHENTICATION_REQUIRED",
@@ -305,6 +484,27 @@ function requirePermission(permission, options = {}) {
 
     // 2. Vertical Privilege Escalation Check: Verify user possesses the declared permission
     if (!hasPermission(userRoles, permission)) {
+      emitRbacAuditEvent({
+        action: "PERMISSION_DENIED",
+        status: "DENIED",
+        actor: {
+          id: req.user?.id || req.user?.sub || req.user?.userId || req.auth?.user?.id || "unknown",
+          username: req.user?.username || req.auth?.user?.username || "unknown",
+          role: userRoles[0] || "viewer",
+          ipAddress: req.ip,
+        },
+        tenantId: (req.user && req.user.tenantId) || "default-tenant",
+        target: { type: "endpoint", id: req.originalUrl || req.path, name: req.method },
+        details: {
+          code: "INSUFFICIENT_PERMISSIONS",
+          requiredPermission: permission,
+          userRoles,
+          path: req.originalUrl || req.path,
+          method: req.method,
+          requestId: req.id,
+        },
+      });
+
       return res.status(403).json({
         error: "Forbidden",
         code: "INSUFFICIENT_PERMISSIONS",
@@ -329,6 +529,28 @@ function requirePermission(permission, options = {}) {
         req.headers["x-tenant-id"];
 
       if (targetTenant && targetTenant !== userTenant) {
+        emitRbacAuditEvent({
+          action: "TENANT_ISOLATION_VIOLATION",
+          status: "DENIED",
+          actor: {
+            id: req.user?.id || req.user?.sub || req.user?.userId || req.auth?.user?.id || "unknown",
+            username: req.user?.username || req.auth?.user?.username || "unknown",
+            role: userRoles[0] || "viewer",
+            ipAddress: req.ip,
+          },
+          tenantId: userTenant,
+          target: { type: "tenant", id: targetTenant, name: req.originalUrl || req.path },
+          details: {
+            code: "HORIZONTAL_TENANT_VIOLATION",
+            userTenant,
+            targetTenant,
+            requiredPermission: permission,
+            path: req.originalUrl || req.path,
+            method: req.method,
+            requestId: req.id,
+          },
+        });
+
         return res.status(403).json({
           error: "Forbidden",
           code: "HORIZONTAL_TENANT_VIOLATION",
@@ -343,6 +565,28 @@ function requirePermission(permission, options = {}) {
         const resourceOwner = (req.body && (req.body.ownerId || req.body.userId)) || (req.params && req.params.ownerId);
 
         if (resourceOwner && resourceOwner !== userId && !userRoles.some((r) => normalizeRole(r) === ROLES.SECURITY_ADMIN)) {
+          emitRbacAuditEvent({
+            action: "OBJECT_OWNERSHIP_VIOLATION",
+            status: "DENIED",
+            actor: {
+              id: userId || "unknown",
+              username: req.user?.username || req.auth?.user?.username || "unknown",
+              role: userRoles[0] || "viewer",
+              ipAddress: req.ip,
+            },
+            tenantId: (req.user && req.user.tenantId) || "default-tenant",
+            target: { type: "resource", id: resourceOwner, name: req.originalUrl || req.path },
+            details: {
+              code: "HORIZONTAL_OWNER_VIOLATION",
+              userId,
+              resourceOwner,
+              requiredPermission: permission,
+              path: req.originalUrl || req.path,
+              method: req.method,
+              requestId: req.id,
+            },
+          });
+
           return res.status(403).json({
             error: "Forbidden",
             code: "HORIZONTAL_OWNER_VIOLATION",
@@ -364,6 +608,21 @@ function requirePermissions(permissions = [], { matchAll = false, ...options } =
   const permList = Array.isArray(permissions) ? permissions : [permissions];
   return (req, res, next) => {
     if (!req.auth || !req.auth.authenticated) {
+      emitRbacAuditEvent({
+        action: "AUTHORIZATION_FAILURE",
+        status: "DENIED",
+        actor: { id: "anonymous", username: "anonymous", role: "anonymous", ipAddress: req.ip },
+        tenantId: "default",
+        target: { type: "endpoint", id: req.originalUrl || req.path, name: req.method },
+        details: {
+          code: "AUTHENTICATION_REQUIRED",
+          requiredPermissions: permList,
+          path: req.originalUrl || req.path,
+          method: req.method,
+          requestId: req.id,
+        },
+      });
+
       return res.status(401).json({
         error: "Unauthorized",
         code: "AUTHENTICATION_REQUIRED",
@@ -379,6 +638,27 @@ function requirePermissions(permissions = [], { matchAll = false, ...options } =
       : permList.some((p) => hasPermission(userRoles, p));
 
     if (!hasAccess) {
+      emitRbacAuditEvent({
+        action: "PERMISSION_DENIED",
+        status: "DENIED",
+        actor: {
+          id: req.user?.id || req.user?.sub || req.user?.userId || req.auth?.user?.id || "unknown",
+          username: req.user?.username || req.auth?.user?.username || "unknown",
+          role: userRoles[0] || "viewer",
+          ipAddress: req.ip,
+        },
+        tenantId: (req.user && req.user.tenantId) || "default-tenant",
+        target: { type: "endpoint", id: req.originalUrl || req.path, name: req.method },
+        details: {
+          code: "INSUFFICIENT_PERMISSIONS",
+          requiredPermissions: permList,
+          userRoles,
+          path: req.originalUrl || req.path,
+          method: req.method,
+          requestId: req.id,
+        },
+      });
+
       return res.status(403).json({
         error: "Forbidden",
         code: "INSUFFICIENT_PERMISSIONS",
@@ -441,17 +721,178 @@ const ENDPOINT_PERMISSIONS = Object.freeze({
 
   // Platform & Secrets Administration
   "POST /api/v1/auth/secrets/rotate": PERMISSIONS.SECRETS_ROTATE,
+  "POST /api/v1/auth/admin/users": PERMISSIONS.USERS_MANAGE,
+  "POST /api/v1/auth/users": PERMISSIONS.USERS_MANAGE,
 });
+
+/**
+ * Evaluates capability access against the canonical Authorization Matrix.
+ * Returns { allowed, status, code, message, matrixValue, scope }.
+ * If denied, emits a structured audit event.
+ */
+function evaluateCapability(role, capability, context = {}) {
+  const normRole = normalizeRole(role);
+  const matrixEntry = AUTHORIZATION_MATRIX[capability];
+  if (!matrixEntry) {
+    return {
+      allowed: false,
+      status: 400,
+      code: "UNKNOWN_CAPABILITY",
+      message: `Unknown capability: '${capability}'`,
+    };
+  }
+
+  // Resolve role column in matrix
+  let colKey = "viewer";
+  const cleanRole = String(role || "").trim().toLowerCase().replace(/[-_]/g, " ");
+  if (!role || cleanRole === "anonymous") {
+    colKey = "anonymous";
+  } else if (cleanRole === "platform admin" || cleanRole === "platform administrator" || cleanRole === "superuser") {
+    colKey = "platform_admin";
+  } else if (cleanRole === "admin" || cleanRole === "security admin" || cleanRole === "security administrator" || cleanRole === "secops") {
+    colKey = "admin";
+  } else if (cleanRole === "analyst" || cleanRole === "threat analyst" || cleanRole === "crypto analyst") {
+    colKey = "analyst";
+  } else if (cleanRole === "developer" || cleanRole === "dev" || cleanRole === "engineer") {
+    colKey = "developer";
+  } else if (cleanRole === "auditor" || cleanRole === "compliance" || cleanRole === "compliance officer") {
+    colKey = "auditor";
+  } else {
+    colKey = "viewer";
+  }
+
+  const matrixValue = matrixEntry[colKey];
+
+  if (matrixValue === "NO") {
+    const status = colKey === "anonymous" ? 401 : 403;
+    const code = colKey === "anonymous" ? "AUTHENTICATION_REQUIRED" : "INSUFFICIENT_PERMISSIONS";
+    const reason = `Access denied. Role '${colKey}' lacks capability '${capability}'.`;
+
+    if (context.emitAudit !== false) {
+      emitRbacAuditEvent({
+        action: colKey === "anonymous" ? "AUTHORIZATION_FAILURE" : "PERMISSION_DENIED",
+        status: "DENIED",
+        actor: {
+          id: context.userId || (colKey === "anonymous" ? "anonymous" : "unknown"),
+          username: context.username || (colKey === "anonymous" ? "anonymous" : "unknown"),
+          role: colKey,
+        },
+        tenantId: context.tenantId || "default",
+        target: { type: "capability", id: capability },
+        details: { code, capability, role: colKey, reason },
+      });
+    }
+
+    return {
+      allowed: false,
+      status,
+      code,
+      message: reason,
+      matrixValue,
+    };
+  }
+
+  if (matrixValue === "scoped") {
+    if (context.isCrossTenant && normRole !== ROLES.PLATFORM_ADMIN) {
+      const reason = `Cross-tenant access violation. Role '${colKey}' is strictly tenant-scoped for '${capability}'.`;
+      if (context.emitAudit !== false) {
+        emitRbacAuditEvent({
+          action: "TENANT_ISOLATION_VIOLATION",
+          status: "DENIED",
+          actor: {
+            id: context.userId || "unknown",
+            username: context.username || "unknown",
+            role: colKey,
+          },
+          tenantId: context.tenantId || "default",
+          target: { type: "tenant", id: context.targetTenantId || "foreign_tenant" },
+          details: { code: "HORIZONTAL_TENANT_VIOLATION", capability, role: colKey, reason },
+        });
+      }
+
+      return {
+        allowed: false,
+        status: 403,
+        code: "HORIZONTAL_TENANT_VIOLATION",
+        message: reason,
+        matrixValue,
+      };
+    }
+
+    return {
+      allowed: true,
+      status: 200,
+      scope: "tenant",
+      matrixValue,
+    };
+  }
+
+  if (matrixValue === "policy") {
+    if (context.isMasterRotation || context.bypassPolicy) {
+      const reason = `Master secret rotation requires platform administrator authority.`;
+      if (context.emitAudit !== false) {
+        emitRbacAuditEvent({
+          action: "PERMISSION_DENIED",
+          status: "DENIED",
+          actor: {
+            id: context.userId || "unknown",
+            username: context.username || "unknown",
+            role: colKey,
+          },
+          tenantId: context.tenantId || "default",
+          target: { type: "secret", id: "platform_master_key" },
+          details: { code: "POLICY_RESTRICTED", capability, role: colKey, reason },
+        });
+      }
+
+      return {
+        allowed: false,
+        status: 403,
+        code: "POLICY_RESTRICTED",
+        message: reason,
+        matrixValue,
+      };
+    }
+
+    return {
+      allowed: true,
+      status: 200,
+      scope: "policy_governed",
+      matrixValue,
+    };
+  }
+
+  if (matrixValue === "YES") {
+    return {
+      allowed: true,
+      status: 200,
+      scope: normRole === ROLES.PLATFORM_ADMIN ? "global" : "standard",
+      matrixValue,
+    };
+  }
+
+  return {
+    allowed: false,
+    status: 403,
+    code: "DENIED",
+    message: "Access denied.",
+    matrixValue,
+  };
+}
 
 module.exports = {
   ROLES,
   ROLE_ALIASES,
   PERMISSIONS,
   ROLE_PERMISSIONS,
+  CAPABILITIES,
+  AUTHORIZATION_MATRIX,
   normalizeRole,
   hasPermission,
   getUserPermissions,
   requirePermission,
   requirePermissions,
+  evaluateCapability,
+  emitRbacAuditEvent,
   ENDPOINT_PERMISSIONS,
 };

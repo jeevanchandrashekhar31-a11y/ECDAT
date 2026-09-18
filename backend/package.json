@@ -12,7 +12,8 @@
     "format:check": "prettier --check \"{src,tests}/**/*.js\"",
     "format": "prettier --write \"{src,tests}/**/*.js\"",
     "import-cbom": "node src/scripts/import_cbom.js",
-    "prepare-db": "node src/scripts/prepare_database.js"
+    "prepare-db": "node src/scripts/prepare_database.js",
+    "clear-data": "node src/scripts/clear_data.js"
   },
   "keywords": [],
   "author": "",

@@ -41,6 +41,11 @@ MANDATORY_CATEGORIES = [
     "09_aliases",
     "10_dynamic_algorithms",
     "11_negative_examples",
+    "12_obfuscated_samples",
+    "13_nested_samples",
+    "14_multi_language_modern",
+    "15_pqc_extended",
+    "16_false_positives_and_negatives",
 ]
 
 
@@ -56,17 +61,17 @@ def eval_results(evaluator):
 
 
 def test_manifest_structure_and_categories(evaluator):
-    """Verifies that the ground-truth manifest contains all 11 standardized categories."""
+    """Verifies that the ground-truth manifest contains all 16 standardized categories."""
     manifest = evaluator.load_manifest()
-    assert manifest.get("corpus_version") == "1.0.0"
-    assert manifest.get("standard") == "Phase 22.3 Golden Corpus"
+    assert manifest.get("corpus_version") == "2.0.0"
+    assert manifest.get("standard") == "Phase 30 Golden Corpus"
 
     categories = manifest.get("categories", [])
     for cat in MANDATORY_CATEGORIES:
         assert cat in categories, f"Mandatory category '{cat}' missing from manifest"
 
     entries = manifest.get("entries", [])
-    assert len(entries) >= 20, f"Expected at least 20 corpus files, found {len(entries)}"
+    assert len(entries) >= 35, f"Expected at least 35 corpus files, found {len(entries)}"
 
     # Ensure every mandatory category has at least one corpus file entry
     present_cats = {entry.get("category") for entry in entries}
@@ -126,7 +131,7 @@ def test_precision_recall_f1_targets(eval_results):
     assert precision >= 0.85, f"Precision {precision * 100:.1f}% below target 85.0%"
     assert recall >= 0.80, f"Recall {recall * 100:.1f}% below target 80.0%"
     assert f1 >= 0.82, f"F1 score {f1 * 100:.1f}% below target 82.0%"
-    assert metrics["true_positives"] >= 50
+    assert metrics["true_positives"] >= 90
 
 
 def test_post_quantum_and_hybrid_discovery(eval_results):
@@ -184,10 +189,12 @@ def test_resource_performance_tracking(eval_results):
 def test_markdown_report_generation(evaluator, eval_results):
     """Verifies markdown report generation accurately includes all tables and metrics."""
     report = evaluator.generate_report(eval_results)
-    assert "# ECDAT Golden Corpus Benchmark Report (Phase 22.3)" in report
-    assert "Precision" in report
-    assert "Recall" in report
-    assert "F1 Score" in report
+    assert "# ECDAT Golden Corpus Empirical Benchmark Report (Phase 30 / P2)" in report
+    assert "Golden Corpus Precision" in report
+    assert "Golden Corpus Recall" in report
+    assert "Golden Corpus F1 Score" in report
+    assert "Known Limitations & Analysis Boundaries" in report
     assert "Peak Process Working Set (RAM)" in report
     for cat in MANDATORY_CATEGORIES:
         assert f"`{cat}`" in report, f"Category `{cat}` missing from report markdown table"
+

@@ -14,6 +14,7 @@
 const crypto = require("crypto");
 const { defaultSecretManager } = require("./secret_manager");
 const { defaultAuthAuditLogger, AUTH_EVENT_TYPES } = require("./auth_audit");
+const { timingSafeCompare } = require("../security/crypto_security_service");
 
 const DEFAULT_ACCESS_TOKEN_TTL_SEC = 15 * 60; // 15 minutes
 const MAX_ACCESS_TOKEN_TTL_SEC = 60 * 60; // 1 hour
@@ -49,6 +50,9 @@ class TokenService {
 
     // Revocation blacklist: Map of jti -> { revokedAt, reason }
     this.revokedTokens = new Map();
+
+    // Registry of issued tokens for ownership verification: jti -> { jti, userId, tenantId, tokenType, issuedAt, expiresAt }
+    this.tokenRegistry = new Map();
 
     // Global user session revocation: userId -> revokedBeforeTimestamp (seconds)
     this.userRevocations = new Map();
@@ -149,6 +153,25 @@ class TokenService {
       family.currentJti = refreshJti;
     }
 
+    // Register issued tokens in token registry for ownership and tenant verification
+    const tenantId = (customClaims && customClaims.tenantId) || "default-tenant";
+    this.tokenRegistry.set(accessJti, {
+      jti: accessJti,
+      userId: String(userId),
+      tenantId,
+      tokenType: "access",
+      issuedAt: now,
+      expiresAt: now + this.accessTokenTtlSec,
+    });
+    this.tokenRegistry.set(refreshJti, {
+      jti: refreshJti,
+      userId: String(userId),
+      tenantId,
+      tokenType: "refresh",
+      issuedAt: now,
+      expiresAt: now + this.refreshTokenTtlSec,
+    });
+
     this.auditLogger.logEvent({
       eventType: AUTH_EVENT_TYPES.TOKEN_ISSUED,
       userId,
@@ -231,7 +254,7 @@ class TokenService {
       .replace(/\+/g, "-")
       .replace(/\//g, "_");
 
-    if (!crypto.timingSafeEqual(Buffer.from(signatureB64), Buffer.from(expectedSig))) {
+    if (!timingSafeCompare(signatureB64, expectedSig)) {
       throw new Error("Invalid token signature");
     }
 
@@ -340,6 +363,11 @@ class TokenService {
 
   isTokenRevoked(jti) {
     return this.revokedTokens.has(jti);
+  }
+
+  getTokenRecord(jti) {
+    if (!jti) return null;
+    return this.tokenRegistry.get(String(jti)) || null;
   }
 }
 

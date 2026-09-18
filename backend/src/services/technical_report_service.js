@@ -321,6 +321,9 @@ async function generateTechnicalDrillDownReport(options = {}) {
     try {
       let q = db("scans");
       if (requestedScanId) q = q.where("id", requestedScanId);
+      if (options.tenantContext && !options.tenantContext.isPlatformAdmin) {
+        q = q.where("tenant_id", options.tenantContext.tenantId);
+      }
       scanRow = await q.orderBy("created_at", "desc").first();
     } catch (_err) {
       // Fallback
@@ -329,11 +332,18 @@ async function generateTechnicalDrillDownReport(options = {}) {
 
   let inMemoryScan = null;
   if (!scanRow) {
-    inMemoryScan = requestedScanId ? await getScanById(requestedScanId) : getLatestScan();
+    inMemoryScan = requestedScanId ? await getScanById(requestedScanId, options.tenantContext) : getLatestScan(options.tenantContext);
   }
 
-  const scanId = scanRow?.id || inMemoryScan?.id || "scan_enterprise_core";
-  const scanName = scanRow?.target_name || inMemoryScan?.name || "Enterprise Core Banking & Payments";
+  if (!scanRow && !inMemoryScan) {
+    const notFoundErr = new Error(requestedScanId ? `Scan '${requestedScanId}' not found` : "No scan data available");
+    notFoundErr.statusCode = 404;
+    notFoundErr.name = "NotFoundError";
+    throw notFoundErr;
+  }
+
+  const scanId = scanRow?.id || inMemoryScan?.id;
+  const scanName = scanRow?.target_name || inMemoryScan?.name || "Enterprise Cryptographic Discovery";
 
   let rawFindings = [];
 

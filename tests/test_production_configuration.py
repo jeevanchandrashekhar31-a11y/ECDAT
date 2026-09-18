@@ -24,6 +24,7 @@ from scanners.production_config_guard import (
 )
 
 
+# ecdat:synthetic-fixture
 VALID_PROD_API_KEY = "k8s-prod-cluster-api-key-ecdat-enterprise-sec-token-2026"
 VALID_PROD_DEK = "k8s-prod-dek-aes256-master-encryption-key-entropy-token"
 VALID_PROD_DB_URL = (

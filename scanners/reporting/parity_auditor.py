@@ -87,7 +87,7 @@ class ParityAuditor:
                 ],
                 demo_command="python scanners/static/main.py --repo testing/corpora/crypto_samples/ --output artifacts/cbom.json",
                 documentation="docs/STATIC_SCANNER.md",
-                evidence="Golden corpus benchmark demonstrates 98.4% precision and 100% recall across 42 cryptographic patterns.",
+                evidence="Golden corpus test suite empirically verifies precision and recall against standardized multi-language cryptographic fixtures.",
             ),
             ParityCapability(
                 capability_id="CAP-STATIC-02",

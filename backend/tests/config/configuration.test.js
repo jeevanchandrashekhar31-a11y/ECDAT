@@ -1,3 +1,4 @@
+// @ecdat-synthetic-corpus
 const { test, describe } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
@@ -82,6 +83,7 @@ describe("Configuration Model & Production Security (Node.js)", () => {
   });
 
   test("Passes validation with secure production settings", () => {
+    // ecdat:synthetic-fixture
     const secureProdConfig = {
       NODE_ENV: "production",
       PORT: 5000,

@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert");
 const app = require("../../src/app");
+const config = require("../../src/config");
 const { db } = require("../../src/db/connection");
 const { ingestCbom } = require("../../src/services/cbom_ingestion");
 
@@ -238,13 +239,18 @@ test("Reports API - GET /api/v1/reports/summary and /api/v1/reports/cbom/:scanId
     // 1. GET /api/v1/reports/summary
     const sumRes = await fetch(
       `${baseUrl}/api/v1/reports/summary?scanId=${testScanId}`,
+      {
+        headers: { "X-API-Key": config.ECDAT_API_KEY },
+      },
     );
     assert.strictEqual(sumRes.status, 200);
     const sumData = await sumRes.json();
     assert.ok(sumData.metrics);
 
     // 2. GET /api/v1/reports/cbom/:scanId (annotated)
-    const cbomRes = await fetch(`${baseUrl}/api/v1/reports/cbom/${testScanId}`);
+    const cbomRes = await fetch(`${baseUrl}/api/v1/reports/cbom/${testScanId}`, {
+      headers: { "X-API-Key": config.ECDAT_API_KEY },
+    });
     assert.strictEqual(cbomRes.status, 200);
     const cbomData = await cbomRes.json();
     assert.strictEqual(cbomData.bomFormat, "CycloneDX");
@@ -253,6 +259,9 @@ test("Reports API - GET /api/v1/reports/summary and /api/v1/reports/cbom/:scanId
     // 3. GET /api/v1/reports/cbom/:scanId?type=raw
     const rawCbomRes = await fetch(
       `${baseUrl}/api/v1/reports/cbom/${testScanId}?type=raw`,
+      {
+        headers: { "X-API-Key": config.ECDAT_API_KEY },
+      },
     );
     assert.strictEqual(rawCbomRes.status, 200);
     const rawCbomData = await rawCbomRes.json();

@@ -27,7 +27,7 @@ import csv
 import io
 import json
 from datetime import datetime, timezone
-from xml.etree import ElementTree
+import defusedxml.ElementTree as ElementTree
 from typing import Dict, Any, List, Optional, Tuple, Union
 
 from cyclonedx.model.bom import Bom

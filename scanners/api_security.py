@@ -58,7 +58,7 @@ FORBIDDEN_HOSTNAMES = frozenset(
         "localhost",
         "127.0.0.1",
         "::1",
-        "0.0.0.0",
+        "0.0.0.0",  # nosec B104 - Blacklist entry for SSRF defense, not a socket binding
         "metadata.google.internal",
         "instance-data",
         "169.254.169.254",

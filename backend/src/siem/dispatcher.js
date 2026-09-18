@@ -11,6 +11,7 @@
 const crypto = require("crypto");
 const { formatEvent } = require("./formatters");
 const { validateSiemEvent } = require("./schema");
+const { safeFetch } = require("../security/ssrf_protection");
 
 class SiemDispatcher {
   constructor(options = {}) {
@@ -209,16 +210,14 @@ class SiemDispatcher {
       headers["X-API-Key"] = endpoint.apiKey;
     }
 
-    if (typeof fetch !== "undefined") {
-      const response = await fetch(endpoint.url, {
-        method: "POST",
-        headers,
-        body: payload,
-      });
+    const response = await safeFetch(endpoint.url, {
+      method: "POST",
+      headers,
+      body: payload,
+    });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
   }
 

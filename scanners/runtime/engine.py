@@ -16,6 +16,12 @@ Core Invariants:
    Enforced via strict runtime validation and payload sanitizers.
 3. First-class asset correlation: Resolves observed live runtime events into first-class CryptoAsset and
    AssetRelationship graphs linking Process -> Library -> Crypto Operation -> Asset.
+
+Implementation Boundary:
+- This module models the capability detection, probe catalog, metadata-only validation, event ingestion,
+  and CycloneDX CBOM correlation.
+- In-kernel bytecode compilation and direct uprobe attachment require an external compiled native daemon
+  (e.g., libbpf/BCC) forwarding structured metadata events.
 """
 
 from __future__ import annotations

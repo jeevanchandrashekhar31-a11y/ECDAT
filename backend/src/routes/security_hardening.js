@@ -19,15 +19,33 @@ const {
   massAssignmentProtectionMiddleware,
   objectLevelAuthMiddleware,
   validateSchema,
+  validateSafeUrlAsync,
+  validateSafeGitUrlAsync,
 } = require("../middleware/api_hardening");
+const { CryptoClassifier, CryptoSecurityService } = require("../security");
 
 /**
  * POST /api/v1/security/validate-url
  * Validates whether a URL is safe against SSRF (rejects private IPs, cloud metadata, invalid schemes).
+ * Supports optional DNS destination resolution via resolveDns: true.
  */
-router.post("/validate-url", (req, res) => {
-  const { url, allowLocalhost = false } = req.body || {};
+router.post("/validate-url", async (req, res) => {
+  const { url, allowLocalhost = false, resolveDns = false } = req.body || {};
+  if (resolveDns) {
+    const result = await validateSafeUrlAsync(url, { allowLocalhost });
+    return res.json(result);
+  }
   const result = validateSafeUrl(url, { allowLocalhost });
+  res.json(result);
+});
+
+/**
+ * POST /api/v1/security/validate-git-url
+ * Validates whether a Git repository URL is safe against SSRF and command/option injection.
+ */
+router.post("/validate-git-url", async (req, res) => {
+  const { url, allowPrivate = false } = req.body || {};
+  const result = await validateSafeGitUrlAsync(url, { allowPrivate });
   res.json(result);
 });
 
@@ -413,6 +431,134 @@ router.post("/database/test-query", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/v1/security/crypto/audit
+ * Runs comprehensive audit of platform cryptographic operations across all 11 dimensions.
+ */
+router.get("/crypto/audit", (req, res) => {
+  const auditReport = CryptoSecurityService.runCryptographicAudit();
+  res.json(auditReport);
+});
+
+/**
+ * POST /api/v1/security/crypto/classify
+ * Classifies an algorithm into: quantum-vulnerable, quantum-resistant, hybrid, or unknown.
+ * Deeply validates key sizes, parameter sets, and combiner structures.
+ */
+router.post("/crypto/classify", (req, res) => {
+  const { algorithm, keySize, parameters, mode, hybridComponents } = req.body || {};
+  if (!algorithm || typeof algorithm !== "string") {
+    return res.status(400).json({
+      error: "InvalidAlgorithm",
+      message: "Field 'algorithm' is required and must be a non-empty string.",
+    });
+  }
+
+  const result = CryptoClassifier.classify(algorithm, {
+    keySize: typeof keySize === "number" ? keySize : undefined,
+    parameters,
+    mode,
+    hybridComponents,
+  });
+
+  res.json(result.toJSON());
+});
+
+// ============================================================================
+// PHASE 24 SCANNER RESULT INTEGRITY & PROVENANCE ENDPOINTS
+// ============================================================================
+
+const {
+  RESULT_STATES,
+  CANONICAL_STATES,
+  ABSENCE_DISCLAIMER,
+  assertNoIllegalCollapse,
+  verifyFindingProvenance,
+  ResultIntegrityTracker,
+} = require("../security");
+
+/**
+ * GET /api/v1/security/scanners/result-states
+ * Returns the 6 canonical scanner outcome states and integrity policy rules.
+ */
+router.get("/scanners/result-states", (req, res) => {
+  res.json({
+    canonicalStates: Object.values(RESULT_STATES),
+    antiCollapseRules: [
+      "Never collapse NOT_SCANNED into NOT_FOUND",
+      "Never collapse ERROR / SCAN_ERROR into CLEAN",
+      "Never collapse UNSUPPORTED into NOT_FOUND",
+    ],
+    absenceDisclaimer: ABSENCE_DISCLAIMER,
+    provenanceRequirements: [
+      "location (file:line or host:port)",
+      "detectionMethod (ast, regex, runtime_hook, network_handshake)",
+      "ruleId (specific identifier)",
+      "toolName",
+      "confidence",
+      "timestamp",
+    ],
+  });
+});
+
+/**
+ * POST /api/v1/security/scanners/validate-integrity
+ * Evaluates item-level scan outcomes and verifies zero anti-collapse violations.
+ */
+router.post("/scanners/validate-integrity", (req, res) => {
+  const { scannerName, items } = req.body || {};
+
+  if (!Array.isArray(items)) {
+    return res.status(400).json({
+      error: "InvalidPayload",
+      message: "Field 'items' must be an array of item scan outcome records.",
+    });
+  }
+
+  const tracker = new ResultIntegrityTracker(scannerName || "ECDAT Scanner");
+  const violations = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const itemId = it.itemId || it.id || `item-${i + 1}`;
+    const target = it.target || itemId;
+    const status = String(it.status || "").trim().toUpperCase();
+
+    if (!CANONICAL_STATES.has(status)) {
+      violations.push(`Item '${itemId}': Invalid state '${status}'. Must be one of: ${Array.from(CANONICAL_STATES).join(", ")}`);
+      continue;
+    }
+
+    try {
+      if (status === RESULT_STATES.FOUND) {
+        tracker.recordFound(itemId, target, it.findings || [{ id: "fnd-1" }], it.provenance || [], it.reasons);
+      } else if (status === RESULT_STATES.NOT_FOUND) {
+        tracker.recordNotFound(itemId, target, it.reasons);
+      } else if (status === RESULT_STATES.NOT_SCANNED) {
+        tracker.recordNotScanned(itemId, target, it.reason || "Skipped by policy", it.details);
+      } else if (status === RESULT_STATES.SCAN_ERROR) {
+        tracker.recordScanError(itemId, target, it.error || "Execution error", it.details);
+      } else if (status === RESULT_STATES.UNSUPPORTED) {
+        tracker.recordUnsupported(itemId, target, it.reason || "Unsupported format", it.details);
+      } else if (status === RESULT_STATES.UNKNOWN) {
+        tracker.recordUnknown(itemId, target, it.reason || "Indeterminate analysis", it.details);
+      }
+    } catch (err) {
+      violations.push(err.message);
+    }
+  }
+
+  if (violations.length > 0) {
+    return res.status(422).json({
+      error: "ResultIntegrityViolation",
+      violations,
+    });
+  }
+
+  res.json(tracker.getSummary());
+});
+
 module.exports = router;
+
 
 

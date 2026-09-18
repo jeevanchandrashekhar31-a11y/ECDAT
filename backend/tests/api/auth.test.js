@@ -196,6 +196,46 @@ test("Auth API - Read routes are protected when REQUIRE_AUTH_FOR_READS is enable
   }
 });
 
+test("Auth API - Network scan & operational scan routes require valid API key and reject invalid credentials with 403", async () => {
+  await withServer(async (baseUrl) => {
+    // 1. Scan with random/invalid API key MUST be rejected with 403
+    const badKeyRes = await fetch(`${baseUrl}/api/v1/scan/network`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": "some-random-thing-987654",
+      },
+      body: JSON.stringify({ target: "api.ecdat.io" }),
+    });
+    assert.strictEqual(badKeyRes.status, 403);
+    const badKeyData = await badKeyRes.json();
+    assert.strictEqual(badKeyData.error, "Forbidden");
+    assert.strictEqual(badKeyData.message, "Invalid API key.");
+
+    // 2. Scan without API key MUST be rejected with 401
+    const noKeyRes = await fetch(`${baseUrl}/api/v1/scan/network`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target: "api.ecdat.io" }),
+    });
+    assert.strictEqual(noKeyRes.status, 401);
+    const noKeyData = await noKeyRes.json();
+    assert.strictEqual(noKeyData.error, "Unauthorized");
+
+    // 3. Static scan with random/invalid API key MUST be rejected with 403
+    const badStaticRes = await fetch(`${baseUrl}/api/v1/scan/static`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": "some-random-invalid-key",
+      },
+      body: JSON.stringify({ target: "/some/path" }),
+    });
+    assert.strictEqual(badStaticRes.status, 403);
+  });
+});
+
 test.after(async () => {
   await db.destroy();
 });
+

@@ -46,35 +46,44 @@ class TenantContext {
     roles = ["viewer"],
     isPlatformAdmin = false,
   } = {}) {
-    this.tenantId = String(tenantId).trim().toLowerCase();
+    this.tenantId = tenantId !== null && tenantId !== undefined ? String(tenantId).trim().toLowerCase() : null;
     this.userId = String(userId);
     this.roles = Array.isArray(roles) ? [...roles] : [String(roles)];
     this.isPlatformAdmin = Boolean(isPlatformAdmin);
+    this.hasTenantScope = Boolean(this.tenantId);
     Object.freeze(this);
   }
 
   static fromRequest(req) {
-    let tenantId = "default-tenant";
+    let tenantId = null;
     let userId = "anonymous";
-    let roles = ["viewer"];
+    let roles = [];
     let isPlatformAdmin = false;
 
     if (req.user) {
-      tenantId = req.user.tenantId || req.user.tenant_id || tenantId;
+      tenantId = req.user.tenantId || req.user.tenant_id || "default-tenant";
       userId = req.user.sub || req.user.userId || userId;
-      roles = req.user.roles || (req.user.role ? [req.user.role] : roles);
-    } else if (req.auth) {
+      roles = req.user.roles || (req.user.role ? [req.user.role] : ["viewer"]);
+    } else if (req.auth && req.auth.authenticated) {
       if (req.auth.user) {
-        tenantId = req.auth.user.tenantId || req.auth.user.tenant_id || tenantId;
+        tenantId = req.auth.user.tenantId || req.auth.user.tenant_id || "default-tenant";
         userId = req.auth.user.sub || req.auth.user.userId || userId;
-        roles = req.auth.user.roles || (req.auth.user.role ? [req.auth.user.role] : roles);
+        roles = req.auth.user.roles || (req.auth.user.role ? [req.auth.user.role] : ["viewer"]);
       } else {
-        roles = req.auth.roles || (req.auth.role ? [req.auth.role] : roles);
+        roles = req.auth.roles || (req.auth.role ? [req.auth.role] : ["viewer"]);
+        tenantId = req.auth.tenantId || req.auth.tenant_id || "default-tenant";
       }
+    } else if (req.auth && req.auth.mode === "open") {
+      tenantId = "default-tenant";
+      userId = "dev-user";
+      roles = ["admin"];
+      isPlatformAdmin = true;
     }
 
     const normRoles = roles.map((r) => String(r).toLowerCase().replace(/[-_]/g, " "));
-    isPlatformAdmin = normRoles.some((r) => r === "platform administrator" || r === "admin" || r === "platform admin");
+    isPlatformAdmin = normRoles.some(
+      (r) => r === "platform administrator" || r === "platform admin" || r === "platform_admin" || r === "superuser"
+    );
 
     return new TenantContext({
       tenantId,
@@ -115,6 +124,33 @@ function tenantIsolationMiddleware(req, res, next) {
     if (cleanSupplied !== context.tenantId) {
       // Only platform administrator may manage cross-tenant operations
       if (!context.isPlatformAdmin) {
+        try {
+          const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
+          defaultAuditService.logEvent({
+            category: AUDIT_CATEGORIES.PERMISSION_CHANGE,
+            action: AUDIT_ACTIONS.TENANT_ISOLATION_VIOLATION,
+            status: AUDIT_STATUSES.DENIED,
+            actor: {
+              id: context.userId || "unknown",
+              username: context.userId || "unknown",
+              role: context.roles[0] || "viewer",
+              ipAddress: req.ip,
+            },
+            tenantId: context.tenantId,
+            target: { type: "tenant", id: cleanSupplied, name: req.originalUrl || req.path },
+            details: {
+              code: "TENANT_SPOOFING_VIOLATION",
+              authoritativeTenantId: context.tenantId,
+              suppliedTenantId: cleanSupplied,
+              path: req.originalUrl || req.path,
+              method: req.method,
+              requestId: req.id,
+            },
+          }).catch(() => {});
+        } catch {
+          // Fail-safe
+        }
+
         return res.status(403).json({
           error: "TenantBoundaryViolation",
           code: "TENANT_SPOOFING_VIOLATION",
@@ -326,10 +362,27 @@ class TenantScopedJobQueue {
   }
 
   enqueue(taskName, payload = {}, tenantContext) {
+    const tid = tenantContext?.tenantId || "default-tenant";
+
+    // Enforce queue depth governor per tenant and system-wide
+    let currentTenantDepth = 0;
+    let currentSystemDepth = 0;
+    for (const j of this.jobs.values()) {
+      if (j.status === "QUEUED" || j.status === "RUNNING") {
+        currentSystemDepth += 1;
+        if (j.tenantId === tid) {
+          currentTenantDepth += 1;
+        }
+      }
+    }
+
+    const { defaultQueueDepthGovernor } = require("../security/resource_governance");
+    defaultQueueDepthGovernor.verifyCapacity(currentTenantDepth, currentSystemDepth, tid);
+
     const jobId = `job_${crypto.randomUUID()}`;
     const job = {
       jobId,
-      tenantId: tenantContext.tenantId,
+      tenantId: tid,
       taskName,
       payload,
       status: "QUEUED",

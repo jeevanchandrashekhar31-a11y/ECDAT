@@ -27,7 +27,8 @@ from scanners.models import CodeCryptoFinding
 from scanners.cbom_mapping import code_finding_to_cbom, serialize_cbom
 from scanners.domain.errors import ParserFailureError, InvalidInputError, EcdatException, ErrorCategory, ErrorCode
 
-
+# @ecdat-synthetic-corpus
+# ecdat:synthetic-fixture
 SAMPLE_RSA_KEY = (
     "-----BEGIN RSA PRIVATE KEY-----\n"
     "MIIEowIBAAKCAQEA0Y3+secretKeyBytesHereForTestingOnlyNotRealKey1234567890=\n"

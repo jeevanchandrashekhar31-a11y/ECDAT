@@ -325,7 +325,11 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                           className="hidden"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
-                              setScanUploadFile(e.target.files[0]);
+                              const f = e.target.files[0];
+                              setScanUploadFile(f);
+                              if (!scanLabel) {
+                                setScanLabel(f.name.replace(/\.[^/.]+$/, ''));
+                              }
                             }
                           }}
                         />
@@ -387,7 +391,11 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                           className="hidden"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
-                              setScanUploadFile(e.target.files[0]);
+                              const f = e.target.files[0];
+                              setScanUploadFile(f);
+                              if (!scanLabel) {
+                                setScanLabel(f.name.replace(/\.[^/.]+$/, ''));
+                              }
                             }
                           }}
                         />
@@ -522,7 +530,18 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
             </button>
             <button
               type="submit"
-              disabled={loading || (mode === 'file' && !file) || (mode === 'text' && !jsonText.trim()) || (mode === 'scan' && !scanTarget.trim())}
+              disabled={
+                loading ||
+                (mode === 'file' && !file) ||
+                (mode === 'text' && !jsonText.trim()) ||
+                (mode === 'scan' && (
+                  (scanType === 'network' && !scanTarget.trim()) ||
+                  (scanType === 'static' && staticSubMode === 'upload' && !scanUploadFile) ||
+                  (scanType === 'static' && staticSubMode === 'git' && !scanGitUrl.trim()) ||
+                  (scanType === 'binary' && binarySubMode === 'upload' && !scanUploadFile) ||
+                  (scanType === 'binary' && binarySubMode === 'image' && !binaryImageName.trim())
+                ))
+              }
               className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold flex items-center gap-2 shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {loading ? (

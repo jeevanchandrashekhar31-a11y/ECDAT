@@ -1,0 +1,199 @@
+// @ecdat-synthetic-corpus
+package crypto_5_0
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
+)
+
+func Encrypt_5_0(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil { return nil, err }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil { return nil, err }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil { return nil, err }
+	return gcm.Seal(nonce, nonce, data, nil), nil
+}
+
+// @ecdat-synthetic-corpus
+package crypto_5_1
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
+)
+
+func Encrypt_5_1(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil { return nil, err }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil { return nil, err }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil { return nil, err }
+	return gcm.Seal(nonce, nonce, data, nil), nil
+}
+
+// @ecdat-synthetic-corpus
+package crypto_5_2
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
+)
+
+func Encrypt_5_2(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil { return nil, err }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil { return nil, err }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil { return nil, err }
+	return gcm.Seal(nonce, nonce, data, nil), nil
+}
+
+// @ecdat-synthetic-corpus
+package crypto_5_3
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
+)
+
+func Encrypt_5_3(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil { return nil, err }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil { return nil, err }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil { return nil, err }
+	return gcm.Seal(nonce, nonce, data, nil), nil
+}
+
+// @ecdat-synthetic-corpus
+package crypto_5_4
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
+)
+
+func Encrypt_5_4(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil { return nil, err }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil { return nil, err }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil { return nil, err }
+	return gcm.Seal(nonce, nonce, data, nil), nil
+}
+
+// @ecdat-synthetic-corpus
+package crypto_5_5
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
+)
+
+func Encrypt_5_5(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil { return nil, err }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil { return nil, err }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil { return nil, err }
+	return gcm.Seal(nonce, nonce, data, nil), nil
+}
+
+// @ecdat-synthetic-corpus
+package crypto_5_6
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
+)
+
+func Encrypt_5_6(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil { return nil, err }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil { return nil, err }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil { return nil, err }
+	return gcm.Seal(nonce, nonce, data, nil), nil
+}
+
+// @ecdat-synthetic-corpus
+package crypto_5_7
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
+)
+
+func Encrypt_5_7(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil { return nil, err }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil { return nil, err }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil { return nil, err }
+	return gcm.Seal(nonce, nonce, data, nil), nil
+}
+
+// @ecdat-synthetic-corpus
+package crypto_5_8
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
+)
+
+func Encrypt_5_8(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil { return nil, err }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil { return nil, err }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil { return nil, err }
+	return gcm.Seal(nonce, nonce, data, nil), nil
+}
+
+// @ecdat-synthetic-corpus
+package crypto_5_9
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
+)
+
+func Encrypt_5_9(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil { return nil, err }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil { return nil, err }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil { return nil, err }
+	return gcm.Seal(nonce, nonce, data, nil), nil
+}

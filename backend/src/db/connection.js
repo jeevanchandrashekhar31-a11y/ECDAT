@@ -23,7 +23,7 @@ const db = knex(knexConfig[environment]);
  * @param {number} [options.timeoutMs=3000]
  */
 async function isDbConnected(options = {}) {
-  const timeoutMs = options.timeoutMs || 3000;
+  const timeoutMs = options.timeoutMs || 8000;
   try {
     const checkPromise = db.raw("SELECT 1");
     const timeoutPromise = new Promise((_, reject) =>

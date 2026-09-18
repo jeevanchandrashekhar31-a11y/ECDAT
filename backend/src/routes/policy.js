@@ -12,12 +12,39 @@ const {
 } = require("../policy");
 const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
 
-// Helper to extract actor from request
+// Helper to extract actor strictly from verified security principal
 function getActorFromReq(req) {
+  // If user JWT is authenticated, user identity is immutable from JWT
+  if (req.user) {
+    const role = req.user.role || (Array.isArray(req.user.roles) ? req.user.roles[0] : "viewer");
+    return {
+      username: req.user.username || req.user.sub || req.user.userId || "authenticated-user",
+      role: role || "viewer",
+    };
+  }
+
+  // If authenticated via API Key / system token
+  if (req.auth && req.auth.authenticated) {
+    const authenticatedRole = req.auth.role || (Array.isArray(req.auth.roles) ? req.auth.roles[0] : "viewer");
+    const isAdmin = authenticatedRole === "admin" || authenticatedRole === "platform administrator";
+
+    // Only an authenticated admin API key may attribute actions to a sub-actor username for four-eyes audit
+    const requestedUsername = req.headers["x-actor-username"] || req.body?.actor_username;
+    const actorUsername = (isAdmin && requestedUsername && typeof requestedUsername === "string")
+      ? requestedUsername.trim().slice(0, 100)
+      : (req.auth.user?.username || req.auth.username || req.auth.keyId || "api-key-caller");
+
+    // Role can NEVER be escalated above authenticatedRole
+    return {
+      username: actorUsername,
+      role: authenticatedRole,
+    };
+  }
+
+  // Unauthenticated caller is strictly anonymous viewer
   return {
-    username:
-      req.headers["x-actor-username"] || req.body.actor_username || "admin",
-    role: req.headers["x-actor-role"] || req.auth?.role || "admin",
+    username: "anonymous",
+    role: "viewer",
   };
 }
 

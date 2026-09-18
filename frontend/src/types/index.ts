@@ -326,6 +326,10 @@ export interface ApplicationInventoryApp {
   dependencies: number;
   crypto_findings_count: number;
   evidence_items: string[];
+  asset_type?: string;
+  data_sensitivity?: string;
+  highest_severity?: SeverityLevel;
+  business_criticality?: string;
 }
 
 export interface ApplicationInventoryView {

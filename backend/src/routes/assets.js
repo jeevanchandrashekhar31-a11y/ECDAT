@@ -1,6 +1,14 @@
 const express = require("express");
-const { getScanById, getLatestScan } = require("../services/cbom_ingestion");
+const { getScanById, getLatestScan, getAllScans, cbomIngestionService } = require("../services/cbom_ingestion");
 const { db, isDbConnected } = require("../db/connection");
+const {
+  validatePagination,
+  validateEnum,
+  validateLength,
+  ALLOWED_DATA_SENSITIVITIES,
+  ALLOWED_BUSINESS_CRITICALITIES,
+  ALLOWED_SEVERITIES,
+} = require("../security/input_validation");
 
 const router = express.Router();
 
@@ -21,16 +29,16 @@ router.get("/", async (req, res, next) => {
       req.query.businessCriticality || req.query.business_criticality;
     const policyProfile = req.query.policyProfile || req.query.policy_profile;
 
-    // Pagination bounds check
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const pageSize = Math.min(
-      Math.max(1, parseInt(req.query.pageSize || req.query.limit, 10) || 25),
-      100,
-    );
-    const offset =
-      req.query.offset !== undefined
-        ? parseInt(req.query.offset, 10)
-        : (page - 1) * pageSize;
+    // Enforce strict pagination bounds (page >= 1, 1 <= pageSize <= 100, offset >= 0)
+    const paginationResult = validatePagination(req.query);
+    if (!paginationResult.valid) {
+      return res.status(400).json({
+        error: "ValidationError",
+        code: "PAGINATION_OUT_OF_BOUNDS",
+        message: paginationResult.error,
+      });
+    }
+    const { page, pageSize, offset } = paginationResult.pagination;
 
     const sortBy = req.query.sortBy || req.query.sort || "risk";
 
@@ -200,7 +208,7 @@ router.get("/", async (req, res, next) => {
     }
 
     // In-memory fallback
-    const scan = scanId ? await getScanById(scanId) : getLatestScan();
+    const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
     if (!scan) {
       return res.status(200).json({
         scan_id: null,
@@ -323,7 +331,9 @@ router.get("/:assetId", async (req, res, next) => {
       try {
         let assetQuery = db("assets")
           .join("scans", "assets.scan_id", "scans.id")
-          .where("assets.id", targetId)
+          .where((qb) => {
+            qb.where("assets.id", targetId).orWhere("assets.primary_identifier", targetId);
+          })
           .select(
             "assets.*",
             "scans.target_name",
@@ -343,10 +353,11 @@ router.get("/:assetId", async (req, res, next) => {
           const currentScanId = assetRow.scan_id;
 
           // 1. Evidence (Components & Findings)
-          const findingsRows = await db("findings").where({
-            scan_id: currentScanId,
-            asset_id: targetId,
-          });
+          const findingsRows = await db("findings")
+            .where("scan_id", currentScanId)
+            .andWhere((qb) => {
+              qb.where("asset_id", assetRow.id).orWhere("asset_id", assetRow.primary_identifier);
+            });
 
           // 2. Risk Assessments
           const findingIds = findingsRows.map((f) => f.id);
@@ -451,7 +462,7 @@ router.get("/:assetId", async (req, res, next) => {
     }
 
     // In-memory fallback
-    const scan = scanId ? await getScanById(scanId) : getLatestScan();
+    const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
     if (!scan) {
       return res.status(404).json({
         error: "NotFound",
@@ -506,6 +517,178 @@ router.get("/:assetId", async (req, res, next) => {
         .map((f) => f.recommendation)
         .filter(Boolean),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/v1/assets
+ * Creates or registers an asset scoped strictly to caller's tenant.
+ */
+router.post("/", async (req, res, next) => {
+  try {
+    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+    const { primary_identifier, asset_type = "cryptographic-key", data_sensitivity = "internal", business_criticality = "medium", metadata = {} } = req.body || {};
+
+    if (!primary_identifier) {
+      return res.status(400).json({ error: "Missing 'primary_identifier' field" });
+    }
+
+    const assetId = `asset_${crypto.randomUUID()}`;
+    const newAsset = {
+      asset_id: assetId,
+      primary_identifier,
+      asset_type,
+      data_sensitivity,
+      business_criticality,
+      highest_severity: "Informational",
+      at_quantum_risk: false,
+      cicd_pass: true,
+      tenantId: callerTenant,
+      metadata,
+      created_at: new Date().toISOString(),
+    };
+
+    const scan = getLatestScan(req.tenantContext);
+    if (scan) {
+      scan.top_risky_assets = scan.top_risky_assets || [];
+      scan.top_risky_assets.push(newAsset);
+    }
+
+    return res.status(201).json(newAsset);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * PUT /api/v1/assets/:id
+ * Modifies an asset verifying caller's tenant boundary.
+ */
+router.put("/:id", async (req, res, next) => {
+  try {
+    const targetId = req.params.id;
+    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+
+    // Check in-memory scans store and database for target asset
+    let targetScan = null;
+    let asset = null;
+
+    for (const s of cbomIngestionService._scans.values()) {
+      const a = (s.top_risky_assets || []).find(
+        (x) => x.asset_id === targetId || x.primary_identifier === targetId
+      );
+      if (a) {
+        asset = a;
+        targetScan = s;
+        break;
+      }
+    }
+
+    const connected = await isDbConnected();
+    if (connected && !asset) {
+      try {
+        const assetRow = await db("assets")
+          .join("scans", "assets.scan_id", "scans.id")
+          .where((qb) => {
+            qb.where("assets.id", targetId).orWhere("assets.primary_identifier", targetId);
+          })
+          .select("assets.*", "scans.tenant_id")
+          .first();
+        if (assetRow) {
+          asset = assetRow;
+          targetScan = { tenantId: assetRow.tenant_id };
+        }
+      } catch (_err) {}
+    }
+
+    if (!targetScan || !asset) {
+      return res.status(404).json({ error: "NotFound", message: `Asset '${targetId}' not found` });
+    }
+
+    if (!isPlatformAdmin && targetScan.tenantId && targetScan.tenantId !== callerTenant) {
+      return res.status(403).json({
+        error: "TenantBoundaryViolation",
+        code: "HORIZONTAL_TENANT_VIOLATION",
+        message: `Cannot modify asset belonging to tenant '${targetScan.tenantId}'`,
+      });
+    }
+
+    const { data_sensitivity, business_criticality } = req.body || {};
+    if (data_sensitivity) asset.data_sensitivity = data_sensitivity;
+    if (business_criticality) asset.business_criticality = business_criticality;
+
+    return res.json({ success: true, asset });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * DELETE /api/v1/assets/:id
+ * Deletes an asset verifying caller's tenant boundary.
+ */
+router.delete("/:id", async (req, res, next) => {
+  try {
+    const targetId = req.params.id;
+    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+
+    // Check in-memory scans store and database for target asset
+    let targetScan = null;
+    let assetIdx = -1;
+
+    for (const s of cbomIngestionService._scans.values()) {
+      const idx = (s.top_risky_assets || []).findIndex(
+        (x) => x.asset_id === targetId || x.primary_identifier === targetId
+      );
+      if (idx !== -1) {
+        assetIdx = idx;
+        targetScan = s;
+        break;
+      }
+    }
+
+    const connected = await isDbConnected();
+    let dbAssetRow = null;
+    if (connected && assetIdx === -1) {
+      try {
+        dbAssetRow = await db("assets")
+          .join("scans", "assets.scan_id", "scans.id")
+          .where((qb) => {
+            qb.where("assets.id", targetId).orWhere("assets.primary_identifier", targetId);
+          })
+          .select("assets.*", "scans.tenant_id")
+          .first();
+        if (dbAssetRow) {
+          targetScan = { tenantId: dbAssetRow.tenant_id };
+        }
+      } catch (_err) {}
+    }
+
+    if (!targetScan || (assetIdx === -1 && !dbAssetRow)) {
+      return res.status(404).json({ error: "NotFound", message: `Asset '${targetId}' not found` });
+    }
+
+    if (!isPlatformAdmin && targetScan.tenantId && targetScan.tenantId !== callerTenant) {
+      return res.status(403).json({
+        error: "TenantBoundaryViolation",
+        code: "HORIZONTAL_TENANT_VIOLATION",
+        message: `Cannot delete asset belonging to tenant '${targetScan.tenantId}'`,
+      });
+    }
+
+    if (assetIdx !== -1 && targetScan.top_risky_assets) {
+      targetScan.top_risky_assets.splice(assetIdx, 1);
+    }
+    if (connected && dbAssetRow) {
+      await db("assets").where({ id: dbAssetRow.id }).del().catch(() => {});
+    }
+
+    return res.json({ success: true, message: `Asset '${targetId}' deleted successfully.` });
   } catch (err) {
     next(err);
   }

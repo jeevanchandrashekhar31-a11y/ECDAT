@@ -1,3 +1,4 @@
+// @ecdat-synthetic-corpus
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const crypto = require("crypto");
@@ -276,7 +277,7 @@ test("Phase 18.2 — REST API endpoints for SIEM Integration", async () => {
       body: JSON.stringify({
         batchSize: 40,
         endpoints: [
-          { id: "dest-splunk", name: "Splunk HEC", url: "https://splunk.internal:8088/services/collector", format: "json" },
+          { id: "dest-splunk", name: "Splunk HEC", url: "https://api.github.com/webhook/test", format: "json" },
         ],
       }),
     });

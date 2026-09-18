@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-17T02:20:10.774744+00:00",
+  "timestamp": "2026-09-18T17:21:07.721322+00:00",
   "overall_status": "PASS",
   "total_gates": 7,
   "passed_gates": 7,
@@ -9,12 +9,19 @@
       "gate_name": "Vulnerability Release Gate",
       "status": "PASS",
       "message": "Gate PASSED: 0 critical blockers, 0 unaccepted highs (0 accepted highs, 0 tracked remediations, 0 tracked improvements, 0 tampering violations).",
-      "details": {}
+      "details": {
+        "critical_blockers": 0,
+        "unaccepted_highs": 0,
+        "accepted_highs": 0,
+        "tracked_remediations": 0,
+        "tracked_improvements": 0,
+        "tampering_violations": 0
+      }
     },
     {
       "gate_name": "Secret Detection",
       "status": "PASS",
-      "message": "Zero leaked secrets or credentials detected across tracked files.",
+      "message": "Zero leaked secrets or credentials detected across tracked files (163 certified synthetic fixtures verified).",
       "details": {}
     },
     {
@@ -26,7 +33,7 @@
     {
       "gate_name": "Critical Security Tests",
       "status": "PASS",
-      "message": "All critical security and cryptographic test suites PASSED successfully.",
+      "message": "All critical security and cryptographic test suites (Python & Node.js adversarial) PASSED successfully.",
       "details": {}
     },
     {

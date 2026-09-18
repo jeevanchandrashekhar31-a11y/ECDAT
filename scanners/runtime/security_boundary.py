@@ -1,7 +1,13 @@
 """
-ECDAT Dedicated eBPF Runtime Security Boundary & Agent Subsystem (Phase 6.2)
+ECDAT Runtime Security Observation Abstraction & Security Boundary (Phase 6.2)
 
 Architecture:
+- Architectural Truthfulness: This module provides the **Runtime Security Observation Abstraction**
+  (`RuntimeSecurityAgent`, `RuntimeObservationProbe`). It models the allowlist probe catalog,
+  metadata-only validation, bounded buffers, rate limiting, and circuit breakers.
+  It does NOT directly load in-kernel C bytecode or execute kernel BPF verifiers.
+- Genuine In-Kernel eBPF Architecture: Live kernel uprobes and BPF ring buffer streaming are
+  implemented in `bpf/crypto_observer.bpf.c` and `scanners.runtime.ebpf_collector.LinuxEbpfProbeCollector`.
 - Principle of Least Privilege: The central ECDAT server (Node.js/backend and general scanners)
   NEVER runs with eBPF privileges (root / CAP_BPF / CAP_PERFMON).
 - Dedicated Runtime Agent: A separate, isolated, low-overhead process (`RuntimeSecurityAgent`)
@@ -14,8 +20,8 @@ Architecture:
 - Input Validation: Validates all events emitted by probes to guarantee no sensitive data exposure.
 - Watchdogs: Active heartbeat watchdog monitoring agent memory, CPU, and event throughput.
 - Clean Detach: Guaranteed signal handlers (SIGINT, SIGTERM) and context managers safely detaching
-  all uprobes and freeing kernel ring buffers on shutdown or error.
-- Graceful Failure: Any probe crash or event buffer overflow trips safe circuit breakers without
+  all observation probes on shutdown or error.
+- Graceful Failure: Any probe anomaly or event buffer overflow trips safe circuit breakers without
   affecting the observed application or the ECDAT control plane.
 
 Acceptance Criterion:
@@ -74,8 +80,15 @@ class AgentResourceLimits:
 
 
 @dataclass
-class ProbeAttachment:
-    """Represents a validated, attached uprobe."""
+class RuntimeObservationProbe:
+    """
+    Represents an observation probe within the Runtime Security Observation Abstraction.
+
+    TRUTHFUL ARCHITECTURAL BOUNDARY:
+    This class models the registration and metadata tracking of an observation target.
+    It does NOT directly load in-kernel eBPF bytecode or execute kernel verifiers.
+    For live in-kernel eBPF observation, see LinuxEbpfProbeCollector.
+    """
 
     probe_id: str
     library_name: str
@@ -83,6 +96,12 @@ class ProbeAttachment:
     target_binary_path: str
     is_attached: bool = False
     attached_at_epoch: float = 0.0
+    is_live_ebpf: bool = False  # Explicitly False in this abstraction layer
+
+
+# Backward-compatible and semantic aliases
+ProbeAttachment = RuntimeObservationProbe
+ObservationProbeAttachment = RuntimeObservationProbe
 
 
 class BoundedEventBuffer:
@@ -213,7 +232,7 @@ class RuntimeSecurityAgent:
         self.catalog = catalog or RuntimeProbesCatalog()
         self.limits = limits or AgentResourceLimits()
         self.buffer = BoundedEventBuffer(capacity=self.limits.max_buffer_entries)
-        self.attached_probes: Dict[str, ProbeAttachment] = {}
+        self.attached_probes: Dict[str, RuntimeObservationProbe] = {}
         self.is_running = False
         self.circuit_breaker_tripped = False
         self.circuit_breaker_reason: Optional[str] = None
@@ -224,14 +243,15 @@ class RuntimeSecurityAgent:
             on_failure_callback=self.handle_circuit_breaker,
         )
 
-    def attach_probe(self, probe_id: str, target_binary_path: str) -> ProbeAttachment:
+    def register_observation_probe(self, probe_id: str, target_binary_path: str) -> RuntimeObservationProbe:
         """
-        Attaches an uprobe strictly checking against allowlisted catalog functions.
+        Registers an observation probe in the runtime security observation abstraction,
+        strictly checking against allowlisted catalog functions.
         Refuses any arbitrary probe attachment.
         """
         if self.circuit_breaker_tripped:
             raise SecurityBoundaryViolation(
-                f"Agent circuit breaker is TRIPPED ({self.circuit_breaker_reason}). Cannot attach probes."
+                f"Agent circuit breaker is TRIPPED ({self.circuit_breaker_reason}). Cannot register probes."
             )
 
         # 1. Probe Catalog Allowlist Check
@@ -256,18 +276,26 @@ class RuntimeSecurityAgent:
         if not target_binary_path or not isinstance(target_binary_path, str):
             raise SecurityBoundaryViolation(f"Invalid target binary path '{target_binary_path}'.")
 
-        # 3. Create attachment record
-        attachment = ProbeAttachment(
+        # 3. Create observation probe record
+        attachment = RuntimeObservationProbe(
             probe_id=probe_id,
             library_name=found_probe.get("library_name", "OpenSSL"),
             function_name=found_probe["function_name"],
             target_binary_path=target_binary_path,
             is_attached=True,
             attached_at_epoch=time.time(),
+            is_live_ebpf=False,
         )
         self.attached_probes[probe_id] = attachment
-        logger.info("Successfully attached allowlisted probe %s to %s", probe_id, target_binary_path)
+        logger.info("Successfully registered observation probe %s for %s", probe_id, target_binary_path)
         return attachment
+
+    def attach_probe(self, probe_id: str, target_binary_path: str) -> RuntimeObservationProbe:
+        """
+        Alias for register_observation_probe to maintain compatibility with test suites
+        and client callers of the runtime security observation abstraction.
+        """
+        return self.register_observation_probe(probe_id, target_binary_path)
 
     def ingest_raw_event(self, event_data: Dict[str, Any]) -> bool:
         """
@@ -339,12 +367,20 @@ class RuntimeSecurityAgent:
     def get_status_report(self) -> Dict[str, Any]:
         return {
             "agent_id": self.agent_id,
+            "architecture_type": "runtime_security_observation_abstraction",
+            "is_kernel_ebpf_attached": False,
+            "is_live_ebpf_verified": False,
             "is_running": self.is_running,
             "circuit_breaker_tripped": self.circuit_breaker_tripped,
             "circuit_breaker_reason": self.circuit_breaker_reason,
             "attached_probes_count": len(self.attached_probes),
             "attached_probes": [
-                {"probe_id": p.probe_id, "function": p.function_name, "target": p.target_binary_path}
+                {
+                    "probe_id": p.probe_id,
+                    "function": p.function_name,
+                    "target": p.target_binary_path,
+                    "is_live_ebpf": p.is_live_ebpf,
+                }
                 for p in self.attached_probes.values()
             ],
             "buffer_size": self.buffer.size(),

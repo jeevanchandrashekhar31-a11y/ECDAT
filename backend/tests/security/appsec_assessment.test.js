@@ -1,3 +1,4 @@
+// @ecdat-synthetic-corpus
 /**
  * Phase 23.1 — Backend Application Security Assessment (Red Team Validation)
  *

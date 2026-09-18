@@ -20,4 +20,9 @@ artifacts/*.txt
 artifacts/*.html
 network_cbom.json
 binary_cbom.json
+network_scan_audit.jsonl
 artifacts/ci/
+.coverage
+.pytest_cache/
+.ruff_cache/
+.keys/

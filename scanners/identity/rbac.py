@@ -254,6 +254,123 @@ ENDPOINT_PERMISSIONS: Dict[str, str] = {
 }
 
 
+class Capabilities:
+    READ_OWN_DATA = "read_own_data"
+    READ_TENANT_DATA = "read_tenant_data"
+    TRIGGER_SCANS = "trigger_scans"
+    TRIAGE_FINDINGS = "triage_findings"
+    PROPOSE_REMEDIATION = "propose_remediation"
+    APPROVE_REMEDIATION = "approve_remediation"
+    MANAGE_POLICIES = "manage_policies"
+    READ_COMPLIANCE_AUDIT = "read_compliance_audit"
+    MANAGE_USERS = "manage_users"
+    ROTATE_SECRETS = "rotate_secrets"
+    CROSS_TENANT_ACCESS = "cross_tenant_access"
+
+
+AUTHORIZATION_MATRIX: Dict[str, Dict[str, str]] = {
+    Capabilities.READ_OWN_DATA: {
+        "anonymous": "NO",
+        "viewer": "YES",
+        "analyst": "YES",
+        "developer": "YES",
+        "auditor": "YES",
+        "admin": "YES",
+        "platform_admin": "YES",
+    },
+    Capabilities.READ_TENANT_DATA: {
+        "anonymous": "NO",
+        "viewer": "scoped",
+        "analyst": "scoped",
+        "developer": "scoped",
+        "auditor": "scoped",
+        "admin": "scoped",
+        "platform_admin": "YES",
+    },
+    Capabilities.TRIGGER_SCANS: {
+        "anonymous": "NO",
+        "viewer": "NO",
+        "analyst": "YES",
+        "developer": "YES",
+        "auditor": "NO",
+        "admin": "YES",
+        "platform_admin": "YES",
+    },
+    Capabilities.TRIAGE_FINDINGS: {
+        "anonymous": "NO",
+        "viewer": "NO",
+        "analyst": "YES",
+        "developer": "YES",
+        "auditor": "NO",
+        "admin": "YES",
+        "platform_admin": "YES",
+    },
+    Capabilities.PROPOSE_REMEDIATION: {
+        "anonymous": "NO",
+        "viewer": "NO",
+        "analyst": "YES",
+        "developer": "YES",
+        "auditor": "NO",
+        "admin": "YES",
+        "platform_admin": "YES",
+    },
+    Capabilities.APPROVE_REMEDIATION: {
+        "anonymous": "NO",
+        "viewer": "NO",
+        "analyst": "NO",
+        "developer": "NO",
+        "auditor": "NO",
+        "admin": "YES",
+        "platform_admin": "YES",
+    },
+    Capabilities.MANAGE_POLICIES: {
+        "anonymous": "NO",
+        "viewer": "NO",
+        "analyst": "NO",
+        "developer": "NO",
+        "auditor": "NO",
+        "admin": "YES",
+        "platform_admin": "YES",
+    },
+    Capabilities.READ_COMPLIANCE_AUDIT: {
+        "anonymous": "NO",
+        "viewer": "scoped",
+        "analyst": "scoped",
+        "developer": "scoped",
+        "auditor": "scoped",
+        "admin": "scoped",
+        "platform_admin": "YES",
+    },
+    Capabilities.MANAGE_USERS: {
+        "anonymous": "NO",
+        "viewer": "NO",
+        "analyst": "NO",
+        "developer": "NO",
+        "auditor": "NO",
+        "admin": "scoped",
+        "platform_admin": "YES",
+    },
+    Capabilities.ROTATE_SECRETS: {
+        "anonymous": "NO",
+        "viewer": "NO",
+        "analyst": "NO",
+        "developer": "NO",
+        "auditor": "NO",
+        "admin": "policy",
+        "platform_admin": "YES",
+    },
+    Capabilities.CROSS_TENANT_ACCESS: {
+        "anonymous": "NO",
+        "viewer": "NO",
+        "analyst": "NO",
+        "developer": "NO",
+        "auditor": "NO",
+        "admin": "NO",
+        "platform_admin": "YES",
+    },
+}
+
+
 class RBACManager:
     """
     Evaluates role permissions, vertical privilege escalation, and horizontal tenant boundaries.
@@ -318,43 +435,87 @@ class RBACManager:
         target_tenant: Optional[str] = None,
         user_id: Optional[str] = None,
         target_owner_id: Optional[str] = None,
+        audit_logger: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Validates both vertical and horizontal privilege constraints.
+        Optionally emits to audit_logger when provided.
         """
         roles_list = [user_roles] if isinstance(user_roles, str) else list(user_roles or [])
 
         # 1. Vertical Privilege Escalation Check
         if not cls.has_permission(roles_list, required_permission):
+            reason = f"Access denied. User lacks required permission: '{required_permission}'."
+            if audit_logger:
+                audit_logger.log_event(
+                    event_type="PERMISSION_DENIED",
+                    user_id=user_id or "anonymous",
+                    status="DENIED",
+                    reason=reason,
+                    metadata={"requiredPermission": required_permission, "userRoles": roles_list},
+                )
             return {
                 "allowed": False,
                 "code": "INSUFFICIENT_PERMISSIONS",
-                "reason": f"Access denied. User lacks required permission: '{required_permission}'.",
+                "reason": reason,
                 "requiredPermission": required_permission,
                 "userRoles": roles_list,
+                "audit_event": {
+                    "action": "PERMISSION_DENIED",
+                    "status": "DENIED",
+                    "reason": reason,
+                },
             }
 
         # 2. Horizontal Privilege Escalation Check: Multi-tenant boundary
         is_platform_admin = any(cls.normalize_role(r) == Roles.PLATFORM_ADMIN for r in roles_list)
         if not is_platform_admin and target_tenant and target_tenant != user_tenant:
+            reason = f"Cross-tenant access violation: user tenant '{user_tenant}' cannot access target tenant '{target_tenant}'."
+            if audit_logger:
+                audit_logger.log_event(
+                    event_type="TENANT_ISOLATION_VIOLATION",
+                    user_id=user_id or "anonymous",
+                    status="DENIED",
+                    reason=reason,
+                    metadata={"userTenant": user_tenant, "targetTenant": target_tenant},
+                )
             return {
                 "allowed": False,
                 "code": "HORIZONTAL_TENANT_VIOLATION",
-                "reason": f"Cross-tenant access violation: user tenant '{user_tenant}' cannot access target tenant '{target_tenant}'.",
+                "reason": reason,
                 "userTenant": user_tenant,
                 "targetTenant": target_tenant,
+                "audit_event": {
+                    "action": "TENANT_ISOLATION_VIOLATION",
+                    "status": "DENIED",
+                    "reason": reason,
+                },
             }
 
         # 3. Horizontal Privilege Escalation Check: Object ownership boundary
         if target_owner_id and user_id and target_owner_id != user_id:
             is_sec_admin = any(cls.normalize_role(r) == Roles.SECURITY_ADMIN for r in roles_list)
             if not is_platform_admin and not is_sec_admin:
+                reason = "Object ownership violation: non-admin cannot access/modify resources owned by another user."
+                if audit_logger:
+                    audit_logger.log_event(
+                        event_type="OBJECT_OWNERSHIP_VIOLATION",
+                        user_id=user_id or "anonymous",
+                        status="DENIED",
+                        reason=reason,
+                        metadata={"userId": user_id, "targetOwnerId": target_owner_id},
+                    )
                 return {
                     "allowed": False,
                     "code": "HORIZONTAL_OWNER_VIOLATION",
-                    "reason": "Object ownership violation: non-admin cannot access/modify resources owned by another user.",
+                    "reason": reason,
                     "userId": user_id,
                     "targetOwnerId": target_owner_id,
+                    "audit_event": {
+                        "action": "OBJECT_OWNERSHIP_VIOLATION",
+                        "status": "DENIED",
+                        "reason": reason,
+                    },
                 }
 
         return {
@@ -362,3 +523,141 @@ class RBACManager:
             "permission": required_permission,
             "userRoles": roles_list,
         }
+
+    @classmethod
+    def evaluate_capability(
+        cls,
+        role: str,
+        capability: str,
+        is_cross_tenant: bool = False,
+        is_master_rotation: bool = False,
+        audit_logger: Optional[Any] = None,
+        user_id: str = "anonymous",
+        tenant_id: str = "default",
+    ) -> Dict[str, Any]:
+        """
+        Evaluates capability access against the canonical Authorization Matrix.
+        """
+        norm_role = cls.normalize_role(role)
+        matrix_entry = AUTHORIZATION_MATRIX.get(capability)
+        if not matrix_entry:
+            return {
+                "allowed": False,
+                "status": 400,
+                "code": "UNKNOWN_CAPABILITY",
+                "reason": f"Unknown capability '{capability}'.",
+            }
+
+        col_key = "viewer"
+        clean_role = str(role or "").strip().lower().replace("-", " ").replace("_", " ")
+        if not role or clean_role == "anonymous":
+            col_key = "anonymous"
+        elif clean_role in {"platform admin", "platform administrator", "superuser"}:
+            col_key = "platform_admin"
+        elif clean_role in {"admin", "security admin", "security administrator", "secops"}:
+            col_key = "admin"
+        elif clean_role in {"analyst", "threat analyst", "crypto analyst"}:
+            col_key = "analyst"
+        elif clean_role in {"developer", "dev", "engineer"}:
+            col_key = "developer"
+        elif clean_role in {"auditor", "compliance", "compliance officer"}:
+            col_key = "auditor"
+        else:
+            col_key = "viewer"
+
+        matrix_value = matrix_entry.get(col_key, "NO")
+
+        if matrix_value == "NO":
+            status = 401 if col_key == "anonymous" else 403
+            code = "AUTHENTICATION_REQUIRED" if col_key == "anonymous" else "INSUFFICIENT_PERMISSIONS"
+            reason = f"Access denied. Role '{col_key}' lacks capability '{capability}'."
+            if audit_logger:
+                audit_logger.log_event(
+                    event_type="AUTHORIZATION_FAILURE" if col_key == "anonymous" else "PERMISSION_DENIED",
+                    user_id=user_id,
+                    status="DENIED",
+                    reason=reason,
+                    metadata={"capability": capability, "role": col_key, "code": code, "tenantId": tenant_id},
+                )
+            return {
+                "allowed": False,
+                "status": status,
+                "code": code,
+                "reason": reason,
+                "matrixValue": matrix_value,
+                "audit_event": {
+                    "action": "AUTHORIZATION_FAILURE" if col_key == "anonymous" else "PERMISSION_DENIED",
+                    "status": "DENIED",
+                    "reason": reason,
+                },
+            }
+
+        if matrix_value == "scoped":
+            if is_cross_tenant and norm_role != Roles.PLATFORM_ADMIN:
+                reason = f"Cross-tenant access violation. Role '{col_key}' is strictly tenant-scoped for '{capability}'."
+                if audit_logger:
+                    audit_logger.log_event(
+                        event_type="TENANT_ISOLATION_VIOLATION",
+                        user_id=user_id,
+                        status="DENIED",
+                        reason=reason,
+                        metadata={"capability": capability, "role": col_key, "code": "HORIZONTAL_TENANT_VIOLATION"},
+                    )
+                return {
+                    "allowed": False,
+                    "status": 403,
+                    "code": "HORIZONTAL_TENANT_VIOLATION",
+                    "reason": reason,
+                    "matrixValue": matrix_value,
+                    "audit_event": {
+                        "action": "TENANT_ISOLATION_VIOLATION",
+                        "status": "DENIED",
+                        "reason": reason,
+                    },
+                }
+            return {
+                "allowed": True,
+                "status": 200,
+                "scope": "tenant",
+                "matrixValue": matrix_value,
+            }
+
+        if matrix_value == "policy":
+            if is_master_rotation:
+                reason = "Master secret rotation requires platform administrator authority."
+                if audit_logger:
+                    audit_logger.log_event(
+                        event_type="PERMISSION_DENIED",
+                        user_id=user_id,
+                        status="DENIED",
+                        reason=reason,
+                        metadata={"capability": capability, "role": col_key, "code": "POLICY_RESTRICTED"},
+                    )
+                return {
+                    "allowed": False,
+                    "status": 403,
+                    "code": "POLICY_RESTRICTED",
+                    "reason": reason,
+                    "matrixValue": matrix_value,
+                    "audit_event": {
+                        "action": "PERMISSION_DENIED",
+                        "status": "DENIED",
+                        "reason": reason,
+                    },
+                }
+            return {
+                "allowed": True,
+                "status": 200,
+                "scope": "policy_governed",
+                "matrixValue": matrix_value,
+            }
+
+        if matrix_value == "YES":
+            return {
+                "allowed": True,
+                "status": 200,
+                "scope": "global" if norm_role == Roles.PLATFORM_ADMIN else "standard",
+                "matrixValue": matrix_value,
+            }
+
+        return {"allowed": False, "status": 403, "code": "DENIED", "reason": "Access denied."}

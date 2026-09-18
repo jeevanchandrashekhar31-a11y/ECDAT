@@ -35,6 +35,7 @@ def test_dockerfile_minimal_base_and_pinned_digest(auditor):
         REPO_ROOT / "backend" / "Dockerfile",
         REPO_ROOT / "frontend" / "Dockerfile",
         REPO_ROOT / "docker" / "scanner.Dockerfile",
+        REPO_ROOT / "docker" / "ebpf-agent.Dockerfile",
     ]
     for target in targets:
         assert target.exists()
@@ -57,6 +58,10 @@ def test_dockerfile_non_root_user(auditor):
     assert "non_root_users" in scanner_res.passed_rules
     assert "USER ecdat" in scanner_res.details["non_root_users"]
 
+    ebpf_res = auditor.audit_dockerfile(REPO_ROOT / "docker" / "ebpf-agent.Dockerfile")
+    assert "non_root_users" in ebpf_res.passed_rules
+    assert "USER ecdat-agent" in ebpf_res.details["non_root_users"]
+
 
 def test_dockerfile_healthchecks(auditor):
     """All production Dockerfiles must declare an explicit HEALTHCHECK."""
@@ -64,9 +69,37 @@ def test_dockerfile_healthchecks(auditor):
         REPO_ROOT / "backend" / "Dockerfile",
         REPO_ROOT / "frontend" / "Dockerfile",
         REPO_ROOT / "docker" / "scanner.Dockerfile",
+        REPO_ROOT / "docker" / "ebpf-agent.Dockerfile",
     ]:
         res = auditor.audit_dockerfile(df)
         assert "health_checks" in res.passed_rules
+
+
+def test_dockerfile_security_controls_audit(auditor):
+    """All production Dockerfiles must pass zero secrets, no compiler in runtime, and read-only compatibility."""
+    for df in [
+        REPO_ROOT / "backend" / "Dockerfile",
+        REPO_ROOT / "frontend" / "Dockerfile",
+        REPO_ROOT / "docker" / "scanner.Dockerfile",
+        REPO_ROOT / "docker" / "ebpf-agent.Dockerfile",
+    ]:
+        res = auditor.audit_dockerfile(df)
+        assert "no_secrets_in_image" in res.passed_rules
+        assert "no_compiler_in_runtime" in res.passed_rules
+        assert "read_only_filesystem" in res.passed_rules
+        assert "no_privileged_mode" in res.passed_rules
+        assert res.score == 100.0
+
+
+def test_dockerignore_secrets_exclusion():
+    """Build context ignore files must strictly exclude secrets, private keys, and environment files."""
+    for ign_file in [REPO_ROOT / ".dockerignore", REPO_ROOT / "frontend" / ".dockerignore"]:
+        assert ign_file.exists()
+        text = ign_file.read_text(encoding="utf-8")
+        assert ".env" in text
+        assert "*.pem" in text
+        assert "*.key" in text
+        assert ".keys" in text
 
 
 def test_compose_read_only_and_capabilities(auditor):

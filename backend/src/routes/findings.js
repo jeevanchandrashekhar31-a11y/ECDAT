@@ -239,7 +239,7 @@ router.get("/", async (req, res, next) => {
     }
 
     // In-memory fallback
-    const scan = scanId ? await getScanById(scanId) : getLatestScan();
+    const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
     if (!scan) {
       return res.status(200).json({
         scan_id: null,
@@ -444,7 +444,7 @@ router.get("/:findingId", async (req, res, next) => {
 
     // In-memory fallback
     const scanId = req.query.scanId || req.query.scan_id;
-    const scan = scanId ? await getScanById(scanId) : getLatestScan();
+    const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
     if (!scan) {
       return res.status(404).json({
         error: "NotFound",
@@ -478,6 +478,46 @@ router.get("/:findingId", async (req, res, next) => {
       },
       recommendation: finding.recommendation || null,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/v1/findings/:id/suppress
+ * Suppresses a finding with tenant boundary checks.
+ */
+router.post("/:id/suppress", async (req, res, next) => {
+  try {
+    const findingId = req.params.id;
+    const { reason = "Risk accepted" } = req.body || {};
+    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+
+    const scan = getLatestScan(req.tenantContext);
+    if (!scan) {
+      return res.status(404).json({ error: "NotFound", message: "Finding not found." });
+    }
+
+    const finding = (scan.classified_findings || []).find(
+      (f) => (f.bom_ref || f.id) === findingId || f.id === findingId
+    );
+    if (!finding) {
+      return res.status(404).json({ error: "NotFound", message: `Finding '${findingId}' not found.` });
+    }
+
+    if (!isPlatformAdmin && scan.tenantId && scan.tenantId !== callerTenant) {
+      return res.status(403).json({
+        error: "TenantBoundaryViolation",
+        code: "HORIZONTAL_TENANT_VIOLATION",
+        message: `Cannot modify finding belonging to tenant '${scan.tenantId}'`,
+      });
+    }
+
+    finding.suppressed = true;
+    finding.suppressionReason = reason;
+
+    return res.json({ success: true, findingId, suppressed: true, reason });
   } catch (err) {
     next(err);
   }

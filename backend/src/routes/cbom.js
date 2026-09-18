@@ -7,6 +7,14 @@ const {
 } = require("../services/cbom_ingestion");
 const config = require("../config");
 const { createRateLimitMiddleware } = require("../middleware/rate_limit");
+const { requireObjectAuthorization, OBJECT_TYPES, defaultObjectStateRegistry } = require("../security/object_authorization");
+const {
+  validateFile,
+  validateCbomContent,
+  validateLength,
+  paginationBoundsMiddleware,
+} = require("../security/input_validation");
+const { RATE_LIMITS, concurrencyQuotaMiddleware } = require("../security/resource_governance");
 
 const router = express.Router();
 
@@ -48,17 +56,45 @@ async function handleCbomUpload(req, res, next) {
       req.body?.reject_private_keys === "true" ||
       req.query?.reject_private_keys === "true";
 
+    // Validate string parameters length limits
+    if (scanLabel) {
+      const check = validateLength(String(scanLabel), { max: 256, fieldName: "scanLabel" });
+      if (!check.valid) return res.status(400).json({ error: "ValidationError", message: check.error });
+    }
+    if (projectName) {
+      const check = validateLength(String(projectName), { max: 256, fieldName: "projectName" });
+      if (!check.valid) return res.status(400).json({ error: "ValidationError", message: check.error });
+    }
+    if (scannerType) {
+      const check = validateLength(String(scannerType), { max: 128, fieldName: "scannerType" });
+      if (!check.valid) return res.status(400).json({ error: "ValidationError", message: check.error });
+    }
+    if (policyProfile) {
+      const check = validateLength(String(policyProfile), { max: 128, fieldName: "policyProfile" });
+      if (!check.valid) return res.status(400).json({ error: "ValidationError", message: check.error });
+    }
+
     // 1. Check if multipart file upload
     if (req.file) {
-      const fileContent = req.file.buffer.toString("utf8");
-      try {
-        rawPayload = JSON.parse(fileContent);
-      } catch (parseErr) {
+      const fileValidation = validateFile(req.file, { maxSizeBytes: config.MAX_UPLOAD_BYTES });
+      if (!fileValidation.valid) {
         return res.status(400).json({
-          error: "BadRequest",
-          message: `Uploaded file '${req.file.originalname}' is not valid JSON: ${parseErr.message}`,
+          error: "ValidationError",
+          code: "INVALID_FILE_UPLOAD",
+          message: fileValidation.error,
         });
       }
+
+      const contentValidation = validateCbomContent(req.file.buffer);
+      if (!contentValidation.valid) {
+        return res.status(400).json({
+          error: "BadRequest",
+          code: "INVALID_CBOM_CONTENT",
+          message: `Uploaded file '${req.file.originalname}' failed content validation: ${contentValidation.error}`,
+        });
+      }
+
+      rawPayload = contentValidation.parsed;
       if (!scanLabel) {
         scanLabel = `Upload: ${req.file.originalname}`;
       }
@@ -88,6 +124,7 @@ async function handleCbomUpload(req, res, next) {
       scannerType,
       projectName,
       rejectPrivateKey,
+      tenantContext: req.tenantContext,
     });
 
     res.status(201).json({
@@ -119,25 +156,44 @@ async function handleCbomUpload(req, res, next) {
  * POST /api/v1/cboms and /api/v1/cbom
  * Ingests a CycloneDX CBOM via JSON body or multipart file upload.
  */
-router.post("/", uploadRateLimit, upload.single("file"), handleCbomUpload);
+router.post(
+  "/",
+  concurrencyQuotaMiddleware(),
+  (req, res, next) => {
+    const contentType = req.headers["content-type"] || "";
+    if (contentType.includes("multipart/form-data")) {
+      return RATE_LIMITS.archiveUpload.middleware()(req, res, next);
+    }
+    return RATE_LIMITS.cbomGeneration.middleware()(req, res, next);
+  },
+  upload.single("file"),
+  handleCbomUpload
+);
 
 /**
  * POST /api/v1/cbom/ingest (backwards-compatible alias)
  */
 router.post(
   "/ingest",
-  uploadRateLimit,
+  concurrencyQuotaMiddleware(),
+  (req, res, next) => {
+    const contentType = req.headers["content-type"] || "";
+    if (contentType.includes("multipart/form-data")) {
+      return RATE_LIMITS.archiveUpload.middleware()(req, res, next);
+    }
+    return RATE_LIMITS.cbomGeneration.middleware()(req, res, next);
+  },
   upload.single("file"),
-  handleCbomUpload,
+  handleCbomUpload
 );
 
 /**
  * GET /api/v1/cboms or /api/v1/cbom
- * Lists all ingested scans.
+ * Lists all ingested scans scoped to caller's tenant.
  */
-router.get("/", async (req, res, next) => {
+router.get("/", paginationBoundsMiddleware(), async (req, res, next) => {
   try {
-    const scans = await getAllScans();
+    const scans = await getAllScans(req.tenantContext);
     res.status(200).json({ scans });
   } catch (err) {
     next(err);
@@ -145,23 +201,44 @@ router.get("/", async (req, res, next) => {
 });
 
 /**
- * GET /api/v1/cboms/:id or /api/v1/cbom/:id
- * Retrieves the annotated CycloneDX 1.6 CBOM document for a scan.
+ * GET /api/v1/cboms/projects/:projectId or /api/v1/cbom/projects/:projectId
+ * Retrieves project CBOM metadata verifying server-side state and tenant boundaries.
  */
-router.get("/:id", async (req, res, next) => {
-  try {
-    const scan = await getScanById(req.params.id);
-    if (!scan) {
-      return res.status(404).json({
-        error: "NotFound",
-        message: `Scan '${req.params.id}' not found`,
-      });
-    }
-
-    res.status(200).json(scan.annotated_bom);
-  } catch (err) {
-    next(err);
+router.get(
+  "/projects/:projectId",
+  requireObjectAuthorization(OBJECT_TYPES.PROJECT, { idParam: "projectId" }),
+  (req, res) => {
+    const project = req.resolvedObject;
+    return res.json({
+      projectId: project.id,
+      tenantId: project.tenantId,
+      status: "active",
+    });
   }
-});
+);
+
+/**
+ * GET /api/v1/cboms/:id or /api/v1/cbom/:id
+ * Retrieves the annotated CycloneDX 1.6 CBOM document for a scan scoped to caller's tenant.
+ */
+router.get(
+  "/:id",
+  requireObjectAuthorization(OBJECT_TYPES.CBOM, { idParam: "id", hideCrossTenantExistence: true }),
+  async (req, res, next) => {
+    try {
+      const scan = await getScanById(req.params.id, req.tenantContext);
+      if (!scan) {
+        return res.status(404).json({
+          error: "NotFound",
+          message: `Scan '${req.params.id}' not found`,
+        });
+      }
+
+      res.status(200).json(scan.annotated_bom);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 module.exports = router;

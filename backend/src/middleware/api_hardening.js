@@ -217,6 +217,14 @@ function injectionProtectionMiddleware(req, res, next) {
 // 2. SERVER-SIDE REQUEST FORGERY (SSRF) DEFENSE
 // ============================================================================
 
+const {
+  checkForbiddenIp,
+  checkForbiddenHostname,
+  validateSafeUrlAsync,
+  validateSafeGitUrlAsync,
+  safeFetch,
+} = require("../security/ssrf_protection");
+
 const FORBIDDEN_HOSTNAMES = new Set([
   "localhost",
   "127.0.0.1",
@@ -231,33 +239,7 @@ const FORBIDDEN_HOSTNAMES = new Set([
  * Checks whether an IP address belongs to private/internal RFC 1918 or link-local ranges.
  */
 function isPrivateIpAddress(ip) {
-  if (!ip) return false;
-
-  // IPv4 Loopback
-  if (ip.startsWith("127.")) return true;
-
-  // Class A Private (10.0.0.0/8)
-  if (ip.startsWith("10.")) return true;
-
-  // Class B Private (172.16.0.0/12)
-  if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip)) return true;
-
-  // Class C Private (192.168.0.0/16)
-  if (ip.startsWith("192.168.")) return true;
-
-  // Link-Local / Cloud Metadata (169.254.0.0/16)
-  if (ip.startsWith("169.254.")) return true;
-
-  // Current network (0.0.0.0/8)
-  if (ip.startsWith("0.")) return true;
-
-  // IPv6 Loopback / Unique Local / Link Local
-  const lower = ip.toLowerCase();
-  if (lower === "::1" || lower === "::" || lower.startsWith("fc00:") || lower.startsWith("fd00:") || lower.startsWith("fe80:")) {
-    return true;
-  }
-
-  return false;
+  return checkForbiddenIp(ip).forbidden;
 }
 
 /**
@@ -290,15 +272,19 @@ function validateSafeUrl(rawUrl, { allowedProtocols = ["http:", "https:"], allow
     return { safe: false, error: "Embedded user credentials in URLs are prohibited" };
   }
 
-  // 3. Reject forbidden hostnames
-  if (!allowLocalhost && FORBIDDEN_HOSTNAMES.has(hostname)) {
-    return { safe: false, error: `Hostname '${hostname}' is a forbidden private or metadata target` };
+  // 3. Reject forbidden hostnames & internal DNS targets
+  if (!allowLocalhost) {
+    const hostCheck = checkForbiddenHostname(hostname);
+    if (hostCheck.forbidden) {
+      return { safe: false, error: hostCheck.reason };
+    }
   }
 
-  // 4. If hostname is an IP, check for private IP ranges
-  if (net.isIP(hostname)) {
-    if (!allowLocalhost && isPrivateIpAddress(hostname)) {
-      return { safe: false, error: `IP address '${hostname}' belongs to a forbidden private or link-local network` };
+  // 4. If hostname is an IP (or numeric format), check for private IP ranges
+  if (!allowLocalhost) {
+    const ipCheck = checkForbiddenIp(hostname);
+    if (ipCheck.forbidden) {
+      return { safe: false, error: `IP address '${hostname}' belongs to a forbidden private or link-local network: ${ipCheck.reason}` };
     }
   }
 
@@ -497,11 +483,21 @@ function objectLevelAuthMiddleware({ getResourceOwner, idParam = "id" } = {}) {
     const resourceId = (req.params && req.params[idParam]) || (req.query && req.query[idParam]) || (req.body && req.body[idParam]);
     if (!resourceId) return next();
 
-    // Admins bypass object-level ownership restrictions
-    const roles = (req.auth && req.auth.roles) || (req.auth && [req.auth.role]) || [];
-    if (roles.includes("admin")) {
-      return next();
-    }
+    const roles = [
+      ...((req.auth && req.auth.roles) || []),
+      ...((req.auth && req.auth.role ? [req.auth.role] : [])),
+      ...((req.user && req.user.roles) || []),
+      ...((req.user && req.user.role ? [req.user.role] : [])),
+      ...((req.tenantContext && req.tenantContext.roles) || []),
+    ].map((r) => String(r).toLowerCase());
+
+    const isPlatformAdmin =
+      Boolean(req.tenantContext?.isPlatformAdmin) ||
+      roles.some((r) => r === "platform admin" || r === "platform_admin" || r === "platform administrator");
+
+    const isTenantAdmin =
+      isPlatformAdmin ||
+      roles.some((r) => r === "admin" || r === "security admin" || r === "security administrator" || r === "secops");
 
     try {
       const resource = await getResourceOwner(resourceId, req);
@@ -513,11 +509,35 @@ function objectLevelAuthMiddleware({ getResourceOwner, idParam = "id" } = {}) {
         });
       }
 
-      const callerUserId = req.auth?.user?.sub || req.auth?.user?.userId || req.auth?.userId;
-      const callerTenantId = req.auth?.user?.tenantId || req.auth?.tenantId;
+      const callerUserId = req.auth?.user?.sub || req.auth?.user?.userId || req.auth?.userId || req.user?.sub || req.user?.userId;
+      const callerTenantId = req.auth?.user?.tenantId || req.auth?.tenantId || req.tenantContext?.tenantId || req.user?.tenantId;
 
       // Check tenant isolation if resource belongs to a tenant
-      if (resource.tenantId && callerTenantId && resource.tenantId !== callerTenantId) {
+      if (resource.tenantId && callerTenantId && resource.tenantId !== callerTenantId && !isPlatformAdmin) {
+        try {
+          const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
+          defaultAuditService.logEvent({
+            category: AUDIT_CATEGORIES.PERMISSION_CHANGE,
+            action: AUDIT_ACTIONS.TENANT_ISOLATION_VIOLATION,
+            status: AUDIT_STATUSES.DENIED,
+            actor: {
+              id: callerUserId || "anonymous",
+              username: callerUserId || "anonymous",
+              role: roles[0] || "viewer",
+              ipAddress: req.ip,
+            },
+            tenantId: callerTenantId,
+            target: { type: "resource", id: resourceId },
+            details: {
+              code: "TENANT_ACCESS_DENIED",
+              resourceTenant: resource.tenantId,
+              callerTenant: callerTenantId,
+              resourceId,
+              path: req.originalUrl || req.path,
+            },
+          }).catch(() => {});
+        } catch (_e) {}
+
         return res.status(403).json({
           error: "Forbidden",
           code: "TENANT_ACCESS_DENIED",
@@ -527,13 +547,41 @@ function objectLevelAuthMiddleware({ getResourceOwner, idParam = "id" } = {}) {
       }
 
       // Check individual ownership if resource is owned by a specific user
-      if (resource.ownerId && callerUserId && resource.ownerId !== callerUserId) {
-        return res.status(403).json({
-          error: "Forbidden",
-          code: "OBJECT_AUTHORIZATION_FAILED",
-          message: "You do not have authorization to view or mutate this object.",
-          requestId: req.id,
-        });
+      if (resource.ownerId && callerUserId && resource.ownerId !== callerUserId && !isPlatformAdmin) {
+        // Tenant admin can manage user objects strictly within their own tenant
+        const isAdminSameTenant = isTenantAdmin && (!resource.tenantId || resource.tenantId === callerTenantId);
+        if (!isAdminSameTenant) {
+          try {
+            const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
+            defaultAuditService.logEvent({
+              category: AUDIT_CATEGORIES.PERMISSION_CHANGE,
+              action: AUDIT_ACTIONS.OBJECT_OWNERSHIP_VIOLATION,
+              status: AUDIT_STATUSES.DENIED,
+              actor: {
+                id: callerUserId || "anonymous",
+                username: callerUserId || "anonymous",
+                role: roles[0] || "viewer",
+                ipAddress: req.ip,
+              },
+              tenantId: callerTenantId || "default-tenant",
+              target: { type: "resource", id: resourceId },
+              details: {
+                code: "OBJECT_AUTHORIZATION_FAILED",
+                ownerId: resource.ownerId,
+                callerUserId,
+                resourceId,
+                path: req.originalUrl || req.path,
+              },
+            }).catch(() => {});
+          } catch (_e) {}
+
+          return res.status(403).json({
+            error: "Forbidden",
+            code: "OBJECT_AUTHORIZATION_FAILED",
+            message: "You do not have authorization to view or mutate this object.",
+            requestId: req.id,
+          });
+        }
       }
 
       next();
@@ -712,6 +760,9 @@ module.exports = {
 
   // SSRF
   validateSafeUrl,
+  validateSafeUrlAsync,
+  validateSafeGitUrlAsync,
+  safeFetch,
   ssrfProtectionMiddleware,
   isPrivateIpAddress,
   FORBIDDEN_HOSTNAMES,

@@ -11,8 +11,14 @@ function withServer(callback) {
       const baseUrl = `http://127.0.0.1:${port}`;
       try {
         await callback(baseUrl);
+        if (typeof server.closeAllConnections === "function") {
+          server.closeAllConnections();
+        }
         server.close(resolve);
       } catch (err) {
+        if (typeof server.closeAllConnections === "function") {
+          server.closeAllConnections();
+        }
         server.close(() => reject(err));
       }
     });
@@ -39,6 +45,8 @@ test("Auth Hardening API - Registration enforces NIST SP 800-63B password policy
     assert.ok(dataWeak.violations.some((v) => v.includes("at least 12 characters")));
 
     // 2. Strong password accepted
+    // Per Rule 4 & Phase 2.1 P0 Remediation, public registration MUST NOT allow client-chosen
+    // roles (e.g. "secops"). Public registration strictly assigns the lowest-privilege account ("viewer").
     const resStrong = await fetch(`${baseUrl}/api/v1/auth/local/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -46,7 +54,6 @@ test("Auth Hardening API - Registration enforces NIST SP 800-63B password policy
         username: "strong_user",
         email: "strong@corp.internal",
         password: "Enterprise-Agile-PQC#2026!",
-        roles: ["secops"],
       }),
     });
 
@@ -54,7 +61,7 @@ test("Auth Hardening API - Registration enforces NIST SP 800-63B password policy
     const dataStrong = await resStrong.json();
     assert.equal(dataStrong.success, true);
     assert.equal(dataStrong.user.username, "strong_user");
-    assert.deepEqual(dataStrong.user.roles, ["secops"]);
+    assert.deepEqual(dataStrong.user.roles, ["viewer"]);
   });
 });
 
@@ -125,10 +132,23 @@ test("Auth Hardening API - MFA Setup, TOTP Challenge verification, and Backup Co
       }),
     });
 
-    // 1. MFA Setup
-    const resSetup = await fetch(`${baseUrl}/api/v1/auth/mfa/setup`, {
+    // Login to obtain authenticated token
+    const resPreLogin = await fetch(`${baseUrl}/api/v1/auth/local/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    assert.equal(resPreLogin.status, 200);
+    const preLoginData = await resPreLogin.json();
+    const token = preLoginData.accessToken;
+
+    // 1. MFA Setup (Authenticated identity bound)
+    const resSetup = await fetch(`${baseUrl}/api/v1/auth/mfa/setup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ username }),
     });
     assert.equal(resSetup.status, 200);
@@ -137,11 +157,14 @@ test("Auth Hardening API - MFA Setup, TOTP Challenge verification, and Backup Co
     assert.ok(setupData.otpAuthUri);
     assert.equal(setupData.backupCodes.length, 8);
 
-    // 2. MFA Enable with valid TOTP code
+    // 2. MFA Enable with valid TOTP code (Authenticated)
     const validCode = defaultMfaEngine.generateCode(setupData.secret);
     const resEnable = await fetch(`${baseUrl}/api/v1/auth/mfa/enable`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ username, code: validCode }),
     });
     assert.equal(resEnable.status, 200);
@@ -223,7 +246,7 @@ test("Auth Hardening API - Secure Cookies, CSRF Double-Submit Protection, and Lo
     const username = "cookie_tester";
     const password = "Super-Secure-Enterprise#2026!";
 
-    // Register user
+    // Register user (public registration assigns lowest-privilege "viewer" per Phase 2.1 P0)
     await fetch(`${baseUrl}/api/v1/auth/local/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -231,7 +254,6 @@ test("Auth Hardening API - Secure Cookies, CSRF Double-Submit Protection, and Lo
         username,
         email: "ck_test@corp.internal",
         password,
-        roles: ["admin"],
       }),
     });
 

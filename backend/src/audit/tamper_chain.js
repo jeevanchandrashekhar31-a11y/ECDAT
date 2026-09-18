@@ -59,12 +59,16 @@ function computeEventHash(eventData, prevHash) {
       username: eventData.actor?.username || "anonymous",
       role: eventData.actor?.role || "viewer",
     },
-    tenantId: eventData.tenantId || "default",
+    tenantId: eventData.tenantId || eventData.tenant || "default",
     target: {
       type: eventData.target?.type || "system",
       id: eventData.target?.id || "none",
     },
-    status: eventData.status || "SUCCESS",
+    status: eventData.status || eventData.result || "SUCCESS",
+    result: eventData.result || eventData.status || "SUCCESS",
+    requestId: eventData.requestId || eventData.request_id || null,
+    reason: eventData.reason || null,
+    sourceIp: eventData.sourceIp || eventData.source_ip || eventData.actor?.ipAddress || null,
     details: eventData.details || {},
     prevHash: prevHash || GENESIS_HASH,
   };

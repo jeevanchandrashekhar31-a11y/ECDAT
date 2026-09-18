@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- @ecdat-synthetic-corpus -->
+<!-- Adversarial XXE Test Corpora -->
+<test_fixtures>
+  <positive>
+    <cbom version="1.6">
+      <component name="AES" keyLength="256" />
+    </cbom>
+  </positive>
+
+  <malicious_file_read>
+    <!DOCTYPE test [
+      <!ENTITY xxe SYSTEM "file:///etc/passwd">
+    ]>
+    <data>&xxe;</data>
+  </malicious_file_read>
+
+  <malicious_ssrf>
+    <!DOCTYPE test [
+      <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/">
+    ]>
+    <data>&xxe;</data>
+  </malicious_ssrf>
+
+  <malicious_billion_laughs>
+    <!DOCTYPE lolz [
+      <!ENTITY lol "lol">
+      <!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+      <!ENTITY lol2 "&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;">
+      <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+    ]>
+    <data>&lol3;</data>
+  </malicious_billion_laughs>
+</test_fixtures>

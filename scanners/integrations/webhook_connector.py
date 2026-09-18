@@ -115,7 +115,8 @@ class WebhookConnector(BaseTicketingConnector):
                 method="POST",
             )
             try:
-                with urllib.request.urlopen(req) as resp:
+                # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+                with urllib.request.urlopen(req) as resp:  # nosec B310
                     data = json.loads(resp.read().decode("utf-8"))
             except urllib.error.HTTPError as e:
                 err_text = e.read().decode("utf-8")

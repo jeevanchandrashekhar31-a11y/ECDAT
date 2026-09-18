@@ -201,6 +201,7 @@ class KubernetesHardeningAuditor:
     def check_security_contexts(self, manifests: Dict[str, str]) -> K8sAuditCheck:
         backend_content = manifests.get("06-backend-deployment.yaml", "")
         frontend_content = manifests.get("07-frontend-deployment.yaml", "")
+        ebpf_content = manifests.get("09-ebpf-agent-daemonset.yaml", "")
 
         checks = {
             "backend_non_root": "runAsNonRoot: true" in backend_content and "runAsUser: 1000" in backend_content,
@@ -208,10 +209,20 @@ class KubernetesHardeningAuditor:
             "backend_drop_all_caps": "drop:\n                - ALL" in backend_content or "- ALL" in backend_content,
             "backend_seccomp_runtime_default": "seccompProfile:\n          type: RuntimeDefault" in backend_content
             or "RuntimeDefault" in backend_content,
+            "backend_immutable_image": ("@sha256:" in backend_content) and ("image: ecdat/backend:latest" not in backend_content),
             "frontend_non_root": "runAsNonRoot: true" in frontend_content and "runAsUser: 101" in frontend_content,
             "frontend_readonly_rootfs": "readOnlyRootFilesystem: true" in frontend_content,
             "frontend_drop_all_caps": "- ALL" in frontend_content,
             "frontend_seccomp_runtime_default": "RuntimeDefault" in frontend_content,
+            "frontend_immutable_image": ("@sha256:" in frontend_content) and ("image: ecdat/frontend:latest" not in frontend_content),
+            "ebpf_privileged_false": ("privileged: false" in ebpf_content) and ("privileged: true" not in ebpf_content),
+            "ebpf_allow_privilege_escalation_false": "allowPrivilegeEscalation: false" in ebpf_content,
+            "ebpf_non_root": "runAsNonRoot: true" in ebpf_content and "runAsUser: 10002" in ebpf_content,
+            "ebpf_readonly_rootfs": "readOnlyRootFilesystem: true" in ebpf_content,
+            "ebpf_drop_all_caps": "- ALL" in ebpf_content,
+            "ebpf_minimal_caps": ("- BPF" in ebpf_content) and ("- PERFMON" in ebpf_content) and ("- NET_ADMIN" not in ebpf_content),
+            "ebpf_seccomp_runtime_default": "RuntimeDefault" in ebpf_content,
+            "ebpf_immutable_image": ("@sha256:" in ebpf_content) and (":latest" not in ebpf_content),
         }
 
         passed = all(checks.values())
@@ -223,7 +234,7 @@ class KubernetesHardeningAuditor:
             details=checks,
         )
 
-    # 7. Privileged Runtime / eBPF Agent Separation
+    # 7. Privileged Runtime / eBPF Agent Separation & Hardening
     def check_ebpf_agent_separation(self, manifests: Dict[str, str]) -> K8sAuditCheck:
         ns_content = manifests.get("00-namespaces.yaml", "")
         ebpf_daemonset = manifests.get("09-ebpf-agent-daemonset.yaml", "")
@@ -245,12 +256,18 @@ class KubernetesHardeningAuditor:
         # 4. eBPF agent does NOT use hostNetwork
         ebpf_no_host_network = "hostNetwork: false" in ebpf_daemonset
 
+        # 5. eBPF agent does NOT use privileged: true and has allowPrivilegeEscalation: false
+        ebpf_unprivileged = ("privileged: false" in ebpf_daemonset) and ("privileged: true" not in ebpf_daemonset)
+        ebpf_no_escalation = "allowPrivilegeEscalation: false" in ebpf_daemonset
+
         passed = bool(
             has_runtime_ns
             and has_control_ns
             and ebpf_in_runtime
             and not control_plane_has_privileged
             and ebpf_no_host_network
+            and ebpf_unprivileged
+            and ebpf_no_escalation
         )
         details = {
             "separate_runtime_namespace": has_runtime_ns,
@@ -258,12 +275,14 @@ class KubernetesHardeningAuditor:
             "ebpf_daemonset_isolated_in_runtime": ebpf_in_runtime,
             "control_plane_has_zero_privileged": not control_plane_has_privileged,
             "ebpf_agent_host_network_disabled": ebpf_no_host_network,
+            "ebpf_agent_unprivileged": ebpf_unprivileged,
+            "ebpf_agent_no_privilege_escalation": ebpf_no_escalation,
         }
         return K8sAuditCheck(
             check_id="K8S-SEC-007",
-            name="eBPF Runtime Agent Separation",
+            name="eBPF Runtime Agent Separation & Hardening",
             passed=passed,
-            description="Privileged runtime eBPF agent strictly segregated in ecdat-runtime from restricted control plane.",
+            description="Privileged runtime eBPF agent strictly segregated in ecdat-runtime; enforced privileged: false, allowPrivilegeEscalation: false, and minimal capabilities.",
             details=details,
         )
 

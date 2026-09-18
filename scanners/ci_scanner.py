@@ -106,9 +106,7 @@ DEFAULT_EXCLUDE_DIRS = {
     ".venv",
     "__pycache__",
     ".pytest_cache",
-    "fixtures",
-    "artifacts",
-    "examples",
+    ".ruff_cache",
     "coverage",
     "scratch",
 }

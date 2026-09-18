@@ -107,6 +107,37 @@ def test_ebpf_agent_architectural_separation(auditor):
     assert check.details["ebpf_daemonset_isolated_in_runtime"] is True
     assert check.details["control_plane_has_zero_privileged"] is True
     assert check.details["ebpf_agent_host_network_disabled"] is True
+    assert check.details["ebpf_agent_unprivileged"] is True
+    assert check.details["ebpf_agent_no_privilege_escalation"] is True
+
+
+def test_ebpf_daemonset_hardened_security_context(auditor):
+    """eBPF DaemonSet must be unprivileged, non-root, drop ALL, have minimal caps, and use immutable image."""
+    manifests = auditor._read_all_manifest_texts()
+    check = auditor.check_security_contexts(manifests)
+    assert check.passed is True
+    assert check.details["ebpf_privileged_false"] is True
+    assert check.details["ebpf_allow_privilege_escalation_false"] is True
+    assert check.details["ebpf_non_root"] is True
+    assert check.details["ebpf_readonly_rootfs"] is True
+    assert check.details["ebpf_drop_all_caps"] is True
+    assert check.details["ebpf_minimal_caps"] is True
+    assert check.details["ebpf_seccomp_runtime_default"] is True
+    assert check.details["ebpf_immutable_image"] is True
+
+
+def test_zero_latest_image_tags_in_production_manifests():
+    """All production Kubernetes workload manifests must use immutable image references with sha256 digests."""
+    for yaml_file in K8S_MANIFESTS_DIR.glob("*.yaml"):
+        content = yaml_file.read_text(encoding="utf-8")
+        if "containers:" in content:
+            # Check for unpinned :latest
+            for line in content.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("image:"):
+                    image_ref = stripped.split("image:", 1)[1].strip()
+                    assert ":latest" not in image_ref, f"Unpinned :latest image detected in {yaml_file.name}: {image_ref}"
+                    assert "@sha256:" in image_ref, f"Missing immutable @sha256: digest in {yaml_file.name}: {image_ref}"
 
 
 def test_helm_chart_templates_exist():
@@ -125,3 +156,4 @@ def test_overall_k8s_hardening_compliance(auditor):
     assert report.all_passed is True
     assert report.failed_count == 0
     assert report.passed_count == 7
+

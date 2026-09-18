@@ -29,8 +29,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from scanners.reporting.evidence_integrity import EvidenceIntegrityBuilder, validate_evidence_integrity
+    from scanners.common.crypto_classifier import CryptoClassifier, CLASS_QUANTUM_VULNERABLE
 except ImportError:
     from evidence_integrity import EvidenceIntegrityBuilder, validate_evidence_integrity
+    from crypto_classifier import CryptoClassifier, CLASS_QUANTUM_VULNERABLE
 
 
 REQUIRED_DIMENSIONS = [
@@ -212,7 +214,8 @@ class TechnicalReporter:
             "cwe_name": "Use of Weak Hash"
             if "md5" in algo_lower
             else "Use of a Broken or Risky Cryptographic Algorithm",
-            "quantum_vulnerable": any(k in algo_lower for k in ["rsa", "ecdsa", "dh"]),
+            "quantum_vulnerable": CryptoClassifier.classify(algo_lower).classification == CLASS_QUANTUM_VULNERABLE,
+            "pqc_classification": CryptoClassifier.classify(algo_lower).classification,
             "mosca_status": "AT_RISK",
             "mosca_margin_years": -4.5,
             "regulatory_violations": [

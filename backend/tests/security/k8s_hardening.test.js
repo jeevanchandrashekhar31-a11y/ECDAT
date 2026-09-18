@@ -91,6 +91,37 @@ describe("Phase 24.2 — Kubernetes Hardening (Backend)", () => {
     assert.ok(!frontend.includes("privileged: true"));
   });
 
+  test("Runtime eBPF Agent Hardening: privileged: false, allowPrivilegeEscalation: false, non-root, and minimal capabilities", () => {
+    const ebpf = fs.readFileSync(path.join(K8S_DIR, "09-ebpf-agent-daemonset.yaml"), "utf-8");
+    assert.ok(ebpf.includes("privileged: false"), "eBPF agent must be privileged: false");
+    assert.ok(!ebpf.includes("privileged: true"), "eBPF agent must NOT have privileged: true");
+    assert.ok(ebpf.includes("allowPrivilegeEscalation: false"), "eBPF agent must have allowPrivilegeEscalation: false");
+    assert.ok(ebpf.includes("runAsNonRoot: true"), "eBPF agent must run as non-root");
+    assert.ok(ebpf.includes("readOnlyRootFilesystem: true"), "eBPF agent must have readOnlyRootFilesystem: true");
+    assert.ok(ebpf.includes("RuntimeDefault"), "eBPF agent must enforce RuntimeDefault seccomp");
+    assert.ok(ebpf.includes("- BPF"), "eBPF agent must have BPF capability");
+    assert.ok(ebpf.includes("- PERFMON"), "eBPF agent must have PERFMON capability");
+    assert.ok(!ebpf.includes("- NET_ADMIN"), "eBPF agent must NOT have NET_ADMIN capability");
+  });
+
+  test("Image Immutability: All production Kubernetes workloads use pinned image digests (@sha256:) without :latest", () => {
+    const manifestFiles = fs.readdirSync(K8S_DIR).filter((f) => f.endsWith(".yaml"));
+    for (const file of manifestFiles) {
+      const content = fs.readFileSync(path.join(K8S_DIR, file), "utf-8");
+      if (content.includes("containers:")) {
+        const lines = content.split("\n");
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("image:")) {
+            const imageRef = trimmed.replace("image:", "").trim();
+            assert.ok(!imageRef.includes(":latest"), `Unpinned :latest detected in ${file}: ${imageRef}`);
+            assert.ok(imageRef.includes("@sha256:"), `Missing @sha256: digest in ${file}: ${imageRef}`);
+          }
+        }
+      }
+    }
+  });
+
   test("Helm Chart: Values and templates are complete", () => {
     assert.ok(fs.existsSync(path.join(HELM_DIR, "Chart.yaml")));
     assert.ok(fs.existsSync(path.join(HELM_DIR, "values.yaml")));
@@ -99,5 +130,8 @@ describe("Phase 24.2 — Kubernetes Hardening (Backend)", () => {
     assert.ok(values.includes("controlPlaneNamespace: \"ecdat-control-plane\""));
     assert.ok(values.includes("runtimeNamespace: \"ecdat-runtime\""));
     assert.ok(values.includes("podSecurityStandards:"));
+    assert.ok(values.includes("privileged: false"));
+    assert.ok(values.includes("allowPrivilegeEscalation: false"));
   });
 });
+

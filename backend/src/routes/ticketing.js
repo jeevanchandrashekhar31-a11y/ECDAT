@@ -21,6 +21,17 @@ const {
   WebhookConnector,
 } = require("../integrations/ticketing");
 const { TicketRequest } = require("../domain/contracts");
+const { validateSafeUrlAsync } = require("../security/ssrf_protection");
+const { requireObjectAuthorization, OBJECT_TYPES } = require("../security/object_authorization");
+const {
+  validateLength,
+  validateEnum,
+  ALLOWED_TICKETING_TYPES,
+} = require("../security/input_validation");
+const { RATE_LIMITS } = require("../security/resource_governance");
+
+// Apply integration calls rate limiter to all ticketing endpoints
+router.use(RATE_LIMITS.integrationCalls.middleware());
 
 /**
  * GET /api/v1/integrations/ticketing/connectors
@@ -35,14 +46,58 @@ router.get("/connectors", (req, res) => {
 });
 
 /**
+ * GET /api/v1/integrations/ticketing/connectors/:id
+ * Retrieves a ticketing connector enforcing server-side state verification and tenant boundaries.
+ */
+router.get(
+  "/connectors/:id",
+  requireObjectAuthorization(OBJECT_TYPES.INTEGRATION, { idParam: "id" }),
+  (req, res) => {
+    const connector = req.resolvedObject;
+    return res.json({
+      name: connector.id,
+      tenantId: connector.tenantId,
+      type: connector.provider,
+    });
+  }
+);
+
+/**
  * POST /api/v1/integrations/ticketing/register
  * Registers a new connector instance.
  */
-router.post("/register", (req, res, next) => {
+router.post("/register", async (req, res, next) => {
   try {
-    const { name, type, config = {} } = req.body;
+    const { name, type, config = {} } = req.body || {};
     if (!name || !type) {
       return res.status(400).json({ error: "Missing required fields: 'name' and 'type'" });
+    }
+
+    if (typeof name !== "string" || typeof type !== "string") {
+      return res.status(400).json({ error: "ValidationError", message: "'name' and 'type' must be strings" });
+    }
+
+    const nameCheck = validateLength(name, { min: 2, max: 64, fieldName: "name" });
+    if (!nameCheck.valid) {
+      return res.status(400).json({ error: "ValidationError", message: nameCheck.error });
+    }
+
+    const typeCheck = validateEnum(type, ALLOWED_TICKETING_TYPES, "type");
+    if (!typeCheck.valid) {
+      return res.status(400).json({
+        error: `Unsupported connector type '${type}'. Supported: ${ALLOWED_TICKETING_TYPES.join(", ")}`,
+      });
+    }
+
+    const urlToCheck = config.url || config.webhookUrl || config.instanceUrl || config.jiraUrl;
+    if (urlToCheck) {
+      const check = await validateSafeUrlAsync(urlToCheck);
+      if (!check.safe) {
+        return res.status(400).json({
+          error: "SSRFViolation",
+          message: `Ticketing connector URL '${urlToCheck}' rejected: ${check.error}`,
+        });
+      }
     }
 
     let connector;
@@ -72,6 +127,35 @@ router.post("/register", (req, res, next) => {
     }
 
     defaultTicketingService.registerConnector(connector);
+
+    try {
+      const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
+      defaultAuditService.logEvent({
+        category: AUDIT_CATEGORIES.INTEGRATION_CHANGE,
+        action: AUDIT_ACTIONS.INTEGRATION_MODIFIED,
+        actor: {
+          id: req.user?.sub || req.auth?.user?.sub || "admin",
+          username: req.user?.username || req.auth?.user?.name || "admin",
+          role: req.auth?.role || "admin",
+          ipAddress: req.ip,
+        },
+        tenant: req.tenantContext?.tenantId || req.headers["x-tenant-id"] || "default",
+        target: {
+          type: "integration",
+          id: name,
+          name: `${type}_connector`,
+        },
+        requestId: req.id || req.headers["x-request-id"],
+        result: AUDIT_STATUSES.SUCCESS,
+        reason: `Registered ticketing connector '${name}' (${type})`,
+        sourceIp: req.ip,
+        details: {
+          connectorName: name,
+          connectorType: connector.connectorType,
+        },
+      }).catch(() => {});
+    } catch {}
+
     return res.status(201).json({
       message: `Connector '${name}' registered successfully`,
       name,

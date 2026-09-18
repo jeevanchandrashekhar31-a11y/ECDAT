@@ -1,6 +1,8 @@
 .git
 .env
 .env.*
+.keys
+**/.keys
 node_modules
 **/node_modules
 artifacts
@@ -11,4 +13,17 @@ __pycache__
 *.pem
 *.key
 *.p12
+*.pfx
+*.p8
+*.pkcs8
+*.crt
+*.cert
+id_rsa*
+id_ed25519*
+secrets/
+**/secrets/
+.coverage
+coverage/
+*.log
 frontend/dist
+
