@@ -66,6 +66,13 @@ def generate_keypair(keys_dir: Path) -> Tuple[Path, Path]:
     with open(pub_path, "wb") as f:
         f.write(pub_bytes)
 
+    release_pub = REPO_ROOT / "config" / "ed25519_release_public.pem"
+    if not release_pub.exists():
+        release_pub.parent.mkdir(parents=True, exist_ok=True)
+        with open(release_pub, "wb") as f:
+            f.write(pub_bytes)
+        print(f"   Created release public key: {release_pub}")
+
     # Set restrictive permissions where supported
     try:
         os.chmod(priv_path, 0o600)

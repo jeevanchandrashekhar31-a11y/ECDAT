@@ -47,8 +47,8 @@ def test_p1_02_truthful_observations_and_mosca_calculations():
     """P1-02: Reachability: given a finding with no runtime metadata, assert the emitted
     reachability_confirmed is null — not true, not false."""
     script = """
-    const { inMemoryScansStore } = require('./backend/src/services/cbom_ingestion');
-    const { getEnterpriseDashboardViews } = require('./backend/src/services/dashboard_views_service');
+    const { inMemoryScansStore } = require('./src/services/cbom_ingestion');
+    const { getEnterpriseDashboardViews } = require('./src/services/dashboard_views_service');
 
     const scanRecord = {
         id: 'test-scan-reachability',
@@ -88,7 +88,7 @@ def test_p1_02_truthful_observations_and_mosca_calculations():
     """
     proc = subprocess.run(
         ["node", "-e", script],
-        cwd=str(REPO_ROOT),
+        cwd=str(REPO_ROOT / "backend"),
         capture_output=True,
         text=True,
         check=True,

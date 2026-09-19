@@ -19,7 +19,7 @@ def test_tenant_context_no_elevation_on_unauthenticated_request():
     Asserts roles === [], isPlatformAdmin === false, and tenantId === null.
     """
     node_script = """
-    const { TenantContext } = require('./backend/src/tenancy/tenant_isolation');
+    const { TenantContext } = require('./src/tenancy/tenant_isolation');
 
     // Construct a request with no auth
     const req = {
@@ -38,7 +38,7 @@ def test_tenant_context_no_elevation_on_unauthenticated_request():
     """
     proc = subprocess.run(
         ["node", "-e", node_script],
-        cwd=str(REPO_ROOT),
+        cwd=str(REPO_ROOT / "backend"),
         capture_output=True,
         text=True,
         check=True,

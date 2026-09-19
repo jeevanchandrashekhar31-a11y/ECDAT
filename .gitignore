@@ -9,6 +9,7 @@ __pycache__/
 !docker/.env.example
 *.sarif
 *.pem
+!config/ed25519_release_public.pem
 *.key
 *.p12
 node_modules/
@@ -29,5 +30,6 @@ artifacts/ci/
 .keys/
 !tests/fixtures/malicious_archives/
 artifacts/security/
+artifacts/provenance/
 security_evidence/
 ecdat_clean_package.zip

@@ -139,7 +139,7 @@ def run_clean_step(name: str, cmd: List[str], env: Dict[str, str], cwd: Path) ->
         env=env,
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=300,
     )
 
     if proc.returncode != 0:

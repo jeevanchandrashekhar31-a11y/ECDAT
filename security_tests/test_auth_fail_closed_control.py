@@ -22,10 +22,10 @@ def test_auth_middleware_fails_closed_when_key_unset():
     """
     node_script = """
     delete process.env.ECDAT_API_KEY;
-    const config = require('./backend/src/config');
+    const config = require('./src/config');
     config.ECDAT_API_KEY = undefined;
 
-    const { apiKeyAuthMiddleware } = require('./backend/src/middleware/auth');
+    const { apiKeyAuthMiddleware } = require('./src/middleware/auth');
 
     const req = {
         path: '/api/v1/findings',
@@ -61,7 +61,7 @@ def test_auth_middleware_fails_closed_when_key_unset():
     """
     proc = subprocess.run(
         ["node", "-e", node_script],
-        cwd=str(REPO_ROOT),
+        cwd=str(REPO_ROOT / "backend"),
         capture_output=True,
         text=True,
         check=True,
@@ -82,10 +82,10 @@ def test_app_boot_with_unset_api_key_returns_503():
     """
     node_script = """
     delete process.env.ECDAT_API_KEY;
-    const config = require('./backend/src/config');
+    const config = require('./src/config');
     config.ECDAT_API_KEY = undefined;
 
-    const app = require('./backend/src/app');
+    const app = require('./src/app');
     const server = app.listen(0, async () => {
         const port = server.address().port;
         try {
@@ -99,7 +99,7 @@ def test_app_boot_with_unset_api_key_returns_503():
     """
     proc = subprocess.run(
         ["node", "-e", node_script],
-        cwd=str(REPO_ROOT),
+        cwd=str(REPO_ROOT / "backend"),
         capture_output=True,
         text=True,
         check=True,

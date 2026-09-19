@@ -10,12 +10,12 @@ def test_remediation_route_prevents_actor_role_spoofing():
     authenticated user, assert the approval is REJECTED and that the recorded actor role is the server-derived one, not 'admin'."""
     script = """
     const express = require('express');
-    const config = require('./backend/src/config');
+    const config = require('./src/config');
     config.ECDAT_API_KEY = 'test-remediation-key-123';
-    const { apiKeyAuthMiddleware } = require('./backend/src/middleware/auth');
-    const { defaultTokenService } = require('./backend/src/identity/token_service');
-    const { getDefaultApprovalEngine } = require('./backend/src/remediation/approval_workflow');
-    const remediationRouter = require('./backend/src/routes/remediation');
+    const { apiKeyAuthMiddleware } = require('./src/middleware/auth');
+    const { defaultTokenService } = require('./src/identity/token_service');
+    const { getDefaultApprovalEngine } = require('./src/remediation/approval_workflow');
+    const remediationRouter = require('./src/routes/remediation');
 
     const app = express();
     app.use(express.json());
@@ -67,7 +67,7 @@ def test_remediation_route_prevents_actor_role_spoofing():
     """
     proc = subprocess.run(
         ["node", "-e", script],
-        cwd=str(REPO_ROOT),
+        cwd=str(REPO_ROOT / "backend"),
         capture_output=True,
         text=True,
         check=True,

@@ -10,9 +10,9 @@ def test_auth_middleware_does_not_fail_open_on_unconfigured_key():
     assert the response status is 503 (or 401) and that req.auth is never populated with a role."""
     script = """
     const express = require('express');
-    const config = require('./backend/src/config');
+    const config = require('./src/config');
     config.ECDAT_API_KEY = null;
-    const { apiKeyAuthMiddleware } = require('./backend/src/middleware/auth');
+    const { apiKeyAuthMiddleware } = require('./src/middleware/auth');
     const app = express();
     app.use(apiKeyAuthMiddleware);
     app.get('/api/v1/assets', (req, res) => {
@@ -35,7 +35,7 @@ def test_auth_middleware_does_not_fail_open_on_unconfigured_key():
     """
     proc = subprocess.run(
         ["node", "-e", script],
-        cwd=str(REPO_ROOT),
+        cwd=str(REPO_ROOT / "backend"),
         capture_output=True,
         text=True,
         check=True,
@@ -49,7 +49,7 @@ def test_tenant_context_does_not_elevate_open_mode_to_admin():
     """Tenant no-elevation: construct a request with no auth, call TenantContext.fromRequest,
     assert roles === [] and isPlatformAdmin === false and tenantId === null."""
     script = """
-    const { TenantContext } = require('./backend/src/tenancy/tenant_isolation');
+    const { TenantContext } = require('./src/tenancy/tenant_isolation');
     const req = {};
     const ctx = TenantContext.fromRequest(req);
     console.log(JSON.stringify({
@@ -60,7 +60,7 @@ def test_tenant_context_does_not_elevate_open_mode_to_admin():
     """
     proc = subprocess.run(
         ["node", "-e", script],
-        cwd=str(REPO_ROOT),
+        cwd=str(REPO_ROOT / "backend"),
         capture_output=True,
         text=True,
         check=True,
