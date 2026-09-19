@@ -24,7 +24,7 @@ tree-sitter-rust==0.24.2
 tree-sitter-typescript==0.23.2
 
 # Transitive Dependencies
-annotated-types==0.7.0
+annotated-types==0.8.0
 anyio==4.15.1
 attrs==26.1.0
 boolean.py==5.0
