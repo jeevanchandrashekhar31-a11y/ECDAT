@@ -17,7 +17,7 @@ Every dependency, build artifact, and container image is deterministically pinne
 ## 2. Phase 19.1: ECDAT Software Bill of Materials (SBOM)
 
 ### 2.1 Multi-Ecosystem Coverage & Metrics
-ECDAT generates a unified, multi-ecosystem SBOM capturing 100% of all direct and transitive dependencies across three core subsystems:
+ECDAT generates a unified, multi-ecosystem SBOM capturing direct and transitive dependencies declared across three core subsystem manifests and lockfiles:
 
 | Subsystem | Primary Manifest | Lockfile & Pinning | Package Count (Direct + Transitive) | Runtime Scope |
 |---|---|---|---|---|

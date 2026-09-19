@@ -81,7 +81,14 @@ export const AuditTrailView: React.FC<Props> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono">
-              {filteredEvents.map((evt) => {
+              {filteredEvents.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-500 italic font-sans text-xs">
+                    No audit records recorded yet. Live cryptographic audit events will appear here as scans, policy updates, and administrative actions are logged.
+                  </td>
+                </tr>
+              ) : (
+                filteredEvents.map((evt) => {
                 const isSuccess = evt.status === 'SUCCESS';
 
                 return (
@@ -129,7 +136,7 @@ export const AuditTrailView: React.FC<Props> = ({
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

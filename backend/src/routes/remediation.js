@@ -17,11 +17,101 @@ const {
 const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
 const { defaultMetricsCollector } = require("../metrics");
 
+const path = require("path");
+const os = require("os");
+
+const FORBIDDEN_SYSTEM_PREFIXES_POSIX = [
+  "/etc", "/bin", "/sbin", "/usr", "/lib", "/var", "/proc", "/sys", "/dev", "/boot", "/root"
+];
+
+function validateRemediationPath(rawPath) {
+  if (!rawPath || typeof rawPath !== "string") {
+    throw new Error("Invalid file path: path must be a non-empty string");
+  }
+
+  // Unicode NFKC normalization
+  const clean = rawPath.normalize("NFKC").trim();
+
+  // Reject control characters and null bytes
+  if (/[\x00-\x1f]/.test(clean)) {
+    throw new Error("Invalid file path: control characters or null bytes detected");
+  }
+
+  // Reject directory traversal sequences and UNC shares
+  if (clean.includes("..") || clean.startsWith("\\\\") || clean.startsWith("//")) {
+    throw new Error("Invalid file path: path traversal or UNC share rejected");
+  }
+
+  const resolved = path.resolve(clean);
+  const resolvedLower = resolved.toLowerCase();
+
+  // Check forbidden POSIX system directories
+  for (const sysPrefix of FORBIDDEN_SYSTEM_PREFIXES_POSIX) {
+    if (resolved.startsWith(sysPrefix + "/") || resolved === sysPrefix) {
+      throw new Error(`File path confinement violation: forbidden system directory '${sysPrefix}'`);
+    }
+  }
+
+  // Check forbidden Windows system directories
+  if (process.platform === "win32") {
+    const winDir = (process.env.WINDIR || "C:\\Windows").toLowerCase();
+    const progFiles = (process.env.ProgramFiles || "C:\\Program Files").toLowerCase();
+    const progFilesX86 = (process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)").toLowerCase();
+    if (
+      resolvedLower.startsWith(winDir) ||
+      resolvedLower.startsWith(progFiles) ||
+      resolvedLower.startsWith(progFilesX86)
+    ) {
+      throw new Error("File path confinement violation: Windows system directories are forbidden");
+    }
+  }
+
+  // Allowed roots: repo root, current working directory, or OS temp directory
+  const repoRoot = path.resolve(__dirname, "../../..").toLowerCase();
+  const cwd = process.cwd().toLowerCase();
+  const tempDir = os.tmpdir().toLowerCase();
+
+  const isAllowed =
+    resolvedLower.startsWith(repoRoot) ||
+    resolvedLower.startsWith(cwd) ||
+    resolvedLower.startsWith(tempDir);
+
+  if (!isAllowed) {
+    throw new Error(`File path confinement violation: path '${resolved}' is outside allowed workspace boundaries`);
+  }
+
+  return resolved;
+}
+
+const REMEDIATION_WORKSPACE = path.resolve(
+  process.env.ECDAT_REMEDIATION_WORKSPACE || "/var/lib/ecdat/workspace"
+);
+
+function resolveConfinedPath(requestedPath) {
+  if (!requestedPath || typeof requestedPath !== "string") {
+    const e = new Error("file_path is required."); e.statusCode = 400; throw e;
+  }
+  if (requestedPath.includes("\0")) {
+    const e = new Error("Invalid path."); e.statusCode = 400; throw e;
+  }
+  const resolved = path.resolve(REMEDIATION_WORKSPACE, requestedPath);
+  const real = fs.existsSync(resolved) ? fs.realpathSync(resolved) : resolved;
+  if (real !== REMEDIATION_WORKSPACE && !real.startsWith(REMEDIATION_WORKSPACE + path.sep)) {
+    const e = new Error("Path escapes the remediation workspace."); e.statusCode = 403; throw e;
+  }
+  return real;
+}
+
 function getActorFromReq(req) {
-  return {
-    username: req.headers["x-actor-username"] || req.body.actor_username || "admin",
-    role: req.headers["x-actor-role"] || req.auth?.role || "admin",
-  };
+  const role = req.auth?.role || req.tenantContext?.roles?.[0] || null;
+  const username =
+    req.user?.username || req.user?.sub || req.auth?.user?.sub || null;
+  if (!role || !username) {
+    const err = new Error("Authenticated actor identity required.");
+    err.statusCode = 401;
+    throw err;
+  }
+  return { username, role };
 }
 
 /**
@@ -131,7 +221,7 @@ router.post("/simulate", (req, res) => {
 router.post("/generate-patch", (req, res) => {
   try {
     const sourceCode = req.body.source_code || req.body.code || "";
-    const filePath = req.body.file_path || req.body.path || "code.js";
+    const filePath = resolveConfinedPath(req.body.file_path || req.body.path);
     const targetAlgorithm = req.body.target_algorithm || req.body.target_standard || "SHA-256";
 
     const patchResult = generatePatch(sourceCode, filePath, { targetAlgorithm });
@@ -155,7 +245,16 @@ router.post("/generate-patch", (req, res) => {
 router.post("/verify-patch", (req, res) => {
   try {
     const sourceCode = req.body.source_code || req.body.code || "";
-    const filePath = req.body.file_path || req.body.path || "code.js";
+    let filePath = resolveConfinedPath(req.body.file_path || req.body.path);
+    try {
+      filePath = validateRemediationPath(filePath);
+    } catch (pathErr) {
+      return res.status(400).json({
+        error: "PathConfinementViolation",
+        code: "PATH_CONFINEMENT_VIOLATION",
+        message: pathErr.message,
+      });
+    }
     const targetAlgorithm = req.body.target_algorithm || "SHA-256";
     const testCommand = req.body.test_command || null;
 
@@ -182,7 +281,16 @@ router.post("/verify-patch", (req, res) => {
 router.post("/apply-patch", (req, res) => {
   try {
     const sourceCode = req.body.source_code || req.body.code || "";
-    const filePath = req.body.file_path || req.body.path || "code.js";
+    let filePath = resolveConfinedPath(req.body.file_path || req.body.path);
+    try {
+      filePath = validateRemediationPath(filePath);
+    } catch (pathErr) {
+      return res.status(400).json({
+        error: "PathConfinementViolation",
+        code: "PATH_CONFINEMENT_VIOLATION",
+        message: pathErr.message,
+      });
+    }
     const targetAlgorithm = req.body.target_algorithm || "SHA-256";
     const dryRun = req.body.dry_run !== undefined ? Boolean(req.body.dry_run) : true;
     const category = req.body.category || "ALGORITHM_MIGRATION";
@@ -422,7 +530,15 @@ router.post("/approvals/:approvalId/verify", (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
     const actor = getActorFromReq(req);
-    const results = req.body.verification_results || { tests_passed: true, finding_resolved: true };
+    const results = req.body.verification_results;
+    if (!results || typeof results !== "object") {
+      return res.status(400).json({
+        error: "Verification Evidence Required",
+        code: "MISSING_VERIFICATION_RESULTS",
+        status: "NOT_VERIFIED",
+        message: "verification_results must be supplied. Absent evidence is never treated as a pass.",
+      });
+    }
     const record = engine.verifyRemediation(req.params.approvalId, actor, results);
     defaultMetricsCollector.recordRemediation("verified");
 

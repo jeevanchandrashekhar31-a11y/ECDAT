@@ -255,7 +255,7 @@ test("Phase 20 / P1 — Resource Governance & Denial-of-Service Defense", async 
         const res = await fetch(`${baseUrl}/scan/static`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-api-key": testApiKey, "x-enforce-rate-limit": "true" },
-          body: JSON.stringify({ git_url: "https://github.com/example/test-repo.git" }),
+          body: JSON.stringify({ git_url: "https://127.0.0.1/test-repo.git" }),
         });
         assert.notEqual(res.status, 429);
       }
@@ -263,7 +263,7 @@ test("Phase 20 / P1 — Resource Governance & Denial-of-Service Defense", async 
       const blockedRes = await fetch(`${baseUrl}/scan/static`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": testApiKey, "x-enforce-rate-limit": "true" },
-        body: JSON.stringify({ git_url: "https://github.com/example/test-repo.git" }),
+        body: JSON.stringify({ git_url: "https://127.0.0.1/test-repo.git" }),
       });
 
       assert.equal(blockedRes.status, 429);

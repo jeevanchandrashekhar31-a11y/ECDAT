@@ -1,7 +1,7 @@
 # Phase 23.2 — Adversarial Scanner Assessment Report
 
 **Objective**: Attempt to make ECDAT fail using hostile scan inputs for defensive validation (not exploitation of third-party systems).  
-**Assessment Result**: **100% Robustness (15 / 15 Scenarios Defended)**  
+**Assessment Result**: **15 / 15 Evaluated Scenarios Defended (validated against test suite)**  
 **Mandate**: Every hostile input evaluated records the mandatory 5 fields:
 1. `attack input`
 2. `affected component`

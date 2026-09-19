@@ -1,8 +1,8 @@
-# ECDAT Feature-Level Parity Audit & 10/10 Certification (Phase 27.1)
+# ECDAT Feature-Level Parity Audit & Baseline Verification (Phase 27.1)
 
 ## 1. Executive Summary & Audit Methodology
 
-This document establishes the definitive, evidence-backed technical comparison between **ECDAT (Enterprise Cryptographic Discovery & Assessment Tool)** and the publicly documented capabilities of leading commercial and open-source cryptographic discovery, CBOM, and post-quantum migration suites:
+This document establishes the evidence-backed technical comparison between **ECDAT (Enterprise Cryptographic Discovery & Assessment Tool)** and the publicly documented capabilities of commercial and open-source cryptographic discovery, CBOM, and post-quantum migration suites:
 
 1. **IBM Quantum Safe Explorer**
 2. **IBM Quantum Safe Remediator** (where publicly documented)
@@ -10,10 +10,11 @@ This document establishes the definitive, evidence-backed technical comparison b
 4. **SandboxAQ AQtive Guard**
 5. **Open-Source Crypto Discovery / CBOM Tools** (IBM CBOMkit, OWASP CycloneDX 1.6, Syft)
 
-### The Anti-Marketing Mandate
-> **"Never mark parity based on marketing language alone."**
-
-Parity claims in this audit are **strictly rejected** unless substantiated by physical source code, automated regression tests, executable demonstration commands, committed documentation, and verifiable runtime evidence in the ECDAT repository.
+> **Documentation Truth & Anti-Marketing Mandate:**
+> - **Evaluation Basis**: This audit evaluates feature-level implementation parity strictly against public technical specifications, schema standards (CycloneDX 1.6), and published manuals of the evaluated products.
+> - **Independence**: ECDAT is not affiliated with, endorsed by, or independently certified by IBM or SandboxAQ.
+> - **Strict Rejection of Hype**: Parity claims in this audit are strictly rejected unless substantiated by physical source code, automated regression tests, executable demonstration commands, committed documentation, and verifiable runtime evidence in the ECDAT repository.
+> - **Competitive Capability Matrix**: For the factual, 7-column comparative capability matrix complying with Phase 32 Competitor Claim Policy, see [`docs/competitive_capability_matrix.md`](competitive_capability_matrix.md).
 
 ### Parity Status Classifications
 - `FULL PARITY`: ECDAT implements the exact publicly documented functional capability with equivalent or superior depth. Every `FULL PARITY` item is backed by a 5-point verification standard:
@@ -47,7 +48,7 @@ Parity claims in this audit are **strictly rejected** unless substantiated by ph
 
 $$\text{Enterprise Parity Score} = \frac{\text{FULL PARITY (14)} + \text{ECDAT ADVANTAGE (4)}}{\text{TOTAL (19)} - \text{NOT IMPLEMENTED (1)}} \times 10.0 = \mathbf{10.0 / 10.0}$$
 
-**Certification Verdict:** `10/10 ENTERPRISE PARITY CERTIFIED`  
+**Verification Verdict:** `ENTERPRISE FEATURE PARITY VERIFIED AGAINST DOCUMENTED BASELINES`  
 **Automated Verification Status:** `ALL 18 ACTIVE CLAIMS PHYSICALLY VERIFIED ON DISK (EXIT CODE: 0)`
 
 ---
@@ -452,4 +453,4 @@ node --test backend/tests/reporting/parity_audit.test.js
 - **ECDAT ADVANTAGE**: 4
 - **NOT IMPLEMENTED (Proprietary Mainframe HSM)**: 1
 - **Claims Verified on Disk**: 100% (18/18 active claims backed by source files, tests, and documentation)
-- **Certification Verdict**: `10/10 ENTERPRISE PARITY CERTIFIED`
+- **Verification Verdict**: `ENTERPRISE FEATURE PARITY VERIFIED AGAINST DOCUMENTED BASELINES`

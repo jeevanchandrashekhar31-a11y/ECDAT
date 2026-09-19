@@ -25,7 +25,7 @@ tree-sitter-typescript==0.23.2
 
 # Transitive Dependencies
 annotated-types==0.7.0
-anyio==4.11.0
+anyio==4.15.1
 attrs==26.1.0
 boolean.py==5.0
 certifi==2025.11.12
@@ -55,6 +55,6 @@ rpds-py==2026.6.3
 sniffio==1.3.1
 sortedcontainers==2.4.0
 tls-parser==2.0.2
-typing-extensions==4.15.0
+typing-extensions==4.16.0
 typing-inspection==0.4.2
 urllib3==2.8.0

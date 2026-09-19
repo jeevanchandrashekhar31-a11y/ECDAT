@@ -14,8 +14,9 @@ import {
   X,
   Network,
   AlertTriangle,
+  UserCheck,
 } from 'lucide-react';
-import { api, getSessionApiKey, setSessionApiKey } from '../api/client';
+import { api } from '../api/client';
 import { authManager } from '../security';
 import { StatusIndicator } from './StatusIndicator';
 import { CbomUploadModal } from './CbomUploadModal';
@@ -31,9 +32,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [scans, setScans] = useState<ScanItem[]>([]);
   const [selectedScanId, setSelectedScanId] = useState<string>('');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [keyModalOpen, setKeyModalOpen] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [savedKey, setSavedKey] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    userId?: string;
+    username?: string;
+    roles?: string[];
+    role?: string;
+  } | null>(null);
   const [securityAlert, setSecurityAlert] = useState<{ status: number; message: string } | null>(null);
   const [currentRole, setCurrentRole] = useState<string>(authManager.getSession().role || 'Viewer');
 
@@ -63,19 +67,44 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   };
 
+  const checkUserSession = async () => {
+    try {
+      const res = await api.getCurrentUser();
+      if (res && res.user) {
+        const primaryRole = (res.user.roles && res.user.roles[0]) || 'Viewer';
+        setCurrentUser({
+          userId: res.user.userId,
+          username: res.user.username || res.user.userId,
+          roles: res.user.roles,
+          role: primaryRole,
+        });
+        setCurrentRole(primaryRole);
+        authManager.setSession({
+          userId: res.user.userId,
+          role: primaryRole as any,
+          tenantId: res.user.tenantId,
+          isAuthenticated: true,
+        });
+      } else {
+        setCurrentUser(null);
+      }
+    } catch {
+      setCurrentUser(null);
+    }
+  };
+
   useEffect(() => {
     checkHealthAndScans();
-    const stored = getSessionApiKey();
-    setSavedKey(stored);
-    setApiKeyInput(stored || '');
+    checkUserSession();
     setCurrentRole(authManager.getSession().role || 'Viewer');
 
     const unsub401 = authManager.onUnauthorized((session, err) => {
       setSecurityAlert({
         status: 401,
-        message: err?.message || 'Session expired or unauthenticated. Please configure your API key.',
+        message: err?.message || 'Session expired or unauthenticated. Please log in.',
       });
       setCurrentRole(session.role || 'Viewer');
+      setCurrentUser(null);
     });
 
     const unsub403 = authManager.onForbidden((session, err) => {
@@ -90,7 +119,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       unsub401();
       unsub403();
     };
-  }, []);
+  }, [location.pathname]);
 
   // Synchronize state when URL changes
   useEffect(() => {
@@ -114,13 +143,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       searchParams.delete('scanId');
     }
     navigate({ pathname: location.pathname, search: searchParams.toString() });
-  };
-
-  const handleSaveApiKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSessionApiKey(apiKeyInput);
-    setSavedKey(apiKeyInput.trim() || null);
-    setKeyModalOpen(false);
   };
 
   const handleUploadSuccess = async (newScanId: string) => {
@@ -236,6 +258,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <span>Compliance Reports</span>
           </NavLink>
 
+          <NavLink
+            to="/login"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
+                isActive
+                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              }`
+            }
+          >
+            <Key size={17} />
+            <span>Authentication & MFA</span>
+          </NavLink>
+
           <div className="pt-4 mt-4 border-t border-slate-800/80">
             <button
               onClick={() => setUploadModalOpen(true)}
@@ -312,19 +348,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <span>Role: {currentRole}</span>
             </div>
 
-            {/* API Key Modal Button */}
-            <button
-              onClick={() => setKeyModalOpen(true)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                savedKey
-                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-              }`}
-              title="Configure API key for write routes"
+            {/* User Session / Login Button */}
+            <NavLink
+              to="/login"
+              className={({ isActive }) =>
+                `inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                  isActive
+                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                    : currentUser
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                }`
+              }
+              title="Authentication & MFA Management"
             >
-              <Key size={13} />
-              <span>{savedKey ? 'API Key Active' : 'Configure API Key'}</span>
-            </button>
+              {currentUser ? <UserCheck size={13} /> : <Key size={13} />}
+              <span>{currentUser ? `${currentUser.username}` : 'Sign In'}</span>
+            </NavLink>
 
             {/* Core Status */}
             <StatusIndicator online={engineOnline} version={engineVersion} />
@@ -345,7 +385,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setKeyModalOpen(true)}
+                onClick={() => navigate('/login')}
                 className="px-3 py-1 rounded bg-rose-900/80 hover:bg-rose-800 text-rose-100 font-semibold text-2xs transition-colors border border-rose-700"
               >
                 Authenticate Now
@@ -373,75 +413,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         onClose={() => setUploadModalOpen(false)}
         onSuccess={handleUploadSuccess}
       />
-
-      {/* 4. API Key Configuration Modal */}
-      {keyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="glass-card max-w-md w-full p-6 relative">
-            <button
-              onClick={() => setKeyModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white"
-            >
-              <X size={18} />
-            </button>
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="p-2 rounded-xl bg-violet-500/15 border border-violet-500/30 text-violet-400">
-                <Key size={20} />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">API Authentication Key</h3>
-                <p className="text-xs text-slate-400">Stored only in your browser session for write requests</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSaveApiKey} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">ECDAT Admin API Key (`ECDAT_API_KEY`)</label>
-                <input
-                  type="password"
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  placeholder="e.g. ecdat-demo-admin-key-2026"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-cyan-500"
-                />
-                <p className="text-slate-500 text-[11px] mt-1">
-                  Default development key: <code className="text-cyan-400 font-mono font-bold">ecdat-demo-admin-key-2026</code>
-                </p>
-              </div>
-
-              <div className="flex justify-between items-center gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSessionApiKey('ecdat-demo-admin-key-2026');
-                    setSavedKey('ecdat-demo-admin-key-2026');
-                    setApiKeyInput('ecdat-demo-admin-key-2026');
-                    setKeyModalOpen(false);
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 text-2xs font-medium"
-                >
-                  Reset to Default
-                </button>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setKeyModalOpen(false)}
-                    className="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold"
-                  >
-                    Save Key
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

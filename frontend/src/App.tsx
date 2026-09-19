@@ -8,6 +8,8 @@ import { Reports } from './pages/Reports';
 import { Roadmap } from './pages/Roadmap';
 import { CryptoGraph } from './pages/CryptoGraph';
 
+import { Login } from './pages/Login';
+
 interface ErrorBoundaryProps {
   children: ReactNode;
 }
@@ -67,6 +69,7 @@ export const App: React.FC = () => {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/assets" element={<Assets />} />
             <Route path="/assets/:assetId" element={<AssetDetail />} />
             <Route path="/roadmap" element={<Roadmap />} />

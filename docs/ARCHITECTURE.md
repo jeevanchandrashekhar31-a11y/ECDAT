@@ -134,7 +134,7 @@ sequenceDiagram
    - Authoritative tenant ID is bound from authenticated security context (`tenant_isolation.js`).
    - Data is stored in PostgreSQL using Knex with parameterized queries and encrypted fields.
 4. **Deterministic Analysis**:
-   - Risk and policy engines evaluate findings without network calls or external dependencies, ensuring 100% reproducible and verifiable results.
+   - Risk and policy engines evaluate findings without network calls or external dependencies, ensuring deterministic and verifiable results for identical input sets.
 5. **Graph Correlation & Blast Radius Calculation**:
    - Cryptographic findings are mapped into a multi-tier dependency graph connecting software assets to underlying data sensitivity tiers.
 6. **Dispatch & Notification**:

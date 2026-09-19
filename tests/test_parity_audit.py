@@ -36,7 +36,7 @@ def test_parity_score_meets_10_out_of_10_threshold():
 
     summary = report["audit_summary"]
     assert summary["parity_score_out_of_10"] >= 9.5
-    assert summary["certification_verdict"] == "10/10 ENTERPRISE PARITY CERTIFIED"
+    assert summary["certification_verdict"] == "ENTERPRISE FEATURE PARITY VERIFIED AGAINST DOCUMENTED BASELINES"
 
 
 def test_competitor_coverage():
@@ -79,4 +79,4 @@ def test_cli_execution_json():
     assert proc.returncode == 0
     data = json.loads(proc.stdout)
     assert "audit_summary" in data
-    assert data["audit_summary"]["certification_verdict"] == "10/10 ENTERPRISE PARITY CERTIFIED"
+    assert data["audit_summary"]["certification_verdict"] == "ENTERPRISE FEATURE PARITY VERIFIED AGAINST DOCUMENTED BASELINES"

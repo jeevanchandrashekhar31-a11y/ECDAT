@@ -80,7 +80,7 @@ const nodeEnv = getEnv("NODE_ENV", "development");
 const rawApiKey =
   nodeEnv === "production"
     ? getEnv("ECDAT_API_KEY", undefined, true)
-    : getEnv("ECDAT_API_KEY", "ecdat-demo-admin-key-2026");
+    : getEnv("ECDAT_API_KEY", null);
 
 const rawDatabaseUrl = getEnv(
   "DATABASE_URL",
@@ -112,7 +112,7 @@ const config = {
   DATABASE_SSL: getEnv("DATABASE_SSL", nodeEnv === "production" ? "true" : "false") === "true",
   DATABASE_SSL_REJECT_UNAUTHORIZED: getEnv("DATABASE_SSL_REJECT_UNAUTHORIZED", "true") === "true",
   DATABASE_SSL_CA_PATH: getEnv("DATABASE_SSL_CA_PATH", undefined),
-  REQUIRE_AUTH_FOR_READS: getEnv("REQUIRE_AUTH_FOR_READS", "false") === "true",
+  REQUIRE_AUTH_FOR_READS: getEnv("REQUIRE_AUTH_FOR_READS", "true") !== "false",
   REQUIRE_DATABASE_HEALTH:
     getEnv("REQUIRE_DATABASE_HEALTH", "false") === "true",
   VERSION: "1.0.0",

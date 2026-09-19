@@ -79,8 +79,18 @@ def generate_keypair(keys_dir: Path) -> Tuple[Path, Path]:
 
 def sign_manifest(manifest_path: Path, priv_key_path: Path, sig_path: Path):
     """Sign a checksum manifest file with Ed25519 private key."""
-    with open(priv_key_path, "rb") as f:
-        private_key = serialization.load_pem_private_key(f.read(), password=None)
+    env_pem = os.environ.get("ECDAT_SIGNING_KEY_PEM")
+    env_path = os.environ.get("ECDAT_SIGNING_KEY_PATH")
+    if env_pem:
+        private_key = serialization.load_pem_private_key(env_pem.strip().encode("utf-8"), password=None)
+    elif env_path and Path(env_path).exists():
+        with open(env_path, "rb") as f:
+            private_key = serialization.load_pem_private_key(f.read(), password=None)
+    elif priv_key_path.exists():
+        with open(priv_key_path, "rb") as f:
+            private_key = serialization.load_pem_private_key(f.read(), password=None)
+    else:
+        raise FileNotFoundError(f"Signing key not found at {priv_key_path} and ECDAT_SIGNING_KEY_PEM/PATH not set.")
 
     with open(manifest_path, "rb") as f:
         data = f.read()
@@ -163,7 +173,7 @@ def collect_target_artifacts(target_dirs: List[Path]) -> List[Path]:
         for root, _, files in os.walk(d):
             for file in sorted(files):
                 # Ignore previous checksums/signatures and dynamic release gate audit reports
-                if file.endswith((".sig", "SUMS", ".tmp")) or "release_gate_report" in file.lower() or "final_quality_gate_report" in file.lower():
+                if file.endswith((".sig", "SUMS", ".tmp")) or "release_gate_report" in file.lower() or "final_quality_gate_report" in file.lower() or "security_gate_report" in file.lower():
                     continue
                 full_path = Path(root) / file
                 artifacts.append(full_path)
@@ -187,6 +197,10 @@ def main():
 
     priv_key_path = keys_dir / "ecdat_signing_key.pem"
     pub_key_path = keys_dir / "ecdat_signing_pub.pem"
+    if not pub_key_path.exists():
+        fallback_pub = REPO_ROOT / "config" / "ed25519_release_public.pem"
+        if fallback_pub.exists():
+            pub_key_path = fallback_pub
 
     sbom_dir = artifacts_dir / "sbom"
     sec_dir = artifacts_dir / "security"

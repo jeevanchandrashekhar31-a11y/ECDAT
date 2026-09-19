@@ -161,6 +161,8 @@ function classifyRoute(rawPath, method = "GET") {
   const internalExactPaths = [
     "/metrics/record",
     "/api/v1/metrics/record",
+    "/telemetry/ebpf",
+    "/api/v1/telemetry/ebpf",
     "/api/v1/certificates/ingest",
     "/api/v1/ci/feedback",
     "/api/v1/siem/forward",
@@ -205,14 +207,6 @@ function classifyRoute(rawPath, method = "GET") {
  * - Bypasses /health probes
  */
 function apiKeyAuthMiddleware(req, res, next) {
-  const configuredKey = config.ECDAT_API_KEY;
-
-  // If no key configured on the server, allow open access
-  if (!configuredKey) {
-    req.auth = { authenticated: false, mode: "open" };
-    return next();
-  }
-
   const rawPath = req.originalUrl || req.path || "";
   const pathOnly = (req.path || "").toLowerCase();
   const originalPathOnly = (rawPath.split("?")[0] || "").toLowerCase();
@@ -223,6 +217,12 @@ function apiKeyAuthMiddleware(req, res, next) {
     originalPathOnly === "/health" ||
     originalPathOnly === "/api/v1/health";
 
+  if (isHealthPath) {
+    req.auth = { authenticated: false, role: "anonymous", roles: [] };
+    return next();
+  }
+
+  const configuredKey = config.ECDAT_API_KEY;
   const publicAuthPaths = PUBLIC_AUTH_PATHS;
 
   const providedKey = extractApiKey(req);
@@ -274,11 +274,14 @@ function apiKeyAuthMiddleware(req, res, next) {
     return next();
   }
 
-  // 2. Health probes are explicitly public and anonymous
-  if (isHealthPath) {
-    req.auth = { authenticated: false, role: "anonymous", roles: [] };
-    return next();
+  if (!configuredKey) {
+    return res.status(503).json({
+      error: "Service Misconfigured",
+      code: "AUTH_NOT_CONFIGURED",
+      message: "Server authentication is not configured. Refusing all requests.",
+    });
   }
+
 
   // 3. Scanner API endpoints MUST be authenticated by default
   // No blanket startsWith("/scan/") or unauthenticated pipeline bypasses permitted

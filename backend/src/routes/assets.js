@@ -70,6 +70,16 @@ router.get("/", async (req, res, next) => {
             "scans.created_at as scan_created_at",
           );
 
+        const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+        const callerTenant = req.tenantContext?.tenantId;
+        if (!isPlatformAdmin) {
+          if (callerTenant) {
+            query = query.where("scans.tenant_id", callerTenant);
+          } else {
+            query = query.whereRaw("1 = 0");
+          }
+        }
+
         if (targetScanId) {
           query = query.where("assets.scan_id", targetScanId);
         }
@@ -340,6 +350,16 @@ router.get("/:assetId", async (req, res, next) => {
             "scans.policy_profile_id",
             "scans.scanner_type",
           );
+
+        const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+        const callerTenant = req.tenantContext?.tenantId;
+        if (!isPlatformAdmin) {
+          if (callerTenant) {
+            assetQuery = assetQuery.andWhere("scans.tenant_id", callerTenant);
+          } else {
+            assetQuery = assetQuery.whereRaw("1 = 0");
+          }
+        }
 
         if (scanId) {
           assetQuery = assetQuery.andWhere("assets.scan_id", scanId);

@@ -367,8 +367,19 @@ class ApprovalWorkflowEngine {
   verifyRemediation(
     approvalId,
     verifier = { username: "ecdat_rescan", role: "verifier" },
-    verificationResults = { tests_passed: true, finding_resolved: true },
+    verificationResults,
   ) {
+    if (
+      !verificationResults ||
+      typeof verificationResults !== "object" ||
+      typeof verificationResults.tests_passed !== "boolean" ||
+      typeof verificationResults.finding_resolved !== "boolean"
+    ) {
+      throw new ApprovalWorkflowError(
+        "Verification failed: 'verificationResults' must be explicitly provided with 'tests_passed' and 'finding_resolved' boolean fields.",
+        400,
+      );
+    }
     const record = this.getApproval(approvalId);
 
     if (record.state !== ApprovalState.APPLIED) {

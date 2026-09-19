@@ -25,6 +25,7 @@ const { getRules, calculateMosca } = require("../risk_engine");
 const { globalCertInventory } = require("../domain/certificate_inventory");
 const { getDbAuditLogs } = require("../db/audit_logger");
 const { evaluatePolicyProfile } = require("../policy/policy_engine");
+const { defaultAuditService } = require("../audit");
 
 function getZeroViews(policyProfile = "regulated_bfsi", scenario = "baseline") {
   const impactLevels = ["Critical", "High", "Medium", "Low"];
@@ -99,9 +100,9 @@ function getZeroViews(policyProfile = "regulated_bfsi", scenario = "baseline") {
     created_at: new Date().toISOString(),
     views: {
       executive_overview: {
-        posture_score: 100,
+        posture_score: null,
         posture_rating: "UNASSESSED",
-        pqc_readiness_pct: 100,
+        pqc_readiness_pct: null,
         total_assets: 0,
         total_findings: 0,
         critical_findings: 0,
@@ -224,6 +225,15 @@ async function getEnterpriseDashboardViews(options = {}) {
       if (requestedScanId) {
         q = q.where("id", requestedScanId);
       }
+      const isPlatformAdmin = Boolean(options.tenantContext?.isPlatformAdmin);
+      const callerTenant = options.tenantContext?.tenantId;
+      if (!isPlatformAdmin) {
+        if (callerTenant) {
+          q = q.where("tenant_id", callerTenant);
+        } else {
+          q = q.whereRaw("1 = 0");
+        }
+      }
       scanRow = await q.orderBy("created_at", "desc").first();
       if (scanRow) {
         const cbomRow = await db("cboms").where("scan_id", scanRow.id).first();
@@ -239,7 +249,7 @@ async function getEnterpriseDashboardViews(options = {}) {
   // If no DB scan, fallback to in-memory scan store
   let inMemoryScan = null;
   if (!scanRow) {
-    inMemoryScan = requestedScanId ? await getScanById(requestedScanId) : getLatestScan();
+    inMemoryScan = requestedScanId ? await getScanById(requestedScanId, options.tenantContext) : getLatestScan(options.tenantContext);
   }
 
   // Pure clean state with zero scans: return zero views immediately
@@ -248,8 +258,8 @@ async function getEnterpriseDashboardViews(options = {}) {
   }
 
   // Active scan ID and metadata
-  const scanId = scanRow?.id || inMemoryScan?.id || "demo_scan_2026";
-  const scanName = scanRow?.target_name || inMemoryScan?.name || "Enterprise Crypto Core & APIs";
+  const scanId = scanRow?.id || inMemoryScan?.id || null;
+  const scanName = scanRow?.target_name || inMemoryScan?.name || "Scan Findings";
   const createdAt = scanRow?.created_at || inMemoryScan?.created_at || new Date().toISOString();
 
   // Load findings from DB or in-memory
@@ -311,24 +321,24 @@ async function getEnterpriseDashboardViews(options = {}) {
       scan_id: scanId,
       asset_id: f.asset_id || `asset_${(i % 5) + 1}`,
       component_id: f.component_id || `comp_${i + 1}`,
-      algorithm: f.algorithm || "RSA",
-      key_size: f.key_size || 2048,
+      algorithm: f.algorithm || "UNKNOWN",
+      key_size: f.key_size || null,
       category: f.category || "algorithm",
       finding_type: f.finding_type || "static",
-      location: f.location || "src/crypto/handshake.ts",
-      line_number: f.line_number || 42,
-      evidence_context: f.evidence_context || `crypto.createCipheriv('${f.algorithm}', key, iv)`,
-      severity: f.severity || "High",
-      mosca_status: f.mosca_status || "AT_RISK",
+      location: f.location || "unspecified",
+      line_number: f.line_number ?? null,
+      evidence_context: f.evidence_context || null,
+      severity: f.severity || "Medium",
+      mosca_status: f.mosca_status || "WATCH",
       classical_risk: f.classical_risk || "Medium",
       quantum_relevance: f.quantum_relevance || "Shor",
-      mosca_margin_years: f.mosca_margin_years ?? -2,
+      mosca_margin_years: f.mosca_margin_years ?? 0,
     }));
   }
 
   // If clean state with zero scans / zero findings, return pure authentic zero payload
   if (findings.length === 0) {
-    return getEmptyViewsPayload(policyProfile);
+    return getZeroViews(policyProfile, scenario);
   }
 
   // ==========================================================================
@@ -528,6 +538,19 @@ async function getEnterpriseDashboardViews(options = {}) {
     return a.includes("kyber") || a.includes("dilithium") || a.includes("sphincs") || (a.includes("aes") && f.key_size === 256);
   });
 
+  const mlKemMatches = findings.filter((f) => {
+    const a = (f.algorithm || "").toLowerCase();
+    return a.includes("kyber") || a.includes("ml-kem");
+  });
+  const mlDsaMatches = findings.filter((f) => {
+    const a = (f.algorithm || "").toLowerCase();
+    return a.includes("dilithium") || a.includes("ml-dsa");
+  });
+  const slhDsaMatches = findings.filter((f) => {
+    const a = (f.algorithm || "").toLowerCase();
+    return a.includes("sphincs") || a.includes("slh-dsa");
+  });
+
   const pqcReadiness = {
     overall_readiness_score: pqcReadinessPct,
     shor_vulnerable_count: shorVulnerable.length,
@@ -538,22 +561,46 @@ async function getEnterpriseDashboardViews(options = {}) {
     pqc_evidence: pqcSafe.map((f) => f.id),
     hybrid_adoption_count: findings.filter((f) => f.algorithm.toLowerCase().includes("hybrid") || f.algorithm.toLowerCase().includes("draft")).length,
     nist_standards_alignment: [
-      { standard: "NIST FIPS 203 (ML-KEM)", target: "Kyber-768 / Kyber-1024", status: "ADOPTING", evidenceCount: 1 },
-      { standard: "NIST FIPS 204 (ML-DSA)", target: "Dilithium-3", status: "PLANNED", evidenceCount: 0 },
-      { standard: "NIST FIPS 205 (SLH-DSA)", target: "SPHINCS+", status: "EVALUATING", evidenceCount: 0 },
+      {
+        standard: "NIST FIPS 203 (ML-KEM)",
+        target: "Kyber-768 / Kyber-1024",
+        status: mlKemMatches.length > 0 ? "ADOPTED" : "PLANNED",
+        evidenceCount: mlKemMatches.length,
+      },
+      {
+        standard: "NIST FIPS 204 (ML-DSA)",
+        target: "Dilithium-3",
+        status: mlDsaMatches.length > 0 ? "ADOPTED" : "PLANNED",
+        evidenceCount: mlDsaMatches.length,
+      },
+      {
+        standard: "NIST FIPS 205 (SLH-DSA)",
+        target: "SPHINCS+",
+        status: slhDsaMatches.length > 0 ? "ADOPTED" : "PLANNED",
+        evidenceCount: slhDsaMatches.length,
+      },
     ],
-    mosca_timeline: findings.map((f) => ({
-      finding_id: f.id,
-      asset_id: f.asset_id,
-      algorithm: f.algorithm,
-      x_shelf_life_years: 5.0,
-      y_migration_years: 3.0,
-      z_quantum_threat_years: 6.0,
-      margin_years: f.mosca_margin_years,
-      status: f.mosca_status,
-      evidence_context: f.evidence_context,
-      location: f.location,
-    })),
+    mosca_timeline: findings.map((f) => {
+      const moscaRes = calculateMosca({
+        assetType: f.asset_type || "software_library",
+        dataSensitivity: f.data_sensitivity || "CONFIDENTIAL",
+        businessCriticality: f.business_criticality || "MEDIUM",
+        scenario,
+        algorithm: f.algorithm,
+      });
+      return {
+        finding_id: f.id,
+        asset_id: f.asset_id,
+        algorithm: f.algorithm,
+        x_shelf_life_years: moscaRes.x_shelf_life_years,
+        y_migration_years: moscaRes.y_migration_years,
+        z_quantum_threat_years: moscaRes.z_quantum_threat_years,
+        margin_years: moscaRes.mosca_margin_years ?? f.mosca_margin_years,
+        status: moscaRes.status || f.mosca_status,
+        evidence_context: f.evidence_context,
+        location: f.location,
+      };
+    }),
   };
   pqcReadiness.timeline = pqcReadiness.mosca_timeline;
   pqcReadiness.mosca_summary = {
@@ -581,19 +628,24 @@ async function getEnterpriseDashboardViews(options = {}) {
         f.finding_type === "certificate" ||
         (f.algorithm || "").toUpperCase().includes("CERT")
     );
-    certItems = certFindings.map((cf) => ({
-      fingerprint_sha256: cf.metadata?.fingerprint || cf.id,
-      subject_dn: cf.metadata?.subject_dn || cf.location || `Certificate [${cf.algorithm}]`,
-      issuer_dn: cf.metadata?.issuer_dn || "Scanned Certificate Authority",
-      validity_start: cf.metadata?.validity_start || new Date().toISOString(),
-      validity_end: cf.metadata?.validity_end || new Date(Date.now() + 365 * 86400000).toISOString(),
-      days_remaining: cf.metadata?.days_remaining ?? 365,
-      algorithm: cf.algorithm || "RSA",
-      key_size: cf.key_size || 2048,
-      renewal_state: cf.metadata?.renewal_state || (cf.key_size < 2048 ? "WEAK_KEY" : "OK"),
-      detected_anomalies: cf.metadata?.anomalies || (cf.key_size < 2048 ? [`weak_key:${(cf.algorithm || '').toLowerCase()}_${cf.key_size}`] : []),
-      evidence_link: cf.location || cf.id,
-    }));
+    certItems = certFindings.map((cf) => {
+      const meta = cf.metadata || {};
+      const keySize = cf.key_size || (meta.key_size ?? null);
+      const isWeak = keySize && keySize < 2048;
+      return {
+        fingerprint_sha256: meta.fingerprint || cf.id,
+        subject_dn: meta.subject_dn || cf.location || `Certificate [${cf.algorithm}]`,
+        issuer_dn: meta.issuer_dn || "UNKNOWN",
+        validity_start: meta.validity_start || null,
+        validity_end: meta.validity_end || null,
+        days_remaining: meta.days_remaining ?? null,
+        algorithm: cf.algorithm || "RSA",
+        key_size: keySize,
+        renewal_state: meta.renewal_state || (isWeak ? "WEAK_KEY" : "UNTRACKED"),
+        detected_anomalies: meta.anomalies || (isWeak ? [`weak_key:${(cf.algorithm || "").toLowerCase()}_${keySize}`] : []),
+        evidence_link: cf.location || cf.id,
+      };
+    });
   }
 
   const certificates = {
@@ -602,7 +654,7 @@ async function getEnterpriseDashboardViews(options = {}) {
     expiring_soon_count: certItems.filter(
       (c) => c.renewal_state === "EXPIRING_SOON" || c.renewal_state === "CRITICAL_EXPIRING"
     ).length,
-    weak_keys_count: certItems.filter((c) => (c.key_size || 2048) < 2048).length,
+    weak_keys_count: certItems.filter((c) => c.key_size && c.key_size < 2048).length,
     certificates: certItems,
   };
 
@@ -688,9 +740,12 @@ async function getEnterpriseDashboardViews(options = {}) {
       id: rf.id,
       observation_type: rf.metadata?.observation_type || "RUNTIME_CRYPTO_CALL",
       target: rf.location || rf.asset_id,
-      component: rf.component_id || "Runtime Interceptor",
+      component: rf.component_id || rf.metadata?.component || "Runtime Interceptor",
       details: rf.evidence_context || `Runtime invocation of ${rf.algorithm}`,
-      reachability_confirmed: true,
+      reachability_confirmed:
+        rf.metadata?.reachability_confirmed != null
+          ? Boolean(rf.metadata.reachability_confirmed)
+          : null,
       timestamp: rf.metadata?.timestamp || new Date().toISOString(),
       evidence_id: rf.id,
       evidence_snippet: rf.evidence_context || rf.algorithm,
@@ -850,16 +905,16 @@ async function getEnterpriseDashboardViews(options = {}) {
   // ==========================================================================
   const teamsMap = new Map();
   assets.forEach((a) => {
-    const owner = a.metadata?.owner || "Unassigned";
+    const owner = a.metadata?.owner || "UNASSIGNED";
     if (!teamsMap.has(owner)) {
       teamsMap.set(owner, {
         team_name: owner,
-        lead: `${owner.split(" ")[0].toLowerCase()}@ecdat.corp`,
+        lead: a.metadata?.owner_email || null,
         asset_count: 0,
         critical_count: 0,
         high_count: 0,
         total_findings: 0,
-        sla_compliance_pct: 95,
+        sla_compliance_pct: a.metadata?.sla_compliance_pct ?? null,
         evidence_asset_ids: [],
       });
     }
@@ -874,11 +929,8 @@ async function getEnterpriseDashboardViews(options = {}) {
 
   const ownership = {
     total_teams: teamsMap.size,
-    unowned_assets_count: assets.filter((a) => !a.metadata?.owner || a.metadata.owner === "Unassigned").length,
-    teams: Array.from(teamsMap.values()).map((t) => ({
-      ...t,
-      sla_compliance_pct: t.critical_count > 0 ? 72 : t.high_count > 2 ? 88 : 98,
-    })),
+    unowned_assets_count: assets.filter((a) => !a.metadata?.owner || a.metadata.owner === "UNASSIGNED" || a.metadata.owner === "Unassigned").length,
+    teams: Array.from(teamsMap.values()),
   };
 
   // ==========================================================================
@@ -892,56 +944,29 @@ async function getEnterpriseDashboardViews(options = {}) {
     auditLogs = [];
   }
 
+  // If DB logs are empty or DB disconnected, use in-memory tamper-evident audit service
   if (auditLogs.length === 0) {
-    auditLogs = [
-      {
-        id: "audit_1789396000001",
-        event_type: "SCAN_INGESTED",
-        table_name: "scans",
-        record_id: scanId,
-        actor: "sec-ops-runner",
-        action: "INSERT",
-        status: "SUCCESS",
-        created_at: new Date(Date.now() - 120000).toISOString(),
-        details: { scan_name: scanName, total_findings: totalFindings },
-      },
-      {
-        id: "audit_1789396000002",
-        event_type: "POLICY_EVALUATED",
-        table_name: "policy_profiles",
-        record_id: policyProfile,
-        actor: "compliance-bot",
-        action: "QUERY",
-        status: "SUCCESS",
-        created_at: new Date(Date.now() - 600000).toISOString(),
-        details: { profile: policyProfile, passed: criticalCount === 0 },
-      },
-      {
-        id: "audit_1789396000003",
-        event_type: "BACKUP_CREATED",
-        table_name: "all_tables",
-        record_id: "backup_latest_encrypted",
-        actor: "backup-daemon",
-        action: "BACKUP",
-        status: "SUCCESS",
-        created_at: new Date(Date.now() - 1800000).toISOString(),
-        details: { encrypted: true, cipher: "AES-256-GCM" },
-      },
-    ];
+    try {
+      const inMemRes = defaultAuditService.getEvents({}, { limit: 15 });
+      auditLogs = inMemRes.events || [];
+    } catch (_e) {
+      auditLogs = [];
+    }
   }
 
+  // Never inject fake synthetic audit events! Truthful empty state if no events exist.
   const auditTrail = {
     total_events: auditLogs.length,
     events: auditLogs.map((e) => ({
       id: e.id,
-      event_type: e.event_type,
-      table_name: e.table_name,
-      record_id: e.record_id,
-      actor: e.actor,
-      action: e.action,
-      status: e.status,
-      created_at: e.created_at,
-      details: e.details,
+      event_type: e.event_type || e.category || "SECURITY_EVENT",
+      table_name: e.table_name || e.target?.type || "audit_log",
+      record_id: e.record_id || e.target?.id || e.id,
+      actor: typeof e.actor === "object" ? e.actor?.username || e.actor?.id || "system" : String(e.actor || "system"),
+      action: e.action || "LOG",
+      status: e.status || "SUCCESS",
+      created_at: e.created_at || e.timestamp || new Date().toISOString(),
+      details: e.details || {},
     })),
   };
 

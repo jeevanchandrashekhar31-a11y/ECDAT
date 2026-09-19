@@ -494,7 +494,7 @@ async function generateExecutiveReport(options = {}) {
   const certInventory = [
     {
       fingerprint: "3a8b9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
-      subject: "CN=api.ecdat.corp",
+      subject: "NOT OBSERVED",
       issuer: "CN=Let's Encrypt Authority X3",
       valid_to: "2026-10-15T00:00:00.000Z",
       days_remaining: 28,
@@ -506,7 +506,7 @@ async function generateExecutiveReport(options = {}) {
     },
     {
       fingerprint: "7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e3d4c5b6a7f8e",
-      subject: "CN=payments-internal.ecdat.corp",
+      subject: "NOT OBSERVED",
       issuer: "CN=ECDAT Internal Enterprise Root CA",
       valid_to: "2027-05-01T00:00:00.000Z",
       days_remaining: 226,

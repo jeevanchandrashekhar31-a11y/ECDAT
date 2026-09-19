@@ -105,7 +105,7 @@ function buildTechnicalDrillDownItem(raw = {}, idx = 1) {
     line_number: lineNumber,
     column_number: raw.column_number || 14,
     function_scope: raw.function_scope || (location.includes("token") ? "GenerateTokenSigningKey" : "InitializeCryptoContext"),
-    repository_url: raw.repository_url || "git@github.com:ecdat-corp/core-banking.git",
+    repository_url: raw.repository_url || "NOT OBSERVED",
     git_ref: raw.git_ref || "main@c3b4a5d",
   };
 
@@ -200,7 +200,7 @@ function buildTechnicalDrillDownItem(raw = {}, idx = 1) {
   const isCert = Boolean(raw.certificate || location.includes("tls") || algoLower.includes("rsa") || algoLower.includes("ecdsa"));
   const certificate = {
     is_certificate_asset: isCert,
-    subject_dn: "CN=api.ecdat.corp, O=Enterprise Financial Services",
+    subject_dn: raw.certificate?.subject_dn || raw.subject_dn || "NOT OBSERVED",
     issuer_dn: "CN=Let's Encrypt Authority X3",
     serial_number: "04:3A:8B:9C:1D:2E:3F",
     fingerprint_sha256: "3a8b9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
@@ -208,12 +208,12 @@ function buildTechnicalDrillDownItem(raw = {}, idx = 1) {
     valid_to: "2026-10-15T00:00:00Z",
     days_remaining: 28,
     is_self_signed: false,
-    san_domains: ["api.ecdat.corp", "auth.ecdat.corp"],
+    san_domains: raw.certificate?.san_domains || raw.san_domains || "NOT OBSERVED",
   };
 
   // 9. Network Endpoint
   const networkEndpoint = {
-    hostname: "api.ecdat.corp",
+    hostname: raw.network_endpoint?.hostname || raw.hostname || "NOT OBSERVED",
     ip_address: "198.51.100.24",
     port: 443,
     protocol: "https",

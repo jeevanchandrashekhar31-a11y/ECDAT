@@ -9,6 +9,11 @@ const { clearScans } = require('../services/cbom_ingestion');
 const { closeDb } = require('../db/connection');
 
 async function main() {
+  if (!config.ECDAT_API_KEY) {
+    console.error('Error: ECDAT_API_KEY is not set.');
+    process.exit(1);
+  }
+
   // 1. Try to clear via running server HTTP endpoint first (so server RAM is cleared)
   const clearedViaHttp = await new Promise((resolve) => {
     const req = http.request(
@@ -18,7 +23,7 @@ async function main() {
         path: '/api/v1/scans',
         method: 'DELETE',
         headers: {
-          'X-API-Key': config.ECDAT_API_KEY || 'ecdat-demo-admin-key-2026',
+          'X-API-Key': config.ECDAT_API_KEY,
         },
         timeout: 3000,
       },

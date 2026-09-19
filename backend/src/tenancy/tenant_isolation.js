@@ -73,11 +73,6 @@ class TenantContext {
         roles = req.auth.roles || (req.auth.role ? [req.auth.role] : ["viewer"]);
         tenantId = req.auth.tenantId || req.auth.tenant_id || "default-tenant";
       }
-    } else if (req.auth && req.auth.mode === "open") {
-      tenantId = "default-tenant";
-      userId = "dev-user";
-      roles = ["admin"];
-      isPlatformAdmin = true;
     }
 
     const normRoles = roles.map((r) => String(r).toLowerCase().replace(/[-_]/g, " "));

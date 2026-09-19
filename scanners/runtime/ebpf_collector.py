@@ -19,7 +19,7 @@ Security Invariants:
 4. Backpressure & Drop Accounting: Accurately counts all dropped events (ringbuf drops, queue drops, rate-limit drops).
 5. Watchdog: Heartbeat monitor ensuring collector thread never loops or deadlocks.
 6. Zero Key Material: Probes capture only metadata; any payload with key bytes trips the circuit breaker.
-7. Truthful Verification: 'is_live_ebpf_verified' is strictly False unless actual in-kernel probe is verified.
+7. Truthful Verification: 'is_live_ebpf_verified' is strictly False in all current code paths because kernel attachment is not implemented.
 """
 
 from __future__ import annotations
@@ -151,7 +151,9 @@ class LinuxEbpfProbeCollector:
 
         # Live Verification Truthfulness
         self.is_live_ebpf_verified = False
-        self.attached_kernel_probes: List[str] = []
+        self.declared_probes: List[str] = []
+        self.attached_kernel_probes: List[str] = self.declared_probes
+        self.attachment_backend: Optional[str] = None
 
         # Locate BPF program bytecode
         if bpf_obj_path is None:
@@ -213,9 +215,16 @@ class LinuxEbpfProbeCollector:
     # ------------------------------------------------------------------------
     def attach_kernel_probe(self, probe_name: str, binary_path: str) -> bool:
         """
-        Attaches a genuine in-kernel uprobe to the target binary.
-        TRUTHFUL INVARIANT: Fails closed and refuses to claim live attachment
-        if running on non-Linux, without kernel BPF support, or if verifier fails.
+        Registers a declared kernel probe for target binary.
+
+        NOTE: Kernel probe attachment is NOT IMPLEMENTED. ECDAT does not currently
+        integrate with libbpf, BCC, or bpftrace to load or attach eBPF programs
+        into the kernel. Therefore, no in-kernel probe is attached and live eBPF
+        verification is not performed.
+
+        Returns:
+            bool: False with reason "NO_BPF_LOADER_AVAILABLE" until an in-kernel
+                  loader is implemented.
         """
         is_compat, reason = self.verify_kernel_requirements()
         if not is_compat:
@@ -233,12 +242,18 @@ class LinuxEbpfProbeCollector:
             logger.error("Target binary '%s' does not exist.", binary_path)
             return False
 
-        # On Linux with validated kernel and capabilities, register the attached probe
+        # In-kernel attachment is not implemented (no libbpf/BCC loader).
+        # Register the probe declaration, but remain unverified and return False.
         with self._lock:
-            self.attached_kernel_probes.append(f"{probe_name}@{binary_path}")
-            self.is_live_ebpf_verified = True
-            logger.info("Verified in-kernel uprobe attached: %s on %s", probe_name, binary_path)
-            return True
+            self.declared_probes.append(f"{probe_name}@{binary_path}")
+            self.is_live_ebpf_verified = False
+            logger.warning(
+                "Cannot attach kernel probe '%s' to '%s': %s (kernel attachment is not implemented).",
+                probe_name,
+                binary_path,
+                "NO_BPF_LOADER_AVAILABLE",
+            )
+            return False
 
     # ------------------------------------------------------------------------
     # 3. Userspace Collector & Event Ingestion Loop
@@ -365,10 +380,14 @@ class LinuxEbpfProbeCollector:
     def _handle_watchdog_failure(self) -> None:
         self.trip_circuit_breaker("Watchdog detected stall or buffer starvation in eBPF collector.")
 
+    @property
+    def verification_status(self) -> str:
+        return "verified" if self.is_live_ebpf_verified else "NOT IMPLEMENTED"
+
     def detach_all_kernel_probes(self) -> int:
         with self._lock:
-            count = len(self.attached_kernel_probes)
-            self.attached_kernel_probes.clear()
+            count = len(self.declared_probes)
+            self.declared_probes.clear()
             self.is_live_ebpf_verified = False
             logger.info("Detached all %d kernel eBPF probes.", count)
             return count
@@ -377,9 +396,12 @@ class LinuxEbpfProbeCollector:
         """Provides truthful status, capability details, and drop accounting metrics."""
         return {
             "is_live_ebpf_verified": self.is_live_ebpf_verified,
+            "verification_status": self.verification_status,
             "architecture": "genuine_ebpf_kernel_collector",
             "kernel_bpf_file": str(self.bpf_obj_path),
-            "attached_kernel_probes": list(self.attached_kernel_probes),
+            "declared_probes": list(self.declared_probes),
+            "attached_kernel_probes": list(self.declared_probes),
+            "attachment_backend": self.attachment_backend,
             "queue_depth": self.event_queue.qsize(),
             "backpressure_active": self.backpressure_active,
             "circuit_breaker_tripped": self.circuit_breaker_tripped,

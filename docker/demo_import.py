@@ -8,7 +8,9 @@ import urllib.request
 from pathlib import Path
 
 api_url = os.environ.get("ECDAT_API_URL", "http://backend:5000/api/v1/cboms")
-api_key = os.environ.get("ECDAT_API_KEY", "change-this-local-api-key")
+api_key = os.environ.get("ECDAT_API_KEY")
+if not api_key:
+    raise SystemExit("Error: ECDAT_API_KEY environment variable is required.")
 
 # Locate CBOM file
 candidate_paths = [

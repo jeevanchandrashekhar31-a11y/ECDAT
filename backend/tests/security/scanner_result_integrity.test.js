@@ -16,6 +16,7 @@ const { test, describe, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const http = require("http");
 const app = require("../../src/app");
+const config = require("../../src/config");
 
 const {
   RESULT_STATES,
@@ -31,8 +32,12 @@ const {
 describe("Phase 24: Scanner Result Integrity Engine", () => {
   let server;
   let baseUrl;
+  const TEST_API_KEY = "test-scanner-integrity-api-key-2026";
+  let originalApiKey;
 
   before(async () => {
+    originalApiKey = config.ECDAT_API_KEY;
+    config.ECDAT_API_KEY = TEST_API_KEY;
     server = http.createServer(app);
     await new Promise((resolve) => server.listen(0, resolve));
     const port = server.address().port;
@@ -40,6 +45,7 @@ describe("Phase 24: Scanner Result Integrity Engine", () => {
   });
 
   after(async () => {
+    config.ECDAT_API_KEY = originalApiKey;
     await new Promise((resolve) => server.close(resolve));
   });
 
@@ -211,7 +217,11 @@ describe("Phase 24: Scanner Result Integrity Engine", () => {
   });
 
   test("11. REST API: GET /api/v1/security/scanners/result-states returns canonical taxonomy", async () => {
-    const res = await fetch(`${baseUrl}/api/v1/security/scanners/result-states`);
+    const res = await fetch(`${baseUrl}/api/v1/security/scanners/result-states`, {
+      headers: {
+        "x-api-key": TEST_API_KEY,
+      },
+    });
     assert.strictEqual(res.status, 200);
     const data = await res.json();
 
@@ -259,7 +269,7 @@ describe("Phase 24: Scanner Result Integrity Engine", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": "ecdat-demo-admin-key-2026",
+        "x-api-key": TEST_API_KEY,
       },
       body: JSON.stringify(payload),
     });
@@ -288,7 +298,7 @@ describe("Phase 24: Scanner Result Integrity Engine", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": "ecdat-demo-admin-key-2026",
+        "x-api-key": TEST_API_KEY,
       },
       body: JSON.stringify(payload),
     });

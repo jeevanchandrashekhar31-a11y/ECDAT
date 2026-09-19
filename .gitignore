@@ -5,6 +5,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+!.env.clean.example
 !docker/.env.example
 *.sarif
 *.pem
@@ -26,3 +27,7 @@ artifacts/ci/
 .pytest_cache/
 .ruff_cache/
 .keys/
+!tests/fixtures/malicious_archives/
+artifacts/security/
+security_evidence/
+ecdat_clean_package.zip

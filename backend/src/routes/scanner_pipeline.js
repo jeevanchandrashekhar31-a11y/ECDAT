@@ -668,7 +668,7 @@ router.post('/cbom/merge', RATE_LIMITS.cbomGeneration.middleware(), async (req, 
     const seenRefs = new Set();
 
     // If explicit CBOMs provided in request body
-    if (Array.isArray(req.body?.cboms) && req.body.cboms.length > 0) {
+    if (Array.isArray(req.body?.cboms)) {
       for (const b of req.body.cboms) {
         if (Array.isArray(b.components)) {
           for (const c of b.components) {

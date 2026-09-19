@@ -19,6 +19,7 @@ router.get("/views", async (req, res, next) => {
       scanId,
       policyProfile,
       scenario,
+      tenantContext: req.tenantContext,
     });
     res.status(200).json(data);
   } catch (err) {
@@ -81,6 +82,17 @@ router.get("/summary", async (req, res, next) => {
             [policyProfile],
           );
         }
+
+        const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+        const callerTenant = req.tenantContext?.tenantId;
+        if (!isPlatformAdmin) {
+          if (callerTenant) {
+            scanQuery = scanQuery.where("tenant_id", callerTenant);
+          } else {
+            scanQuery = scanQuery.whereRaw("1 = 0");
+          }
+        }
+
         const scanRow = await scanQuery.orderBy("created_at", "desc").first();
 
         if (scanRow) {
@@ -451,7 +463,7 @@ router.get("/summary", async (req, res, next) => {
     }
 
     // In-memory fallback
-    const scan = scanId ? await getScanById(scanId) : getLatestScan();
+    const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
 
     if (!scan) {
       return res.status(200).json({

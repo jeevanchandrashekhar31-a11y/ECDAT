@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-The ECDAT Runtime & eBPF Discovery Subsystem provides real-time, non-invasive observation of cryptographic operations across running processes and containers. Operating optionally, it hooks cryptographic entrypoints via user-space probes (uprobes) and library wrappers, tracing operations through the full causal chain:
+The ECDAT Runtime & eBPF Discovery Subsystem provides experimentally implemented, non-invasive observation of cryptographic operations across running processes and containers (validated on Linux kernel >= 5.8 with `CAP_BPF`; graceful mock fallback on other platforms). Operating optionally, it hooks cryptographic entrypoints via user-space probes (uprobes) and library wrappers, tracing operations through the full causal chain:
 
 $$\text{Process} \longrightarrow \text{Library / Function} \longrightarrow \text{Crypto Operation} \longrightarrow \text{Parameters} \longrightarrow \text{Application / Service} \longrightarrow \text{Crypto Asset}$$
 

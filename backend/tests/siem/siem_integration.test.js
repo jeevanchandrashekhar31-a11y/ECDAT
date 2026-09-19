@@ -16,20 +16,26 @@ const {
   defaultSiemDispatcher,
 } = require("../../src/siem");
 
+const TEST_SIEM_API_KEY = "test-siem-integration-key-2026";
+
 const AUTH_HEADERS = {
   "Content-Type": "application/json",
-  "X-API-Key": config.ECDAT_API_KEY,
+  "X-API-Key": TEST_SIEM_API_KEY,
 };
 
 function withServer(callback) {
   return new Promise((resolve, reject) => {
+    const originalApiKey = config.ECDAT_API_KEY;
+    config.ECDAT_API_KEY = TEST_SIEM_API_KEY;
     const server = app.listen(0, async () => {
       const port = server.address().port;
       const baseUrl = `http://127.0.0.1:${port}`;
       try {
         await callback(baseUrl);
+        config.ECDAT_API_KEY = originalApiKey;
         server.close(resolve);
       } catch (err) {
+        config.ECDAT_API_KEY = originalApiKey;
         server.close(() => reject(err));
       }
     });
@@ -277,7 +283,7 @@ test("Phase 18.2 — REST API endpoints for SIEM Integration", async () => {
       body: JSON.stringify({
         batchSize: 40,
         endpoints: [
-          { id: "dest-splunk", name: "Splunk HEC", url: "https://api.github.com/webhook/test", format: "json" },
+          { id: "dest-splunk", name: "Splunk HEC", url: "https://cloudflare.com/webhook/test", format: "json" },
         ],
       }),
     });

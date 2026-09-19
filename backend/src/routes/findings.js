@@ -93,6 +93,16 @@ router.get("/", async (req, res, next) => {
             "assets.business_criticality",
           );
 
+        const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+        const callerTenant = req.tenantContext?.tenantId;
+        if (!isPlatformAdmin) {
+          if (callerTenant) {
+            query = query.where("scans.tenant_id", callerTenant);
+          } else {
+            query = query.whereRaw("1 = 0");
+          }
+        }
+
         if (targetScanId) {
           query = query.where("findings.scan_id", targetScanId);
         }
@@ -321,7 +331,7 @@ router.get("/:findingId", async (req, res, next) => {
     const connected = await isDbConnected();
     if (connected) {
       try {
-        const findingRow = await db("findings")
+        let findingQuery = db("findings")
           .join("scans", "findings.scan_id", "scans.id")
           .join(
             "risk_assessments",
@@ -340,7 +350,19 @@ router.get("/:findingId", async (req, res, next) => {
               "assets.id",
             );
           })
-          .where("findings.id", findingId)
+          .where("findings.id", findingId);
+
+        const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+        const callerTenant = req.tenantContext?.tenantId;
+        if (!isPlatformAdmin) {
+          if (callerTenant) {
+            findingQuery = findingQuery.andWhere("scans.tenant_id", callerTenant);
+          } else {
+            findingQuery = findingQuery.whereRaw("1 = 0");
+          }
+        }
+
+        const findingRow = await findingQuery
           .select(
             "findings.*",
             "risk_assessments.severity",

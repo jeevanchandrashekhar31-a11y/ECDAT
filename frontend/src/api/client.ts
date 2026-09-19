@@ -19,9 +19,12 @@ export function getSessionApiKey(): string | null {
   const existing = sessionAuthStorage.getApiKey();
   if (existing) return existing;
 
-  const envKey = (import.meta.env.VITE_ECDAT_API_KEY as string) || 'ecdat-demo-admin-key-2026';
-  sessionAuthStorage.setApiKey(envKey);
-  return envKey;
+  const envKey = (import.meta.env.VITE_ECDAT_API_KEY as string) || null;
+  if (envKey && envKey.trim() !== '') {
+    sessionAuthStorage.setApiKey(envKey.trim());
+    return envKey.trim();
+  }
+  return null;
 }
 
 export function setSessionApiKey(key: string): void {
@@ -459,5 +462,130 @@ export const api = {
     html_report_url: string;
   }> => {
     return request('/cbom/pqc-report');
+  },
+
+  // --------------------------------------------------------------------------
+  // Authentication & MFA Surface
+  // --------------------------------------------------------------------------
+  login: async (username: string, password: string): Promise<{
+    mfaRequired?: boolean;
+    mfaToken?: string;
+    userId?: string;
+    username?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    csrfToken?: string;
+    user?: {
+      userId: string;
+      username: string;
+      email?: string;
+      roles?: string[];
+      tenantId?: string;
+    };
+  }> => {
+    return request('/api/v1/auth/local/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+  },
+
+  mfaVerify: async (
+    mfaToken: string,
+    code: string,
+    isBackupCode: boolean = false
+  ): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    csrfToken?: string;
+    user: {
+      userId: string;
+      username: string;
+      email?: string;
+      roles?: string[];
+    };
+  }> => {
+    return request('/api/v1/auth/mfa/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mfaToken, code, isBackupCode }),
+    });
+  },
+
+  mfaSetup: async (userId?: string): Promise<{
+    secret: string;
+    otpAuthUri: string;
+    issuer: string;
+    digits: number;
+    period: number;
+    backupCodes: string[];
+    instructions: string;
+  }> => {
+    return request('/api/v1/auth/mfa/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userId ? { userId } : {}),
+    });
+  },
+
+  mfaEnable: async (
+    code: string,
+    userId?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    mfaEnabled: boolean;
+  }> => {
+    return request('/api/v1/auth/mfa/enable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, ...(userId ? { userId } : {}) }),
+    });
+  },
+
+  mfaReset: async (
+    params: {
+      userId?: string;
+      code?: string;
+      password?: string;
+      isBackupCode?: boolean;
+      reason?: string;
+    } = {}
+  ): Promise<{
+    success: boolean;
+    message: string;
+    mfaEnabled: boolean;
+  }> => {
+    return request('/api/v1/auth/mfa/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+  },
+
+  logout: async (): Promise<{ success: boolean; message: string }> => {
+    return request('/api/v1/auth/logout', {
+      method: 'POST',
+    });
+  },
+
+  getCsrfToken: async (): Promise<{ csrfToken: string }> => {
+    return request('/api/v1/auth/csrf-token');
+  },
+
+  getCurrentUser: async (): Promise<{
+    authenticated: boolean;
+    mode: string;
+    role: string;
+    roles: string[];
+    user: {
+      userId: string;
+      username?: string;
+      email?: string;
+      roles?: string[];
+      tenantId?: string;
+    };
+  }> => {
+    return request('/api/v1/auth/me');
   },
 };

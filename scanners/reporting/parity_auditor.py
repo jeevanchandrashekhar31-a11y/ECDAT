@@ -568,7 +568,7 @@ class ParityAuditor:
                 "total_capabilities_evaluated": total_evaluated,
                 "counts": counts,
                 "parity_score_out_of_10": round(parity_score, 1),
-                "certification_verdict": "10/10 ENTERPRISE PARITY CERTIFIED"
+                "certification_verdict": "ENTERPRISE FEATURE PARITY VERIFIED AGAINST DOCUMENTED BASELINES"
                 if parity_score >= 9.5
                 else "PARITY DEFICIT",
                 "all_full_parity_claims_verified": all(
@@ -593,7 +593,7 @@ def main():
 
     summary = report["audit_summary"]
     print("=" * 70)
-    print("ECDAT FEATURE-LEVEL PARITY AUDIT & 10/10 CERTIFICATION (PHASE 27.1)")
+    print("ECDAT FEATURE-LEVEL PARITY AUDIT & VERIFICATION (PHASE 27.1)")
     print("=" * 70)
     print(f"Total Capabilities Evaluated : {summary['total_capabilities_evaluated']}")
     print(f"  - FULL PARITY              : {summary['counts']['FULL PARITY']}")
@@ -603,7 +603,7 @@ def main():
     print(f"  - NOT PUBLICLY VERIFIABLE  : {summary['counts']['NOT PUBLICLY VERIFIABLE']}")
     print("-" * 70)
     print(f"PARITY SCORE                 : {summary['parity_score_out_of_10']} / 10.0")
-    print(f"CERTIFICATION VERDICT        : {summary['certification_verdict']}")
+    print(f"VERIFICATION VERDICT         : {summary['certification_verdict']}")
     print(f"Claims Verified Against Disk : {summary['all_full_parity_claims_verified']}")
     print("=" * 70)
 

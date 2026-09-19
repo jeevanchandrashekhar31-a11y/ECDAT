@@ -135,7 +135,7 @@ def test_precision_recall_f1_targets(eval_results):
 
 
 def test_post_quantum_and_hybrid_discovery(eval_results):
-    """Validates 100% recall on Post-Quantum Cryptography (PQC) and Hybrid schemes."""
+    """Validates 100% recall on Post-Quantum Cryptography (PQC) and Hybrid schemes in golden corpus test fixtures."""
     cat_breakdown = eval_results["category_breakdown"]
 
     # 1. PQC examples (Kyber, Dilithium, SPHINCS+, Falcon)
@@ -151,7 +151,7 @@ def test_post_quantum_and_hybrid_discovery(eval_results):
 
 
 def test_secure_and_weak_algorithms_discovery(eval_results):
-    """Validates 100% recall on Secure Examples and Weak Algorithms."""
+    """Validates high recall on Secure Examples and Weak Algorithms in golden corpus test fixtures."""
     cat_breakdown = eval_results["category_breakdown"]
 
     # Secure examples (AES-256-GCM, ChaCha20-Poly1305, SHA-384/512, Ed25519)

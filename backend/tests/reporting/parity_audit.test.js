@@ -17,7 +17,7 @@ describe("Feature-Level Parity Audit & 10/10 Certification (Phase 27.1)", () => 
     assert.ok(report.audit_summary, "Report must contain audit_summary");
 
     const summary = report.audit_summary;
-    assert.equal(summary.certification_verdict, "10/10 ENTERPRISE PARITY CERTIFIED");
+    assert.equal(summary.certification_verdict, "ENTERPRISE FEATURE PARITY VERIFIED AGAINST DOCUMENTED BASELINES");
     assert.equal(summary.all_full_parity_claims_verified, true);
     assert.ok(summary.parity_score_out_of_10 >= 9.5);
 

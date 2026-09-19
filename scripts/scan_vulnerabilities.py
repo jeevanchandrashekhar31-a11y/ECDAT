@@ -1018,7 +1018,7 @@ def generate_markdown_report(result: VulnerabilityScanResult, out_path: Path):
     ])
 
     if result.status == ScanStatus.CLEAN:
-        lines.append("> **Zero vulnerabilities detected.** All audited packages are verified clean across Python, Backend, and Frontend ecosystems.")
+        lines.append("> **0 known CVEs detected.** All audited packages are verified clean against active vulnerability databases across Python, Backend, and Frontend ecosystems at time of scan. This does not guarantee absence of zero-day vulnerabilities.")
     elif result.status == ScanStatus.INCOMPLETE_VULNERABILITY_DATA and not vulns:
         lines.append("> **Zero findings recorded across indexed packages, but database coverage is INCOMPLETE.** This is NOT a clean result.")
     elif result.status in (ScanStatus.SCAN_ERROR, ScanStatus.SCAN_UNAVAILABLE, ScanStatus.INVALID_INPUT) and not vulns:

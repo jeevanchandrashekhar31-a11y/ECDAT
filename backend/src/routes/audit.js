@@ -205,8 +205,8 @@ router.post("/events", async (req, res) => {
       action: body.action,
       actor: {
         id: req.auth?.userId || req.headers["x-actor-id"] || body.actor?.id || "system",
-        username: req.auth?.username || req.headers["x-actor-username"] || body.actor?.username || "system",
-        role: req.auth?.role || req.headers["x-actor-role"] || body.actor?.role || "admin",
+        username: req.auth?.username || body.actor?.username || "system",
+        role: req.user?.role || req.auth?.role || req.tenantContext?.roles?.[0] || null,
         ipAddress: req.ip || req.connection?.remoteAddress,
         userAgent: req.headers["user-agent"],
       },

@@ -193,81 +193,87 @@ export const CertificatesView: React.FC<Props> = ({
                 <th className="py-3 px-4 text-right">Evidence Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {filteredCerts.map((cert, idx) => {
-                const isExp = cert.days_remaining < 0;
-                const relatedEvidenceIds = Object.values(evidenceLookup)
-                  .filter(
-                    (f) =>
-                      (cert.evidence_link && f.location?.includes(cert.evidence_link)) ||
-                      (f.key_size === cert.key_size && f.algorithm.includes(cert.algorithm))
-                  )
-                  .map((f) => f.id);
+            <tbody className="divide-y divide-slate-800/60 font-sans">
+              {filteredCerts.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-500 italic text-xs">
+                    No active X.509 certificates detected in this scan. Certificates discovered via TLS probes or static assets will appear here.
+                  </td>
+                </tr>
+              ) : (
+                filteredCerts.map((cert, idx) => {
+                  const isExp = cert.renewal_state === 'EXPIRED' || (cert.days_remaining !== null && cert.days_remaining < 0);
+                  const relatedEvidenceIds = [cert.evidence_link].filter(Boolean) as string[];
 
-                return (
-                  <tr key={cert.fingerprint_sha256 || idx} className="hover:bg-slate-850/50 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-slate-100">{cert.subject_dn}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">Issuer: {cert.issuer_dn}</div>
-                      <div className="font-mono text-[9px] text-slate-500 mt-0.5 truncate max-w-xs">
-                        SHA256: {cert.fingerprint_sha256}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="font-mono text-slate-200 font-medium">
-                        {cert.algorithm} {cert.key_size ? `${cert.key_size}-bit` : ''}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 font-mono text-[11px] text-slate-400">
-                      <div>From: {cert.validity_start ? cert.validity_start.slice(0, 10) : 'N/A'}</div>
-                      <div>To: {cert.validity_end ? cert.validity_end.slice(0, 10) : 'N/A'}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[11px] font-bold border ${getRenewalBadge(
-                          cert.renewal_state,
-                          cert.days_remaining
-                        )}`}
-                      >
-                        {isExp ? `Expired (${Math.abs(cert.days_remaining)}d ago)` : `${cert.days_remaining} days`}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      {cert.detected_anomalies && cert.detected_anomalies.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {cert.detected_anomalies.map((anom) => (
-                            <span
-                              key={anom}
-                              className="px-1.5 py-0.5 rounded text-[10px] bg-rose-950 text-rose-300 border border-rose-800 font-mono"
-                            >
-                              {anom}
-                            </span>
-                          ))}
+                  return (
+                    <tr key={cert.fingerprint_sha256 || idx} className="hover:bg-slate-850/50 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-100">{cert.subject_dn}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">Issuer: {cert.issuer_dn}</div>
+                        <div className="font-mono text-[9px] text-slate-500 mt-0.5 truncate max-w-xs">
+                          SHA256: {cert.fingerprint_sha256}
                         </div>
-                      ) : (
-                        <span className="text-emerald-400 text-[11px] flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Valid
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="font-mono text-slate-200 font-medium">
+                          {cert.algorithm} {cert.key_size ? `${cert.key_size}-bit` : ''}
                         </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() =>
-                          onOpenEvidence(
-                            `Certificate Evidence: ${cert.subject_dn}`,
-                            `X.509 binding for ${cert.evidence_link || cert.subject_dn}`,
-                            relatedEvidenceIds.length > 0 ? relatedEvidenceIds : Object.keys(evidenceLookup).slice(0, 2)
-                          )
-                        }
-                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 border border-slate-700 text-xs inline-flex items-center gap-1 transition-colors"
-                      >
-                        <span>Evidence</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[11px] text-slate-400">
+                        <div>From: {cert.validity_start ? cert.validity_start.slice(0, 10) : 'N/A'}</div>
+                        <div>To: {cert.validity_end ? cert.validity_end.slice(0, 10) : 'N/A'}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[11px] font-bold border ${getRenewalBadge(
+                            cert.renewal_state,
+                            cert.days_remaining ?? 365
+                          )}`}
+                        >
+                          {isExp
+                            ? `Expired (${cert.days_remaining !== null ? `${Math.abs(cert.days_remaining)}d ago` : 'past'})`
+                            : cert.days_remaining !== null
+                              ? `${cert.days_remaining} days`
+                              : 'Untracked'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {cert.detected_anomalies && cert.detected_anomalies.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {cert.detected_anomalies.map((anom) => (
+                              <span
+                                key={anom}
+                                className="px-1.5 py-0.5 rounded text-[10px] bg-rose-950 text-rose-300 border border-rose-800 font-mono"
+                              >
+                                {anom}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-emerald-400 text-[11px] flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Valid
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() =>
+                            onOpenEvidence(
+                              `Certificate Evidence: ${cert.subject_dn}`,
+                              `X.509 binding for ${cert.evidence_link || cert.subject_dn}`,
+                              relatedEvidenceIds.length > 0 ? relatedEvidenceIds : Object.keys(evidenceLookup).slice(0, 2)
+                            )
+                          }
+                          className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 border border-slate-700 text-xs inline-flex items-center gap-1 transition-colors"
+                        >
+                          <span>Evidence</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

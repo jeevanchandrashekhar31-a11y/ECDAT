@@ -200,6 +200,10 @@ const ROLE_ALIASES = Object.freeze({
   "security_admin": ROLES.SECURITY_ADMIN,
   "security-admin": ROLES.SECURITY_ADMIN,
   "securityadmin": ROLES.SECURITY_ADMIN,
+  "tenant administrator": ROLES.SECURITY_ADMIN,
+  "tenant_administrator": ROLES.SECURITY_ADMIN,
+  "tenant admin": ROLES.SECURITY_ADMIN,
+  "tenant_admin": ROLES.SECURITY_ADMIN,
   "secops": ROLES.SECURITY_ADMIN,
   "security_engineer": ROLES.SECURITY_ADMIN,
 
@@ -749,7 +753,14 @@ function evaluateCapability(role, capability, context = {}) {
     colKey = "anonymous";
   } else if (cleanRole === "platform admin" || cleanRole === "platform administrator" || cleanRole === "superuser") {
     colKey = "platform_admin";
-  } else if (cleanRole === "admin" || cleanRole === "security admin" || cleanRole === "security administrator" || cleanRole === "secops") {
+  } else if (
+    cleanRole === "admin" ||
+    cleanRole === "security admin" ||
+    cleanRole === "security administrator" ||
+    cleanRole === "tenant admin" ||
+    cleanRole === "tenant administrator" ||
+    cleanRole === "secops"
+  ) {
     colKey = "admin";
   } else if (cleanRole === "analyst" || cleanRole === "threat analyst" || cleanRole === "crypto analyst") {
     colKey = "analyst";
@@ -762,6 +773,60 @@ function evaluateCapability(role, capability, context = {}) {
   }
 
   const matrixValue = matrixEntry[colKey];
+
+  // Universal Cross-Tenant Invariant: Any cross-tenant access by non-platform_admin is strictly rejected
+  if (context.isCrossTenant && colKey !== "platform_admin") {
+    const reason = `Cross-tenant access violation. Role '${colKey}' is strictly tenant-scoped and cannot perform '${capability}' across tenants.`;
+    if (context.emitAudit !== false) {
+      emitRbacAuditEvent({
+        action: "TENANT_ISOLATION_VIOLATION",
+        status: "DENIED",
+        actor: {
+          id: context.userId || (colKey === "anonymous" ? "anonymous" : "unknown"),
+          username: context.username || (colKey === "anonymous" ? "anonymous" : "unknown"),
+          role: colKey,
+        },
+        tenantId: context.tenantId || "default",
+        target: { type: "tenant", id: context.targetTenantId || "foreign_tenant" },
+        details: { code: "HORIZONTAL_TENANT_VIOLATION", capability, role: colKey, reason },
+      });
+    }
+
+    return {
+      allowed: false,
+      status: 403,
+      code: "HORIZONTAL_TENANT_VIOLATION",
+      message: reason,
+      matrixValue,
+    };
+  }
+
+  // Universal Platform Scope Invariant: Platform scope requires platform_admin authority
+  if (context.isPlatformScope && colKey !== "platform_admin") {
+    const reason = `Platform-level operations require platform_admin authority.`;
+    if (context.emitAudit !== false) {
+      emitRbacAuditEvent({
+        action: "PERMISSION_DENIED",
+        status: "DENIED",
+        actor: {
+          id: context.userId || "unknown",
+          username: context.username || "unknown",
+          role: colKey,
+        },
+        tenantId: context.tenantId || "default",
+        target: { type: "platform", id: "platform_governance" },
+        details: { code: "INSUFFICIENT_PERMISSIONS", capability, role: colKey, reason },
+      });
+    }
+
+    return {
+      allowed: false,
+      status: 403,
+      code: "INSUFFICIENT_PERMISSIONS",
+      message: reason,
+      matrixValue: "NO",
+    };
+  }
 
   if (matrixValue === "NO") {
     const status = colKey === "anonymous" ? 401 : 403;

@@ -812,6 +812,13 @@ router.post("/local/login", RATE_LIMITS.login.middleware(), (req, res) => {
       provider: "local_auth",
     });
 
+    const csrfToken = generateCsrfToken();
+    setAuthCookies(res, {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      csrfToken,
+    });
+
     defaultAuditService.logEvent({
       category: AUDIT_CATEGORIES.LOGIN,
       action: AUDIT_ACTIONS.LOGIN,
@@ -828,6 +835,7 @@ router.post("/local/login", RATE_LIMITS.login.middleware(), (req, res) => {
 
     return res.json({
       ...tokens,
+      csrfToken,
       user: authResult.user,
     });
   } catch (err) {
@@ -1362,8 +1370,16 @@ router.post("/mfa/verify", RATE_LIMITS.mfa.middleware(), (req, res) => {
       provider: "local_auth",
     });
 
+    const csrfToken = generateCsrfToken();
+    setAuthCookies(res, {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      csrfToken,
+    });
+
     return res.json({
       ...tokens,
+      csrfToken,
       user: {
         userId: challengeUser.userId,
         username: challengeUser.username,

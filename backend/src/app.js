@@ -33,6 +33,7 @@ const graphRoutes = require("./routes/graph");
 const auditRoutes = require("./routes/audit");
 const siemRoutes = require("./routes/siem");
 const metricsRoutes = require("./routes/metrics");
+const telemetryRoutes = require("./routes/telemetry");
 const { metricsMiddleware } = require("./metrics");
 const {
   injectionProtectionMiddleware,
@@ -79,6 +80,7 @@ app.use("/metrics", metricsRoutes);
 // 5. Direct Scanner Pipeline Routes (root-level for /scan/* and /cbom/*)
 app.use(scannerPipeline);
 app.use("/sbom", sbomRoutes);
+app.use("/telemetry", telemetryRoutes);
 
 // 6. API v1 Router
 const apiV1 = express.Router();
@@ -106,6 +108,7 @@ apiV1.use("/security", securityHardeningRoutes);
 apiV1.use("/audit", auditRoutes);
 apiV1.use("/siem", siemRoutes);
 apiV1.use("/metrics", metricsRoutes);
+apiV1.use("/telemetry", telemetryRoutes);
 apiV1.use(scannerPipeline);
 
 
