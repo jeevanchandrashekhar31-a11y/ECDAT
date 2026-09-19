@@ -16,7 +16,7 @@ import pytest
 
 from scanners.static.secret_detector import SecretSafeDetector
 from scanners.vulnerability_release_gate import VulnerabilityReleaseGateEngine
-from scripts.security_gate import REPO_ROOT
+from scripts.final_quality_gate import REPO_ROOT
 
 
 def test_redteam_command_injection_defense():

@@ -18,7 +18,7 @@
     "sign": "python scripts/sign_artifacts.py",
     "provenance": "python scripts/generate_provenance.py",
     "release-gate": "python scripts/release_gate.py",
-    "security-gate": "python scripts/security_gate.py",
+    "security-gate": "python scripts/final_quality_gate.py",
     "evidence:verify": "python scripts/generate_security_evidence.py --verify",
     "clear-data": "npm --prefix backend run clear-data"
   }

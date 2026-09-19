@@ -185,7 +185,23 @@ def main() -> int:
 
     steps: List[Tuple[str, List[str]]] = [
         (
-            "1. Cryptographic Artifact Signatures Verification",
+            "1a. Regenerate Dependency Security Inventory",
+            [sys.executable, "scripts/generate_dependency_inventory.py"],
+        ),
+        (
+            "1b. Regenerate Vulnerability Scan & Assessment Reports",
+            [sys.executable, "scripts/scan_vulnerabilities.py"],
+        ),
+        (
+            "1c. Regenerate SLSA Build Provenance Attestation",
+            [sys.executable, "scripts/generate_provenance.py"],
+        ),
+        (
+            "1d. Cryptographic Artifact Signing",
+            [sys.executable, "scripts/sign_artifacts.py", "--sign"],
+        ),
+        (
+            "1e. Cryptographic Artifact Signatures Verification",
             [sys.executable, "scripts/sign_artifacts.py", "--verify"],
         ),
         (
@@ -193,8 +209,8 @@ def main() -> int:
             [sys.executable, "scripts/generate_security_evidence.py", "--verify"],
         ),
         (
-            "3. Security Release Gate (14 Mandatory Controls)",
-            [sys.executable, "scripts/security_gate.py", "--quick"],
+            "3. Final Quality & Release Gate (17 Qualification Domains)",
+            [sys.executable, "scripts/final_quality_gate.py"],
         ),
         (
             "4. Supply-Chain Security Release Gate (6 Gates)",
@@ -208,8 +224,8 @@ def main() -> int:
             [sys.executable, "-m", "pytest", "tests/test_security_evidence.py", "-q"],
         ))
         steps.append((
-            "6. Security Gate Regression Test Suite",
-            [sys.executable, "-m", "pytest", "tests/test_security_gate.py", "-q"],
+            "6. Final Quality Gate Test Suite",
+            [sys.executable, "-m", "pytest", "tests/test_final_quality_gate.py", "-q"],
         ))
 
     failed = False

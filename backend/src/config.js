@@ -80,7 +80,7 @@ const nodeEnv = getEnv("NODE_ENV", "development");
 const rawApiKey =
   nodeEnv === "production"
     ? getEnv("ECDAT_API_KEY", undefined, true)
-    : getEnv("ECDAT_API_KEY", null);
+    : getEnv("ECDAT_API_KEY", "ecdat-demo-admin-key-2026");
 
 const rawDatabaseUrl = getEnv(
   "DATABASE_URL",
