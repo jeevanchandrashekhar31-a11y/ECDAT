@@ -111,6 +111,7 @@ class DNSRebindingGuard:
         ipaddress.ip_network("ff00::/8"),  # Multicast IPv6
         ipaddress.ip_network("0.0.0.0/8"),  # This host on this network
         ipaddress.ip_network("100.100.100.200/32"),  # Alibaba IMDS
+        ipaddress.ip_network("100.64.0.0/10"),  # Carrier-Grade NAT
     ]
 
     PRIVATE_IPV4_RANGES = [
@@ -123,17 +124,33 @@ class DNSRebindingGuard:
         ipaddress.ip_network("fc00::/7"),  # Unique local addresses
     ]
 
+    CLOUD_METADATA_IPS = {
+        "169.254.169.254",
+        "169.254.169.253",
+        "169.254.170.2",
+        "100.100.100.200",
+        "fd00:ec2::254",
+    }
+
     @classmethod
     def validate_ip_address(
         cls, ip_str: str, allow_private: bool = False
     ) -> ipaddress.IPv4Address | ipaddress.IPv6Address:
         """
         Validates an IP against SSRF and private network policies.
+        Supports decimal, hex, octal, dotted numeric, and IPv4-mapped IPv6.
         """
-        try:
-            ip = ipaddress.ip_address(ip_str)
-        except ValueError as e:
-            raise SecurityControlError(f"Invalid IP address literal: '{ip_str}'") from e
+        from scanners.network.target_validation import parse_numeric_or_special_ip
+
+        ip = parse_numeric_or_special_ip(ip_str)
+        if ip is None:
+            raise SecurityControlError(f"Invalid IP address literal: '{ip_str}'")
+
+        clean_ip_str = str(ip)
+
+        # Cloud metadata endpoints check
+        if clean_ip_str in cls.CLOUD_METADATA_IPS:
+            raise SSRFProtectionError(f"Blocked SSRF: '{ip_str}' ({clean_ip_str}) is a cloud metadata endpoint.")
 
         # SSRF checks
         for net in cls.BLOCKED_IPS_AND_RANGES:
@@ -157,9 +174,17 @@ class DNSRebindingGuard:
         allow_private: bool = False,
     ) -> Tuple[str, List[str]]:
         """
-        Resolves hostname to IP addresses once, validates all addresses against SSRF,
-        and returns the pinned IP address for the scan connection.
+        Validates hostname before DNS resolution, resolves hostname to IP addresses once,
+        validates all resolved addresses against SSRF, and returns the pinned IP address.
         """
+        from scanners.network.target_validation import check_target_pre_dns
+
+        # Step 1: Pre-DNS validation to reject forbidden hostnames and numeric IP literals
+        rejected, reason = check_target_pre_dns(hostname, allow_private=allow_private)
+        if rejected:
+            raise SSRFProtectionError(f"Pre-DNS SSRF Blocked: {reason}")
+
+        # Step 2: DNS Resolution
         try:
             addr_info = socket.getaddrinfo(hostname, port, socket.AF_UNSPEC, socket.SOCK_STREAM)
         except socket.gaierror as e:
@@ -170,10 +195,11 @@ class DNSRebindingGuard:
 
         resolved_ips = list(dict.fromkeys(info[4][0] for info in addr_info))
 
-        # Validate EVERY resolved IP address to prevent mixed public/private rebinding
+        # Step 3: Validate EVERY resolved IP address to prevent mixed public/private rebinding
         for ip in resolved_ips:
             cls.validate_ip_address(ip, allow_private=allow_private)
 
         # Pin the first valid IP
         pinned_ip = resolved_ips[0]
         return pinned_ip, resolved_ips
+

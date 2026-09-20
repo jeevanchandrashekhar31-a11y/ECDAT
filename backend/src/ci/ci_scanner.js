@@ -25,7 +25,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const { PolicyEngine } = require("../policy/policy_engine");
 
 const CI_EXIT_CODES = Object.freeze({
@@ -103,18 +103,38 @@ class NodeCiScanner {
    * Resolves PR changed files using git diff if prBase is provided.
    */
   resolvePrDiff(resolvedTarget) {
-    if (!this.prBase) return [];
+    if (!this.prBase || typeof this.prBase !== "string") return [];
+    const cleanBase = this.prBase.trim();
+    if (!cleanBase) return [];
+
+    // Reject shell metacharacters and control bytes
+    if (/[\x00\r\n;`$|&<>()\\]/.test(cleanBase)) {
+      throw new Error(`Command injection attempt rejected in prBase: '${cleanBase}' contains prohibited shell metacharacters.`);
+    }
+
+    // Reject option injection
+    if (cleanBase.startsWith("-")) {
+      throw new Error(`Option injection rejected in prBase: '${cleanBase}' cannot start with '-'.`);
+    }
+
+    // Strict branch / ref format: alphanumeric, dot, underscore, hyphen, slash
+    if (!/^[a-zA-Z0-9._\/-]+$/.test(cleanBase)) {
+      throw new Error(`Invalid branch/ref format in prBase: '${cleanBase}'.`);
+    }
+
     try {
-      const cmd = `git diff --name-only ${this.prBase}...HEAD`;
-      const output = execSync(cmd, { cwd: resolvedTarget, stdio: ["ignore", "pipe", "pipe"], encoding: "utf-8" });
+      const output = execFileSync("git", ["diff", "--name-only", `${cleanBase}...HEAD`], {
+        cwd: resolvedTarget,
+        stdio: ["ignore", "pipe", "pipe"],
+        encoding: "utf-8",
+      });
       return output
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean);
     } catch (e) {
       try {
-        const fallbackCmd = `git diff --name-only ${this.prBase}`;
-        const output = execSync(fallbackCmd, {
+        const output = execFileSync("git", ["diff", "--name-only", "--", cleanBase], {
           cwd: resolvedTarget,
           stdio: ["ignore", "pipe", "pipe"],
           encoding: "utf-8",
@@ -124,7 +144,7 @@ class NodeCiScanner {
           .map((s) => s.trim())
           .filter(Boolean);
       } catch (err) {
-        throw new Error(`Git diff against '${this.prBase}' failed: ${err.message}`);
+        throw new Error(`Git diff against '${cleanBase}' failed: ${err.message}`);
       }
     }
   }

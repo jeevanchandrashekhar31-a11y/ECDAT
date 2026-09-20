@@ -47,11 +47,14 @@ const {
   PathTraversalError,
   DecompressionBombError,
 } = require("../../src/security/archive_guard");
+const http = require("http");
 const {
   validateSafeUrlAsync,
   validateSafeGitUrlAsync,
   checkForbiddenIp,
+  safeFetch,
 } = require("../../src/security/ssrf_protection");
+const { NodeCiScanner } = require("../../src/ci/ci_scanner");
 const {
   scrubSensitiveFields,
   scrubString,
@@ -416,7 +419,17 @@ describe("Phase 25: P1 — Testing Architecture (Node.js 25-Category Regression 
       assert.strictEqual(checkForbiddenIp("172.16.0.1").forbidden, true);
     });
 
-    test("Git URL validator blocks dangerous pseudo-protocols", async () => {
+    test("Blocks decimal, hex, octal, and mapped IPv6 SSRF targets", () => {
+      assert.strictEqual(checkForbiddenIp("2130706433").forbidden, true); // 127.0.0.1
+      assert.strictEqual(checkForbiddenIp("0x7f000001").forbidden, true); // 127.0.0.1
+      assert.strictEqual(checkForbiddenIp("0177.0.0.1").forbidden, true); // 127.0.0.1
+      assert.strictEqual(checkForbiddenIp("::ffff:127.0.0.1").forbidden, true);
+      assert.strictEqual(checkForbiddenIp("100.100.100.200").forbidden, true);
+      assert.strictEqual(checkForbiddenIp("169.254.169.254").forbidden, true);
+      assert.strictEqual(checkForbiddenIp("fd00:ec2::254").forbidden, true);
+    });
+
+    test("Git URL validator blocks dangerous pseudo-protocols and unauthorized credentials", async () => {
       const g1 = await validateSafeGitUrlAsync("file:///etc/passwd");
       assert.strictEqual(g1.safe, false);
 
@@ -425,6 +438,79 @@ describe("Phase 25: P1 — Testing Architecture (Node.js 25-Category Regression 
 
       const g3 = await validateSafeGitUrlAsync("https://github.com/org/repo.git");
       assert.strictEqual(g3.safe, true);
+
+      // Reject credential-embedded Git URLs unless explicitly authorized
+      const g4 = await validateSafeGitUrlAsync("https://user:pass@github.com/org/repo.git");
+      assert.strictEqual(g4.safe, false);
+      assert.match(g4.error, /credentials/i);
+
+      // Allowed when explicitly authorized with allowCredentials
+      const g5 = await validateSafeGitUrlAsync("https://user:pass@github.com/org/repo.git", { allowCredentials: true });
+      assert.strictEqual(g5.safe, true);
+      assert.strictEqual(g5.normalizedUrl, "https://github.com/org/repo.git"); // credentials stripped from normalized URL
+    });
+
+    test("safeFetch blocks redirect chains that start external and land on internal/loopback IPs", async () => {
+      let server;
+      try {
+        const serverPort = await new Promise((resolve, reject) => {
+          server = http.createServer((req, res) => {
+            if (req.url === "/external-start") {
+              // Redirect to internal loopback
+              res.writeHead(302, { Location: "http://127.0.0.1:8080/internal-admin" });
+              res.end();
+            } else if (req.url === "/metadata-redirect") {
+              // Redirect to cloud metadata endpoint
+              res.writeHead(302, { Location: "http://169.254.169.254/latest/meta-data" });
+              res.end();
+            } else {
+              res.writeHead(200, { "Content-Type": "text/plain" });
+              res.end("OK");
+            }
+          });
+          server.listen(0, "127.0.0.1", () => resolve(server.address().port));
+        });
+
+        // Mock DNS lookup so example.com resolves to 127.0.0.1:serverPort for testing redirect logic with allowPrivate
+        // But the redirect to 169.254.169.254 is forbidden even with allowPrivate=false
+        await assert.rejects(
+          async () => {
+            await safeFetch(`http://127.0.0.1:${serverPort}/metadata-redirect`, {
+              allowPrivate: true, // Allow initial connection to local test server
+              maxRedirects: 3,
+            });
+          },
+          /SSRF Blocked/
+        );
+      } finally {
+        if (server) server.close();
+      }
+    });
+
+    test("safeFetch enforces maximum response size limit", async () => {
+      let server;
+      try {
+        const serverPort = await new Promise((resolve) => {
+          server = http.createServer((req, res) => {
+            res.writeHead(200, { "Content-Type": "application/octet-stream" });
+            res.write(Buffer.alloc(2000, "A"));
+            res.end();
+          });
+          server.listen(0, "127.0.0.1", () => resolve(server.address().port));
+        });
+
+        await assert.rejects(
+          async () => {
+            await safeFetch(`http://127.0.0.1:${serverPort}/large`, {
+              allowPrivate: true,
+              maxResponseSizeBytes: 500, // Limit to 500 bytes
+            });
+          },
+          /Response size limit exceeded/
+        );
+      } finally {
+        if (server) server.close();
+      }
     });
   });
 
@@ -447,6 +533,27 @@ describe("Phase 25: P1 — Testing Architecture (Node.js 25-Category Regression 
       assert.throws(() => sanitizeCommandArg("main `whoami`"), /Command injection/);
       assert.throws(() => sanitizeCommandArg("main $(id)"), /Command injection/);
       assert.strictEqual(sanitizeCommandArg("feature/safe-branch-v1"), "feature/safe-branch-v1");
+    });
+
+    test("NodeCiScanner.resolvePrDiff rejects command injection and option injection via prBase", () => {
+      const maliciousBases = [
+        "main; id",
+        "main && rm -rf /",
+        "main | cat /etc/passwd",
+        "main `whoami`",
+        "main $(id)",
+        "--upload-pack=evil",
+        "--output=/tmp/evil",
+        "-Ddangerous",
+      ];
+
+      for (const prBase of maliciousBases) {
+        const scanner = new NodeCiScanner({ prBase });
+        assert.throws(
+          () => scanner.resolvePrDiff("."),
+          /(Command injection|Option injection|Invalid branch)/
+        );
+      }
     });
   });
 

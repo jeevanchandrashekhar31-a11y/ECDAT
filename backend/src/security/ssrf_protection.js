@@ -415,14 +415,19 @@ async function resolveAndValidateTarget(target, options = {}) {
     if (hostCheck.forbidden) {
       return { valid: false, error: hostCheck.reason, hostname, port };
     }
+  } else {
+    // Cloud metadata hostnames must NEVER be allowed under any circumstances
+    if (FORBIDDEN_HOSTNAMES_EXACT.has(hostname)) {
+      return { valid: false, error: `Cloud metadata hostname '${hostname}' is strictly prohibited`, hostname, port };
+    }
   }
 
   // 2. Check if hostname is an IP literal
   const isDirectIp = net.isIP(hostname);
   if (isDirectIp) {
-    if (!allowPrivate) {
-      const ipCheck = checkForbiddenIp(hostname);
-      if (ipCheck.forbidden) {
+    const ipCheck = checkForbiddenIp(hostname);
+    if (ipCheck.forbidden) {
+      if (!allowPrivate || CLOUD_METADATA_IPV4S.has(hostname) || hostname.includes("169.254.") || hostname.includes("fd00:ec2:")) {
         return {
           valid: false,
           error: `IP address belongs to restricted range: ${ipCheck.reason}`,
@@ -466,10 +471,10 @@ async function resolveAndValidateTarget(target, options = {}) {
   const resolvedIps = [...new Set(lookupResults.map((r) => r.address))];
 
   // 4. DNS Rebinding Guard: Verify that ALL resolved IPs are safe
-  if (!allowPrivate) {
-    for (const ip of resolvedIps) {
-      const ipCheck = checkForbiddenIp(ip);
-      if (ipCheck.forbidden) {
+  for (const ip of resolvedIps) {
+    const ipCheck = checkForbiddenIp(ip);
+    if (ipCheck.forbidden) {
+      if (!allowPrivate || CLOUD_METADATA_IPV4S.has(ip) || ip.includes("169.254.") || ip.includes("fd00:ec2:")) {
         return {
           valid: false,
           error: `DNS resolution for '${hostname}' returned restricted address ${ip} (${ipCheck.reason})`,
@@ -608,6 +613,17 @@ async function validateSafeGitUrlAsync(rawGitUrl, options = {}) {
   if (clean.startsWith("https://") || clean.startsWith("http://")) {
     try {
       const parsed = new URL(clean);
+      if ((parsed.username || parsed.password) && !options.allowCredentials) {
+        return {
+          safe: false,
+          error: "Embedded credentials in Git repository URLs are prohibited unless explicitly authorized.",
+        };
+      }
+      if (parsed.username || parsed.password) {
+        parsed.username = "";
+        parsed.password = "";
+        clean = parsed.toString();
+      }
       hostname = parsed.hostname;
       defaultPort = parsed.port ? parseInt(parsed.port, 10) : (parsed.protocol === "http:" ? 80 : 443);
     } catch {
@@ -693,7 +709,8 @@ async function safeFetch(rawUrl, options = {}) {
     headers = {},
     body = null,
     timeoutMs = 15000,
-    maxRedirects = 3,
+    maxRedirects = 5,
+    maxResponseSizeBytes = 50 * 1024 * 1024, // 50 MB response size cap
     allowPrivate = false,
     dnsLookupFn = dns.promises.lookup,
   } = options;
@@ -702,7 +719,7 @@ async function safeFetch(rawUrl, options = {}) {
   let redirectsCount = 0;
 
   while (redirectsCount <= maxRedirects) {
-    // Step 1: Validate URL and resolve destination IP
+    // Step 1: Validate URL and resolve destination IP (before and after DNS resolution)
     const urlValidation = await validateSafeUrlAsync(currentUrl, {
       allowPrivate,
       dnsLookupFn,
@@ -741,10 +758,24 @@ async function safeFetch(rawUrl, options = {}) {
         reqOptions.servername = hostname;
       }
 
+      let totalBytesReceived = 0;
+      let aborted = false;
+
       const clientReq = transport.request(reqOptions, (res) => {
         const chunks = [];
-        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("data", (chunk) => {
+          if (aborted) return;
+          totalBytesReceived += chunk.length;
+          if (totalBytesReceived > maxResponseSizeBytes) {
+            aborted = true;
+            clientReq.destroy();
+            reject(new Error(`Response size limit exceeded: Received more than ${maxResponseSizeBytes} bytes`));
+            return;
+          }
+          chunks.push(chunk);
+        });
         res.on("end", () => {
+          if (aborted) return;
           const buffer = Buffer.concat(chunks);
           resolve({
             status: res.statusCode,
@@ -759,12 +790,15 @@ async function safeFetch(rawUrl, options = {}) {
       });
 
       clientReq.on("timeout", () => {
+        aborted = true;
         clientReq.destroy();
         reject(new Error(`Request timed out after ${timeoutMs}ms`));
       });
 
       clientReq.on("error", (err) => {
-        reject(err);
+        if (!aborted) {
+          reject(err);
+        }
       });
 
       if (body) {
@@ -785,7 +819,7 @@ async function safeFetch(rawUrl, options = {}) {
         throw new Error(`Too many redirects (limit: ${maxRedirects})`);
       }
 
-      // Resolve relative redirect against current URL
+      // Resolve relative redirect against current URL and re-validate on next iteration
       currentUrl = new URL(location, currentUrl).toString();
       continue;
     }

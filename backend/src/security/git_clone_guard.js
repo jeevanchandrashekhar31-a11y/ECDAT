@@ -152,7 +152,13 @@ async function validateGitCloneUrl(rawUrl, options = {}) {
 
   // 6. Embedded credentials protection
   if (parsed.username || parsed.password) {
-    // Strip credentials from URL to prevent leakage in logs or process arguments
+    if (!options.allowCredentials) {
+      return {
+        safe: false,
+        error: "Embedded credentials in Git repository URLs are prohibited unless explicitly authorized.",
+      };
+    }
+    // If explicitly authorized, strip credentials from URL to prevent leakage in logs or process arguments
     parsed.username = "";
     parsed.password = "";
     clean = parsed.toString();
@@ -343,7 +349,11 @@ async function executeHardenedGitClone(repoUrl, targetDir, options = {}) {
   const boundedTimeout = Math.min(Math.max(timeoutMs, 1000), MAX_CLONE_TIMEOUT_MS);
 
   // Step 1: Strict URL Validation
-  const urlCheck = await validateGitCloneUrl(repoUrl, { allowInsecureHttp, dnsLookupFn });
+  const urlCheck = await validateGitCloneUrl(repoUrl, {
+    allowInsecureHttp,
+    dnsLookupFn,
+    allowCredentials: options.allowCredentials,
+  });
   if (!urlCheck.safe) {
     throw new GitSecurityError(`Git clone rejected for security: ${urlCheck.error}`);
   }

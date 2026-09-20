@@ -181,8 +181,14 @@ def resolve_pr_diff_files(target_dir: str, pr_base: str) -> Tuple[List[str], Opt
         if check.returncode != 0:
             return [], f"Target directory '{target_dir}' is not inside a git repository."
 
+        clean_base = str(pr_base).strip()
+        if clean_base.startswith("-"):
+            return [], f"Option injection rejected in pr_base: '{clean_base}' cannot start with '-'."
+        if any(c in clean_base for c in ";|&`$<>\n\r\0()\\"):
+            return [], f"Command injection rejected in pr_base: '{clean_base}' contains prohibited shell metacharacters."
+
         # Try triple-dot diff first (merge-base), then double-dot diff
-        diff_cmd = ["git", "diff", "--name-only", f"{pr_base}...HEAD"]
+        diff_cmd = ["git", "diff", "--name-only", f"{clean_base}...HEAD"]
         proc = subprocess.run(
             diff_cmd,
             cwd=str(resolved_target),
@@ -191,8 +197,8 @@ def resolve_pr_diff_files(target_dir: str, pr_base: str) -> Tuple[List[str], Opt
             check=False,
         )
         if proc.returncode != 0:
-            # Fallback to direct ref diff
-            diff_cmd = ["git", "diff", "--name-only", pr_base]
+            # Fallback to direct ref diff with '--' delimiter to block option injection
+            diff_cmd = ["git", "diff", "--name-only", "--", clean_base]
             proc = subprocess.run(
                 diff_cmd,
                 cwd=str(resolved_target),
@@ -201,7 +207,7 @@ def resolve_pr_diff_files(target_dir: str, pr_base: str) -> Tuple[List[str], Opt
                 check=False,
             )
             if proc.returncode != 0:
-                return [], f"Git diff against '{pr_base}' failed: {proc.stderr.strip()}"
+                return [], f"Git diff against '{clean_base}' failed: {proc.stderr.strip()}"
 
         lines = [line.strip().replace("\\", "/") for line in proc.stdout.splitlines() if line.strip()]
         return lines, None

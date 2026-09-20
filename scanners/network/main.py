@@ -130,7 +130,9 @@ def main():
         target_hostname = t
         target_port = args.port
         try:
-            target_hostname, target_port = normalize_target(t, default_port=args.port)
+            target_hostname, target_port = normalize_target(
+                t, default_port=args.port, allow_private=policy.allow_private_networks
+            )
 
             # Early authorization check (avoids DNS queries for unauthorized targets)
             if not scope or (scope.allowed_hostnames and not scope.allowed_subnets):
