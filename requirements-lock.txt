@@ -48,7 +48,7 @@ packaging==25.0
 pluggy==1.6.0
 py-serializable==2.1.0
 pycparser==3.0
-pydantic-core==2.46.5
+pydantic-core==2.49.0
 pygments==2.21.0
 referencing==0.37.0
 rpds-py==2026.6.3
