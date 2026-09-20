@@ -124,9 +124,9 @@ function validateConfig(config) {
 
   // Production security checks
   if (config.NODE_ENV === "production") {
-    // 1. API Key must be set and cannot be the default demo key
-    if (!config.ECDAT_API_KEY || config.ECDAT_API_KEY === "ecdat-demo-admin-key-2026") {
-      violations.push("Production requires a strong, non-default ECDAT_API_KEY.");
+    // 1. API Key must be set and meet production complexity standards
+    if (!config.ECDAT_API_KEY || config.ECDAT_API_KEY.length < 32) {
+      violations.push("Production requires a strong, non-default ECDAT_API_KEY (>= 32 characters).");
     }
 
     // 2. Database credentials cannot be the default development credentials

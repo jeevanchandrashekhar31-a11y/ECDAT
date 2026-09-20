@@ -28,6 +28,10 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const http = require("node:http");
 const app = require("../../src/app");
+const config = require("../../src/config");
+if (!config.ECDAT_API_KEY) {
+  config.ECDAT_API_KEY = "test-governance-key-32-chars-long-entropy!!";
+}
 const {
   RATE_LIMITS,
   resetAllRateLimiters,
@@ -198,7 +202,7 @@ test("Phase 20 / P1 — Resource Governance & Denial-of-Service Defense", async 
       assert.equal(data.operation, "token_operations");
     });
 
-    const testApiKey = "ecdat-demo-admin-key-2026";
+    const testApiKey = config.ECDAT_API_KEY;
 
     await t.test("1.6 Scan submission rate limiter triggers HTTP 429 after 10 requests/min", async () => {
       resetAllRateLimiters();
@@ -336,13 +340,13 @@ test("Phase 20 / P1 — Resource Governance & Denial-of-Service Defense", async 
 
       for (let i = 0; i < 15; i++) {
         const res = await fetch(`${baseUrl}/api/v1/reports/summary`, {
-          headers: { "x-enforce-rate-limit": "true" },
+          headers: { "x-api-key": testApiKey, "x-enforce-rate-limit": "true" },
         });
         assert.notEqual(res.status, 429);
       }
 
       const blockedRes = await fetch(`${baseUrl}/api/v1/reports/summary`, {
-        headers: { "x-enforce-rate-limit": "true" },
+        headers: { "x-api-key": testApiKey, "x-enforce-rate-limit": "true" },
       });
       assert.equal(blockedRes.status, 429);
       const data = await blockedRes.json();
@@ -355,13 +359,13 @@ test("Phase 20 / P1 — Resource Governance & Denial-of-Service Defense", async 
 
       for (let i = 0; i < 20; i++) {
         const res = await fetch(`${baseUrl}/api/v1/integrations/ticketing/connectors`, {
-          headers: { "x-enforce-rate-limit": "true" },
+          headers: { "x-api-key": testApiKey, "x-enforce-rate-limit": "true" },
         });
         assert.notEqual(res.status, 429);
       }
 
       const blockedRes = await fetch(`${baseUrl}/api/v1/integrations/ticketing/connectors`, {
-        headers: { "x-enforce-rate-limit": "true" },
+        headers: { "x-api-key": testApiKey, "x-enforce-rate-limit": "true" },
       });
       assert.equal(blockedRes.status, 429);
       const data = await blockedRes.json();

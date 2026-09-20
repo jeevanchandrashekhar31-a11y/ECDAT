@@ -102,10 +102,42 @@ function resolveConfinedPath(requestedPath) {
   return real;
 }
 
+function isRemediationAuthorized(req, allowedRoles = []) {
+  const rawRoles =
+    (req.user && req.user.roles) ||
+    (req.user && [req.user.role]) ||
+    (req.tenantContext && req.tenantContext.roles) ||
+    (req.auth && req.auth.roles) ||
+    (req.auth && [req.auth.role]) ||
+    [];
+  const userRoles = rawRoles.map((r) => String(r).toLowerCase().replace(/[-_]/g, " "));
+  const isPlatformAdmin =
+    Boolean(req.tenantContext?.isPlatformAdmin) ||
+    userRoles.includes("platform administrator") ||
+    userRoles.includes("admin") ||
+    userRoles.includes("superuser");
+
+  if (isPlatformAdmin) return true;
+
+  const normalizedAllowed = allowedRoles.map((r) => String(r).toLowerCase().replace(/[-_]/g, " "));
+  return userRoles.some((r) => normalizedAllowed.includes(r));
+}
+
 function getActorFromReq(req) {
-  const role = req.auth?.role || req.tenantContext?.roles?.[0] || null;
+  const role =
+    req.auth?.role ||
+    req.tenantContext?.roles?.[0] ||
+    req.user?.role ||
+    (req.auth === undefined && req.user === undefined ? "viewer" : null);
   const username =
-    req.user?.username || req.user?.sub || req.auth?.user?.sub || null;
+    req.user?.username ||
+    req.user?.sub ||
+    req.auth?.user?.sub ||
+    req.auth?.user?.username ||
+    req.auth?.username ||
+    req.auth?.userId ||
+    (req.auth === undefined && req.user === undefined ? "anonymous" : null) ||
+    (req.auth?.authenticated ? "authenticated-user" : null);
   if (!role || !username) {
     const err = new Error("Authenticated actor identity required.");
     err.statusCode = 401;
@@ -280,10 +312,48 @@ router.post("/verify-patch", (req, res) => {
  */
 router.post("/apply-patch", (req, res) => {
   try {
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+
+    const targetProjectId = req.body.project_id || req.body.projectId;
+    if (targetProjectId) {
+      const { defaultObjectStateRegistry } = require("../security/object_authorization");
+      const targetProj = defaultObjectStateRegistry.getProject(targetProjectId);
+      if (targetProj && !isPlatformAdmin && targetProj.tenantId !== callerTenant) {
+        return res.status(403).json({
+          error: "TenantBoundaryViolation",
+          code: "HORIZONTAL_TENANT_VIOLATION",
+          message: `Cannot apply remediation to project belonging to foreign tenant '${targetProj.tenantId}'`,
+        });
+      }
+    }
+
+    const approvalId = req.body.approval_id || null;
+    if (approvalId) {
+      const engine = getDefaultApprovalEngine();
+      const existing = engine.getApproval(approvalId);
+      if (existing && !isPlatformAdmin && existing.tenantId && existing.tenantId !== callerTenant) {
+        return res.status(403).json({
+          error: "TenantBoundaryViolation",
+          code: "HORIZONTAL_TENANT_VIOLATION",
+          message: `Cannot access remediation approval belonging to foreign tenant '${existing.tenantId}'`,
+        });
+      }
+    }
+
+    const rawPath = req.body.file_path || req.body.path;
+    if (!rawPath) {
+      return res.status(400).json({
+        error: "ValidationError",
+        message: "Missing required 'file_path' field in request body",
+      });
+    }
+
     const sourceCode = req.body.source_code || req.body.code || "";
-    let filePath = resolveConfinedPath(req.body.file_path || req.body.path);
+    let filePath;
     try {
-      filePath = validateRemediationPath(filePath);
+      validateRemediationPath(rawPath);
+      filePath = resolveConfinedPath(rawPath);
     } catch (pathErr) {
       return res.status(400).json({
         error: "PathConfinementViolation",
@@ -291,11 +361,11 @@ router.post("/apply-patch", (req, res) => {
         message: pathErr.message,
       });
     }
+
     const targetAlgorithm = req.body.target_algorithm || "SHA-256";
     const dryRun = req.body.dry_run !== undefined ? Boolean(req.body.dry_run) : true;
     const category = req.body.category || "ALGORITHM_MIGRATION";
     const environment = req.body.environment || "production";
-    const approvalId = req.body.approval_id || null;
 
     // Check if human approval is required
     if (!dryRun && requiresExplicitApproval(category, environment)) {
@@ -308,10 +378,38 @@ router.post("/apply-patch", (req, res) => {
 
       const engine = getDefaultApprovalEngine();
       const approval = engine.getApproval(approvalId);
+      if (!isPlatformAdmin && approval.tenantId && approval.tenantId !== callerTenant) {
+        return res.status(403).json({
+          error: "TenantBoundaryViolation",
+          code: "HORIZONTAL_TENANT_VIOLATION",
+          message: `Cannot apply remediation using approval belonging to foreign tenant '${approval.tenantId}'`,
+        });
+      }
       if (approval.state !== "APPROVED") {
         return res.status(403).json({
           error: "Approval Incomplete",
           message: `Approval request '${approvalId}' is currently in state '${approval.state}'. Must be 'APPROVED' before applying.`,
+        });
+      }
+    }
+
+    // Server-side role authorization check: Live patch application requires privileged role
+    if (!dryRun) {
+      const allowedPatchRoles = [
+        "admin",
+        "platform administrator",
+        "platform admin",
+        "security administrator",
+        "security admin",
+        "deployer",
+        "secops",
+        "security_lead",
+      ];
+      if (!isRemediationAuthorized(req, allowedPatchRoles)) {
+        return res.status(403).json({
+          error: "Forbidden",
+          code: "INSUFFICIENT_PERMISSIONS",
+          message: "Access denied. Caller is not authorized to apply live remediation patches.",
         });
       }
     }
@@ -342,6 +440,12 @@ router.post("/apply-patch", (req, res) => {
       safety_lifecycle: safetyCheck,
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({
+        error: err.name || "Error",
+        message: err.message,
+      });
+    }
     if (err instanceof ApprovalWorkflowError) {
       return res.status(err.statusCode || 400).json({
         error: "Approval Error",
@@ -359,6 +463,20 @@ router.post("/apply-patch", (req, res) => {
 // Human Approval Workflow Endpoints (Phase 12.3)
 // =====================================================================
 
+function verifyApprovalTenant(req, approval) {
+  const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+  const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+  if (!isPlatformAdmin && approval.tenantId && approval.tenantId !== callerTenant) {
+    const err = new ApprovalWorkflowError(
+      `Cannot access or modify remediation approval belonging to foreign tenant '${approval.tenantId}'`,
+      403,
+    );
+    err.code = "HORIZONTAL_TENANT_VIOLATION";
+    err.name = "TenantBoundaryViolation";
+    throw err;
+  }
+}
+
 /**
  * POST /api/v1/remediation/approvals/propose
  * Creates a remediation proposal in PROPOSED state.
@@ -367,7 +485,8 @@ router.post("/approvals/propose", (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
     const actor = getActorFromReq(req);
-    const record = engine.proposeRemediation(req.body, actor);
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+    const record = engine.proposeRemediation({ ...req.body, tenantId: callerTenant }, actor);
     defaultMetricsCollector.recordRemediation("proposed");
 
     return res.status(201).json({
@@ -375,6 +494,9 @@ router.post("/approvals/propose", (req, res) => {
       ...record,
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.name || "Error", message: err.message });
+    }
     if (err instanceof ApprovalWorkflowError) {
       return res.status(err.statusCode || 400).json({ error: "Proposal Error", message: err.message });
     }
@@ -389,10 +511,13 @@ router.post("/approvals/propose", (req, res) => {
 router.get("/approvals", (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
     const filters = {
       state: req.query.state,
       category: req.query.category,
       environment: req.query.environment,
+      tenantId: isPlatformAdmin ? (req.query.tenantId || null) : callerTenant,
     };
     const list = engine.listApprovals(filters);
 
@@ -414,6 +539,7 @@ router.get("/approvals/:approvalId", (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
     const record = engine.getApproval(req.params.approvalId);
+    verifyApprovalTenant(req, record);
     const chainVerification = engine.verifyStateChain(req.params.approvalId);
 
     return res.status(200).json({
@@ -422,8 +548,11 @@ router.get("/approvals/:approvalId", (req, res) => {
       chain_verification: chainVerification,
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.name || "Error", message: err.message });
+    }
     if (err instanceof ApprovalWorkflowError) {
-      return res.status(err.statusCode || 404).json({ error: "Not Found", message: err.message });
+      return res.status(err.statusCode || 404).json({ error: err.name || "Not Found", message: err.message });
     }
     return res.status(500).json({ error: "Retrieval Failed", message: err.message });
   }
@@ -436,6 +565,8 @@ router.get("/approvals/:approvalId", (req, res) => {
 router.post("/approvals/:approvalId/review", (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
+    const existing = engine.getApproval(req.params.approvalId);
+    verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const comments = req.body.comments || "Peer review completed.";
     const record = engine.reviewRemediation(req.params.approvalId, actor, comments);
@@ -446,6 +577,9 @@ router.post("/approvals/:approvalId/review", (req, res) => {
       approval: record,
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.name || "Error", message: err.message });
+    }
     if (err instanceof ApprovalWorkflowError) {
       return res.status(err.statusCode || 400).json({ error: "Review Error", message: err.message });
     }
@@ -460,6 +594,8 @@ router.post("/approvals/:approvalId/review", (req, res) => {
 router.post("/approvals/:approvalId/approve", (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
+    const existing = engine.getApproval(req.params.approvalId);
+    verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const comments = req.body.comments || "Approved for execution.";
     const record = engine.approveRemediation(req.params.approvalId, actor, comments);
@@ -481,6 +617,9 @@ router.post("/approvals/:approvalId/approve", (req, res) => {
       approval: record,
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.name || "Error", message: err.message });
+    }
     if (err instanceof ApprovalWorkflowError) {
       return res.status(err.statusCode || 400).json({ error: "Approval Error", message: err.message });
     }
@@ -494,7 +633,26 @@ router.post("/approvals/:approvalId/approve", (req, res) => {
  */
 router.post("/approvals/:approvalId/apply", (req, res) => {
   try {
+    const allowedApplyRoles = [
+      "admin",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+      "deployer",
+      "secops",
+    ];
+    if (!isRemediationAuthorized(req, allowedApplyRoles)) {
+      return res.status(403).json({
+        error: "Forbidden",
+        code: "INSUFFICIENT_PERMISSIONS",
+        message: "Access denied. Caller is not authorized to apply remediation.",
+      });
+    }
+
     const engine = getDefaultApprovalEngine();
+    const existing = engine.getApproval(req.params.approvalId);
+    verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const record = engine.applyRemediation(req.params.approvalId, actor);
     defaultMetricsCollector.recordRemediation("applied");
@@ -515,6 +673,9 @@ router.post("/approvals/:approvalId/apply", (req, res) => {
       approval: record,
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.name || "Error", message: err.message });
+    }
     if (err instanceof ApprovalWorkflowError) {
       return res.status(err.statusCode || 400).json({ error: "Apply Error", message: err.message });
     }
@@ -528,7 +689,28 @@ router.post("/approvals/:approvalId/apply", (req, res) => {
  */
 router.post("/approvals/:approvalId/verify", (req, res) => {
   try {
+    const allowedVerifyRoles = [
+      "admin",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+      "security_lead",
+      "secops",
+      "verifier",
+      "qa_lead",
+    ];
+    if (!isRemediationAuthorized(req, allowedVerifyRoles)) {
+      return res.status(403).json({
+        error: "Forbidden",
+        code: "INSUFFICIENT_PERMISSIONS",
+        message: "Access denied. Caller is not authorized to verify remediation.",
+      });
+    }
+
     const engine = getDefaultApprovalEngine();
+    const existing = engine.getApproval(req.params.approvalId);
+    verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const results = req.body.verification_results;
     if (!results || typeof results !== "object") {
@@ -548,6 +730,9 @@ router.post("/approvals/:approvalId/verify", (req, res) => {
       approval: record,
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.name || "Error", message: err.message });
+    }
     if (err instanceof ApprovalWorkflowError) {
       return res.status(err.statusCode || 400).json({ error: "Verification Error", message: err.message });
     }
@@ -561,7 +746,27 @@ router.post("/approvals/:approvalId/verify", (req, res) => {
  */
 router.post("/approvals/:approvalId/rollback", (req, res) => {
   try {
+    const allowedRollbackRoles = [
+      "admin",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+      "security_lead",
+      "secops",
+      "deployer",
+    ];
+    if (!isRemediationAuthorized(req, allowedRollbackRoles)) {
+      return res.status(403).json({
+        error: "Forbidden",
+        code: "INSUFFICIENT_PERMISSIONS",
+        message: "Access denied. Caller is not authorized to rollback remediation.",
+      });
+    }
+
     const engine = getDefaultApprovalEngine();
+    const existing = engine.getApproval(req.params.approvalId);
+    verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const reason = req.body.reason || "Manual rollback requested.";
     const record = engine.rollbackRemediation(req.params.approvalId, actor, reason);
@@ -572,6 +777,9 @@ router.post("/approvals/:approvalId/rollback", (req, res) => {
       approval: record,
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.name || "Error", message: err.message });
+    }
     if (err instanceof ApprovalWorkflowError) {
       return res.status(err.statusCode || 400).json({ error: "Rollback Error", message: err.message });
     }
@@ -585,7 +793,27 @@ router.post("/approvals/:approvalId/rollback", (req, res) => {
  */
 router.post("/approvals/:approvalId/reject", (req, res) => {
   try {
+    const allowedRejectRoles = [
+      "admin",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+      "security_lead",
+      "secops",
+      "ciso",
+    ];
+    if (!isRemediationAuthorized(req, allowedRejectRoles)) {
+      return res.status(403).json({
+        error: "Forbidden",
+        code: "INSUFFICIENT_PERMISSIONS",
+        message: "Access denied. Caller is not authorized to reject remediation.",
+      });
+    }
+
     const engine = getDefaultApprovalEngine();
+    const existing = engine.getApproval(req.params.approvalId);
+    verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const reason = req.body.reason || "Remediation rejected.";
     const record = engine.failRemediation(req.params.approvalId, actor, reason);
@@ -596,10 +824,54 @@ router.post("/approvals/:approvalId/reject", (req, res) => {
       approval: record,
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.name || "Error", message: err.message });
+    }
     if (err instanceof ApprovalWorkflowError) {
       return res.status(err.statusCode || 400).json({ error: "Rejection Error", message: err.message });
     }
     return res.status(500).json({ error: "Rejection Failed", message: err.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/remediation/approvals/:approvalId
+ * Privileged operation: deletes an approval record.
+ */
+router.delete(["/approvals/:approvalId", "/:approvalId"], (req, res) => {
+  try {
+    const allowedDeleteRoles = [
+      "admin",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+    ];
+    if (!isRemediationAuthorized(req, allowedDeleteRoles)) {
+      return res.status(403).json({
+        error: "Forbidden",
+        code: "INSUFFICIENT_PERMISSIONS",
+        message: "Access denied. Caller is not authorized to delete remediation records.",
+      });
+    }
+
+    const engine = getDefaultApprovalEngine();
+    const approvalId = req.params.approvalId;
+    const existing = engine.getApproval(approvalId);
+    verifyApprovalTenant(req, existing);
+    engine.deleteApproval(approvalId);
+    return res.status(200).json({
+      success: true,
+      message: `Remediation approval '${approvalId}' deleted successfully.`,
+    });
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.name || "Error", message: err.message });
+    }
+    if (err instanceof ApprovalWorkflowError) {
+      return res.status(err.statusCode || 400).json({ error: "Delete Error", message: err.message });
+    }
+    return res.status(500).json({ error: "Delete Failed", message: err.message });
   }
 });
 

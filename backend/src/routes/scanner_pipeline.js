@@ -28,7 +28,7 @@ function emitScanAudit({ action, status = AUDIT_STATUSES.SUCCESS, scanId, target
         role: req.auth?.role || 'analyst',
         ipAddress: req.ip,
       },
-      tenant: req.tenantContext?.tenantId || req.headers['x-tenant-id'] || 'default',
+      tenant: req.tenantContext?.tenantId || 'default',
       target: { type: 'scan', id: scanId, name: targetName || scanId },
       requestId: req.id || req.headers['x-request-id'],
       result: status,

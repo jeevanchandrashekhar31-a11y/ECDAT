@@ -46,7 +46,7 @@ router.get("/graph", async (req, res, next) => {
       exposure: req.query.exposure,
       search: req.query.search || req.query.q,
     };
-    const data = await buildCryptoRelationshipGraph(filters);
+    const data = await buildCryptoRelationshipGraph(filters, req.tenantContext);
     res.status(200).json(data);
   } catch (err) {
     next(err);
@@ -335,8 +335,8 @@ router.get("/summary", async (req, res, next) => {
               ? Number(((unclassifiedCount / totalAssets) * 100).toFixed(1))
               : 0;
 
-          // 9. Historical Risk Trend (up to 6 recent scans)
-          const trendRows = await db("scans")
+          // 9. Historical Risk Trend (up to 6 recent scans scoped to caller's tenant)
+          let trendQuery = db("scans")
             .select(
               "id",
               "target_name",
@@ -345,7 +345,15 @@ router.get("/summary", async (req, res, next) => {
               "high_count",
               "quantum_risk_count",
               "total_findings",
-            )
+            );
+          if (!isPlatformAdmin) {
+            if (callerTenant) {
+              trendQuery = trendQuery.where("tenant_id", callerTenant);
+            } else {
+              trendQuery = trendQuery.whereRaw("1 = 0");
+            }
+          }
+          const trendRows = await trendQuery
             .orderBy("created_at", "asc")
             .limit(6);
 

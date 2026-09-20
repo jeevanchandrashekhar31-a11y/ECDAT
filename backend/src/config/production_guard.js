@@ -45,7 +45,6 @@ class UnsafeDevelopmentDefaultDetectedError extends InsecureProductionConfigErro
 
 // Blacklist of known development, demo, and test mock credentials
 const KNOWN_INSECURE_DEV_SECRETS = new Set([
-  "ecdat-demo-admin-key-2026",
   "ecdat-dev-master-encryption-key",
   "change-this-local-api-key",
   "change-this-local-postgres-password",

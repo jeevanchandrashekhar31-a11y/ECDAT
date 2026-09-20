@@ -73,12 +73,26 @@ class TenantContext {
         roles = req.auth.roles || (req.auth.role ? [req.auth.role] : ["viewer"]);
         tenantId = req.auth.tenantId || req.auth.tenant_id || "default-tenant";
       }
+    } else {
+      if (req.auth && req.auth.mode === "open") {
+        roles = ["anonymous"];
+      } else if (req.auth && Array.isArray(req.auth.roles)) {
+        roles = req.auth.roles;
+      } else {
+        roles = [];
+      }
     }
 
     const normRoles = roles.map((r) => String(r).toLowerCase().replace(/[-_]/g, " "));
     isPlatformAdmin = normRoles.some(
       (r) => r === "platform administrator" || r === "platform admin" || r === "platform_admin" || r === "superuser"
     );
+
+    // Strict security invariant: Open-mode or unauthenticated requests must NEVER be platform admin or admin
+    if (!req.user && (!req.auth || !req.auth.authenticated)) {
+      isPlatformAdmin = false;
+      roles = roles.filter((r) => r !== "admin" && r !== "platform admin" && r !== "platform administrator");
+    }
 
     return new TenantContext({
       tenantId,
@@ -101,6 +115,25 @@ class TenantContext {
  * 3. Sanitizes body to prevent mass-assignment tenant tampering.
  */
 function tenantIsolationMiddleware(req, res, next) {
+  const rawPath = req.originalUrl || req.path || "";
+  const pathOnly = (req.path || "").toLowerCase();
+  const originalPathOnly = (rawPath.split("?")[0] || "").toLowerCase();
+
+  // Public registration endpoints manage tenant assignment and role assignment server-side
+  const isRegistrationPath =
+    pathOnly === "/api/v1/auth/local/register" ||
+    pathOnly === "/api/v1/auth/register" ||
+    pathOnly === "/auth/local/register" ||
+    pathOnly === "/auth/register" ||
+    originalPathOnly === "/api/v1/auth/local/register" ||
+    originalPathOnly === "/api/v1/auth/register" ||
+    originalPathOnly === "/auth/local/register" ||
+    originalPathOnly === "/auth/register";
+
+  if (isRegistrationPath) {
+    return next();
+  }
+
   const context = TenantContext.fromRequest(req);
   req.tenantContext = context;
 

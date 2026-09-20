@@ -83,7 +83,7 @@ class NetworkScanGuard {
    */
   async validateAndAuthorizeScan(req, options = {}) {
     const callerAuth = req.auth?.user || req.user || req.auth;
-    const tenantId = req.tenantContext?.tenantId || req.body?.tenantId || req.headers?.["x-tenant-id"] || callerAuth?.tenantId || "default";
+    const tenantId = req.tenantContext?.tenantId || callerAuth?.tenantId || "default";
     const rawTarget = req.body?.url || req.body?.target || req.body?.host;
     const rawPort = req.body?.port || 443;
     const authorizedBy = req.body?.authorized_by;

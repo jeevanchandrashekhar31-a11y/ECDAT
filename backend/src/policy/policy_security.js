@@ -128,10 +128,18 @@ class PolicySecurityController {
     if (!actor || typeof actor !== "object") {
       throw new PolicySecurityError("Invalid actor credentials", 401);
     }
-    const role = String(actor.role || "").toLowerCase();
-    if (role !== "admin") {
+    const role = String(actor.role || "").toLowerCase().replace(/[-_]/g, " ");
+    const allowed = [
+      "admin",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+      "secops",
+    ];
+    if (!allowed.includes(role)) {
       throw new PolicySecurityError(
-        `Unauthorized: User '${actor.username || "unknown"}' with role '${role}' is not an authorized policy administrator.`,
+        `Unauthorized: User '${actor.username || "unknown"}' with role '${actor.role}' is not an authorized policy administrator.`,
         403,
       );
     }

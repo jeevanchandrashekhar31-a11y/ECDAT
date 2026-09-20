@@ -129,7 +129,21 @@ router.get("/summary", (req, res) => {
       });
     }
 
-    const summary = defaultAuditService.getSummaryStats();
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId;
+
+    if (req.query.tenantId && !isPlatformAdmin) {
+      if (String(req.query.tenantId).trim().toLowerCase() !== callerTenant) {
+        return res.status(403).json({
+          error: "HorizontalTenantViolation",
+          code: "HORIZONTAL_TENANT_VIOLATION",
+          message: `Cannot view audit summary for foreign tenant '${req.query.tenantId}'`,
+        });
+      }
+    }
+
+    const tenantId = isPlatformAdmin ? (req.query.tenantId || null) : callerTenant;
+    const summary = defaultAuditService.getSummaryStats(tenantId);
     return res.status(200).json(summary);
   } catch (err) {
     return res.status(500).json({
@@ -189,6 +203,7 @@ router.get("/export", (req, res) => {
 /**
  * POST /api/v1/audit/events
  * Records a manual or custom audit event into the ledger.
+ * Tenant assignment is strictly derived from server-side authentication context.
  */
 router.post("/events", async (req, res) => {
   try {
@@ -200,17 +215,21 @@ router.post("/events", async (req, res) => {
       });
     }
 
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId || req.auth?.tenantId || "default";
+    const assignedTenant = (isPlatformAdmin && body.tenantId) ? body.tenantId : callerTenant;
+
     const event = await defaultAuditService.logEvent({
       category: body.category,
       action: body.action,
       actor: {
-        id: req.auth?.userId || req.headers["x-actor-id"] || body.actor?.id || "system",
-        username: req.auth?.username || body.actor?.username || "system",
+        id: req.user?.sub || req.user?.userId || req.auth?.user?.sub || req.auth?.userId || "system",
+        username: req.user?.username || req.auth?.user?.username || req.auth?.username || "system",
         role: req.user?.role || req.auth?.role || req.tenantContext?.roles?.[0] || null,
         ipAddress: req.ip || req.connection?.remoteAddress,
         userAgent: req.headers["user-agent"],
       },
-      tenantId: req.tenantContext?.tenantId || body.tenantId || "default",
+      tenantId: assignedTenant,
       target: body.target,
       status: body.status || AUDIT_STATUSES.SUCCESS,
       details: body.details || {},

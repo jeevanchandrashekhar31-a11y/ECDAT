@@ -63,7 +63,7 @@ describe("Configuration Model & Production Security (Node.js)", () => {
     const insecureProdConfig = {
       NODE_ENV: "production",
       PORT: 5000,
-      ECDAT_API_KEY: "ecdat-demo-admin-key-2026", // default demo key
+      ECDAT_API_KEY: "too-short-key", // insufficient length (< 32 chars)
       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/ecdat", // default credentials
       CORS_ORIGIN: ["http://localhost:3000"], // localhost in prod
       REQUIRE_AUTH_FOR_READS: false, // unauthenticated reads in prod

@@ -10,6 +10,10 @@ const {
 } = require("../../src/services/technical_report_service");
 
 const app = require("../../src/app");
+const config = require("../../src/config");
+if (!config.ECDAT_API_KEY) {
+  config.ECDAT_API_KEY = "test-reports-key-32-chars-long-entropy!!";
+}
 
 describe("Technical Drill-Down Reporting Engine (Phase 26.2)", () => {
   test("Generates report where every finding satisfies all 12 technical dimensions", async () => {
@@ -137,7 +141,7 @@ describe("Technical Drill-Down Reporting Engine (Phase 26.2)", () => {
 
     try {
       const res = await fetch(`http://localhost:${port}/api/v1/reports/technical?limit=5`, {
-        headers: { "X-API-Key": "ecdat-demo-admin-key-2026" },
+        headers: { "X-API-Key": config.ECDAT_API_KEY },
       });
 
       assert.equal(res.status, 200);
@@ -159,7 +163,7 @@ describe("Technical Drill-Down Reporting Engine (Phase 26.2)", () => {
 
     try {
       const res = await fetch(`http://localhost:${port}/api/v1/reports/technical/find_rsa_1024_auth`, {
-        headers: { "X-API-Key": "ecdat-demo-admin-key-2026" },
+        headers: { "X-API-Key": config.ECDAT_API_KEY },
       });
 
       assert.equal(res.status, 200);
@@ -180,7 +184,7 @@ describe("Technical Drill-Down Reporting Engine (Phase 26.2)", () => {
 
     try {
       const res = await fetch(`http://localhost:${port}/api/v1/reports/technical/html`, {
-        headers: { "X-API-Key": "ecdat-demo-admin-key-2026" },
+        headers: { "X-API-Key": config.ECDAT_API_KEY },
       });
 
       assert.equal(res.status, 200);

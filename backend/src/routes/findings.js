@@ -516,23 +516,47 @@ router.post("/:id/suppress", async (req, res, next) => {
     const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
     const callerTenant = req.tenantContext?.tenantId || "default-tenant";
 
-    const scan = getLatestScan(req.tenantContext);
-    if (!scan) {
-      return res.status(404).json({ error: "NotFound", message: "Finding not found." });
+    // 1. Check all in-memory scans to see if finding exists in any tenant
+    let targetScan = null;
+    let finding = null;
+
+    for (const s of require("../services/cbom_ingestion").cbomIngestionService._scans.values()) {
+      const f = (s.classified_findings || []).find(
+        (x) => (x.bom_ref || x.id) === findingId || x.id === findingId
+      );
+      if (f) {
+        finding = f;
+        targetScan = s;
+        break;
+      }
     }
 
-    const finding = (scan.classified_findings || []).find(
-      (f) => (f.bom_ref || f.id) === findingId || f.id === findingId
-    );
-    if (!finding) {
+    // 2. Check DB
+    const connected = await isDbConnected();
+    if (connected && !finding) {
+      try {
+        const row = await db("findings")
+          .join("scans", "findings.scan_id", "scans.id")
+          .where("findings.id", findingId)
+          .select("findings.id", "scans.tenant_id")
+          .first();
+        if (row) {
+          finding = row;
+          targetScan = { tenantId: row.tenant_id };
+        }
+      } catch (_err) {}
+    }
+
+    if (!targetScan || !finding) {
       return res.status(404).json({ error: "NotFound", message: `Finding '${findingId}' not found.` });
     }
 
-    if (!isPlatformAdmin && scan.tenantId && scan.tenantId !== callerTenant) {
+    const findingTenant = targetScan.tenantId || "default-tenant";
+    if (!isPlatformAdmin && findingTenant !== callerTenant) {
       return res.status(403).json({
         error: "TenantBoundaryViolation",
         code: "HORIZONTAL_TENANT_VIOLATION",
-        message: `Cannot modify finding belonging to tenant '${scan.tenantId}'`,
+        message: `Cannot modify finding belonging to tenant '${findingTenant}'`,
       });
     }
 
@@ -540,6 +564,73 @@ router.post("/:id/suppress", async (req, res, next) => {
     finding.suppressionReason = reason;
 
     return res.json({ success: true, findingId, suppressed: true, reason });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * DELETE /api/v1/findings/:id
+ * Deletes a finding verifying caller's tenant boundary.
+ */
+router.delete("/:id", async (req, res, next) => {
+  try {
+    const findingId = req.params.id;
+    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+
+    // 1. Search in-memory scans
+    let targetScan = null;
+    let findingIdx = -1;
+
+    for (const s of require("../services/cbom_ingestion").cbomIngestionService._scans.values()) {
+      const idx = (s.classified_findings || []).findIndex(
+        (x) => (x.bom_ref || x.id) === findingId || x.id === findingId
+      );
+      if (idx !== -1) {
+        findingIdx = idx;
+        targetScan = s;
+        break;
+      }
+    }
+
+    // 2. Search database
+    const connected = await isDbConnected();
+    let dbFindingRow = null;
+    if (connected && findingIdx === -1) {
+      try {
+        dbFindingRow = await db("findings")
+          .join("scans", "findings.scan_id", "scans.id")
+          .where("findings.id", findingId)
+          .select("findings.id", "scans.tenant_id")
+          .first();
+        if (dbFindingRow) {
+          targetScan = { tenantId: dbFindingRow.tenant_id };
+        }
+      } catch (_err) {}
+    }
+
+    if (!targetScan || (findingIdx === -1 && !dbFindingRow)) {
+      return res.status(404).json({ error: "NotFound", message: `Finding '${findingId}' not found.` });
+    }
+
+    const findingTenant = targetScan.tenantId || "default-tenant";
+    if (!isPlatformAdmin && findingTenant !== callerTenant) {
+      return res.status(403).json({
+        error: "TenantBoundaryViolation",
+        code: "HORIZONTAL_TENANT_VIOLATION",
+        message: `Cannot delete finding belonging to tenant '${findingTenant}'`,
+      });
+    }
+
+    if (findingIdx !== -1 && targetScan.classified_findings) {
+      targetScan.classified_findings.splice(findingIdx, 1);
+    }
+    if (connected && dbFindingRow) {
+      await db("findings").where({ id: dbFindingRow.id }).del().catch(() => {});
+    }
+
+    return res.json({ success: true, message: `Finding '${findingId}' deleted successfully.` });
   } catch (err) {
     next(err);
   }

@@ -274,26 +274,7 @@ function apiKeyAuthMiddleware(req, res, next) {
     return next();
   }
 
-  if (!configuredKey) {
-    return res.status(503).json({
-      error: "Service Misconfigured",
-      code: "AUTH_NOT_CONFIGURED",
-      message: "Server authentication is not configured. Refusing all requests.",
-    });
-  }
-
-
-  // 3. Scanner API endpoints MUST be authenticated by default
-  // No blanket startsWith("/scan/") or unauthenticated pipeline bypasses permitted
-  if (isScannerRoute(pathOnly) || isScannerRoute(originalPathOnly)) {
-    return res.status(401).json({
-      error: "Unauthorized",
-      message:
-        "Authentication required for scanner endpoints. Please provide a valid API key via X-API-Key header or Authorization: Bearer <key>.",
-    });
-  }
-
-  // 4. Public auth endpoints (login, registration, CSRF, etc.)
+  // 3. Public auth endpoints (login, registration, CSRF, etc.)
   const isPublicAuthPath =
     publicAuthPaths.includes(pathOnly) ||
     publicAuthPaths.includes(originalPathOnly);
@@ -303,13 +284,43 @@ function apiKeyAuthMiddleware(req, res, next) {
     return next();
   }
 
-  // 5. All write routes (POST, PUT, PATCH, DELETE) require authentication
-  const method = req.method.toUpperCase();
-  const isWriteRoute = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
-  const isProtectedRead =
-    config.REQUIRE_AUTH_FOR_READS && ["GET", "HEAD"].includes(method);
+  // Extension point: AUTH_MODE must be explicitly configured; missing auth never triggers demo bypass
+  const authMode = config.AUTH_MODE || "production";
+  if (authMode !== "production" && authMode !== "demo") {
+    return res.status(500).json({
+      error: "Invalid AUTH_MODE configuration.",
+      code: "AUTH_CONFIG_ERROR",
+    });
+  }
 
-  if (isWriteRoute || isProtectedRead) {
+  if (!configuredKey) {
+    return res.status(401).json({
+      error: "Authentication system down. Access denied.",
+      code: "AUTHENTICATION_REQUIRED",
+      message: "Server authentication is not configured. Refusing all requests.",
+    });
+  }
+
+  // 4. Scanner API endpoints MUST be authenticated by default
+  // No blanket startsWith("/scan/") or unauthenticated pipeline bypasses permitted
+  if (isScannerRoute(pathOnly) || isScannerRoute(originalPathOnly)) {
+    return res.status(401).json({
+      error: "Unauthorized",
+      message:
+        "Authentication required for scanner endpoints. Please provide a valid API key via X-API-Key header or Authorization: Bearer <key>.",
+    });
+  }
+
+  // 5. All protected routes strictly require authentication
+  const method = req.method.toUpperCase();
+  const isPublicMetrics =
+    (pathOnly === "/metrics" ||
+      originalPathOnly === "/metrics" ||
+      pathOnly === "/api/v1/metrics" ||
+      originalPathOnly === "/api/v1/metrics") &&
+    ["GET", "HEAD"].includes(method);
+
+  if (!isPublicMetrics) {
     try {
       const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
       defaultAuditService
@@ -335,7 +346,7 @@ function apiKeyAuthMiddleware(req, res, next) {
     });
   }
 
-  // 6. Open read routes (GET, HEAD) when REQUIRE_AUTH_FOR_READS=false
+  // 6. Public metrics read
   req.auth = { authenticated: false, role: "anonymous", roles: [] };
   next();
 }
@@ -345,6 +356,12 @@ function apiKeyAuthMiddleware(req, res, next) {
  */
 function requireApiKey(req, res, next) {
   const configuredKey = config.ECDAT_API_KEY;
+  if (!configuredKey) {
+    return res.status(401).json({
+      error: "Authentication system down. Access denied.",
+      code: "AUTHENTICATION_REQUIRED",
+    });
+  }
   const providedKey = extractApiKey(req);
   if (!providedKey) {
     return res.status(401).json({

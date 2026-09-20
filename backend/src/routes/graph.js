@@ -22,7 +22,7 @@ router.get("/", async (req, res, next) => {
       search: req.query.search || req.query.q,
     };
 
-    const graphData = await buildCryptoRelationshipGraph(filters);
+    const graphData = await buildCryptoRelationshipGraph(filters, req.tenantContext);
     res.status(200).json(graphData);
   } catch (err) {
     next(err);

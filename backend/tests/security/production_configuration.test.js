@@ -32,7 +32,7 @@ describe("Production Security Configuration Guard (Phase 24.3)", () => {
     const devConfig = {
       NODE_ENV: "development",
       PORT: 5000,
-      ECDAT_API_KEY: "ecdat-demo-admin-key-2026",
+      ECDAT_API_KEY: "dev-test-key-for-local-testing-only",
     };
     const res = validateProductionSecurity(devConfig, { NODE_ENV: "development" });
     assert.equal(res.isProduction, false);
@@ -65,7 +65,7 @@ describe("Production Security Configuration Guard (Phase 24.3)", () => {
   test("Unsafe demo API key is rejected in production", () => {
     const config = {
       ...VALID_PROD_CONFIG,
-      ECDAT_API_KEY: "ecdat-demo-admin-key-2026",
+      ECDAT_API_KEY: "change-this-local-api-key",
     };
 
     assert.throws(

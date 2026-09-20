@@ -10,6 +10,10 @@ const {
 } = require("../../src/services/executive_report_service");
 
 const app = require("../../src/app");
+const config = require("../../src/config");
+if (!config.ECDAT_API_KEY) {
+  config.ECDAT_API_KEY = "test-exec-reports-key-32-chars-long-entropy!!";
+}
 
 describe("Enterprise Executive Reporting Engine (Phase 26.1)", () => {
   test("Generates comprehensive executive report covering all 9 domains", async () => {
@@ -112,7 +116,7 @@ describe("Enterprise Executive Reporting Engine (Phase 26.1)", () => {
 
     try {
       const res = await fetch(`http://localhost:${port}/api/v1/reports/executive`, {
-        headers: { "X-API-Key": "ecdat-demo-admin-key-2026" },
+        headers: { "X-API-Key": config.ECDAT_API_KEY },
       });
 
       assert.equal(res.status, 200);
@@ -134,7 +138,7 @@ describe("Enterprise Executive Reporting Engine (Phase 26.1)", () => {
 
     try {
       const res = await fetch(`http://localhost:${port}/api/v1/reports/executive/html`, {
-        headers: { "X-API-Key": "ecdat-demo-admin-key-2026" },
+        headers: { "X-API-Key": config.ECDAT_API_KEY },
       });
 
       assert.equal(res.status, 200);
@@ -153,7 +157,7 @@ describe("Enterprise Executive Reporting Engine (Phase 26.1)", () => {
 
     try {
       const res = await fetch(`http://localhost:${port}/api/v1/reports/executive/export`, {
-        headers: { "X-API-Key": "ecdat-demo-admin-key-2026" },
+        headers: { "X-API-Key": config.ECDAT_API_KEY },
       });
 
       assert.equal(res.status, 200);

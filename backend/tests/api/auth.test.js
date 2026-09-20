@@ -2,6 +2,9 @@ const test = require("node:test");
 const assert = require("node:assert");
 const app = require("../../src/app");
 const config = require("../../src/config");
+if (!config.ECDAT_API_KEY) {
+  config.ECDAT_API_KEY = "test-auth-api-key-32-chars-long-entropy!!";
+}
 const { safeCompare, extractApiKey } = require("../../src/middleware/auth");
 const { db } = require("../../src/db/connection");
 
@@ -148,52 +151,37 @@ test("Auth API - Authorized upload via Authorization: Bearer header returns 201"
   });
 });
 
-test("Auth API - Read routes and /health are accessible without API key by default", async () => {
+test("Auth API - Health check is public, but protected tenant routes require authentication (fail-closed)", async () => {
   await withServer(async (baseUrl) => {
-    // 1. Health check is always public
+    // 1. Health check is public
     const healthRes = await fetch(`${baseUrl}/health`);
     assert.strictEqual(healthRes.status, 200);
 
-    // 2. Dashboard summary is publicly readable by default
+    const apiHealthRes = await fetch(`${baseUrl}/api/v1/health`);
+    assert.strictEqual(apiHealthRes.status, 200);
+
+    // 2. Protected tenant routes without authentication MUST fail with 401
     const dashRes = await fetch(`${baseUrl}/api/v1/dashboard/summary`);
-    assert.strictEqual(dashRes.status, 200);
+    assert.strictEqual(dashRes.status, 401);
 
-    // 3. Assets query is publicly readable by default
     const assetsRes = await fetch(`${baseUrl}/api/v1/assets`);
-    assert.strictEqual(assetsRes.status, 200);
-  });
-});
+    assert.strictEqual(assetsRes.status, 401);
 
-test("Auth API - Read routes are protected when REQUIRE_AUTH_FOR_READS is enabled", async () => {
-  // Temporarily enable REQUIRE_AUTH_FOR_READS
-  config.REQUIRE_AUTH_FOR_READS = true;
+    const findingsRes = await fetch(`${baseUrl}/api/v1/findings`);
+    assert.strictEqual(findingsRes.status, 401);
 
-  try {
-    await withServer(async (baseUrl) => {
-      // 1. Read without key should now fail with 401
-      const resWithoutKey = await fetch(`${baseUrl}/api/v1/assets`);
-      assert.strictEqual(resWithoutKey.status, 401);
-
-      // 2. Read with invalid key should fail with 403
-      const resWithBadKey = await fetch(`${baseUrl}/api/v1/assets`, {
-        headers: { "X-API-Key": "wrong-key" },
-      });
-      assert.strictEqual(resWithBadKey.status, 403);
-
-      // 3. Read with valid key should succeed with 200
-      const resWithKey = await fetch(`${baseUrl}/api/v1/assets`, {
-        headers: { "X-API-Key": config.ECDAT_API_KEY },
-      });
-      assert.strictEqual(resWithKey.status, 200);
-
-      // 4. /health must still remain public
-      const healthRes = await fetch(`${baseUrl}/health`);
-      assert.strictEqual(healthRes.status, 200);
+    // 3. Read with valid key should succeed with 200
+    const resWithKey = await fetch(`${baseUrl}/api/v1/assets`, {
+      headers: { "X-API-Key": config.ECDAT_API_KEY },
     });
-  } finally {
-    // Restore default
-    config.REQUIRE_AUTH_FOR_READS = false;
-  }
+    assert.strictEqual(resWithKey.status, 200);
+
+    // 4. Read with invalid key should fail with 403
+    const resWithBadKey = await fetch(`${baseUrl}/api/v1/assets`, {
+      headers: { "X-API-Key": "wrong-key" },
+    });
+    assert.strictEqual(resWithBadKey.status, 403);
+  });
 });
 
 test("Auth API - Network scan & operational scan routes require valid API key and reject invalid credentials with 403", async () => {

@@ -287,41 +287,47 @@ const PRIVILEGED_ROLE_NAMES = new Set([
 function detectPrivilegeEscalationAttempt(body = {}) {
   const violations = [];
 
-  // 1. Check roles / role
-  const rawRoles = body.roles !== undefined ? body.roles : body.role;
-  if (rawRoles !== undefined && rawRoles !== null) {
-    const roleList = Array.isArray(rawRoles) ? rawRoles : [rawRoles];
-    for (const r of roleList) {
-      if (typeof r !== "string") {
-        violations.push(`Invalid role specification: ${typeof r}`);
-        continue;
-      }
-      const norm = r.trim().toLowerCase().replace(/[-_]/g, " ");
-      const raw = r.trim().toLowerCase();
-      if (
-        PRIVILEGED_ROLE_NAMES.has(raw) ||
-        PRIVILEGED_ROLE_NAMES.has(norm) ||
-        raw === "*" ||
-        (norm !== "viewer" &&
-          norm !== "default user" &&
-          norm !== "read only" &&
-          norm !== "reader" &&
-          norm !== "user" &&
-          norm !== "")
-      ) {
-        violations.push(`Privileged role assignment attempted: '${r}'`);
+  // 1. Check roles / role / userRole / user_role
+  const roleFields = ["roles", "role", "userRole", "user_role"];
+  for (const field of roleFields) {
+    if (body[field] !== undefined && body[field] !== null) {
+      const rawVal = body[field];
+      const roleList = Array.isArray(rawVal) ? rawVal : [rawVal];
+      for (const r of roleList) {
+        if (typeof r !== "string") {
+          violations.push(`Invalid role specification in '${field}': ${typeof r}`);
+          continue;
+        }
+        const norm = r.trim().toLowerCase().replace(/[-_]/g, " ");
+        const raw = r.trim().toLowerCase();
+        if (
+          PRIVILEGED_ROLE_NAMES.has(raw) ||
+          PRIVILEGED_ROLE_NAMES.has(norm) ||
+          raw === "*" ||
+          (norm !== "viewer" &&
+            norm !== "default user" &&
+            norm !== "read only" &&
+            norm !== "reader" &&
+            norm !== "user" &&
+            norm !== "")
+        ) {
+          violations.push(`Privileged role assignment attempted in '${field}': '${r}'`);
+        }
       }
     }
   }
 
-  // 2. Check tenantId
-  if (
-    body.tenantId !== undefined &&
-    body.tenantId !== null &&
-    body.tenantId !== "" &&
-    body.tenantId !== "default-tenant"
-  ) {
-    violations.push(`Arbitrary tenant selection attempted: '${body.tenantId}'`);
+  // 2. Check tenant selection (tenantId, tenant_id, tenant)
+  const tenantFields = ["tenantId", "tenant_id", "tenant"];
+  for (const field of tenantFields) {
+    if (
+      body[field] !== undefined &&
+      body[field] !== null &&
+      body[field] !== "" &&
+      body[field] !== "default-tenant"
+    ) {
+      violations.push(`Arbitrary tenant selection attempted in '${field}': '${body[field]}'`);
+    }
   }
 
   // 3. Check permissions & privileges
@@ -336,9 +342,25 @@ function detectPrivilegeEscalationAttempt(body = {}) {
     violations.push(`Privilege assignment attempted: ${JSON.stringify(body.privileges)}`);
   }
 
-  // 4. Check system ownership
-  if (body.systemOwnership || body.isOwner || body.owner || body.isAdmin) {
-    violations.push("System ownership assignment attempted");
+  // 4. Check admin, platform admin, and system ownership flags
+  const adminFlags = [
+    "isPlatformAdmin",
+    "platformAdmin",
+    "is_platform_admin",
+    "isAdmin",
+    "is_admin",
+    "admin",
+    "isSuperuser",
+    "is_superuser",
+    "superuser",
+    "systemOwnership",
+    "isOwner",
+    "owner",
+  ];
+  for (const flag of adminFlags) {
+    if (body[flag] !== undefined && body[flag] !== null && body[flag] !== false) {
+      violations.push(`Privileged administrative flag attempted: '${flag}'`);
+    }
   }
 
   return violations;
@@ -350,13 +372,17 @@ function detectPrivilegeEscalationAttempt(body = {}) {
 function handlePublicRegistration(req, res) {
   try {
     const body = req.body || {};
-    const { username, email, password } = body;
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: "Missing required fields: 'username', 'email', and 'password'" });
+    let { username, email, password } = body;
+    if (!username || !password) {
+      return res.status(400).json({ error: "Missing required fields: 'username' and 'password'" });
     }
 
-    if (typeof username !== "string" || typeof email !== "string" || typeof password !== "string") {
-      return res.status(400).json({ error: "ValidationError", message: "Username, email, and password must be strings" });
+    if (typeof username !== "string" || typeof password !== "string") {
+      return res.status(400).json({ error: "ValidationError", message: "Username and password must be strings" });
+    }
+
+    if (email !== undefined && email !== null && typeof email !== "string") {
+      return res.status(400).json({ error: "ValidationError", message: "Email must be a string" });
     }
 
     const uCheck = validateLength(username, { min: 3, max: 64, fieldName: "username" });
@@ -365,8 +391,12 @@ function handlePublicRegistration(req, res) {
     const pCheck = validateLength(password, { min: 1, max: 128, fieldName: "password" });
     if (!pCheck.valid) return res.status(400).json({ error: "ValidationError", message: pCheck.error });
 
-    const eCheck = validateLength(email, { min: 5, max: 254, fieldName: "email" });
-    if (!eCheck.valid) return res.status(400).json({ error: "ValidationError", message: eCheck.error });
+    if (email) {
+      const eCheck = validateLength(email, { min: 5, max: 254, fieldName: "email" });
+      if (!eCheck.valid) return res.status(400).json({ error: "ValidationError", message: eCheck.error });
+    } else {
+      email = `${username.trim().toLowerCase()}@ecdat.local`;
+    }
 
     const violations = detectPrivilegeEscalationAttempt(body);
     const safeIgnoreRequested =
@@ -441,7 +471,10 @@ function handlePublicRegistration(req, res) {
 
     return res.status(201).json({
       success: true,
-      user: newUser,
+      user: {
+        ...newUser,
+        role: newUser.roles?.[0] || "viewer",
+      },
     });
   } catch (err) {
     if (err instanceof PasswordPolicyError) {
@@ -810,6 +843,7 @@ router.post("/local/login", RATE_LIMITS.login.middleware(), (req, res) => {
       name: authResult.user.username,
       roles: authResult.user.roles,
       provider: "local_auth",
+      customClaims: { tenantId: authResult.user.tenantId || "default-tenant" },
     });
 
     const csrfToken = generateCsrfToken();
@@ -1368,6 +1402,7 @@ router.post("/mfa/verify", RATE_LIMITS.mfa.middleware(), (req, res) => {
       name: challengeUser.username,
       roles: challengeUser.roles,
       provider: "local_auth",
+      customClaims: { tenantId: challengeUser.tenantId || "default-tenant" },
     });
 
     const csrfToken = generateCsrfToken();
@@ -1432,6 +1467,7 @@ router.post("/cookie/login", RATE_LIMITS.login.middleware(), (req, res) => {
       name: authResult.user.username,
       roles: authResult.user.roles,
       provider: "local_auth",
+      customClaims: { tenantId: authResult.user.tenantId || "default-tenant" },
     });
 
     const csrfToken = generateCsrfToken();

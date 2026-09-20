@@ -161,9 +161,9 @@ router.post("/register", async (req, res) => {
       category: AUDIT_CATEGORIES.INTEGRATION_CHANGE,
       action: AUDIT_ACTIONS.INTEGRATION_ADD,
       actor: {
-        id: req.auth?.role || "admin",
-        username: req.headers["x-actor-username"] || req.auth?.role || "admin",
-        role: req.auth?.role || "admin",
+        id: req.user?.sub || req.user?.userId || req.auth?.user?.sub || req.auth?.userId || "admin",
+        username: req.user?.username || req.auth?.user?.username || req.auth?.username || "admin",
+        role: req.user?.role || req.auth?.role || req.tenantContext?.roles?.[0] || "admin",
         ipAddress: req.ip,
       },
       tenantId: req.tenantContext?.tenantId || "default",

@@ -35,6 +35,10 @@ const {
 } = require("../../src/security");
 
 const app = require("../../src/app");
+const config = require("../../src/config");
+if (!config.ECDAT_API_KEY) {
+  config.ECDAT_API_KEY = "test-dataprotect-key-32-chars-long-entropy!!";
+}
 
 // Synthetic test dummy keys (NOT real credentials)
 const FAKE_RSA_PRIVATE_KEY = `-----BEGIN RSA PRIVATE KEY-----
@@ -536,7 +540,7 @@ describe("Phase 16.1 — Security REST API Endpoints", () => {
     await withServer(async (baseUrl) => {
       const res = await fetch(`${baseUrl}/api/v1/security/data-classification`, {
         method: "GET",
-        headers: { "x-api-key": "ecdat-demo-admin-key-2026" },
+        headers: { "x-api-key": config.ECDAT_API_KEY },
       });
       assert.strictEqual(res.status, 200);
       const body = await res.json();
@@ -550,7 +554,7 @@ describe("Phase 16.1 — Security REST API Endpoints", () => {
       const res = await fetch(`${baseUrl}/api/v1/security/data-classification/classify`, {
         method: "POST",
         headers: {
-          "x-api-key": "ecdat-demo-admin-key-2026",
+          "x-api-key": config.ECDAT_API_KEY,
           "content-type": "application/json",
         },
         body: JSON.stringify({
@@ -569,7 +573,7 @@ describe("Phase 16.1 — Security REST API Endpoints", () => {
     await withServer(async (baseUrl) => {
       const res = await fetch(`${baseUrl}/api/v1/security/documented-secret-exceptions`, {
         method: "GET",
-        headers: { "x-api-key": "ecdat-demo-admin-key-2026" },
+        headers: { "x-api-key": config.ECDAT_API_KEY },
       });
       assert.strictEqual(res.status, 200);
       const body = await res.json();
@@ -584,7 +588,7 @@ describe("Phase 16.1 — Security REST API Endpoints", () => {
       const badRes = await fetch(`${baseUrl}/api/v1/security/validate-secret-storage`, {
         method: "POST",
         headers: {
-          "x-api-key": "ecdat-demo-admin-key-2026",
+          "x-api-key": config.ECDAT_API_KEY,
           "content-type": "application/json",
         },
         body: JSON.stringify({
@@ -603,7 +607,7 @@ describe("Phase 16.1 — Security REST API Endpoints", () => {
       const goodRes = await fetch(`${baseUrl}/api/v1/security/validate-secret-storage`, {
         method: "POST",
         headers: {
-          "x-api-key": "ecdat-demo-admin-key-2026",
+          "x-api-key": config.ECDAT_API_KEY,
           "content-type": "application/json",
         },
         body: JSON.stringify({
@@ -628,7 +632,7 @@ describe("Phase 16.1 — Security REST API Endpoints", () => {
       const encRes = await fetch(`${baseUrl}/api/v1/security/encrypt-at-rest`, {
         method: "POST",
         headers: {
-          "x-api-key": "ecdat-demo-admin-key-2026",
+          "x-api-key": config.ECDAT_API_KEY,
           "content-type": "application/json",
         },
         body: JSON.stringify({ plaintext, aad: "connector-1" }),
@@ -640,7 +644,7 @@ describe("Phase 16.1 — Security REST API Endpoints", () => {
       const decRes = await fetch(`${baseUrl}/api/v1/security/decrypt-at-rest`, {
         method: "POST",
         headers: {
-          "x-api-key": "ecdat-demo-admin-key-2026",
+          "x-api-key": config.ECDAT_API_KEY,
           "content-type": "application/json",
         },
         body: JSON.stringify({ ciphertext: encBody.ciphertext, aad: "connector-1" }),
@@ -655,7 +659,7 @@ describe("Phase 16.1 — Security REST API Endpoints", () => {
     await withServer(async (baseUrl) => {
       const res = await fetch(`${baseUrl}/api/v1/security/transit-status`, {
         method: "GET",
-        headers: { "x-api-key": "ecdat-demo-admin-key-2026" },
+        headers: { "x-api-key": config.ECDAT_API_KEY },
       });
       assert.strictEqual(res.status, 200);
       const body = await res.json();

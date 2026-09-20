@@ -260,6 +260,7 @@ class LocalAuthManager {
       userId: userRecord.userId,
       username: userRecord.username,
       email: userRecord.email,
+      role: userRecord.roles[0] || "viewer",
       roles: userRecord.roles,
       tenantId: userRecord.tenantId,
     };

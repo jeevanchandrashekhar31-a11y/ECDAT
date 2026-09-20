@@ -167,7 +167,15 @@ class CertificateInventory {
       }
     }
 
+    const tenantId =
+      options.tenantId ||
+      certData.tenantId ||
+      (options.tenantContext && options.tenantContext.tenantId) ||
+      "default-tenant";
+
     const item = {
+      tenant_id: tenantId,
+      tenantId: tenantId,
       fingerprint_sha256: fp,
       serial_number: String(certData.serial_number || certData.serialNumber || ""),
       subject: certData.subjectName || certData.subject || "CN=unknown",
@@ -338,13 +346,26 @@ class CertificateInventory {
     return inconsistencies;
   }
 
-  get(fingerprint) {
-    return this.inventory.get(String(fingerprint).toLowerCase()) || null;
+  get(fingerprint, tenantContext = null) {
+    const item = this.inventory.get(String(fingerprint).toLowerCase()) || null;
+    if (!item) return null;
+    if (tenantContext && !tenantContext.isPlatformAdmin) {
+      const callerTenant = tenantContext.tenantId || "default-tenant";
+      if (item.tenantId && item.tenantId !== callerTenant) {
+        return null;
+      }
+    }
+    return item;
   }
 
-  list(filters = {}) {
+  list(filters = {}, tenantContext = null) {
     this.detectInconsistentDeployments();
     let items = Array.from(this.inventory.values());
+
+    if (tenantContext && !tenantContext.isPlatformAdmin) {
+      const callerTenant = tenantContext.tenantId || "default-tenant";
+      items = items.filter((i) => (i.tenantId || "default-tenant") === callerTenant);
+    }
 
     if (filters.environment) {
       items = items.filter((i) => i.environment === filters.environment);
@@ -368,10 +389,17 @@ class CertificateInventory {
     return items;
   }
 
-  getSummary() {
+  getSummary(tenantContext = null) {
     this.detectInconsistentDeployments();
+    let items = Array.from(this.inventory.values());
+
+    if (tenantContext && !tenantContext.isPlatformAdmin) {
+      const callerTenant = tenantContext.tenantId || "default-tenant";
+      items = items.filter((i) => (i.tenantId || "default-tenant") === callerTenant);
+    }
+
     const summary = {
-      total_certificates: this.inventory.size,
+      total_certificates: items.length,
       renewal_states: {
         [RenewalState.OK]: 0,
         [RenewalState.EXPIRING_SOON]: 0,
@@ -391,7 +419,7 @@ class CertificateInventory {
       environments: {},
     };
 
-    for (const item of this.inventory.values()) {
+    for (const item of items) {
       summary.renewal_states[item.renewal_state] =
         (summary.renewal_states[item.renewal_state] || 0) + 1;
       summary.environments[item.environment] =

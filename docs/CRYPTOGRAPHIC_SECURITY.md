@@ -95,8 +95,7 @@ In Python, constant-time verification is enforced via `hmac.compare_digest()`.
 
 ### 9. Secure Key Storage
 - **Zero Plaintext Storage**: Master encryption keys, database passwords, and API secrets are never committed to git repositories or stored in cleartext.
-- **Runtime Injection**: Secrets are injected strictly via environment variables (`DATA_ENCRYPTION_KEY`, `AUDIT_HMAC_SECRET`, `JWT_SECRET`) or external KMS envelope encryption (AWS KMS, Google Cloud KMS, HashiCorp Vault).
-- **Filesystem Permissions**: The `.keys/` directory stores asymmetric public verification keys (`ecdat_signing_pub.pem`), with private signing keys restricted to secure build environments.
+- **Verification Keys & Environment Injection**: Asymmetric release verification public keys are stored in `config/ed25519_release_public.pem`. Private signing keys are never stored on disk in the repository; they are strictly injected in secure build environments via `ECDAT_SIGNING_KEY_PEM` or `ECDAT_SIGNING_KEY_PATH`. The `.keys/` directory is strictly gitignored and excluded from distributions.
 
 ### 10. Zeroization Where Practical
 In-memory plaintexts, raw keys, and decrypted credentials are wiped immediately after use:

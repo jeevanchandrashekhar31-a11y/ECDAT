@@ -21,14 +21,15 @@ function startServer() {
     process.exit(1);
   }
 
-  // 2. Initialize default local user if empty
+  // 2. Initialize default local admin only if explicitly configured via environment variable
   try {
     const { defaultLocalAuthManager } = require("./identity/password_auth");
-    if (!defaultLocalAuthManager.getUser("admin")) {
+    const initialAdminPass = process.env.INITIAL_ADMIN_PASSWORD;
+    if (initialAdminPass && !defaultLocalAuthManager.getUser("admin")) {
       defaultLocalAuthManager.registerUser({
         username: "admin",
         email: "admin@ecdat.local",
-        password: "ComplexSecurePass2026!",
+        password: initialAdminPass,
         roles: ["admin"],
         tenantId: "default-tenant",
       });

@@ -537,3 +537,176 @@ test("Acceptance Condition: An unauthenticated request can NEVER create an accou
     }
   });
 });
+
+test("P0 — Comprehensive Registration Authorization Invariants (7 Mandated Scenarios)", async (t) => {
+  await withServer(async (baseUrl) => {
+    // 1. Normal registration (both with email and without email)
+    await t.test("Scenario 1: Normal registration produces lowest-privilege user in default tenant", async () => {
+      // 1a. Normal registration with email
+      const res1 = await fetch(`${baseUrl}/api/v1/auth/local/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "legit_user_01",
+          email: "legit_user_01@example.com",
+          password: "LegitimateUserPass2026!",
+        }),
+      });
+      assert.equal(res1.status, 201);
+      const data1 = await res1.json();
+      assert.equal(data1.success, true);
+      assert.equal(data1.user.username, "legit_user_01");
+      assert.deepEqual(data1.user.roles, ["viewer"]);
+      assert.equal(data1.user.role, "viewer");
+      assert.equal(data1.user.tenantId, "default-tenant");
+
+      // 1b. Normal registration with only username and password (email omitted)
+      const res1b = await fetch(`${baseUrl}/api/v1/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "legit_user_no_email",
+          password: "LegitimateUserPass2026!",
+        }),
+      });
+      assert.equal(res1b.status, 201);
+      const data1b = await res1b.json();
+      assert.equal(data1b.success, true);
+      assert.deepEqual(data1b.user.roles, ["viewer"]);
+      assert.equal(data1b.user.role, "viewer");
+      assert.equal(data1b.user.tenantId, "default-tenant");
+    });
+
+    // 2. Registration with role=admin
+    await t.test("Scenario 2: Registration with role=admin is rejected or safe-ignored to viewer", async () => {
+      // Fail-closed rejection
+      const res2 = await fetch(`${baseUrl}/api/v1/auth/local/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "attacker_role_admin",
+          password: "AttackerPassword2026!",
+          role: "admin",
+        }),
+      });
+      assert.equal(res2.status, 400);
+      assert.ok(!defaultLocalAuthManager.getUser("attacker_role_admin"));
+
+      // Safe-ignore mode produces strictly viewer
+      const res2Safe = await fetch(`${baseUrl}/api/v1/auth/local/register?safe_ignore=true`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "safe_role_admin",
+          password: "AttackerPassword2026!",
+          role: "admin",
+        }),
+      });
+      assert.equal(res2Safe.status, 201);
+      const data2Safe = await res2Safe.json();
+      assert.deepEqual(data2Safe.user.roles, ["viewer"]);
+      assert.equal(data2Safe.user.role, "viewer");
+      assert.notEqual(data2Safe.user.role, "admin");
+    });
+
+    // 3. Registration with roles=["admin"]
+    await t.test("Scenario 3: Registration with roles=['admin'] is rejected or safe-ignored to viewer", async () => {
+      const res3 = await fetch(`${baseUrl}/api/v1/auth/local/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "attacker_roles_admin",
+          password: "AttackerPassword2026!",
+          roles: ["admin"],
+        }),
+      });
+      assert.equal(res3.status, 400);
+      assert.ok(!defaultLocalAuthManager.getUser("attacker_roles_admin"));
+    });
+
+    // 4. Registration with isAdmin=true
+    await t.test("Scenario 4: Registration with isAdmin=true is rejected or safe-ignored to viewer", async () => {
+      const res4 = await fetch(`${baseUrl}/api/v1/auth/local/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "attacker_is_admin",
+          password: "AttackerPassword2026!",
+          isAdmin: true,
+        }),
+      });
+      assert.equal(res4.status, 400);
+      assert.ok(!defaultLocalAuthManager.getUser("attacker_is_admin"));
+    });
+
+    // 5. Registration with isPlatformAdmin=true
+    await t.test("Scenario 5: Registration with isPlatformAdmin=true is rejected or safe-ignored to viewer", async () => {
+      const res5 = await fetch(`${baseUrl}/api/v1/auth/local/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "attacker_is_platform_admin",
+          password: "AttackerPassword2026!",
+          isPlatformAdmin: true,
+        }),
+      });
+      assert.equal(res5.status, 400);
+      assert.ok(!defaultLocalAuthManager.getUser("attacker_is_platform_admin"));
+    });
+
+    // 6. Registration with arbitrary tenantId
+    await t.test("Scenario 6: Registration with arbitrary tenantId is rejected or safe-ignored to default tenant", async () => {
+      const res6 = await fetch(`${baseUrl}/api/v1/auth/local/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "attacker_arbitrary_tenant",
+          password: "AttackerPassword2026!",
+          tenantId: "rogue-enterprise-tenant-777",
+        }),
+      });
+      assert.equal(res6.status, 400);
+      assert.ok(!defaultLocalAuthManager.getUser("attacker_arbitrary_tenant"));
+
+      // Safe-ignore mode clamps tenant to default-tenant
+      const res6Safe = await fetch(`${baseUrl}/api/v1/auth/local/register?safe_ignore=true`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "safe_arbitrary_tenant",
+          password: "AttackerPassword2026!",
+          tenantId: "rogue-enterprise-tenant-777",
+        }),
+      });
+      assert.equal(res6Safe.status, 201);
+      const data6Safe = await res6Safe.json();
+      assert.equal(data6Safe.user.tenantId, "default-tenant");
+      assert.notEqual(data6Safe.user.tenantId, "rogue-enterprise-tenant-777");
+    });
+
+    // 7. Registration attempting to combine all privilege fields
+    await t.test("Scenario 7: Registration combining all privilege fields is rejected", async () => {
+      const res7 = await fetch(`${baseUrl}/api/v1/auth/local/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "attacker_combined_exploit",
+          password: "AttackerPassword2026!",
+          role: "admin",
+          roles: ["platform administrator", "admin"],
+          isAdmin: true,
+          isPlatformAdmin: true,
+          tenantId: "evil-foreign-tenant",
+          permissions: ["*"],
+          privileges: ["root"],
+          systemOwnership: true,
+        }),
+      });
+      assert.equal(res7.status, 400);
+      const data7 = await res7.json();
+      assert.equal(data7.error, "PrivilegeEscalationForbidden");
+      assert.ok(data7.violations.length >= 4, "Must identify multiple privilege escalation violations");
+      assert.ok(!defaultLocalAuthManager.getUser("attacker_combined_exploit"));
+    });
+  });
+});

@@ -6,7 +6,9 @@ __pycache__/
 .env.*
 !.env.example
 !.env.clean.example
+!backend/.env.example
 !docker/.env.example
+!frontend/.env.example
 *.sarif
 *.pem
 !config/ed25519_release_public.pem

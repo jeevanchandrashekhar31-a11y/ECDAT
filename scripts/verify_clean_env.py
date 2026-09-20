@@ -126,6 +126,16 @@ def build_clean_environment(sanitized_config_path: Path) -> Tuple[Dict[str, str]
     clean_env["PYTHONUNBUFFERED"] = "1"
     clean_env["NODE_TEST_CONTEXT"] = "true"
 
+    # Ephemeral in-memory signing key for hermetic release artifact signing
+    from cryptography.hazmat.primitives.asymmetric import ed25519
+    from cryptography.hazmat.primitives import serialization
+    clean_signing_key = ed25519.Ed25519PrivateKey.generate()
+    clean_env["ECDAT_SIGNING_KEY_PEM"] = clean_signing_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode("utf-8")
+
     return clean_env, stripped_vars
 
 

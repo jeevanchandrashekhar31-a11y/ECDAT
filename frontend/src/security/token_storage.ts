@@ -122,10 +122,48 @@ class MemoryTokenStore {
 export const memoryTokenStore = new MemoryTokenStore();
 
 /**
+/**
+ * Scans sessionStorage and purges any keys matching sensitive credential patterns.
+ * Returns the count of purged items.
+ */
+export function purgeSessionStorageSecrets(): number {
+  if (typeof window === 'undefined' || !window.sessionStorage) {
+    return 0;
+  }
+
+  let purgedCount = 0;
+  const keysToRemove: string[] = [];
+
+  try {
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const key = window.sessionStorage.key(i);
+      if (!key) continue;
+
+      const isSensitive = SENSITIVE_KEY_PATTERNS.some((pattern) => pattern.test(key));
+      if (isSensitive) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach((key) => {
+      window.sessionStorage.removeItem(key);
+      purgedCount++;
+      console.warn(`[Security Alert] Purged unauthorized secret from sessionStorage: "${key}"`);
+    });
+  } catch (err) {
+    console.error('Failed to audit sessionStorage secrets:', err);
+  }
+
+  return purgedCount;
+}
+
+/**
  * Scans localStorage and purges any keys matching sensitive credential patterns.
  * Returns the count of purged items.
  */
 export function purgeLocalStorageSecrets(): number {
+  purgeSessionStorageSecrets();
+
   if (typeof window === 'undefined' || !window.localStorage) {
     return 0;
   }
@@ -157,82 +195,59 @@ export function purgeLocalStorageSecrets(): number {
 }
 
 /**
- * Asserts that localStorage does not contain any sensitive secret tokens.
+ * Asserts that localStorage and sessionStorage do not contain any sensitive secret tokens.
  * Throws a SecurityError if any unauthorized secret is found.
  */
 export function assertNoLocalStorageSecrets(): void {
-  if (typeof window === 'undefined' || !window.localStorage) return;
+  if (typeof window === 'undefined') return;
 
-  for (let i = 0; i < window.localStorage.length; i++) {
-    const key = window.localStorage.key(i);
-    if (!key) continue;
+  if (window.localStorage) {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (!key) continue;
 
-    if (SENSITIVE_KEY_PATTERNS.some((pattern) => pattern.test(key))) {
-      throw new Error(`[Security Violation] Sensitive secret found in localStorage under key: "${key}"`);
+      if (SENSITIVE_KEY_PATTERNS.some((pattern) => pattern.test(key))) {
+        throw new Error(`[Security Violation] Sensitive secret found in localStorage under key: "${key}"`);
+      }
+    }
+  }
+
+  if (window.sessionStorage) {
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const key = window.sessionStorage.key(i);
+      if (!key) continue;
+
+      if (SENSITIVE_KEY_PATTERNS.some((pattern) => pattern.test(key))) {
+        throw new Error(`[Security Violation] Sensitive secret found in sessionStorage under key: "${key}"`);
+      }
     }
   }
 }
 
+export function assertNoSessionStorageSecrets(): void {
+  assertNoLocalStorageSecrets();
+}
+
 /**
- * Secure Tab Session Storage Helper.
- * Strictly uses sessionStorage (which is destroyed when the tab closes and never shared across origins/windows).
+ * In-Memory Session Auth Helper.
+ * Strictly uses in-memory token store; never persists secrets to disk or browser storage.
  */
 export const sessionAuthStorage = {
   getApiKey(): string | null {
-    // 1. Check in-memory store first
-    const memToken = memoryTokenStore.getToken('api_key');
-    if (memToken) return memToken;
-
-    // 2. Fall back to sessionStorage (tab-scoped)
-    if (typeof window !== 'undefined' && window.sessionStorage) {
-      try {
-        const item = window.sessionStorage.getItem('ecdat_session_api_key');
-        if (item) {
-          // Cache in memory
-          memoryTokenStore.setToken('api_key', item, 60 * 60 * 1000, 'ApiKey');
-          return item;
-        }
-      } catch {
-        // sessionStorage inaccessible or restricted
-      }
-    }
-
-    return null;
+    return memoryTokenStore.getToken('api_key');
   },
 
   setApiKey(key: string | null): void {
     if (!key || key.trim() === '') {
       memoryTokenStore.removeToken('api_key');
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        try {
-          window.sessionStorage.removeItem('ecdat_session_api_key');
-        } catch {
-          // sessionStorage inaccessible or restricted
-        }
-      }
       return;
     }
-
-    const trimmed = key.trim();
-    memoryTokenStore.setToken('api_key', trimmed, 60 * 60 * 1000, 'ApiKey');
-    if (typeof window !== 'undefined' && window.sessionStorage) {
-      try {
-        window.sessionStorage.setItem('ecdat_session_api_key', trimmed);
-      } catch {
-        // sessionStorage inaccessible or restricted
-      }
-    }
+    memoryTokenStore.setToken('api_key', key.trim(), 60 * 60 * 1000, 'ApiKey');
   },
 
   clear(): void {
     memoryTokenStore.clear();
-    if (typeof window !== 'undefined' && window.sessionStorage) {
-      try {
-        window.sessionStorage.removeItem('ecdat_session_api_key');
-      } catch {
-        // sessionStorage inaccessible or restricted
-      }
-    }
     purgeLocalStorageSecrets();
+    purgeSessionStorageSecrets();
   },
 };

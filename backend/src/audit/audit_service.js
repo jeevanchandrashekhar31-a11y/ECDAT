@@ -296,16 +296,20 @@ class AuditService {
 
   /**
    * Computes summary statistics across audit categories.
+   * @param {string} [tenantId] - Optional tenant scoping
    */
-  getSummaryStats() {
-    const total = this.events.length;
+  getSummaryStats(tenantId = null) {
+    const events = tenantId
+      ? this.events.filter((e) => e.tenantId === tenantId || e.tenant === tenantId)
+      : this.events;
+    const total = events.length;
     const byCategory = {};
     const byStatus = {};
     let recentFailures = 0;
 
     const oneHourAgo = Date.now() - 60 * 60 * 1000;
 
-    for (const evt of this.events) {
+    for (const evt of events) {
       byCategory[evt.category] = (byCategory[evt.category] || 0) + 1;
       byStatus[evt.status] = (byStatus[evt.status] || 0) + 1;
 

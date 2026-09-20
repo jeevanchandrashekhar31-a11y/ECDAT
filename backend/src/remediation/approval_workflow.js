@@ -176,6 +176,8 @@ class ApprovalWorkflowEngine {
       requires_explicit_approval: explicitApprovalRequired,
       finding_id: data.finding_id || null,
       affected_asset: data.affected_asset || null,
+      tenantId: data.tenantId || "default-tenant",
+      project_id: data.project_id || data.projectId || null,
       target_standard: data.target_standard || null,
       patch_diff: data.patch_diff || null,
       test_plan: data.test_plan || null,
@@ -268,8 +270,18 @@ class ApprovalWorkflowEngine {
     }
 
     // RBAC check
-    const allowedRoles = ["admin", "security_lead", "ciso", "secops"];
-    if (!allowedRoles.includes(String(approver.role || "").toLowerCase())) {
+    const allowedRoles = [
+      "admin",
+      "security_lead",
+      "ciso",
+      "secops",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+    ];
+    const approverRole = String(approver.role || "").toLowerCase().replace(/[-_]/g, " ");
+    if (!allowedRoles.some((r) => r.replace(/[-_]/g, " ") === approverRole)) {
       throw new ApprovalWorkflowError(
         `Unauthorized: Role '${approver.role}' is not authorized to approve cryptographic remediation. Requires one of ${JSON.stringify(allowedRoles)}.`,
         403,
@@ -314,6 +326,25 @@ class ApprovalWorkflowEngine {
    */
   applyRemediation(approvalId, deployer = { username: "automation_pipeline", role: "deployer" }) {
     const record = this.getApproval(approvalId);
+
+    // RBAC check
+    const allowedRoles = [
+      "admin",
+      "security_lead",
+      "secops",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+      "deployer",
+    ];
+    const deployerRole = String(deployer.role || "").toLowerCase().replace(/[-_]/g, " ");
+    if (!allowedRoles.some((r) => r.replace(/[-_]/g, " ") === deployerRole)) {
+      throw new ApprovalWorkflowError(
+        `Unauthorized: Role '${deployer.role}' is not authorized to apply cryptographic remediation. Requires one of ${JSON.stringify(allowedRoles)}.`,
+        403,
+      );
+    }
 
     // If explicit approval is required, state MUST be APPROVED
     if (record.requires_explicit_approval && record.state !== ApprovalState.APPROVED) {
@@ -369,6 +400,26 @@ class ApprovalWorkflowEngine {
     verifier = { username: "ecdat_rescan", role: "verifier" },
     verificationResults,
   ) {
+    // RBAC check
+    const allowedRoles = [
+      "admin",
+      "security_lead",
+      "secops",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+      "verifier",
+      "qa_lead",
+    ];
+    const verifierRole = String(verifier.role || "").toLowerCase().replace(/[-_]/g, " ");
+    if (!allowedRoles.some((r) => r.replace(/[-_]/g, " ") === verifierRole)) {
+      throw new ApprovalWorkflowError(
+        `Unauthorized: Role '${verifier.role}' is not authorized to verify cryptographic remediation. Requires one of ${JSON.stringify(allowedRoles)}.`,
+        403,
+      );
+    }
+
     if (
       !verificationResults ||
       typeof verificationResults !== "object" ||
@@ -434,6 +485,25 @@ class ApprovalWorkflowEngine {
   rollbackRemediation(approvalId, actor = { username: "secops", role: "admin" }, reason = "Rollback triggered due to error threshold.") {
     const record = this.getApproval(approvalId);
 
+    // RBAC check
+    const allowedRoles = [
+      "admin",
+      "security_lead",
+      "secops",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+      "deployer",
+    ];
+    const actorRole = String(actor.role || "").toLowerCase().replace(/[-_]/g, " ");
+    if (!allowedRoles.some((r) => r.replace(/[-_]/g, " ") === actorRole)) {
+      throw new ApprovalWorkflowError(
+        `Unauthorized: Role '${actor.role}' is not authorized to rollback cryptographic remediation. Requires one of ${JSON.stringify(allowedRoles)}.`,
+        403,
+      );
+    }
+
     if (![ApprovalState.APPLIED, ApprovalState.APPROVED, ApprovalState.REVIEWED].includes(record.state)) {
       throw new ApprovalWorkflowError(
         `Cannot rollback remediation in state '${record.state}'.`,
@@ -480,6 +550,26 @@ class ApprovalWorkflowEngine {
   failRemediation(approvalId, actor = { username: "system", role: "system" }, reason = "Remediation failed.") {
     const record = this.getApproval(approvalId);
 
+    // RBAC check
+    const allowedRoles = [
+      "admin",
+      "security_lead",
+      "secops",
+      "ciso",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+      "system",
+    ];
+    const actorRole = String(actor.role || "").toLowerCase().replace(/[-_]/g, " ");
+    if (!allowedRoles.some((r) => r.replace(/[-_]/g, " ") === actorRole)) {
+      throw new ApprovalWorkflowError(
+        `Unauthorized: Role '${actor.role}' is not authorized to reject cryptographic remediation. Requires one of ${JSON.stringify(allowedRoles)}.`,
+        403,
+      );
+    }
+
     const nowTs = new Date().toISOString();
     const newHash = this._computeTransitionHash(record.current_state_hash, {
       approvalId,
@@ -509,6 +599,17 @@ class ApprovalWorkflowEngine {
   }
 
   /**
+   * Deletes an approval record by ID.
+   */
+  deleteApproval(approvalId) {
+    if (!this.approvals.has(approvalId)) {
+      throw new ApprovalWorkflowError(`Approval request '${approvalId}' not found`, 404);
+    }
+    this.approvals.delete(approvalId);
+    return true;
+  }
+
+  /**
    * Retrieves an approval record by ID.
    */
   getApproval(approvalId) {
@@ -535,6 +636,9 @@ class ApprovalWorkflowEngine {
     }
     if (filters.environment) {
       list = list.filter((r) => r.environment.toLowerCase() === filters.environment.toLowerCase());
+    }
+    if (filters.tenantId) {
+      list = list.filter((r) => (r.tenantId || "default-tenant") === filters.tenantId);
     }
 
     return list;

@@ -46,6 +46,10 @@ const {
 const { isDbConnected } = require("../../src/db/connection");
 
 const app = require("../../src/app");
+const config = require("../../src/config");
+if (!config.ECDAT_API_KEY) {
+  config.ECDAT_API_KEY = "test-database-key-32-chars-long-entropy!!";
+}
 
 function withServer(callback) {
   return new Promise((resolve, reject) => {
@@ -334,7 +338,7 @@ describe("Phase 16.2 — Database Security REST API Endpoints", () => {
   it("GET /api/v1/security/database/least-privilege-roles returns role catalog", async () => {
     await withServer(async (baseUrl) => {
       const res = await fetch(`${baseUrl}/api/v1/security/database/least-privilege-roles`, {
-        headers: { "x-api-key": "ecdat-demo-admin-key-2026" },
+        headers: { "x-api-key": config.ECDAT_API_KEY },
       });
       assert.strictEqual(res.status, 200);
       const body = await res.json();
@@ -347,7 +351,7 @@ describe("Phase 16.2 — Database Security REST API Endpoints", () => {
   it("GET /api/v1/security/database/audit-logs returns audit events", async () => {
     await withServer(async (baseUrl) => {
       const res = await fetch(`${baseUrl}/api/v1/security/database/audit-logs?limit=5`, {
-        headers: { "x-api-key": "ecdat-demo-admin-key-2026" },
+        headers: { "x-api-key": config.ECDAT_API_KEY },
       });
       assert.strictEqual(res.status, 200);
       const body = await res.json();
@@ -358,7 +362,7 @@ describe("Phase 16.2 — Database Security REST API Endpoints", () => {
   it("GET /api/v1/security/database/retention-policy returns configured windows", async () => {
     await withServer(async (baseUrl) => {
       const res = await fetch(`${baseUrl}/api/v1/security/database/retention-policy`, {
-        headers: { "x-api-key": "ecdat-demo-admin-key-2026" },
+        headers: { "x-api-key": config.ECDAT_API_KEY },
       });
       assert.strictEqual(res.status, 200);
       const body = await res.json();
@@ -372,7 +376,7 @@ describe("Phase 16.2 — Database Security REST API Endpoints", () => {
       const res = await fetch(`${baseUrl}/api/v1/security/database/prune`, {
         method: "POST",
         headers: {
-          "x-api-key": "ecdat-demo-admin-key-2026",
+          "x-api-key": config.ECDAT_API_KEY,
           "content-type": "application/json",
         },
         body: JSON.stringify({ entityType: "scans", dryRun: true }),
@@ -389,7 +393,7 @@ describe("Phase 16.2 — Database Security REST API Endpoints", () => {
       const createRes = await fetch(`${baseUrl}/api/v1/security/database/backups`, {
         method: "POST",
         headers: {
-          "x-api-key": "ecdat-demo-admin-key-2026",
+          "x-api-key": config.ECDAT_API_KEY,
           "content-type": "application/json",
         },
       });
@@ -401,7 +405,7 @@ describe("Phase 16.2 — Database Security REST API Endpoints", () => {
       // 2. Verify backup
       const verifyRes = await fetch(`${baseUrl}/api/v1/security/database/backups/${backupId}/verify`, {
         method: "POST",
-        headers: { "x-api-key": "ecdat-demo-admin-key-2026" },
+        headers: { "x-api-key": config.ECDAT_API_KEY },
       });
       assert.strictEqual(verifyRes.status, 200);
       const verifyBody = await verifyRes.json();
@@ -409,7 +413,7 @@ describe("Phase 16.2 — Database Security REST API Endpoints", () => {
 
       // 3. List backups
       const listRes = await fetch(`${baseUrl}/api/v1/security/database/backups`, {
-        headers: { "x-api-key": "ecdat-demo-admin-key-2026" },
+        headers: { "x-api-key": config.ECDAT_API_KEY },
       });
       assert.strictEqual(listRes.status, 200);
       const listBody = await listRes.json();
@@ -428,7 +432,7 @@ describe("Phase 16.2 — Database Security REST API Endpoints", () => {
       const res = await fetch(`${baseUrl}/api/v1/security/database/test-query`, {
         method: "POST",
         headers: {
-          "x-api-key": "ecdat-demo-admin-key-2026",
+          "x-api-key": config.ECDAT_API_KEY,
           "content-type": "application/json",
         },
         body: JSON.stringify({

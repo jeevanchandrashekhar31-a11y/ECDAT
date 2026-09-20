@@ -102,7 +102,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
     const findings = scanRecord.classified_findings || [];
     for (let i = 0; i < findings.length; i++) {
       const f = findings[i];
-      const findingId = `fnd_${scanRecord.id}_${i}`;
+      const findingId = f.id || `fnd_${scanRecord.id}_${i}`;
       const compId = String(f.bom_ref || `comp_${scanRecord.id}_${i}`).slice(0, 255);
       const assetId = String(f.asset_id || f.bom_ref || "global").slice(0, 255);
 

@@ -107,6 +107,17 @@ def sign_manifest(manifest_path: Path, priv_key_path: Path, sig_path: Path):
         f.write(signature)
     print(f"   [SIGNED] Signature written to {sig_path}")
 
+    # Synchronize release public key with the key used to sign
+    pub = private_key.public_key()
+    pub_bytes = pub.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    release_pub = REPO_ROOT / "config" / "ed25519_release_public.pem"
+    release_pub.parent.mkdir(parents=True, exist_ok=True)
+    with open(release_pub, "wb") as f:
+        f.write(pub_bytes)
+
 
 def verify_manifest(manifest_path: Path, pub_key_path: Path, sig_path: Path) -> bool:
     """Verify an Ed25519 signature against the manifest content."""
@@ -199,7 +210,7 @@ def main():
     keys_dir = REPO_ROOT / args.keys_dir
     artifacts_dir = REPO_ROOT / args.artifacts_dir
 
-    if args.generate_keys or (args.sign and not (keys_dir / "ecdat_signing_key.pem").exists()):
+    if args.generate_keys:
         generate_keypair(keys_dir)
 
     priv_key_path = keys_dir / "ecdat_signing_key.pem"
@@ -255,10 +266,10 @@ def main():
     print(f"   Wrote {sha512_file.name} ({len(sha512_lines)} entries)")
 
     # Digitally sign SHA256SUMS
-    if priv_key_path.exists():
+    if priv_key_path.exists() or os.environ.get("ECDAT_SIGNING_KEY_PEM") or os.environ.get("ECDAT_SIGNING_KEY_PATH"):
         sign_manifest(sha256_file, priv_key_path, sig_file)
     else:
-        print(f"   [WARN] Private key missing at {priv_key_path}. Cannot sign manifest.")
+        print("   [WARN] Private key missing and ECDAT_SIGNING_KEY_PEM/PATH not set. Cannot sign manifest.")
 
     print("\n>> Artifact signing complete.")
     return 0

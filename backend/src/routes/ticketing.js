@@ -139,7 +139,7 @@ router.post("/register", async (req, res, next) => {
           role: req.auth?.role || "admin",
           ipAddress: req.ip,
         },
-        tenant: req.tenantContext?.tenantId || req.headers["x-tenant-id"] || "default",
+        tenant: req.tenantContext?.tenantId || "default",
         target: {
           type: "integration",
           id: name,

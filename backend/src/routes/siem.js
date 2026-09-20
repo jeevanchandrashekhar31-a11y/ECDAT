@@ -91,8 +91,8 @@ router.post("/forward", RATE_LIMITS.integrationCalls.middleware(), async (req, r
     if (body && body.action && body.resource) {
       const event = createSiemEvent({
         actor: {
-          id: req.auth?.userId || req.headers["x-actor-id"] || body.actor?.id || "system",
-          username: req.auth?.username || body.actor?.username || "system",
+          id: req.user?.sub || req.user?.userId || req.auth?.user?.sub || req.auth?.userId || "system",
+          username: req.user?.username || req.auth?.user?.username || req.auth?.username || "system",
           role: req.user?.role || req.auth?.role || req.tenantContext?.roles?.[0] || null,
           ip: req.ip || req.connection?.remoteAddress || "127.0.0.1",
         },

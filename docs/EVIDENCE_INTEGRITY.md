@@ -149,7 +149,7 @@ Organizations must not mislead stakeholders into believing an automated internal
 ```bash
 curl -X POST http://localhost:4000/api/v1/reports/integrity/verify \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: ecdat-demo-admin-key-2026" \
+  -H "X-API-Key: <YOUR_ECDAT_API_KEY>" \
   -d '{"scanId": "scan_enterprise_core"}'
 ```
 

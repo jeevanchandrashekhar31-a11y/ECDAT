@@ -13,6 +13,10 @@ const {
 const { generateExecutiveReport, generateExecutiveHtmlReport } = require("../../src/services/executive_report_service");
 const { generateTechnicalDrillDownReport, generateTechnicalHtmlReport } = require("../../src/services/technical_report_service");
 const app = require("../../src/app");
+const config = require("../../src/config");
+if (!config.ECDAT_API_KEY) {
+  config.ECDAT_API_KEY = "test-evidence-key-32-chars-long-entropy!!";
+}
 
 describe("Evidence Integrity & Audit Attestation Subsystem (Phase 26.3)", () => {
   test("Executive reports strictly identify all 6 mandated metadata dimensions", async () => {
@@ -133,7 +137,7 @@ describe("Evidence Integrity & Audit Attestation Subsystem (Phase 26.3)", () => 
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": "ecdat-demo-admin-key-2026",
+          "X-API-Key": config.ECDAT_API_KEY,
         },
         body: JSON.stringify({ report }),
       });
@@ -156,7 +160,7 @@ describe("Evidence Integrity & Audit Attestation Subsystem (Phase 26.3)", () => 
     try {
       const res = await fetch(`http://localhost:${port}/api/v1/reports/integrity/status`, {
         headers: {
-          "X-API-Key": "ecdat-demo-admin-key-2026",
+          "X-API-Key": config.ECDAT_API_KEY,
         },
       });
 

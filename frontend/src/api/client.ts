@@ -1,34 +1,21 @@
 import { DashboardSummary, AssetsResponse, AssetDetail, FindingsResponse, FindingItem, ScanItem, Metrics, DashboardViewsResponse, CryptoGraphResponse } from '../types';
 import {
-  sessionAuthStorage,
   purgeLocalStorageSecrets,
   attachCsrfHeader,
   authManager,
   isSafeUrl,
 } from '../security';
 
-// Immediately audit and clear any unauthorized credentials placed in localStorage
+// Immediately audit and clear any unauthorized credentials placed in localStorage or sessionStorage
 if (typeof window !== 'undefined') {
   purgeLocalStorageSecrets();
 }
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 
-// Tab-scoped & In-Memory Session API Key Management
+// Legacy helper kept for backward compatibility; returns null when no key configured
 export function getSessionApiKey(): string | null {
-  const existing = sessionAuthStorage.getApiKey();
-  if (existing) return existing;
-
-  const envKey = (import.meta.env.VITE_ECDAT_API_KEY as string) || null;
-  if (envKey && envKey.trim() !== '') {
-    sessionAuthStorage.setApiKey(envKey.trim());
-    return envKey.trim();
-  }
   return null;
-}
-
-export function setSessionApiKey(key: string): void {
-  sessionAuthStorage.setApiKey(key);
 }
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -45,14 +32,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   // 1. Double Submit Cookie CSRF Defense (mutating requests)
   attachCsrfHeader(headers, method);
 
-  // 2. Strict API Authorization & Multi-Tenancy headers
+  // 2. Strict API Authorization & Multi-Tenancy headers (Bearer token from in-memory store)
   authManager.attachAuthHeaders(headers);
-
-  // 3. Fall back to Session API key if no Authorization or X-API-Key was set
-  const apiKey = getSessionApiKey();
-  if (apiKey && !headers.has('X-API-Key') && !headers.has('Authorization')) {
-    headers.set('X-API-Key', apiKey);
-  }
 
   const response = await fetch(url, {
     credentials: 'same-origin',
@@ -351,7 +332,7 @@ export const api = {
     cbom: unknown;
   }> => {
     const session = authManager.getSession();
-    const authorized_by = options.authorized_by || session.userId || 'admin';
+    const authorized_by = options.authorized_by || session.userId || undefined;
     return request('/scan/network', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -80,7 +80,7 @@ const nodeEnv = getEnv("NODE_ENV", "development");
 const rawApiKey =
   nodeEnv === "production"
     ? getEnv("ECDAT_API_KEY", undefined, true)
-    : getEnv("ECDAT_API_KEY", "ecdat-demo-admin-key-2026");
+    : getEnv("ECDAT_API_KEY", undefined);
 
 const rawDatabaseUrl = getEnv(
   "DATABASE_URL",
@@ -90,6 +90,7 @@ const rawDatabaseUrl = getEnv(
 const config = {
   NODE_ENV: nodeEnv,
   PORT: parseInt(getEnv("PORT", "5000"), 10),
+  AUTH_MODE: getEnv("AUTH_MODE", "production"),
   MAX_JSON_SIZE: parseBodySize(getEnv("MAX_JSON_SIZE", "10mb")),
   MAX_UPLOAD_BYTES: parsePositiveInt(
     "MAX_UPLOAD_BYTES",

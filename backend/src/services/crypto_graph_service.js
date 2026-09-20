@@ -260,8 +260,10 @@ function getTestFixtureGraph(scanId, scanName, filters = {}) {
  * @param {string} [filters.search]
  * @returns {Promise<object>} Graph nodes, edges, filter metadata, and evidence lookup
  */
-async function buildCryptoRelationshipGraph(filters = {}) {
+async function buildCryptoRelationshipGraph(filters = {}, tenantContext = null) {
   const requestedScanId = filters.scanId && filters.scanId !== "all" ? filters.scanId : null;
+  const isPlatformAdmin = Boolean(tenantContext?.isPlatformAdmin);
+  const callerTenant = tenantContext?.tenantId;
   const connected = await isDbConnected();
 
   let scanRow = null;
@@ -271,6 +273,9 @@ async function buildCryptoRelationshipGraph(filters = {}) {
       if (requestedScanId) {
         q = q.where("id", requestedScanId);
       }
+      if (!isPlatformAdmin && callerTenant) {
+        q = q.where("tenant_id", callerTenant);
+      }
       scanRow = await q.orderBy("created_at", "desc").first();
     } catch (_err) {
       // ignore
@@ -279,11 +284,29 @@ async function buildCryptoRelationshipGraph(filters = {}) {
 
   let inMemoryScan = null;
   if (!scanRow) {
-    inMemoryScan = requestedScanId ? await getScanById(requestedScanId) : getLatestScan();
+    inMemoryScan = requestedScanId ? await getScanById(requestedScanId, tenantContext) : getLatestScan(tenantContext);
   }
 
-  const scanId = scanRow?.id || inMemoryScan?.id || "scan_enterprise_core";
-  const scanName = scanRow?.target_name || inMemoryScan?.name || "Enterprise Crypto Stack";
+  // If a specific scan was requested but belongs to another tenant or does not exist
+  if (requestedScanId && !scanRow && !inMemoryScan) {
+    return {
+      scan_id: requestedScanId,
+      scan_name: "Not Found",
+      graph: {
+        nodes: [],
+        edges: [],
+        total_nodes: 0,
+        total_edges: 0,
+        unfiltered_nodes_count: 0,
+        unfiltered_edges_count: 0,
+      },
+      filters_applied: filters,
+      evidence_lookup: {},
+    };
+  }
+
+  const scanId = scanRow?.id || inMemoryScan?.id || (callerTenant ? `scan_${callerTenant}` : "scan_enterprise_core");
+  const scanName = scanRow?.target_name || inMemoryScan?.name || (callerTenant ? `${callerTenant} Crypto Stack` : "Enterprise Crypto Stack");
 
   let findings = [];
   let assets = [];
@@ -334,7 +357,39 @@ async function buildCryptoRelationshipGraph(filters = {}) {
     }
   }
 
-  if (process.env.NODE_ENV === "test" && !requestedScanId) {
+  // Use in-memory scan data if available
+  if (findings.length === 0 && inMemoryScan?.classified_findings?.length > 0) {
+    findings = inMemoryScan.classified_findings.map((f) => ({
+      id: f.id || f.bom_ref,
+      scan_id: inMemoryScan.id,
+      asset_id: f.asset_id,
+      component_id: f.component_id,
+      algorithm: f.algorithm || "RSA",
+      key_size: f.key_size,
+      category: f.category || "algorithm",
+      location: f.file_path || f.location,
+      line_number: f.line_number,
+      evidence_context: f.evidence_context,
+      severity: f.severity || "Medium",
+      mosca_status: f.mosca?.status || "WATCH",
+      classical_risk: f.classical_risk || "Medium",
+      quantum_relevance: f.quantum_relevance || "Shor",
+    }));
+  }
+  if (assets.length === 0 && inMemoryScan?.top_risky_assets?.length > 0) {
+    assets = inMemoryScan.top_risky_assets.map((a) => ({
+      id: a.asset_id || a.id,
+      primary_identifier: a.primary_identifier || a.asset_id,
+      asset_type: a.asset_type || "cryptographic_asset",
+      data_sensitivity: a.data_sensitivity || "internal",
+      business_criticality: a.business_criticality || "medium",
+      highest_severity: a.highest_severity || a.severity || "Medium",
+      at_quantum_risk: Boolean(a.at_quantum_risk),
+      metadata: a.metadata || {},
+    }));
+  }
+
+  if (process.env.NODE_ENV === "test" && !requestedScanId && !callerTenant) {
     return getTestFixtureGraph(scanId, scanName, filters);
   }
 

@@ -20,7 +20,7 @@ router.get("/", (req, res) => {
       anomaly: req.query.anomaly,
       expiringWithinDays: req.query.expiringWithinDays || req.query.expiring_within_days,
     };
-    const items = globalCertInventory.list(filters);
+    const items = globalCertInventory.list(filters, req.tenantContext);
     return res.json({
       success: true,
       total: items.length,
@@ -37,7 +37,7 @@ router.get("/", (req, res) => {
  */
 router.get("/summary", (req, res) => {
   try {
-    const summary = globalCertInventory.getSummary();
+    const summary = globalCertInventory.getSummary(req.tenantContext);
     return res.json({
       success: true,
       summary,
@@ -54,7 +54,7 @@ router.get("/summary", (req, res) => {
 router.get("/anomalies", (req, res) => {
   try {
     globalCertInventory.detectInconsistentDeployments();
-    const all = globalCertInventory.list();
+    const all = globalCertInventory.list({}, req.tenantContext);
 
     const grouped = {
       expired: [],
@@ -85,15 +85,29 @@ router.get("/anomalies", (req, res) => {
 
 /**
  * GET /api/v1/certificates/:fingerprint
- * Retrieves a single certificate by fingerprint.
+ * Retrieves a single certificate by fingerprint enforcing tenant boundary.
  */
 router.get("/:fingerprint", (req, res) => {
   try {
-    const cert = globalCertInventory.get(req.params.fingerprint);
-    if (!cert) {
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId || req.auth?.tenantId || "default-tenant";
+
+    // Lookup raw item to distinguish 404 from 403
+    const rawCert = globalCertInventory.get(req.params.fingerprint, { isPlatformAdmin: true });
+    if (!rawCert) {
       return res.status(404).json({ success: false, error: "Certificate not found" });
     }
-    return res.json({ success: true, certificate: cert });
+
+    if (!isPlatformAdmin && rawCert.tenantId && rawCert.tenantId !== callerTenant) {
+      return res.status(403).json({
+        success: false,
+        error: "TenantBoundaryViolation",
+        code: "HORIZONTAL_TENANT_VIOLATION",
+        message: `Cannot access certificate belonging to foreign tenant '${rawCert.tenantId}'`,
+      });
+    }
+
+    return res.json({ success: true, certificate: rawCert });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -102,23 +116,32 @@ router.get("/:fingerprint", (req, res) => {
 /**
  * POST /api/v1/certificates/ingest
  * Ingests certificate(s) into the inventory.
- * Strictly rejects any private key material.
+ * Strictly rejects any private key material and enforces server-side tenant assignment.
  */
 router.post("/ingest", (req, res) => {
   try {
     const body = req.body;
     assertNoPrivateKey(body);
 
+    const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+    const callerTenant = req.tenantContext?.tenantId || req.auth?.tenantId || "default-tenant";
+
     const certList = Array.isArray(body) ? body : [body];
     const results = [];
 
     for (const entry of certList) {
       const certData = entry.certificate || entry;
+      // Normal users CANNOT override tenantId with client-controlled body value
+      const assignedTenant = (isPlatformAdmin && (entry.tenantId || entry.tenant_id))
+        ? (entry.tenantId || entry.tenant_id)
+        : callerTenant;
+
       const options = {
         chain: entry.chain,
         endpoint: entry.endpoint,
         owner: entry.owner,
         environment: entry.environment || "production",
+        tenantId: assignedTenant,
       };
       const item = globalCertInventory.addOrUpdateCertificate(certData, options);
       results.push(item);
