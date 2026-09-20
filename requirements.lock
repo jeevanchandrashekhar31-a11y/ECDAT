@@ -13,7 +13,6 @@ pytest==9.1.1
 pytest-cov==7.1.0
 requests==2.34.2
 ruff==0.16.6
-sslyze==6.3.1
 tree-sitter==0.26.0
 tree-sitter-c==0.24.2
 tree-sitter-c-sharp==0.23.5

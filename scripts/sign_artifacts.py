@@ -89,12 +89,8 @@ def generate_keypair(keys_dir: Path) -> Tuple[Path, Path]:
     with open(pub_path, "wb") as f:
         f.write(pub_bytes)
 
-    release_pub = REPO_ROOT / "config" / "ed25519_release_public.pem"
-    release_pub.parent.mkdir(parents=True, exist_ok=True)
-    with open(release_pub, "wb") as f:
-        f.write(pub_bytes)
-    print(f"   Synchronized release public key: {release_pub}")
-
+    # Note: --generate-keys writes ONLY to .keys/ (gitignored local dev keypair).
+    # It must NEVER overwrite config/ed25519_release_public.pem.
     # Set restrictive permissions where supported
     try:
         os.chmod(priv_path, 0o600)
@@ -215,7 +211,8 @@ def main():
     parser = argparse.ArgumentParser(description="ECDAT Cryptographic Artifact Signing & Integrity Engine")
     parser.add_argument("--sign", action="store_true", help="Generate checksums and sign artifacts")
     parser.add_argument("--verify", action="store_true", help="Verify checksums and cryptographic signatures")
-    parser.add_argument("--generate-keys", action="store_true", help="Generate new Ed25519 signing keypair")
+    parser.add_argument("--generate-keys", action="store_true", help="Generate new Ed25519 signing keypair in .keys/")
+    parser.add_argument("--sync-release-key", action="store_true", help="Explicitly synchronize config/ed25519_release_public.pem with current authoritative signing public key")
     parser.add_argument("--keys-dir", default=".keys", help="Directory storing signing keys")
     parser.add_argument("--artifacts-dir", default="artifacts", help="Root directory of artifacts to sign")
     args = parser.parse_args()
@@ -223,8 +220,47 @@ def main():
     keys_dir = REPO_ROOT / args.keys_dir
     artifacts_dir = REPO_ROOT / args.artifacts_dir
 
+    if args.sync_release_key:
+        print(">> Synchronizing release public key from local or environment signing key...")
+        pub_bytes = None
+        if os.environ.get("ECDAT_SIGNING_KEY_PEM"):
+            priv = serialization.load_pem_private_key(os.environ["ECDAT_SIGNING_KEY_PEM"].strip().encode("utf-8"), password=None)
+            pub_bytes = priv.public_key().public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
+        elif (keys_dir / "ecdat_signing_pub.pem").exists():
+            with open(keys_dir / "ecdat_signing_pub.pem", "rb") as f:
+                pub_bytes = f.read()
+        elif (keys_dir / "ecdat_signing_key.pem").exists():
+            with open(keys_dir / "ecdat_signing_key.pem", "rb") as f:
+                priv = serialization.load_pem_private_key(f.read(), password=None)
+            pub_bytes = priv.public_key().public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
+        elif os.environ.get("ECDAT_SIGNING_KEY_PATH") and Path(os.environ["ECDAT_SIGNING_KEY_PATH"]).exists():
+            with open(os.environ["ECDAT_SIGNING_KEY_PATH"], "rb") as f:
+                priv = serialization.load_pem_private_key(f.read(), password=None)
+            pub_bytes = priv.public_key().public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
+        else:
+            print("[ERROR] Cannot sync release key: no signing key found in .keys/ or environment.", file=sys.stderr)
+            return 1
+
+        release_pub = REPO_ROOT / "config" / "ed25519_release_public.pem"
+        release_pub.parent.mkdir(parents=True, exist_ok=True)
+        with open(release_pub, "wb") as f:
+            f.write(pub_bytes)
+        print(f"   [SYNCED] Synchronized release public key: {release_pub}")
+        return 0
+
     if args.generate_keys:
         generate_keypair(keys_dir)
+        if not args.sign and not args.verify:
+            return 0
 
     priv_key_path = keys_dir / "ecdat_signing_key.pem"
     pub_key_path = keys_dir / "ecdat_signing_pub.pem"
