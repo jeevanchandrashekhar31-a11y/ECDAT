@@ -341,7 +341,7 @@ export const api = {
   triggerNetworkScan: async (
     targetOrHost?: string,
     port?: number,
-    options: { scan_label?: string; policy_profile?: string; scenario?: string } = {}
+    options: { scan_label?: string; policy_profile?: string; scenario?: string; authorized_by?: string } = {}
   ): Promise<{
     success: boolean;
     message: string;
@@ -350,6 +350,8 @@ export const api = {
     metrics: Metrics;
     cbom: unknown;
   }> => {
+    const session = authManager.getSession();
+    const authorized_by = options.authorized_by || session.userId || 'admin';
     return request('/scan/network', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -357,6 +359,7 @@ export const api = {
         url: targetOrHost,
         host: targetOrHost,
         port,
+        authorized_by,
         ...options,
       }),
     });

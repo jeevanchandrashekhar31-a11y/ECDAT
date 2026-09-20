@@ -21,7 +21,24 @@ function startServer() {
     process.exit(1);
   }
 
-  // 2. Start HTTP Server
+  // 2. Initialize default local user if empty
+  try {
+    const { defaultLocalAuthManager } = require("./identity/password_auth");
+    if (!defaultLocalAuthManager.getUser("admin")) {
+      defaultLocalAuthManager.registerUser({
+        username: "admin",
+        email: "admin@ecdat.local",
+        password: "ComplexSecurePass2026!",
+        roles: ["admin"],
+        tenantId: "default-tenant",
+      });
+      console.log("✓ Initialized local user: admin");
+    }
+  } catch (err) {
+    console.warn("Notice: Local user initialization skipped:", err.message);
+  }
+
+  // 3. Start HTTP Server
   const server = app.listen(config.PORT, () => {
     console.log(
       `✓ ECDAT API Server listening on http://localhost:${config.PORT}`,
