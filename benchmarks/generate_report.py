@@ -30,6 +30,10 @@ def generate_markdown_report_from_raw(raw_json_path: Path, output_md_path: Path)
     deps = meta["dependency_versions"]
     policy = meta["execution_policy"]
     benchmarks = data["benchmarks"]
+    try:
+        rel_json = raw_json_path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        rel_json = f"benchmarks/results/{raw_json_path.name}"
 
     lines = [
         "# @ecdat-synthetic-corpus",
@@ -41,7 +45,7 @@ def generate_markdown_report_from_raw(raw_json_path: Path, output_md_path: Path)
         "> **Strict Empirical Measurement Standard**:",
         "> Every benchmark number in this document is generated automatically from raw telemetry captured during",
         f"> live execution on `{meta['timestamp']}`. Zero numbers are manually typed or synthetic projections.",
-        f"> Source Raw Telemetry: [`{raw_json_path.name}`](file:///{raw_json_path.as_posix()})",
+        f"> Source Raw Telemetry: [`{raw_json_path.name}`]({rel_json})",
         "",
         "### Key Measurement Results:",
         f"- **Audited Components**: **`{len(benchmarks)}` Core Subsystems** (Static Scanner, CBOM Processor, Incremental Cache, Secret Engine)",
@@ -102,7 +106,7 @@ def generate_markdown_report_from_raw(raw_json_path: Path, output_md_path: Path)
     for b in benchmarks:
         lines.extend([
             f"### {b['benchmark_id']}: {b['benchmark_name']}",
-            f"- **Benchmark Script**: [`{b['benchmark_script']}`](file:///{REPO_ROOT.as_posix()}/{b['benchmark_script'].split('::')[0]})",
+            f"- **Benchmark Script**: [`{b['benchmark_script']}`]({b['benchmark_script'].split('::')[0]})",
             f"- **Warmup Policy**: `{b['warmup_policy']}`",
             f"- **Measured Repetitions**: `{b['number_of_repetitions']}`",
             f"- **Input Dataset**: `{b['input_dataset']['name']}` (`{b['input_dataset']['path']}`)",

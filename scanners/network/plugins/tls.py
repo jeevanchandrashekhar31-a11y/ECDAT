@@ -1,7 +1,44 @@
+from enum import Enum
 from typing import List
 from datetime import datetime, timezone
 import logging
-from sslyze import Scanner, ServerNetworkLocation, ServerScanRequest, ScanCommand, ScanCommandAttemptStatusEnum
+
+try:
+    from sslyze import (
+        Scanner,
+        ServerNetworkLocation,
+        ServerScanRequest,
+        ScanCommand,
+        ScanCommandAttemptStatusEnum,
+    )
+    HAVE_SSLYZE = True
+except ImportError:
+    class ScanCommand(str, Enum):
+        CERTIFICATE_INFO = "certificate_info"
+        SSL_2_0_CIPHER_SUITES = "ssl_2_0_cipher_suites"
+        SSL_3_0_CIPHER_SUITES = "ssl_3_0_cipher_suites"
+        TLS_1_0_CIPHER_SUITES = "tls_1_0_cipher_suites"
+        TLS_1_1_CIPHER_SUITES = "tls_1_1_cipher_suites"
+        TLS_1_2_CIPHER_SUITES = "tls_1_2_cipher_suites"
+        TLS_1_3_CIPHER_SUITES = "tls_1_3_cipher_suites"
+
+    class ScanCommandAttemptStatusEnum(str, Enum):
+        COMPLETED = "completed"
+        ERROR = "error"
+
+    class ServerNetworkLocation:
+        def __init__(self, hostname, port, ip_address=None):
+            self.hostname = hostname
+            self.port = port
+            self.ip_address = ip_address
+
+    class ServerScanRequest:
+        def __init__(self, server_location, scan_commands):
+            self.server_location = server_location
+            self.scan_commands = scan_commands
+
+    Scanner = None
+    HAVE_SSLYZE = False
 
 from scanners.models import NetworkCryptoFinding
 from scanners.network.cert_parser import parse_cert
@@ -35,20 +72,21 @@ class TlsScanner:
                 findings.append(finding)
                 continue
 
-            location = ServerNetworkLocation(hostname=t.hostname, port=t.port, ip_address=t.resolved_ip)
-            request = ServerScanRequest(
-                server_location=location,
-                scan_commands={
-                    ScanCommand.CERTIFICATE_INFO,
-                    ScanCommand.SSL_2_0_CIPHER_SUITES,
-                    ScanCommand.SSL_3_0_CIPHER_SUITES,
-                    ScanCommand.TLS_1_0_CIPHER_SUITES,
-                    ScanCommand.TLS_1_1_CIPHER_SUITES,
-                    ScanCommand.TLS_1_2_CIPHER_SUITES,
-                    ScanCommand.TLS_1_3_CIPHER_SUITES,
-                },
-            )
-            scan_requests.append(request)
+            if ServerNetworkLocation and ServerScanRequest and ScanCommand:
+                location = ServerNetworkLocation(hostname=t.hostname, port=t.port, ip_address=t.resolved_ip)
+                request = ServerScanRequest(
+                    server_location=location,
+                    scan_commands={
+                        ScanCommand.CERTIFICATE_INFO,
+                        ScanCommand.SSL_2_0_CIPHER_SUITES,
+                        ScanCommand.SSL_3_0_CIPHER_SUITES,
+                        ScanCommand.TLS_1_0_CIPHER_SUITES,
+                        ScanCommand.TLS_1_1_CIPHER_SUITES,
+                        ScanCommand.TLS_1_2_CIPHER_SUITES,
+                        ScanCommand.TLS_1_3_CIPHER_SUITES,
+                    },
+                )
+                scan_requests.append(request)
             target_map[f"{t.hostname}:{t.port}"] = finding
 
         if not scan_requests:

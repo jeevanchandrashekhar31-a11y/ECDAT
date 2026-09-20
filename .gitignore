@@ -33,5 +33,6 @@ artifacts/security/
 artifacts/provenance/
 artifacts/SHA256SUMS
 artifacts/SHA256SUMS.sig
+artifacts/SHA512SUMS
 security_evidence/
 ecdat_clean_package.zip

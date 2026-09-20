@@ -7,7 +7,7 @@
 > **Strict Empirical Measurement Standard**:
 > Every benchmark number in this document is generated automatically from raw telemetry captured during
 > live execution on `2026-09-18T17:06:57.965080+00:00`. Zero numbers are manually typed or synthetic projections.
-> Source Raw Telemetry: [`latest_benchmark_run.json`](file:///C:/Users/Jeevan c/Documents/ECDAT/benchmarks/results/latest_benchmark_run.json)
+> Source Raw Telemetry: [`latest_benchmark_run.json`](benchmarks/results/latest_benchmark_run.json)
 
 ### Key Measurement Results:
 - **Audited Components**: **`4` Core Subsystems** (Static Scanner, CBOM Processor, Incremental Cache, Secret Engine)
@@ -60,7 +60,7 @@
 ## 4. Detailed Empirical Results by Subsystem
 
 ### BENCH-01-STATIC-SCANNER: Static Cryptographic Scanner Throughput & Latency
-- **Benchmark Script**: [`benchmarks/run_benchmarks.py::benchmark_static_scanner`](file:///C:/Users/Jeevan c/Documents/ECDAT/benchmarks/run_benchmarks.py)
+- **Benchmark Script**: [`benchmarks/run_benchmarks.py::benchmark_static_scanner`](benchmarks/run_benchmarks.py)
 - **Warmup Policy**: `1 unmeasured execution to prime OS disk cache and AST structures`
 - **Measured Repetitions**: `5`
 - **Input Dataset**: `ECDAT Standard Benchmark Source Corpus` (`benchmarks\datasets\source_corpus`)
@@ -85,7 +85,7 @@
 ```
 
 ### BENCH-02-CBOM-ENGINE: CycloneDX 1.6 CBOM Ingestion & Normalization Engine
-- **Benchmark Script**: [`benchmarks/run_benchmarks.py::benchmark_cbom_engine`](file:///C:/Users/Jeevan c/Documents/ECDAT/benchmarks/run_benchmarks.py)
+- **Benchmark Script**: [`benchmarks/run_benchmarks.py::benchmark_cbom_engine`](benchmarks/run_benchmarks.py)
 - **Warmup Policy**: `1 unmeasured execution to prime CycloneDX model registries`
 - **Measured Repetitions**: `5`
 - **Input Dataset**: `CycloneDX 1.6 Standard Cryptographic Benchmark CBOM` (`benchmarks\datasets\cbom_benchmark_1000.json`)
@@ -110,7 +110,7 @@
 ```
 
 ### BENCH-03-INCREMENTAL-CACHE: Incremental Caching & 5-Dimensional Change Detection
-- **Benchmark Script**: [`benchmarks/run_benchmarks.py::benchmark_incremental_cache`](file:///C:/Users/Jeevan c/Documents/ECDAT/benchmarks/run_benchmarks.py)
+- **Benchmark Script**: [`benchmarks/run_benchmarks.py::benchmark_incremental_cache`](benchmarks/run_benchmarks.py)
 - **Warmup Policy**: `Self-priming: First scan establishes clean cold cache baseline`
 - **Measured Repetitions**: `5`
 - **Input Dataset**: `ECDAT Standard Benchmark Source Corpus` (`benchmarks\datasets\source_corpus`)
@@ -135,7 +135,7 @@
 ```
 
 ### BENCH-04-SECRET-SCANNER: Secret Safe Entropy & Pattern Scanning Engine
-- **Benchmark Script**: [`benchmarks/run_benchmarks.py::benchmark_secret_scanner`](file:///C:/Users/Jeevan c/Documents/ECDAT/benchmarks/run_benchmarks.py)
+- **Benchmark Script**: [`benchmarks/run_benchmarks.py::benchmark_secret_scanner`](benchmarks/run_benchmarks.py)
 - **Warmup Policy**: `1 unmeasured execution to compile high-entropy regex engines`
 - **Measured Repetitions**: `5`
 - **Input Dataset**: `Secret Scanning Benchmark Corpus` (`benchmarks\datasets\secret_scan_corpus`)
