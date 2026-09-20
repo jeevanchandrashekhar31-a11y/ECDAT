@@ -81,9 +81,17 @@ jobs:
           python scripts/generate_provenance.py --output artifacts/provenance/ecdat_provenance.slsa.json
 
       - name: 19.2 Cryptographic Artifact Signing (Ed25519 & Manifests)
+        env:
+          ECDAT_SIGNING_KEY_PEM: ${{ secrets.ECDAT_SIGNING_KEY_PEM }}
         run: |
-          python scripts/sign_artifacts.py --generate-keys --sign
-          python scripts/sign_artifacts.py --verify
+          if [ -n "$ECDAT_SIGNING_KEY_PEM" ] || [ -f ".keys/ecdat_signing_key.pem" ]; then
+            python scripts/sign_artifacts.py --sign
+          else
+            echo "::warning::ECDAT_SIGNING_KEY_PEM secret not configured; signing skipped under Option 1 (fixed keypair)."
+          fi
+          if [ -f "artifacts/SHA256SUMS" ] && [ -f "artifacts/SHA256SUMS.sig" ]; then
+            python scripts/sign_artifacts.py --verify
+          fi
 
       - name: 19.2 Sigstore Cosign Keyless OIDC Attestation (on Tag / Main)
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')

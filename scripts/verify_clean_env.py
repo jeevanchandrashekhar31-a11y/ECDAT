@@ -126,15 +126,16 @@ def build_clean_environment(sanitized_config_path: Path) -> Tuple[Dict[str, str]
     clean_env["PYTHONUNBUFFERED"] = "1"
     clean_env["NODE_TEST_CONTEXT"] = "true"
 
-    # Ephemeral in-memory signing key for hermetic release artifact signing
-    from cryptography.hazmat.primitives.asymmetric import ed25519
-    from cryptography.hazmat.primitives import serialization
-    clean_signing_key = ed25519.Ed25519PrivateKey.generate()
-    clean_env["ECDAT_SIGNING_KEY_PEM"] = clean_signing_key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption(),
-    ).decode("utf-8")
+    # Option 1 (Fixed & Shared Keypair Architecture):
+    # Forward the authoritative signing key if present in ambient env or .keys/.
+    # Ephemeral random keys MUST NOT be generated, as they break verification
+    # against the fixed committed config/ed25519_release_public.pem.
+    if "ECDAT_SIGNING_KEY_PEM" in os.environ:
+        clean_env["ECDAT_SIGNING_KEY_PEM"] = os.environ["ECDAT_SIGNING_KEY_PEM"]
+    elif "ECDAT_SIGNING_KEY_PATH" in os.environ:
+        clean_env["ECDAT_SIGNING_KEY_PATH"] = os.environ["ECDAT_SIGNING_KEY_PATH"]
+    elif (REPO_ROOT / ".keys" / "ecdat_signing_key.pem").exists():
+        clean_env["ECDAT_SIGNING_KEY_PATH"] = str(REPO_ROOT / ".keys" / "ecdat_signing_key.pem")
 
     return clean_env, stripped_vars
 
@@ -206,10 +207,25 @@ def main() -> int:
             "1c. Regenerate SLSA Build Provenance Attestation",
             [sys.executable, "scripts/generate_provenance.py"],
         ),
-        (
+    ]
+
+    has_signing_key = (
+        "ECDAT_SIGNING_KEY_PEM" in clean_env
+        or "ECDAT_SIGNING_KEY_PATH" in clean_env
+        or (REPO_ROOT / ".keys" / "ecdat_signing_key.pem").exists()
+    )
+    existing_sig = (REPO_ROOT / "artifacts" / "SHA256SUMS.sig").exists()
+
+    if has_signing_key or not existing_sig:
+        # Include signing step (will sign if key present, or fail loudly if missing key and no pre-existing sig)
+        steps.append((
             "1d. Cryptographic Artifact Signing",
             [sys.executable, "scripts/sign_artifacts.py", "--sign"],
-        ),
+        ))
+    else:
+        print(">> [NOTICE] No signing key in environment (Option 1); validating pre-existing signed release manifest.")
+
+    steps.extend([
         (
             "1e. Cryptographic Artifact Signatures Verification",
             [sys.executable, "scripts/sign_artifacts.py", "--verify"],
@@ -226,7 +242,7 @@ def main() -> int:
             "4. Supply-Chain Security Release Gate (6 Gates)",
             [sys.executable, "scripts/release_gate.py"],
         ),
-    ]
+    ])
 
     if not args.skip_tests:
         steps.append((

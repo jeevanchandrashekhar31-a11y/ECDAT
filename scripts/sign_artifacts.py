@@ -38,6 +38,29 @@ def compute_hashes(file_path: Path) -> Tuple[str, str]:
     return sha256.hexdigest(), sha512.hexdigest()
 
 
+# =========================================================================
+# DESIGN DECISION: OPTION 1 (Fixed & Shared Authority Keypair Architecture)
+# -------------------------------------------------------------------------
+# The Ed25519 release keypair is authoritative, fixed, and shared across
+# environments. The public key half is permanently committed at
+# config/ed25519_release_public.pem to enable deterministic, offline signature
+# verification by any evaluator, judge, or CI runner without external trust roots.
+#
+# The private key half (.keys/ecdat_signing_key.pem, or injected via the
+# ECDAT_SIGNING_KEY_PEM / ECDAT_SIGNING_KEY_PATH environment variables) represents
+# the release authority credential. It must NEVER be committed to version control.
+#
+# Under this model:
+# 1. Signing MUST FAIL LOUDLY if .keys/ecdat_signing_key.pem (or an injected
+#    environment key) does not exist. It must NEVER silently generate a fresh
+#    ephemeral keypair, as doing so creates an identity mismatch against the
+#    authoritative committed public key and breaks downstream verification.
+# 2. Key generation via generate_keypair() is strictly an explicit, one-time
+#    administrative operation triggered only by --generate-keys.
+# 3. Signing operations never overwrite config/ed25519_release_public.pem.
+# =========================================================================
+
+
 def generate_keypair(keys_dir: Path) -> Tuple[Path, Path]:
     """Generate Ed25519 private and public keys if not already present."""
     keys_dir.mkdir(parents=True, exist_ok=True)
@@ -67,11 +90,10 @@ def generate_keypair(keys_dir: Path) -> Tuple[Path, Path]:
         f.write(pub_bytes)
 
     release_pub = REPO_ROOT / "config" / "ed25519_release_public.pem"
-    if not release_pub.exists():
-        release_pub.parent.mkdir(parents=True, exist_ok=True)
-        with open(release_pub, "wb") as f:
-            f.write(pub_bytes)
-        print(f"   Created release public key: {release_pub}")
+    release_pub.parent.mkdir(parents=True, exist_ok=True)
+    with open(release_pub, "wb") as f:
+        f.write(pub_bytes)
+    print(f"   Synchronized release public key: {release_pub}")
 
     # Set restrictive permissions where supported
     try:
@@ -107,16 +129,7 @@ def sign_manifest(manifest_path: Path, priv_key_path: Path, sig_path: Path):
         f.write(signature)
     print(f"   [SIGNED] Signature written to {sig_path}")
 
-    # Synchronize release public key with the key used to sign
-    pub = private_key.public_key()
-    pub_bytes = pub.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-    )
-    release_pub = REPO_ROOT / "config" / "ed25519_release_public.pem"
-    release_pub.parent.mkdir(parents=True, exist_ok=True)
-    with open(release_pub, "wb") as f:
-        f.write(pub_bytes)
+    # Option 1: config/ed25519_release_public.pem is static and authoritative; do not overwrite.
 
 
 def verify_manifest(manifest_path: Path, pub_key_path: Path, sig_path: Path) -> bool:
@@ -230,14 +243,56 @@ def main():
 
     if args.verify:
         print(">> Verifying artifact integrity and cryptographic signatures...")
-        sig_ok = verify_manifest(sha256_file, pub_key_path, sig_file)
+        canonical_pub = REPO_ROOT / "config" / "ed25519_release_public.pem"
+        verify_pub = canonical_pub if canonical_pub.exists() else pub_key_path
+
+        if not sha256_file.exists():
+            print(f"   [FAIL] Checksum manifest missing: {sha256_file}", file=sys.stderr)
+            print("\n>> [ERROR] Integrity verification failed: SHA256SUMS not found.", file=sys.stderr)
+            return 1
+        if not sig_file.exists():
+            print(f"   [FAIL] Signature missing: {sig_file}", file=sys.stderr)
+            print("\n>> [ERROR] Integrity verification failed: SHA256SUMS.sig not found.", file=sys.stderr)
+            return 1
+        if not verify_pub.exists():
+            print(f"   [FAIL] Public key missing: {verify_pub}", file=sys.stderr)
+            print("\n>> [ERROR] Integrity verification failed: release public key not found.", file=sys.stderr)
+            return 1
+
+        sig_ok = verify_manifest(sha256_file, verify_pub, sig_file)
         hash_ok = verify_checksums(sha256_file, REPO_ROOT)
         if sig_ok and hash_ok:
             print("\n>> [SUCCESS] All artifact checksums and digital signatures are VALID.")
             return 0
         else:
-            print("\n>> [ERROR] Integrity verification failed.")
+            print("\n>> [ERROR] Integrity verification failed.", file=sys.stderr)
             return 1
+
+    # Option 1: The keypair is fixed and shared. Fail loudly if the signing key is missing.
+    has_priv_key = (
+        priv_key_path.exists()
+        or bool(os.environ.get("ECDAT_SIGNING_KEY_PEM"))
+        or (bool(os.environ.get("ECDAT_SIGNING_KEY_PATH")) and Path(os.environ.get("ECDAT_SIGNING_KEY_PATH")).exists())
+    )
+    if not has_priv_key:
+        print(
+            f"\n>> [ERROR] Signing key missing: '{priv_key_path}' does not exist and neither "
+            "ECDAT_SIGNING_KEY_PEM nor ECDAT_SIGNING_KEY_PATH is configured.",
+            file=sys.stderr,
+        )
+        print(
+            ">> Under Option 1 (Fixed & Shared Keypair), signing requires a pre-provisioned Ed25519 private key.",
+            file=sys.stderr,
+        )
+        print(
+            ">> Automatic generation of an ephemeral key is disabled to prevent mismatched identities.",
+            file=sys.stderr,
+        )
+        print(
+            ">> To generate a local development keypair, run: python scripts/sign_artifacts.py --generate-keys",
+            file=sys.stderr,
+        )
+        return 1
 
     # Default action: sign
     print(">> Discovering artifacts for cryptographic signing...")
@@ -266,10 +321,7 @@ def main():
     print(f"   Wrote {sha512_file.name} ({len(sha512_lines)} entries)")
 
     # Digitally sign SHA256SUMS
-    if priv_key_path.exists() or os.environ.get("ECDAT_SIGNING_KEY_PEM") or os.environ.get("ECDAT_SIGNING_KEY_PATH"):
-        sign_manifest(sha256_file, priv_key_path, sig_file)
-    else:
-        print("   [WARN] Private key missing and ECDAT_SIGNING_KEY_PEM/PATH not set. Cannot sign manifest.")
+    sign_manifest(sha256_file, priv_key_path, sig_file)
 
     print("\n>> Artifact signing complete.")
     return 0
