@@ -31,5 +31,7 @@ artifacts/ci/
 !tests/fixtures/malicious_archives/
 artifacts/security/
 artifacts/provenance/
+artifacts/SHA256SUMS
+artifacts/SHA256SUMS.sig
 security_evidence/
 ecdat_clean_package.zip
