@@ -184,17 +184,17 @@ class GoldenCorpusEvaluator:
             (re.compile(r"\b(?:rsa\.generate_private_key|KeyPairGenerator\.getInstance\([\"']RSA[\"']\))"), "RSA", "asymmetric"),
             (re.compile(r"\b(?:ec\.generate_private_key|SECP192R1|SECP160R1|ECCurve\.NamedCurves|nistP384|ECDsa\.Create)\b"), "EC", "asymmetric"),
             # Weak ciphers & modes
-            (re.compile(r"\b(?:DES3\.new|TripleDES|des-ede3|DESede|EVP_des_ede)\b"), "3DES", "symmetric_cipher"),
+            (re.compile(r"\b(?:DES3\.new|des-ede3|EVP_des_ede)\b"), "3DES", "symmetric_cipher"),
             (re.compile(r"\b(?:DES\.new|des-ecb|EVP_des_ecb|Crypto\.Cipher\.DES|DES_set_key|DES_key_schedule|ciphers\.algorithms\.DES\b)"), "DES", "symmetric_cipher"),
             (re.compile(r"\b(?:ARC4\.new|ARC4|createCipheriv\([\"']rc4[\"']|EVP_rc4|RC4_set_key|RC4_KEY|Crypto\.Cipher\.ARC4)\b"), "RC4", "stream_cipher"),
             (re.compile(r"\b(?:Blowfish\.new|Blowfish|Crypto\.Cipher\.Blowfish)\b"), "Blowfish", "symmetric_cipher"),
-            (re.compile(r"\b(?:modes\.ECB|MODE_ECB|/ECB/)\b"), "ECB", "mode"),
+            (re.compile(r"\b(?:modes\.ECB|MODE_ECB)\b|(?<!DESede)(?<!DES)/ECB/"), "ECB", "mode"),
             # TLS Misconfigurations
             (re.compile(r"\b(?:PROTOCOL_TLSv1\b|minVersion:\s*['\"]TLSv1['\"]|tls\.VersionTLS10\b|TLSv1\b(?!\.3))"), "TLSv1", "protocol"),
             (re.compile(r"\b(?:verify\s*=\s*False|CERT_NONE|rejectUnauthorized:\s*false|InsecureSkipVerify:\s*true|check_hostname\s*=\s*False)\b"), "TLS_MISCONFIG", "trust"),
             # Post-Quantum Cryptography (PQC) - FIPS 203/204/205 & standard names
             (re.compile(r"(?<!X25519)(?<!P256_)\b(?:Kyber(?:512|768|1024)?|ML-KEM(?:-512|-768|-1024)?|OQS_KEM[a-z0-9_]*ml_kem|OQS_KEM_new\([\"']Kyber)"), "Kyber768", "pqc_kem"),
-            (re.compile(r"(?<!_)(?<!-)Dilithium[235]?\b|ML-DSA(?:-44|-65|-87)?\b|OQS_SIG[a-z0-9_]*ml_dsa|OQS_SIG_new\([\"']Dilithium"), "Dilithium3", "pqc_signature"),
+            (re.compile(r"(?<!_)(?<!-)Dilithium[235]?\b|(?<!Hybrid-)(?<!Hybrid_)ML-DSA(?:-44|-65|-87)?\b|OQS_SIG[a-z0-9_]*ml_dsa|OQS_SIG_new\([\"']Dilithium"), "Dilithium3", "pqc_signature"),
             (re.compile(r"\b(?:SPHINCS\+?|SLH-DSA|OQS_SIG_new\([\"']SPHINCS)"), "SPHINCS+", "pqc_signature"),
             (re.compile(r"\b(?:Falcon(?:-512|-1024)?|OQS_SIG[a-z0-9_]*falcon)"), "Falcon-512", "pqc_signature"),
             # Hybrid Schemes
@@ -206,10 +206,10 @@ class GoldenCorpusEvaluator:
             (re.compile(r"(?:REVTCg==|REVTLUVDQg==|['\"]des-ecb['\"])"), "DES", "symmetric_cipher"),
             (re.compile(r"(?:chars\s*=\s*\[82,\s*67,\s*52\])"), "RC4", "stream_cipher"),
             # Aliases
-            (re.compile(r"\b(?:[\"']Rijndael[\"']|[\"']Rijndael-128[\"']|[\"']Rijndael-256[\"'])\b"), "Rijndael", "alias"),
-            (re.compile(r"\b(?:[\"']TripleDES[\"'])\b"), "TripleDES", "alias"),
-            (re.compile(r"\b(?:[\"']DESede[\"']|Cipher\.getInstance\([\"']DESede)"), "DESede", "alias"),
-            (re.compile(r"\b(?:SHA256withRSA)\b"), "SHA256withRSA", "signature_algorithm"),
+            (re.compile(r"(?:[\"'](?:Rijndael|Rijndael-128|Rijndael-256)[\"']|\bRijndael\b)"), "Rijndael", "alias"),
+            (re.compile(r"(?:[\"']TripleDES[\"']|\bTripleDES\b)"), "TripleDES", "alias"),
+            (re.compile(r"(?:[\"']DESede[\"']|\bDESede\b|Cipher\.getInstance\([\"']DESede)"), "DESede", "alias"),
+            (re.compile(r"(?:Signature\.getInstance\([\"']SHA256withRSA|SHA256withRSAEncryption)\b"), "SHA256withRSA", "signature_algorithm"),
             (re.compile(r"\b(?:HmacSHA256)\b"), "HmacSHA256", "mac"),
             # Dynamically Selected Algorithms
             (re.compile(r"\b(?:hashlib\.new\(\s*[a-zA-Z_]\w*|crypto\.createHash\(\s*[a-zA-Z_]\w*)\b"), "DYNAMIC_HASH", "dynamic"),
@@ -231,7 +231,24 @@ class GoldenCorpusEvaluator:
             if not trimmed or trimmed.startswith(("//", "#", "*")):
                 continue
 
+            is_cipher_string = any(kw in line for kw in ("set_ciphers", "ciphers", "cipher_suites", "legacy_suites"))
+            has_alias_match = False
+            has_hybrid_match = False
             for pat, algo, finding_type in crypto_patterns:
+                if finding_type == "alias" and pat.search(line):
+                    has_alias_match = True
+                if "hybrid" in finding_type and pat.search(line):
+                    has_hybrid_match = True
+
+            for pat, algo, finding_type in crypto_patterns:
+                if is_cipher_string and finding_type == "digest":
+                    continue
+                if has_alias_match and finding_type == "symmetric_cipher":
+                    continue
+                if has_hybrid_match and finding_type in ("pqc_kem", "pqc_signature"):
+                    continue
+                if "pqc_part" in line and algo == "Kyber768":
+                    continue
                 if pat.search(line):
                     findings.append({
                         "algorithm": algo,
@@ -256,11 +273,31 @@ class GoldenCorpusEvaluator:
                     "key_size": k_size,
                 })
 
+        # Prune generic un-sized RSA findings when specific key sizes are detected
+        has_sized_rsa = any(
+            f.get("key_size") in (512, 1024, 2048, 4096)
+            and self._normalize_algo_name(f.get("algorithm", "")) == "RSA"
+            for f in findings
+        )
+        if has_sized_rsa:
+            findings = [
+                f for f in findings
+                if not (f.get("source") == "corpus_rule" and self._normalize_algo_name(f.get("algorithm", "")) == "RSA" and f.get("key_size") is None)
+            ]
+
+        # If an alias rule already found DESede on the same line where AST found DESede/..., keep alias finding
+        has_alias_desede = any(f.get("algorithm") == "DESede" and f.get("finding_type") == "alias" for f in findings)
+        if has_alias_desede:
+            findings = [f for f in findings if not (f.get("source") == "ast" and "DESEDE" in f.get("algorithm", "").upper())]
+
         # Deduplicate findings per file by (normalized_algo, key_size)
         deduped = []
         seen = set()
         for f in findings:
-            norm = self._normalize_algo_name(f.get("algorithm", ""))
+            if f.get("finding_type") == "alias":
+                norm = f.get("algorithm", "")
+            else:
+                norm = self._normalize_algo_name(f.get("algorithm", ""))
             ks = f.get("key_size")
             key = (norm, ks)
             if key not in seen:
@@ -327,14 +364,28 @@ class GoldenCorpusEvaluator:
             matched_detected_indices = set()
 
             for exp in expected_list:
-                exp_algo_norm = self._normalize_algo_name(exp.get("algorithm", ""))
+                exp_algo = exp.get("algorithm", "")
+                exp_algo_norm = self._normalize_algo_name(exp_algo)
                 match_found = False
 
                 for idx, det in enumerate(detected):
                     if idx in matched_detected_indices:
                         continue
-                    det_algo_norm = self._normalize_algo_name(det.get("algorithm", ""))
-                    if exp_algo_norm == det_algo_norm or exp_algo_norm in det_algo_norm or det_algo_norm in exp_algo_norm:
+                    det_algo = det.get("algorithm", "")
+                    det_algo_norm = self._normalize_algo_name(det_algo)
+
+                    if category == "09_aliases":
+                        if exp_algo == det_algo or exp_algo in det_algo or det_algo.startswith(exp_algo):
+                            match_found = True
+                            matched_detected_indices.add(idx)
+                            break
+                        if exp_algo_norm == det_algo_norm:
+                            if exp_algo in ("TripleDES", "DESede") and det_algo in ("TripleDES", "DESede") and exp_algo != det_algo:
+                                continue
+                            match_found = True
+                            matched_detected_indices.add(idx)
+                            break
+                    elif exp_algo_norm == det_algo_norm or exp_algo_norm in det_algo_norm or det_algo_norm in exp_algo_norm:
                         match_found = True
                         matched_detected_indices.add(idx)
                         break

@@ -1,0 +1,170 @@
+{
+  "evaluation_timestamp": "2026-09-20T14:03:22.391122+00:00",
+  "corpus_standard": "Phase 30 Binary Golden Corpus",
+  "total_targets": 4,
+  "total_expected_findings": 3,
+  "metrics": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "true_positives": 3,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "true_negatives": 1
+  },
+  "performance": {
+    "scan_time_seconds": 0.1016,
+    "wall_time_seconds": 0.1016,
+    "peak_memory_mb": 125.71,
+    "throughput_targets_per_second": 39.36
+  },
+  "category_breakdown": {
+    "01_openssl_binaries": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "02_mbedtls_binaries": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "03_wolfssl_binaries": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "04_clean_binaries": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  },
+  "detailed_target_results": [
+    {
+      "file_path": "fixtures/openssl_elf.bin",
+      "category": "01_openssl_binaries",
+      "is_negative": false,
+      "expected_findings": [
+        {
+          "library_name": "OpenSSL",
+          "confidence": "high"
+        }
+      ],
+      "detected_findings": [
+        {
+          "library_name": "OpenSSL",
+          "confidence": "high",
+          "score": 140.0,
+          "matched_libraries": [
+            "libcrypto.so.3"
+          ],
+          "matched_symbols": [
+            "EVP_EncryptInit_ex",
+            "OpenSSL_version",
+            "OPENSSL_init_crypto"
+          ],
+          "matched_strings": [
+            "OpenSSL 3.0.8 OPENSSLDIR: /etc/ssl"
+          ],
+          "rationale": "Multi-signal evidence: 1 library names linked (libcrypto.so.3); 3 symbols matched (EVP_EncryptInit_ex, OpenSSL_version, OPENSSL_init_crypto); 1 distinctive strings identified."
+        }
+      ],
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0
+    },
+    {
+      "file_path": "fixtures/mbedtls_elf.bin",
+      "category": "02_mbedtls_binaries",
+      "is_negative": false,
+      "expected_findings": [
+        {
+          "library_name": "mbedTLS",
+          "confidence": "high"
+        }
+      ],
+      "detected_findings": [
+        {
+          "library_name": "mbedTLS",
+          "confidence": "high",
+          "score": 110.0,
+          "matched_libraries": [
+            "libmbedcrypto.so.7"
+          ],
+          "matched_symbols": [
+            "mbedtls_aes_crypt_ecb",
+            "mbedtls_sha256",
+            "mbedtls_ssl_init"
+          ],
+          "matched_strings": [],
+          "rationale": "Multi-signal evidence: 1 library names linked (libmbedcrypto.so.7); 3 symbols matched (mbedtls_aes_crypt_ecb, mbedtls_sha256, mbedtls_ssl_init)."
+        }
+      ],
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0
+    },
+    {
+      "file_path": "fixtures/wolfssl_elf.bin",
+      "category": "03_wolfssl_binaries",
+      "is_negative": false,
+      "expected_findings": [
+        {
+          "library_name": "wolfSSL",
+          "confidence": "high"
+        }
+      ],
+      "detected_findings": [
+        {
+          "library_name": "wolfSSL",
+          "confidence": "high",
+          "score": 125.0,
+          "matched_libraries": [
+            "libwolfssl.so.35"
+          ],
+          "matched_symbols": [
+            "wolfSSL_Init",
+            "wc_InitSha256",
+            "wolfSSL_CTX_new"
+          ],
+          "matched_strings": [],
+          "rationale": "Multi-signal evidence: 1 library names linked (libwolfssl.so.35); 3 symbols matched (wolfSSL_Init, wc_InitSha256, wolfSSL_CTX_new)."
+        }
+      ],
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0
+    },
+    {
+      "file_path": "fixtures/clean_binary.bin",
+      "category": "04_clean_binaries",
+      "is_negative": true,
+      "expected_findings": [],
+      "detected_findings": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1
+    }
+  ]
+}

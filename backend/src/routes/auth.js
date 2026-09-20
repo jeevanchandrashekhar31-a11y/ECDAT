@@ -169,6 +169,7 @@ router.post("/token/revoke", RATE_LIMITS.tokenOperations.middleware(), async (re
   );
 
   const tokenRecord = defaultTokenService.getTokenRecord(jti);
+
   if (!tokenRecord) {
     // If not in registry, check if caller's own current access token matches the JTI
     if (req.user?.jti === jti) {
@@ -202,7 +203,7 @@ router.post("/token/revoke", RATE_LIMITS.tokenOperations.middleware(), async (re
     }
 
     // Ownership check: ordinary user can only revoke their own tokens
-    const isOwner = callerUserId && tokenRecord.userId === callerUserId;
+    const isOwner = Boolean(callerUserId && tokenRecord.userId === callerUserId) || req.user?.jti === jti;
     if (!isOwner && !isPlatformAdmin && !isTenantAdmin) {
       return res.status(403).json({
         error: "Forbidden",
@@ -1586,6 +1587,15 @@ router.post("/logout-all", RATE_LIMITS.tokenOperations.middleware(), async (req,
   let targetUser = null;
   // If targeting another user
   if (targetUserId !== callerUserId) {
+    // Role check: ordinary authenticated user cannot target another user (fail fast to prevent user enumeration)
+    if (!isPlatformAdmin && !isTenantAdmin) {
+      return res.status(403).json({
+        error: "Forbidden",
+        code: "FORBIDDEN",
+        message: "Ordinary users can only revoke their own sessions",
+      });
+    }
+
     targetUser = defaultLocalAuthManager.getUser(targetUserId);
     if (!targetUser) {
       return res.status(404).json({
@@ -1609,15 +1619,6 @@ router.post("/logout-all", RATE_LIMITS.tokenOperations.middleware(), async (req,
         error: "VerticalPrivilegeEscalation",
         code: "VERTICAL_PRIVILEGE_ESCALATION",
         message: "Tenant administrators cannot revoke platform administrator sessions",
-      });
-    }
-
-    // Role check: ordinary authenticated user cannot target another user
-    if (!isPlatformAdmin && !isTenantAdmin) {
-      return res.status(403).json({
-        error: "Forbidden",
-        code: "FORBIDDEN",
-        message: "Ordinary users can only revoke their own sessions",
       });
     }
   } else {

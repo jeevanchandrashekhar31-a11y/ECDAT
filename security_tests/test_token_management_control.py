@@ -132,3 +132,161 @@ class TestTokenManagementControl:
         # Unsigned token without valid signature must fail verification
         with pytest.raises(Exception):
             verifier.verify_token(unsigned_token)
+
+    # 6. TOKEN REVOCATION AUTHORIZATION: User A cannot revoke User B's token (returns 403)
+    def test_user_a_revoking_user_b_token_returns_403(self):
+        """Confirm user A attempting to revoke user B's token returns 403."""
+        import json
+        import subprocess
+        from pathlib import Path
+
+        repo_root = Path(__file__).resolve().parent.parent
+        node_script = """
+        const app = require('./src/app');
+        const { defaultTokenService } = require('./src/identity');
+
+        const server = app.listen(0, async () => {
+            const port = server.address().port;
+            const baseUrl = 'http://127.0.0.1:' + port;
+
+            const tokenA = defaultTokenService.issueTokenPair({
+                userId: 'usr_alice_' + Date.now(),
+                email: 'alice@corp.test',
+                roles: ['viewer'],
+                customClaims: { tenantId: 'default-tenant' }
+            });
+            const tokenB = defaultTokenService.issueTokenPair({
+                userId: 'usr_bob_' + Date.now(),
+                email: 'bob@corp.test',
+                roles: ['viewer'],
+                customClaims: { tenantId: 'default-tenant' }
+            });
+
+            const resRevoke = await fetch(baseUrl + '/api/v1/auth/token/revoke', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + tokenA.accessToken,
+                },
+                body: JSON.stringify({ jti: tokenB.jti }),
+            });
+            const dataRevoke = await resRevoke.json();
+
+            server.close();
+            console.log(JSON.stringify({
+                status: resRevoke.status,
+                code: dataRevoke.code,
+            }));
+        });
+        """
+        proc = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=str(repo_root / "backend"),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        lines = [l for l in proc.stdout.splitlines() if l.startswith("{")]
+        result = json.loads(lines[-1])
+
+        assert result["status"] == 403
+        assert result["code"] == "FORBIDDEN"
+
+    # 7. EXPIRED TOKEN INTEGRITY: Expired token returns 401
+    def test_expired_token_returns_401(self):
+        """Confirm expired token returns 401."""
+        import json
+        import subprocess
+        from pathlib import Path
+
+        repo_root = Path(__file__).resolve().parent.parent
+        node_script = """
+        const app = require('./src/app');
+        const { defaultTokenService } = require('./src/identity');
+
+        const server = app.listen(0, async () => {
+            const port = server.address().port;
+            const baseUrl = 'http://127.0.0.1:' + port;
+
+            const expPayload = {
+                sub: 'usr_exp',
+                exp: Math.floor(Date.now() / 1000) - 300,
+                iat: Math.floor(Date.now() / 1000) - 900,
+                token_type: 'access',
+                roles: ['viewer'],
+            };
+            const activeKey = defaultTokenService.secretManager.getActiveKey('jwt_signing');
+            const expiredToken = defaultTokenService.signJwt(expPayload, activeKey.secret, activeKey.kid, activeKey.algorithm);
+
+            const resExpired = await fetch(baseUrl + '/api/v1/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + expiredToken }
+            });
+
+            server.close();
+            console.log(JSON.stringify({
+                status: resExpired.status,
+            }));
+        });
+        """
+        proc = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=str(repo_root / "backend"),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        lines = [l for l in proc.stdout.splitlines() if l.startswith("{")]
+        result = json.loads(lines[-1])
+
+        assert result["status"] == 401
+
+    # 8. TAMPERED TOKEN SIGNATURE INTEGRITY: Tampered token signature returns 401
+    def test_tampered_token_signature_returns_401(self):
+        """Confirm tampered token signature returns 401."""
+        import json
+        import subprocess
+        from pathlib import Path
+
+        repo_root = Path(__file__).resolve().parent.parent
+        node_script = """
+        const app = require('./src/app');
+        const { defaultTokenService } = require('./src/identity');
+
+        const server = app.listen(0, async () => {
+            const port = server.address().port;
+            const baseUrl = 'http://127.0.0.1:' + port;
+
+            const validTokenPair = defaultTokenService.issueTokenPair({
+                userId: 'usr_valid_' + Date.now(),
+                email: 'valid@corp.test',
+                roles: ['viewer'],
+                customClaims: { tenantId: 'default-tenant' }
+            });
+
+            // Tamper with signature bytes
+            const parts = validTokenPair.accessToken.split('.');
+            const tamperedSig = (parts[2].slice(0, -4) || 'xxxx') + 'abcd';
+            const tamperedToken = parts[0] + '.' + parts[1] + '.' + tamperedSig;
+
+            const resTampered = await fetch(baseUrl + '/api/v1/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + tamperedToken }
+            });
+
+            server.close();
+            console.log(JSON.stringify({
+                status: resTampered.status,
+            }));
+        });
+        """
+        proc = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=str(repo_root / "backend"),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        lines = [l for l in proc.stdout.splitlines() if l.startswith("{")]
+        result = json.loads(lines[-1])
+
+        assert result["status"] == 401
+

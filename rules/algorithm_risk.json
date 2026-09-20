@@ -218,7 +218,7 @@
       "id": "aes",
       "canonical_name": "AES",
       "category": "symmetric_cipher",
-      "aliases": ["aes", "evp_aes_128_gcm", "evp_aes_256_gcm", "aes-cbc", "aes-gcm", "aes-ctr"],
+      "aliases": ["aes", "rijndael", "evp_aes_128_gcm", "evp_aes_256_gcm", "aes-cbc", "aes-gcm", "aes-ctr"],
       "classical_risk_level": "none",
       "quantum_relevance": "grover_sensitive",
       "conditions": [
@@ -258,7 +258,7 @@
       "id": "3des",
       "canonical_name": "3DES",
       "category": "symmetric_cipher",
-      "aliases": ["3des", "triple-des", "des-ede3", "evp_des_ede3"],
+      "aliases": ["3des", "tripledes", "triple-des", "desede", "des-ede3", "evp_des_ede3"],
       "classical_risk_level": "high",
       "quantum_relevance": "grover_sensitive",
       "deprecation_notes": "Sweet32 attack (CVE-2016-2183) exploits 64-bit block size collision vulnerability. Disallowed in TLS and deprecated by NIST after 2023.",

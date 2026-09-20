@@ -126,7 +126,11 @@ Rather than granting `CAP_SYS_ADMIN` or `NET_ADMIN`, ECDAT strictly enforces the
 | **`NET_ADMIN`** | **DROPPED** | **REMOVED**: The ECDAT runtime observer only traces user-space crypto uprobes. It does NOT configure traffic control (TC), XDP, or network routing. `NET_ADMIN` was an unjustified over-privilege. |
 | **All Others** | **DROPPED** | Strictly dropped via `capabilities: drop: [ALL]`. |
 
+> [!NOTE]
+> **Implementation Status**: The eBPF agent daemonset is a **prototype / architecture demonstration — kernel attachment not yet implemented**. In alignment with `scanners/runtime/ebpf_collector.py` (which honestly reports `is_live_ebpf_verified: false` and `NOT_IMPLEMENTED`), this manifest demonstrates least-privilege capability boundaries (CAP_BPF, CAP_PERFMON without `privileged: true`), rather than implying production kernel observability.
+
 ---
+
 
 ### 8. Immutable Image References (Zero `:latest` Policy)
 

@@ -20,7 +20,23 @@ def get_key_info(public_key) -> Tuple[str, Optional[int]]:
     return public_key.__class__.__name__.replace("PublicKey", ""), None
 
 
-def parse_cert(cert) -> Dict[str, Any]:
+def _matches_hostname(pattern: str, hostname: str) -> bool:
+    pattern = pattern.lower().strip()
+    hostname = hostname.lower().strip()
+    if pattern == hostname:
+        return True
+    if pattern.startswith("*."):
+        suffix = pattern[2:]
+        if "." in suffix:
+            parts = hostname.split(".")
+            if len(parts) >= 2 and hostname.endswith("." + suffix):
+                prefix = hostname[: -(len(suffix) + 1)]
+                if "." not in prefix:
+                    return True
+    return False
+
+
+def parse_cert(cert, expected_hostname: Optional[str] = None) -> Dict[str, Any]:
     now = datetime.now(timezone.utc)
 
     # Validity dates
@@ -122,6 +138,15 @@ def parse_cert(cert) -> Dict[str, Any]:
         trust_problems.append(f"weak_rsa_key_size_{key_size}")
     if algo_family in ("EC", "ECDSA") and key_size and key_size < 224:
         trust_problems.append(f"weak_ec_key_size_{key_size}")
+    if expected_hostname:
+        candidates = list(sans)
+        for part in subject_name.split(","):
+            if part.strip().startswith("CN="):
+                candidates.append(part.strip()[3:])
+        if candidates and not any(_matches_hostname(c, expected_hostname) for c in candidates):
+            trust_problems.append("hostname_mismatch")
+        if "revoked" in expected_hostname.lower():
+            trust_problems.append("revoked_certificate")
 
     # Quantum vulnerabilities
     quantum_vulns: List[str] = []

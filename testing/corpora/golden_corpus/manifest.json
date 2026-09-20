@@ -688,6 +688,13 @@
       "expected_findings": []
     },
     {
+      "file_path": "11_negative_examples/negative_rules_pin.py",
+      "category": "11_negative_examples",
+      "language": "python",
+      "is_negative": true,
+      "expected_findings": []
+    },
+    {
       "file_path": "12_obfuscated_samples/obfuscated_crypto.js",
       "category": "12_obfuscated_samples",
       "language": "javascript",

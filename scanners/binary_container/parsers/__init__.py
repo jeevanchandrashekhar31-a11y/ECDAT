@@ -27,6 +27,7 @@ def analyze_binary(
     file_path: str,
     options: ParserOptions = None,
     worker_isolation: bool = True,
+    timeout_seconds: int = None,
 ) -> BinaryMetadata:
     """
     Safely analyzes an ELF, PE, or Mach-O binary.
@@ -36,7 +37,8 @@ def analyze_binary(
     """
     options = options or ParserOptions()
     options.worker_isolation = worker_isolation
-    analyzer = WorkerIsolatedBinaryAnalyzer(default_timeout=options.timeout_seconds)
+    timeout = timeout_seconds or getattr(options, "timeout_seconds", 30)
+    analyzer = WorkerIsolatedBinaryAnalyzer(default_timeout=timeout)
     return analyzer.analyze(file_path, options=options)
 
 

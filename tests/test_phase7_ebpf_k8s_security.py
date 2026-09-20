@@ -58,3 +58,32 @@ def test_p1_07_k8s_ebpf_least_privilege():
     assert "- ALL" in content
     assert "- BPF" in content
     assert "- PERFMON" in content
+
+
+def test_p5b_ebpf_truthfulness_separation():
+    """Phase 5B: eBPF collector strictly distinguishes kernel_attachment_verified from algorithm_identification_verified."""
+    from scanners.runtime.ebpf_collector import LinuxEbpfProbeCollector
+
+    collector = LinuxEbpfProbeCollector()
+    assert collector.kernel_attachment_verified is False
+    assert collector.algorithm_identification_verified is False
+    assert collector.is_live_ebpf_verified is False
+    assert collector.verification_status == "NOT IMPLEMENTED"
+
+    # Simulate genuine kernel attachment without dynamic algorithm inspection
+    collector.kernel_attachment_verified = True
+    assert collector.algorithm_identification_verified is False
+    assert collector.is_live_ebpf_verified is False  # Must NOT be set True as a stand-in for both
+    assert collector.verification_status == "KERNEL_ATTACHED_ALGORITHMS_UNVERIFIED"
+
+    status = collector.get_telemetry_status()
+    assert status["kernel_attachment_verified"] is True
+    assert status["algorithm_identification_verified"] is False
+    assert status["is_live_ebpf_verified"] is False
+    assert status["verification_status"] == "KERNEL_ATTACHED_ALGORITHMS_UNVERIFIED"
+
+    collector.detach_all_kernel_probes()
+    assert collector.kernel_attachment_verified is False
+    assert collector.algorithm_identification_verified is False
+    assert collector.verification_status == "NOT IMPLEMENTED"
+

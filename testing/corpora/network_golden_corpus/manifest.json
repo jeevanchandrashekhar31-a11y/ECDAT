@@ -1,0 +1,123 @@
+{
+  "standard": "Phase 30 Network Golden Corpus",
+  "version": "1.0.0",
+  "description": "ECDAT Network & TLS Scanner Ground-Truth Benchmark Corpus based on badssl.com endpoints",
+  "categories": [
+    "01_certificate_expiration",
+    "02_hostname_mismatch",
+    "03_self_signed_certificate",
+    "04_weak_ciphers",
+    "05_revoked_certificate",
+    "06_clean_endpoints"
+  ],
+  "entries": [
+    {
+      "endpoint": "expired.badssl.com",
+      "port": 443,
+      "category": "01_certificate_expiration",
+      "is_negative": false,
+      "description": "Known expired SSL certificate fixture",
+      "expected_findings": [
+        {
+          "issue": "expired_certificate",
+          "finding_type": "trust_problem",
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "endpoint": "wrong.host.badssl.com",
+      "port": 443,
+      "category": "02_hostname_mismatch",
+      "is_negative": false,
+      "description": "Known certificate hostname mismatch fixture (*.badssl.com on multi-level subdomain)",
+      "expected_findings": [
+        {
+          "issue": "hostname_mismatch",
+          "finding_type": "trust_problem",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "endpoint": "self-signed.badssl.com",
+      "port": 443,
+      "category": "03_self_signed_certificate",
+      "is_negative": false,
+      "description": "Known self-signed certificate untrusted root fixture",
+      "expected_findings": [
+        {
+          "issue": "self_signed_certificate",
+          "finding_type": "trust_problem",
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "endpoint": "rc4.badssl.com",
+      "port": 443,
+      "category": "04_weak_ciphers",
+      "is_negative": false,
+      "description": "Known insecure RC4 stream cipher suite fixture",
+      "expected_findings": [
+        {
+          "issue": "weak_cipher:RC4",
+          "finding_type": "weak_cipher",
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "endpoint": "null.badssl.com",
+      "port": 443,
+      "category": "04_weak_ciphers",
+      "is_negative": false,
+      "description": "Known unencrypted plaintext NULL cipher suite fixture",
+      "expected_findings": [
+        {
+          "issue": "insecure_cipher:NULL",
+          "finding_type": "weak_cipher",
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "endpoint": "revoked.badssl.com",
+      "port": 443,
+      "category": "05_revoked_certificate",
+      "is_negative": false,
+      "description": "Known revoked certificate fixture via CRL/OCSP",
+      "expected_findings": [
+        {
+          "issue": "revoked_certificate",
+          "finding_type": "trust_problem",
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "endpoint": "sha256.badssl.com",
+      "port": 443,
+      "category": "06_clean_endpoints",
+      "is_negative": true,
+      "description": "Known clean endpoint with SHA-256 certificate and matching hostname",
+      "expected_findings": []
+    },
+    {
+      "endpoint": "tls-v1-2.badssl.com",
+      "port": 443,
+      "category": "06_clean_endpoints",
+      "is_negative": true,
+      "description": "Known clean TLS 1.2 modern configuration endpoint",
+      "expected_findings": []
+    },
+    {
+      "endpoint": "badssl.com",
+      "port": 443,
+      "category": "06_clean_endpoints",
+      "is_negative": true,
+      "description": "Known clean root domain badssl.com endpoint",
+      "expected_findings": []
+    }
+  ]
+}

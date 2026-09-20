@@ -1,7 +1,10 @@
-# Privileged Runtime eBPF Agent DaemonSet
+# Prototype / architecture demonstration — kernel attachment not yet implemented
 # STRICT ARCHITECTURAL ISOLATION:
 # Deployed exclusively into the isolated 'ecdat-runtime' namespace, completely
 # segregated from the 'ecdat-control-plane' namespace.
+# NOTE: This daemonset demonstrates minimal-privilege container capability architecture
+# (CAP_BPF, CAP_PERFMON without privileged mode), but active in-kernel kprobe attachment
+# is not yet implemented (is_live_ebpf_verified: false).
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -11,6 +14,9 @@ metadata:
     app.kubernetes.io/name: ecdat-ebpf-agent
     app.kubernetes.io/part-of: ecdat
     ecdat.io/tier: runtime-agent
+    ecdat.io/status: "prototype-demonstration-not-implemented"
+  annotations:
+    ecdat.io/implementation-status: "Prototype / architecture demonstration — kernel attachment not yet implemented"
 spec:
   selector:
     matchLabels:
@@ -21,7 +27,9 @@ spec:
         app.kubernetes.io/name: ecdat-ebpf-agent
         ecdat.io/tier: runtime-agent
       annotations:
+        ecdat.io/implementation-status: "Prototype / architecture demonstration — kernel attachment not yet implemented"
         container.apparmor.security.beta.kubernetes.io/ebpf-agent: runtime/default
+
     spec:
       serviceAccountName: ecdat-ebpf-agent-sa
       # hostPID is required to map in-kernel eBPF probe events to host process trees

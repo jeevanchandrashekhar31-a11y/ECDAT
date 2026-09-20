@@ -1,0 +1,94 @@
+{
+  "components": [
+    {
+      "bom-ref": "binary:target/mbedcrypto_sample.elf",
+      "name": "mbedcrypto_sample.elf",
+      "properties": [
+        {
+          "name": "ecdat:analysis_mode",
+          "value": "STATIC_SAFE_NON_EXECUTING"
+        },
+        {
+          "name": "ecdat:architecture",
+          "value": "x86_64"
+        },
+        {
+          "name": "ecdat:binary_format",
+          "value": "ELF"
+        },
+        {
+          "name": "ecdat:bit_width",
+          "value": "64"
+        },
+        {
+          "name": "ecdat:endianness",
+          "value": "little"
+        },
+        {
+          "name": "ecdat:file_size",
+          "value": "707"
+        },
+        {
+          "name": "ecdat:imported_libraries",
+          "value": "libmbedcrypto.so.7"
+        },
+        {
+          "name": "ecdat:sha256",
+          "value": "7067f9c1b3f3826dbf742c4e2c425247e369c80bbf1d883b282cd7b1004d80c7"
+        }
+      ],
+      "type": "application"
+    },
+    {
+      "bom-ref": "binary:crypto_lib/mbedtls@binary:target/mbedcrypto_sample.elf",
+      "name": "mbedTLS",
+      "properties": [
+        {
+          "name": "ecdat:confidence",
+          "value": "high"
+        },
+        {
+          "name": "ecdat:description",
+          "value": "Multi-signal evidence: 1 library names linked (libmbedcrypto.so.7); 2 symbols matched (mbedtls_aes_crypt_ecb, mbedtls_sha256)."
+        },
+        {
+          "name": "ecdat:evidence",
+          "value": "libs:[libmbedcrypto.so.7]; symbols:[mbedtls_aes_crypt_ecb,mbedtls_sha256]"
+        },
+        {
+          "name": "ecdat:reason",
+          "value": "Static binary metadata indicator (non-executing)"
+        }
+      ],
+      "type": "library"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "binary:crypto_lib/mbedtls@binary:target/mbedcrypto_sample.elf"
+    },
+    {
+      "dependsOn": [
+        "binary:crypto_lib/mbedtls@binary:target/mbedcrypto_sample.elf"
+      ],
+      "ref": "binary:target/mbedcrypto_sample.elf"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-09-20T14:00:53.986982+00:00",
+    "tools": {
+      "components": [
+        {
+          "name": "ECDAT Cryptographic Discovery and Analysis Tool",
+          "type": "application",
+          "version": "1.0.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:30ab519a-e536-4859-99d0-1e9b07db82c9",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7"
+}

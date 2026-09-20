@@ -9,23 +9,23 @@
 ## 1. Executive Summary & Core Metrics
 
 - **Corpus Standard**: `Phase 30 Golden Corpus`
-- **Evaluation Timestamp**: `2026-09-18T17:15:56.534865+00:00`
-- **Golden Corpus Size**: **`39` files** (109 ground truth expected primitives)
+- **Evaluation Timestamp**: `2026-09-20T13:56:46.585217+00:00`
+- **Golden Corpus Size**: **`40` files** (109 ground truth expected primitives)
 - **Total Evaluated Categories**: **`16` Standardized Classes**
-- **Golden Corpus Precision**: **`90.6%`**
-- **Golden Corpus Recall**: **`97.2%`**
-- **Golden Corpus F1 Score**: **`93.8%`**
+- **Golden Corpus Precision**: **`98.2%`**
+- **Golden Corpus Recall**: **`98.2%`**
+- **Golden Corpus F1 Score**: **`98.2%`**
 - **True Negatives Rate on Traps / Negative Examples**: **`100.0%` (0 False Positives)**
 
 | Metric | Measured Value | Standard Target | Status |
 |---|---|---|---|
-| **Golden Corpus Precision** | **90.6%** | ≥ 85.0% | ✅ PASS |
-| **Golden Corpus Recall** | **97.2%** | ≥ 80.0% | ✅ PASS |
-| **Golden Corpus F1 Score** | **93.8%** | ≥ 82.0% | ✅ PASS |
-| **True Positives (TP)** | `106` | Maximize | Verified |
-| **False Positives (FP)** | `11` | Minimize | Verified |
-| **False Negatives (FN)** | `3` | Minimize | Verified |
-| **True Negatives (TN)** | `4` | All Negative Files | 100% Clean |
+| **Golden Corpus Precision** | **98.2%** | ≥ 85.0% | ✅ PASS |
+| **Golden Corpus Recall** | **98.2%** | ≥ 80.0% | ✅ PASS |
+| **Golden Corpus F1 Score** | **98.2%** | ≥ 82.0% | ✅ PASS |
+| **True Positives (TP)** | `107` | Maximize | Verified |
+| **False Positives (FP)** | `2` | Minimize | Verified |
+| **False Negatives (FN)** | `2` | Minimize | Verified |
+| **True Negatives (TN)** | `5` | All Negative Files | 100% Clean |
 
 ---
 
@@ -33,9 +33,9 @@
 
 | Resource Metric | Empirical Measurement | Unit |
 |---|---|---|
-| **Scan Wall Time** | `0.1761s` | Seconds |
-| **Peak Process Working Set (RAM)** | `43.42 MB` | Megabytes |
-| **Scanning Throughput** | `221.48 files/s` | Files per Second |
+| **Scan Wall Time** | `0.2171s` | Seconds |
+| **Peak Process Working Set (RAM)** | `43.53 MB` | Megabytes |
+| **Scanning Throughput** | `184.28 files/s` | Files per Second |
 
 ---
 
@@ -45,15 +45,15 @@
 |---|---|---|---|---|---|---|---|---|
 | `01_secure_examples` | 3 | 11 | 11 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 | `02_weak_algorithms` | 3 | 16 | 16 | 0 | 0 | 100.0% | 100.0% | 100.0% |
-| `03_weak_keys` | 3 | 7 | 7 | 2 | 0 | 77.8% | 100.0% | 87.5% |
-| `04_tls_misconfigurations` | 3 | 6 | 6 | 2 | 0 | 75.0% | 100.0% | 85.7% |
-| `05_certificate_problems` | 2 | 5 | 5 | 1 | 0 | 83.3% | 100.0% | 90.9% |
+| `03_weak_keys` | 3 | 7 | 7 | 0 | 0 | 100.0% | 100.0% | 100.0% |
+| `04_tls_misconfigurations` | 3 | 6 | 6 | 0 | 0 | 100.0% | 100.0% | 100.0% |
+| `05_certificate_problems` | 2 | 5 | 5 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 | `06_pqc_examples` | 2 | 7 | 7 | 0 | 0 | 100.0% | 100.0% | 100.0% |
-| `07_hybrid_examples` | 3 | 8 | 8 | 2 | 0 | 80.0% | 100.0% | 88.9% |
+| `07_hybrid_examples` | 3 | 8 | 8 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 | `08_wrapper_apis` | 2 | 5 | 5 | 0 | 0 | 100.0% | 100.0% | 100.0% |
-| `09_aliases` | 2 | 7 | 6 | 2 | 1 | 75.0% | 85.7% | 80.0% |
+| `09_aliases` | 2 | 7 | 7 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 | `10_dynamic_algorithms` | 2 | 5 | 5 | 0 | 0 | 100.0% | 100.0% | 100.0% |
-| `11_negative_examples` | 3 | 0 | 0 | 0 | 0 | 100.0% | 100.0% | 100.0% |
+| `11_negative_examples` | 4 | 0 | 0 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 | `12_obfuscated_samples` | 2 | 7 | 6 | 1 | 1 | 85.7% | 85.7% | 85.7% |
 | `13_nested_samples` | 2 | 6 | 6 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 | `14_multi_language_modern` | 3 | 9 | 9 | 1 | 0 | 90.0% | 100.0% | 94.7% |

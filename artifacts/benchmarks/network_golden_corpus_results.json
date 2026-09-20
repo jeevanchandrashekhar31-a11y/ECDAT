@@ -1,0 +1,214 @@
+{
+  "evaluation_timestamp": "2026-09-20T13:59:06.402129+00:00",
+  "corpus_standard": "Phase 30 Network Golden Corpus",
+  "total_endpoints": 9,
+  "total_expected_findings": 6,
+  "metrics": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "true_positives": 6,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "true_negatives": 3
+  },
+  "performance": {
+    "scan_time_seconds": 7.157,
+    "wall_time_seconds": 7.1568,
+    "peak_memory_mb": 53.61,
+    "throughput_endpoints_per_second": 1.26
+  },
+  "category_breakdown": {
+    "01_certificate_expiration": {
+      "endpoints_count": 1,
+      "expected": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "02_hostname_mismatch": {
+      "endpoints_count": 1,
+      "expected": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "03_self_signed_certificate": {
+      "endpoints_count": 1,
+      "expected": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "04_weak_ciphers": {
+      "endpoints_count": 2,
+      "expected": 2,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "05_revoked_certificate": {
+      "endpoints_count": 1,
+      "expected": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "06_clean_endpoints": {
+      "endpoints_count": 3,
+      "expected": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  },
+  "detailed_endpoint_results": [
+    {
+      "endpoint": "expired.badssl.com",
+      "category": "01_certificate_expiration",
+      "is_negative": false,
+      "expected_count": 1,
+      "detected_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "issue": "expired_certificate",
+          "finding_type": "trust_problem"
+        }
+      ]
+    },
+    {
+      "endpoint": "wrong.host.badssl.com",
+      "category": "02_hostname_mismatch",
+      "is_negative": false,
+      "expected_count": 1,
+      "detected_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "issue": "hostname_mismatch",
+          "finding_type": "trust_problem"
+        }
+      ]
+    },
+    {
+      "endpoint": "self-signed.badssl.com",
+      "category": "03_self_signed_certificate",
+      "is_negative": false,
+      "expected_count": 1,
+      "detected_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "issue": "self_signed_certificate",
+          "finding_type": "trust_problem"
+        }
+      ]
+    },
+    {
+      "endpoint": "rc4.badssl.com",
+      "category": "04_weak_ciphers",
+      "is_negative": false,
+      "expected_count": 1,
+      "detected_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "issue": "weak_cipher:RC4",
+          "finding_type": "weak_cipher"
+        }
+      ]
+    },
+    {
+      "endpoint": "null.badssl.com",
+      "category": "04_weak_ciphers",
+      "is_negative": false,
+      "expected_count": 1,
+      "detected_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "issue": "insecure_cipher:NULL",
+          "finding_type": "weak_cipher"
+        }
+      ]
+    },
+    {
+      "endpoint": "revoked.badssl.com",
+      "category": "05_revoked_certificate",
+      "is_negative": false,
+      "expected_count": 1,
+      "detected_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "findings": [
+        {
+          "issue": "revoked_certificate",
+          "finding_type": "trust_problem"
+        }
+      ]
+    },
+    {
+      "endpoint": "sha256.badssl.com",
+      "category": "06_clean_endpoints",
+      "is_negative": true,
+      "expected_count": 0,
+      "detected_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "findings": []
+    },
+    {
+      "endpoint": "tls-v1-2.badssl.com",
+      "category": "06_clean_endpoints",
+      "is_negative": true,
+      "expected_count": 0,
+      "detected_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "findings": []
+    },
+    {
+      "endpoint": "badssl.com",
+      "category": "06_clean_endpoints",
+      "is_negative": true,
+      "expected_count": 0,
+      "detected_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "findings": []
+    }
+  ]
+}

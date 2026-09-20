@@ -337,7 +337,7 @@ class PythonCryptoDetector(ast.NodeVisitor):
                 p in arg_sym
                 for p in ("PROTOCOL_SSLV2", "PROTOCOL_SSLV3", "PROTOCOL_TLSV1_0", "PROTOCOL_TLSV1_1", "PROTOCOL_TLSV1")
             ):
-                proto = "SSLv3" if "SSL" in arg_sym else "TLS 1.0/1.1"
+                proto = "SSLv3" if ("PROTOCOL_SSLV2" in arg_sym or "PROTOCOL_SSLV3" in arg_sym) else "TLS 1.0/1.1"
                 self._add_finding(node.lineno, "PY_INSECURE_TLS_PROTOCOL", proto, "insecure_tls_protocol", "critical")
 
     def _check_cert_validation(self, node: ast.Call, func_sym: str):

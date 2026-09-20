@@ -150,9 +150,16 @@ class LinuxEbpfProbeCollector:
         self.backpressure_active = False
 
         # Live Verification Truthfulness
+        # Invariant (Phase 5B): We distinguish TWO separate booleans:
+        # 1. kernel_attachment_verified: True ONLY once a probe genuinely attaches to the kernel.
+        # 2. algorithm_identification_verified: Must remain False because probe field values
+        #    are hardcoded metadata identifiers, not dynamically introspected from the runtime call site.
+        # 3. is_live_ebpf_verified: Retained as False so it is NEVER used as a conflated stand-in for both.
         self.is_live_ebpf_verified = False
+        self.kernel_attachment_verified = False
+        self.algorithm_identification_verified = False
         self.declared_probes: List[str] = []
-        self.attached_kernel_probes: List[str] = self.declared_probes
+        self.attached_kernel_probes: List[str] = []
         self.attachment_backend: Optional[str] = None
 
         # Locate BPF program bytecode
@@ -382,12 +389,18 @@ class LinuxEbpfProbeCollector:
 
     @property
     def verification_status(self) -> str:
-        return "verified" if self.is_live_ebpf_verified else "NOT IMPLEMENTED"
+        if self.kernel_attachment_verified and not self.algorithm_identification_verified:
+            return "KERNEL_ATTACHED_ALGORITHMS_UNVERIFIED"
+        if self.is_live_ebpf_verified:
+            return "verified"
+        return "NOT IMPLEMENTED"
 
     def detach_all_kernel_probes(self) -> int:
         with self._lock:
             count = len(self.declared_probes)
             self.declared_probes.clear()
+            self.attached_kernel_probes.clear()
+            self.kernel_attachment_verified = False
             self.is_live_ebpf_verified = False
             logger.info("Detached all %d kernel eBPF probes.", count)
             return count
@@ -396,11 +409,13 @@ class LinuxEbpfProbeCollector:
         """Provides truthful status, capability details, and drop accounting metrics."""
         return {
             "is_live_ebpf_verified": self.is_live_ebpf_verified,
+            "kernel_attachment_verified": self.kernel_attachment_verified,
+            "algorithm_identification_verified": self.algorithm_identification_verified,
             "verification_status": self.verification_status,
             "architecture": "genuine_ebpf_kernel_collector",
             "kernel_bpf_file": str(self.bpf_obj_path),
             "declared_probes": list(self.declared_probes),
-            "attached_kernel_probes": list(self.declared_probes),
+            "attached_kernel_probes": list(self.attached_kernel_probes),
             "attachment_backend": self.attachment_backend,
             "queue_depth": self.event_queue.qsize(),
             "backpressure_active": self.backpressure_active,

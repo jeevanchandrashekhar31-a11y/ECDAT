@@ -1,22 +1,22 @@
 {
-  "evaluation_timestamp": "2026-09-18T17:15:56.534865+00:00",
+  "evaluation_timestamp": "2026-09-20T13:56:46.585217+00:00",
   "corpus_standard": "Phase 30 Golden Corpus",
-  "total_files": 39,
+  "total_files": 40,
   "total_expected_findings": 109,
   "metrics": {
-    "precision": 0.906,
-    "recall": 0.9725,
-    "f1_score": 0.9381,
-    "true_positives": 106,
-    "false_positives": 11,
-    "false_negatives": 3,
-    "true_negatives": 4
+    "precision": 0.9817,
+    "recall": 0.9817,
+    "f1_score": 0.9817,
+    "true_positives": 107,
+    "false_positives": 2,
+    "false_negatives": 2,
+    "true_negatives": 5
   },
   "performance": {
-    "scan_time_seconds": 0.1761,
-    "wall_time_seconds": 0.1759,
-    "peak_memory_mb": 43.42,
-    "throughput_files_per_second": 221.48
+    "scan_time_seconds": 0.2171,
+    "wall_time_seconds": 0.2169,
+    "peak_memory_mb": 43.53,
+    "throughput_files_per_second": 184.28
   },
   "category_breakdown": {
     "01_secure_examples": {
@@ -43,31 +43,31 @@
       "files_count": 3,
       "expected": 7,
       "tp": 7,
-      "fp": 2,
+      "fp": 0,
       "fn": 0,
-      "precision": 0.7778,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.875
+      "f1": 1.0
     },
     "04_tls_misconfigurations": {
       "files_count": 3,
       "expected": 6,
       "tp": 6,
-      "fp": 2,
+      "fp": 0,
       "fn": 0,
-      "precision": 0.75,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.8571
+      "f1": 1.0
     },
     "05_certificate_problems": {
       "files_count": 2,
       "expected": 5,
       "tp": 5,
-      "fp": 1,
+      "fp": 0,
       "fn": 0,
-      "precision": 0.8333,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.9091
+      "f1": 1.0
     },
     "06_pqc_examples": {
       "files_count": 2,
@@ -83,11 +83,11 @@
       "files_count": 3,
       "expected": 8,
       "tp": 8,
-      "fp": 2,
+      "fp": 0,
       "fn": 0,
-      "precision": 0.8,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.8889
+      "f1": 1.0
     },
     "08_wrapper_apis": {
       "files_count": 2,
@@ -102,12 +102,12 @@
     "09_aliases": {
       "files_count": 2,
       "expected": 7,
-      "tp": 6,
-      "fp": 2,
-      "fn": 1,
-      "precision": 0.75,
-      "recall": 0.8571,
-      "f1": 0.8
+      "tp": 7,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
     },
     "10_dynamic_algorithms": {
       "files_count": 2,
@@ -120,7 +120,7 @@
       "f1": 1.0
     },
     "11_negative_examples": {
-      "files_count": 3,
+      "files_count": 4,
       "expected": 0,
       "tp": 0,
       "fp": 0,
@@ -444,9 +444,9 @@
       "category": "03_weak_keys",
       "is_negative": false,
       "expected_count": 2,
-      "detected_count": 3,
+      "detected_count": 2,
       "tp": 2,
-      "fp": 1,
+      "fp": 0,
       "fn": 0,
       "findings": [
         {
@@ -460,12 +460,6 @@
           "line_number": 18,
           "source": "ast",
           "key_size": 512
-        },
-        {
-          "algorithm": "RSA",
-          "line_number": 11,
-          "source": "corpus_rule",
-          "finding_type": "asymmetric"
         }
       ]
     },
@@ -474,9 +468,9 @@
       "category": "03_weak_keys",
       "is_negative": false,
       "expected_count": 3,
-      "detected_count": 4,
+      "detected_count": 3,
       "tp": 3,
-      "fp": 1,
+      "fp": 0,
       "fn": 0,
       "findings": [
         {
@@ -490,12 +484,6 @@
           "line_number": 22,
           "source": "ast",
           "key_size": 1024
-        },
-        {
-          "algorithm": "RSA",
-          "line_number": 16,
-          "source": "corpus_rule",
-          "finding_type": "asymmetric"
         },
         {
           "algorithm": "EC",
@@ -552,13 +540,13 @@
       "category": "04_tls_misconfigurations",
       "is_negative": false,
       "expected_count": 3,
-      "detected_count": 5,
+      "detected_count": 3,
       "tp": 3,
-      "fp": 2,
+      "fp": 0,
       "fn": 0,
       "findings": [
         {
-          "algorithm": "SSLv3",
+          "algorithm": "TLS 1.0/1.1",
           "line_number": 17,
           "source": "ast",
           "key_size": null
@@ -574,18 +562,6 @@
           "line_number": 23,
           "source": "ast",
           "key_size": null
-        },
-        {
-          "algorithm": "TLSv1",
-          "line_number": 17,
-          "source": "corpus_rule",
-          "finding_type": "protocol"
-        },
-        {
-          "algorithm": "MD5",
-          "line_number": 26,
-          "source": "corpus_rule",
-          "finding_type": "digest"
         }
       ]
     },
@@ -627,9 +603,9 @@
       "category": "05_certificate_problems",
       "is_negative": false,
       "expected_count": 2,
-      "detected_count": 3,
+      "detected_count": 2,
       "tp": 2,
-      "fp": 1,
+      "fp": 0,
       "fn": 0,
       "findings": [
         {
@@ -637,12 +613,6 @@
           "line_number": 21,
           "source": "ast",
           "key_size": 1024
-        },
-        {
-          "algorithm": "RSA",
-          "line_number": 21,
-          "source": "corpus_rule",
-          "finding_type": "asymmetric"
         },
         {
           "algorithm": "SHA-1",
@@ -753,9 +723,9 @@
       "category": "07_hybrid_examples",
       "is_negative": false,
       "expected_count": 3,
-      "detected_count": 4,
+      "detected_count": 3,
       "tp": 3,
-      "fp": 1,
+      "fp": 0,
       "fn": 0,
       "findings": [
         {
@@ -771,12 +741,6 @@
           "finding_type": "digest"
         },
         {
-          "algorithm": "Dilithium3",
-          "line_number": 27,
-          "source": "corpus_rule",
-          "finding_type": "pqc_signature"
-        },
-        {
           "algorithm": "ECDSA_P256_Dilithium3_Hybrid",
           "line_number": 27,
           "source": "corpus_rule",
@@ -789,9 +753,9 @@
       "category": "07_hybrid_examples",
       "is_negative": false,
       "expected_count": 2,
-      "detected_count": 3,
+      "detected_count": 2,
       "tp": 2,
-      "fp": 1,
+      "fp": 0,
       "fn": 0,
       "findings": [
         {
@@ -799,12 +763,6 @@
           "line_number": 20,
           "source": "corpus_rule",
           "finding_type": "hybrid_kem"
-        },
-        {
-          "algorithm": "Kyber768",
-          "line_number": 23,
-          "source": "corpus_rule",
-          "finding_type": "pqc_kem"
         },
         {
           "algorithm": "ECDSA_P256_Dilithium3_Hybrid",
@@ -873,17 +831,11 @@
       "category": "09_aliases",
       "is_negative": false,
       "expected_count": 4,
-      "detected_count": 5,
+      "detected_count": 4,
       "tp": 4,
-      "fp": 1,
+      "fp": 0,
       "fn": 0,
       "findings": [
-        {
-          "algorithm": "DESede/ECB/PKCS5Padding",
-          "line_number": 14,
-          "source": "ast",
-          "key_size": null
-        },
         {
           "algorithm": "AES-256-GCM",
           "line_number": 11,
@@ -891,10 +843,10 @@
           "finding_type": "symmetric_cipher"
         },
         {
-          "algorithm": "ECB",
+          "algorithm": "DESede",
           "line_number": 14,
           "source": "corpus_rule",
-          "finding_type": "mode"
+          "finding_type": "alias"
         },
         {
           "algorithm": "SHA256withRSA",
@@ -916,27 +868,27 @@
       "is_negative": false,
       "expected_count": 3,
       "detected_count": 3,
-      "tp": 2,
-      "fp": 1,
-      "fn": 1,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
       "findings": [
         {
-          "algorithm": "AES-256-GCM",
-          "line_number": 13,
+          "algorithm": "Rijndael",
+          "line_number": 11,
           "source": "corpus_rule",
-          "finding_type": "symmetric_cipher"
+          "finding_type": "alias"
         },
         {
-          "algorithm": "3DES",
+          "algorithm": "TripleDES",
           "line_number": 14,
           "source": "corpus_rule",
-          "finding_type": "symmetric_cipher"
+          "finding_type": "alias"
         },
         {
-          "algorithm": "SHA256withRSA",
-          "line_number": 16,
+          "algorithm": "DESede",
+          "line_number": 15,
           "source": "corpus_rule",
-          "finding_type": "signature_algorithm"
+          "finding_type": "alias"
         }
       ]
     },
@@ -1018,6 +970,17 @@
     },
     {
       "file_path": "11_negative_examples/negative_clean.py",
+      "category": "11_negative_examples",
+      "is_negative": true,
+      "expected_count": 0,
+      "detected_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "findings": []
+    },
+    {
+      "file_path": "11_negative_examples/negative_rules_pin.py",
       "category": "11_negative_examples",
       "is_negative": true,
       "expected_count": 0,

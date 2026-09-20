@@ -123,3 +123,134 @@ class TestSessionManagementControl:
         res_over_ttl = manager.validate_session("sess-eternal", current_time=t0 + 86401)
         assert res_over_ttl["valid"] is False
         assert res_over_ttl["reason"] == "ABSOLUTE_TTL_EXCEEDED"
+
+    # 6. REGISTRATION HARDENING TEST: Registration payload cannot elevate role or tenant
+    def test_registration_payload_role_admin_rejected_or_downgraded(self):
+        """Confirm public registration cannot set role=admin, isAdmin=true, or arbitrary tenantId."""
+        import json
+        import subprocess
+        from pathlib import Path
+
+        repo_root = Path(__file__).resolve().parent.parent
+        node_script = """
+        const app = require('./src/app');
+        const server = app.listen(0, async () => {
+            const port = server.address().port;
+            const baseUrl = 'http://127.0.0.1:' + port;
+
+            // 1. Strict rejection of admin role, admin flags, arbitrary tenant
+            const resReject = await fetch(baseUrl + '/api/v1/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: 'evil_admin_' + Date.now(),
+                    email: 'evil@corp.test',
+                    password: 'Strong-Password-1234!@#',
+                    role: 'admin',
+                    isAdmin: true,
+                    isPlatformAdmin: true,
+                    tenantId: 'arbitrary-tenant',
+                }),
+            });
+            const dataReject = await resReject.json();
+
+            // 2. Safe-ignore mode strictly downgrades role to viewer and forces default-tenant
+            const resDowngrade = await fetch(baseUrl + '/api/v1/auth/register?safe_ignore=true', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: 'down_user_' + Date.now(),
+                    email: 'down@corp.test',
+                    password: 'Strong-Password-1234!@#',
+                    role: 'admin',
+                    isAdmin: true,
+                    tenantId: 'arbitrary-tenant',
+                }),
+            });
+            const dataDowngrade = await resDowngrade.json();
+
+            server.close();
+            console.log(JSON.stringify({
+                rejectStatus: resReject.status,
+                rejectCode: dataReject.code,
+                downgradeStatus: resDowngrade.status,
+                downgradedRole: dataDowngrade.user?.role,
+                downgradedRoles: dataDowngrade.user?.roles,
+                downgradedTenant: dataDowngrade.user?.tenantId,
+            }));
+        });
+        """
+        proc = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=str(repo_root / "backend"),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        lines = [l for l in proc.stdout.splitlines() if l.startswith("{")]
+        result = json.loads(lines[-1])
+
+        # Must reject with 400 PRIVILEGE_ESCALATION_FORBIDDEN by default
+        assert result["rejectStatus"] == 400
+        assert result["rejectCode"] == "PRIVILEGE_ESCALATION_FORBIDDEN"
+
+        # In safe downgrade mode, must assign lowest-privilege role (viewer) and default tenant
+        assert result["downgradeStatus"] == 201
+        assert result["downgradedRole"] == "viewer"
+        assert result["downgradedRoles"] == ["viewer"]
+        assert result["downgradedTenant"] == "default-tenant"
+
+    # 7. SESSION OWNERSHIP TEST: User cannot logout-all or revoke another user's sessions
+    def test_session_ownership_cross_user_revocation_returns_403(self):
+        """Confirm ordinary user cannot trigger logout-all for another user's account."""
+        import json
+        import subprocess
+        from pathlib import Path
+
+        repo_root = Path(__file__).resolve().parent.parent
+        node_script = """
+        const app = require('./src/app');
+        const { defaultTokenService } = require('./src/identity');
+
+        const server = app.listen(0, async () => {
+            const port = server.address().port;
+            const baseUrl = 'http://127.0.0.1:' + port;
+
+            const tokenA = defaultTokenService.issueTokenPair({
+                userId: 'usr_userA_' + Date.now(),
+                email: 'userA@corp.test',
+                roles: ['viewer'],
+                customClaims: { tenantId: 'default-tenant' },
+            });
+
+            // User A attempts to trigger logout-all for User B
+            const resLogoutAll = await fetch(baseUrl + '/api/v1/auth/logout-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + tokenA.accessToken,
+                },
+                body: JSON.stringify({ userId: 'usr_userB_victim' }),
+            });
+            const dataLogoutAll = await resLogoutAll.json();
+
+            server.close();
+            console.log(JSON.stringify({
+                status: resLogoutAll.status,
+                code: dataLogoutAll.code,
+            }));
+        });
+        """
+        proc = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=str(repo_root / "backend"),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        lines = [l for l in proc.stdout.splitlines() if l.startswith("{")]
+        result = json.loads(lines[-1])
+
+        assert result["status"] == 403
+        assert result["code"] == "FORBIDDEN"
+

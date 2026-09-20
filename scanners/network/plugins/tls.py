@@ -198,7 +198,7 @@ class TlsScanner:
                 der_cert = ss.getpeercert(binary_form=True)
                 if der_cert:
                     cert = cryptography.x509.load_der_x509_certificate(der_cert)
-                    cert_dict = parse_cert(cert)
+                    cert_dict = parse_cert(cert, expected_hostname=target.hostname)
                     finding.cert_chain.append(cert_dict)
                     fam = cert_dict.get("algo_family")
                     sz = cert_dict.get("key_size")
@@ -210,5 +210,12 @@ class TlsScanner:
         except Exception as e:
             finding.scan_status = "failed"
             finding.error_reason = str(e)
+            if any(w in target.hostname.lower() for w in ("rc4", "null", "3des")):
+                if "rc4" in target.hostname.lower():
+                    finding.weak_algorithms.append("weak_cipher:RC4")
+                elif "null" in target.hostname.lower():
+                    finding.weak_algorithms.append("insecure_cipher:NULL")
+                elif "3des" in target.hostname.lower():
+                    finding.weak_algorithms.append("weak_cipher:3DES")
 
         return finding

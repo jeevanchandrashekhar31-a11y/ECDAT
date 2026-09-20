@@ -1,0 +1,60 @@
+{
+  "standard": "Phase 30 Binary Golden Corpus",
+  "version": "1.0.0",
+  "description": "ECDAT Binary & Container Scanner Ground-Truth Benchmark Corpus",
+  "categories": [
+    "01_openssl_binaries",
+    "02_mbedtls_binaries",
+    "03_wolfssl_binaries",
+    "04_clean_binaries"
+  ],
+  "entries": [
+    {
+      "file_path": "fixtures/openssl_elf.bin",
+      "binary_format": "ELF",
+      "category": "01_openssl_binaries",
+      "is_negative": false,
+      "description": "ELF binary linked against OpenSSL libcrypto with EVP symbols",
+      "expected_findings": [
+        {
+          "library_name": "OpenSSL",
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "file_path": "fixtures/mbedtls_elf.bin",
+      "binary_format": "ELF",
+      "category": "02_mbedtls_binaries",
+      "is_negative": false,
+      "description": "ELF binary linked against mbedTLS libmbedcrypto with PSA symbols",
+      "expected_findings": [
+        {
+          "library_name": "mbedTLS",
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "file_path": "fixtures/wolfssl_elf.bin",
+      "binary_format": "ELF",
+      "category": "03_wolfssl_binaries",
+      "is_negative": false,
+      "description": "ELF binary linked against wolfSSL libwolfssl with wolfSSL_Init symbol",
+      "expected_findings": [
+        {
+          "library_name": "wolfSSL",
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "file_path": "fixtures/clean_binary.bin",
+      "binary_format": "ELF",
+      "category": "04_clean_binaries",
+      "is_negative": true,
+      "description": "Clean ELF binary containing standard libc without cryptographic components",
+      "expected_findings": []
+    }
+  ]
+}
