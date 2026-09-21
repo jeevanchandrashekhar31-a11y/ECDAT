@@ -4,6 +4,51 @@ from cryptography.hazmat.primitives.asymmetric import rsa, ec, dsa, ed25519, ed4
 from cryptography.hazmat.primitives import hashes
 import cryptography.x509
 import re
+import time
+
+_crl_cache: Dict[str, Tuple[float, Any]] = {}
+
+
+def check_crl_revocation(cert, timeout: int = 4) -> bool:
+    """
+    Checks if a certificate is revoked by querying its CRL Distribution Points.
+    Uses in-memory caching to avoid repeated downloads of identical CRLs.
+    """
+    try:
+        from cryptography.x509.oid import ExtensionOID
+        import urllib.request
+
+        crl_ext = cert.extensions.get_extension_for_oid(ExtensionOID.CRL_DISTRIBUTION_POINTS)
+        serial = cert.serial_number
+
+        for dp in crl_ext.value:
+            if not dp.full_name:
+                continue
+            for name in dp.full_name:
+                crl_url = str(name.value)
+                if not (crl_url.startswith("http://") or crl_url.startswith("https://")):
+                    continue
+
+                now = time.time()
+                crl = None
+                if crl_url in _crl_cache:
+                    cached_time, cached_crl = _crl_cache[crl_url]
+                    if now - cached_time < 3600:
+                        crl = cached_crl
+
+                if crl is None:
+                    req = urllib.request.Request(crl_url, headers={"User-Agent": "ECDAT-NetworkScanner/1.0"})
+                    with urllib.request.urlopen(req, timeout=timeout) as resp:
+                        crl_bytes = resp.read()
+                    crl = cryptography.x509.load_der_x509_crl(crl_bytes)
+                    _crl_cache[crl_url] = (now, crl)
+
+                revoked = crl.get_revoked_certificate_by_serial_number(serial)
+                if revoked is not None:
+                    return True
+    except Exception:
+        pass
+    return False
 
 
 def get_key_info(public_key) -> Tuple[str, Optional[int]]:
@@ -145,8 +190,10 @@ def parse_cert(cert, expected_hostname: Optional[str] = None) -> Dict[str, Any]:
                 candidates.append(part.strip()[3:])
         if candidates and not any(_matches_hostname(c, expected_hostname) for c in candidates):
             trust_problems.append("hostname_mismatch")
-        if "revoked" in expected_hostname.lower():
-            trust_problems.append("revoked_certificate")
+
+    # Real CRL revocation check
+    if check_crl_revocation(cert):
+        trust_problems.append("revoked_certificate")
 
     # Quantum vulnerabilities
     quantum_vulns: List[str] = []

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import List, Tuple, Optional, Dict, Any
 from datetime import datetime, timezone
 import logging
 
@@ -154,6 +154,119 @@ class TlsScanner:
 
         return findings
 
+    def _probe_legacy_ciphers(
+        self, ip: str, port: int, hostname: str, timeout: int = 5
+    ) -> Tuple[Optional[str], Optional[bytes]]:
+        """
+        Probes a server for legacy ciphers (RC4, 3DES) via a raw TLS 1.2 ClientHello
+        when the host OpenSSL environment does not negotiate them natively.
+        Returns (cipher_suite_name, peer_der_certificate) if accepted.
+        """
+        import socket
+        import struct
+
+        # Legacy ciphers to offer:
+        # 0xC011: TLS_ECDHE_RSA_WITH_RC4_128_SHA
+        # 0x0005: TLS_RSA_WITH_RC4_128_SHA
+        # 0x0004: TLS_RSA_WITH_RC4_128_MD5
+        # 0x000A: TLS_RSA_WITH_3DES_EDE_CBC_SHA
+        ciphers = [0xC011, 0x0005, 0x0004, 0x000A]
+        cipher_bytes = b"".join(struct.pack("!H", c) for c in ciphers)
+
+        host_bytes = hostname.encode("ascii")
+        sni_data = struct.pack("!H", len(host_bytes) + 3) + b"\x00" + struct.pack("!H", len(host_bytes)) + host_bytes
+        ext_sni = struct.pack("!HH", 0x0000, len(sni_data)) + sni_data
+
+        curves_data = struct.pack("!H", 4) + struct.pack("!HH", 0x0017, 0x0018)
+        ext_curves = struct.pack("!HH", 0x000A, len(curves_data)) + curves_data
+
+        pt_fmt = b"\x01\x00"
+        ext_pt = struct.pack("!HH", 0x000B, len(pt_fmt)) + pt_fmt
+
+        extensions = ext_sni + ext_curves + ext_pt
+
+        client_random = b"\x00" * 32
+        ch_body = (
+            struct.pack("!H", 0x0303)
+            + client_random
+            + b"\x00"
+            + struct.pack("!H", len(cipher_bytes))
+            + cipher_bytes
+            + b"\x01\x00"
+            + struct.pack("!H", len(extensions))
+            + extensions
+        )
+        ch_handshake = struct.pack("!B", 0x01) + struct.pack("!I", len(ch_body))[1:] + ch_body
+        tls_record = struct.pack("!B", 0x16) + struct.pack("!H", 0x0303) + struct.pack("!H", len(ch_handshake)) + ch_handshake
+
+        s = None
+        try:
+            s = socket.create_connection((ip, port), timeout=timeout)
+            s.sendall(tls_record)
+            resp = b""
+            while len(resp) < 65536:
+                chunk = s.recv(4096)
+                if not chunk:
+                    break
+                resp += chunk
+                if b"\x0e\x00\x00\x00" in resp or len(resp) >= 4096:
+                    break
+        except Exception:
+            return None, None
+        finally:
+            if s:
+                try:
+                    s.close()
+                except Exception:
+                    pass
+
+        if not resp:
+            return None, None
+
+        selected_cipher_name = None
+        peer_der_cert = None
+
+        idx = 0
+        while idx < len(resp):
+            if len(resp) < idx + 5:
+                break
+            rec_type, ver, rec_len = struct.unpack("!BHH", resp[idx : idx + 5])
+            rec_body = resp[idx + 5 : idx + 5 + rec_len]
+            if rec_type == 0x16:
+                h_idx = 0
+                while h_idx < len(rec_body):
+                    if len(rec_body) < h_idx + 4:
+                        break
+                    htype = rec_body[h_idx]
+                    hlen = struct.unpack("!I", b"\x00" + rec_body[h_idx + 1 : h_idx + 4])[0]
+                    hdata = rec_body[h_idx + 4 : h_idx + 4 + hlen]
+
+                    if htype == 0x02:  # ServerHello
+                        pos = 2 + 32
+                        if len(hdata) > pos:
+                            sid_len = hdata[pos]
+                            pos += 1 + sid_len
+                            if len(hdata) >= pos + 2:
+                                cipher_code = struct.unpack("!H", hdata[pos : pos + 2])[0]
+                                cipher_map = {
+                                    0xC011: "ECDHE-RSA-RC4-SHA",
+                                    0x0005: "RC4-SHA",
+                                    0x0004: "RC4-MD5",
+                                    0x000A: "DES-CBC3-SHA",
+                                }
+                                selected_cipher_name = cipher_map.get(cipher_code)
+
+                    elif htype == 0x0B:  # Certificate
+                        if len(hdata) >= 6:
+                            first_cert_len = struct.unpack("!I", b"\x00" + hdata[3:6])[0]
+                            if len(hdata) >= 6 + first_cert_len:
+                                peer_der_cert = hdata[6 : 6 + first_cert_len]
+
+                    h_idx += 4 + hlen
+            idx += 5 + rec_len
+
+        return selected_cipher_name, peer_der_cert
+
     def _scan_direct_ssl(self, target: NormalizedTarget, timeout: int = 8) -> NetworkCryptoFinding:
         import socket
         import ssl
@@ -175,9 +288,13 @@ class TlsScanner:
 
         try:
             sock = socket.create_connection((target.resolved_ip, target.port), timeout=timeout)
-            ctx = ssl.create_default_context()
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
+            try:
+                ctx.set_ciphers("ALL:COMPLEMENTOFALL:@SECLEVEL=0:eNULL:aNULL")
+            except Exception:
+                pass
             try:
                 ctx.set_alpn_protocols(["h2", "http/1.1"])
             except Exception:
@@ -206,16 +323,29 @@ class TlsScanner:
                         finding.key_sizes[fam] = sz
 
             finding.scan_status = "success"
-            enrich_finding_intelligence(finding)
         except Exception as e:
-            finding.scan_status = "failed"
-            finding.error_reason = str(e)
-            if any(w in target.hostname.lower() for w in ("rc4", "null", "3des")):
-                if "rc4" in target.hostname.lower():
-                    finding.weak_algorithms.append("weak_cipher:RC4")
-                elif "null" in target.hostname.lower():
-                    finding.weak_algorithms.append("insecure_cipher:NULL")
-                elif "3des" in target.hostname.lower():
-                    finding.weak_algorithms.append("weak_cipher:3DES")
+            # Fallback probe for legacy ciphers (RC4, 3DES) not permitted by host OpenSSL
+            legacy_cipher, legacy_cert = self._probe_legacy_ciphers(
+                target.resolved_ip or target.hostname, target.port, target.hostname, timeout=min(timeout, 5)
+            )
+            if legacy_cipher:
+                finding.cipher_suites.append(legacy_cipher)
+                finding.tls_versions.append("TLSv1.2")
+                if legacy_cert:
+                    try:
+                        cert = cryptography.x509.load_der_x509_certificate(legacy_cert)
+                        cert_dict = parse_cert(cert, expected_hostname=target.hostname)
+                        finding.cert_chain.append(cert_dict)
+                        fam = cert_dict.get("algo_family")
+                        sz = cert_dict.get("key_size")
+                        if fam and sz:
+                            finding.key_sizes[fam] = sz
+                    except Exception:
+                        pass
+                finding.scan_status = "success"
+            else:
+                finding.scan_status = "failed"
+                finding.error_reason = str(e)
 
+        enrich_finding_intelligence(finding)
         return finding

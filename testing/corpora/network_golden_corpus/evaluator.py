@@ -81,7 +81,8 @@ class NetworkGoldenCorpusEvaluator:
                 for tp in finding.trust_problems:
                     detected_issues.append({"issue": tp, "finding_type": "trust_problem"})
                 for wa in finding.weak_algorithms:
-                    detected_issues.append({"issue": wa, "finding_type": "weak_cipher"})
+                    if wa.startswith("weak_cipher:") or wa.startswith("insecure_cipher:"):
+                        detected_issues.append({"issue": wa, "finding_type": "weak_cipher"})
                 return {
                     "endpoint": host,
                     "port": port,
@@ -90,29 +91,20 @@ class NetworkGoldenCorpusEvaluator:
                     "raw_finding": finding,
                 }
         except Exception as e:
-            pass
-
-        # Offline/error fallback heuristic based on known badssl semantics if live socket is completely blocked
-        fallback_issues = []
-        h_lower = host.lower()
-        if "expired" in h_lower:
-            fallback_issues.append({"issue": "expired_certificate", "finding_type": "trust_problem"})
-        elif "wrong.host" in h_lower:
-            fallback_issues.append({"issue": "hostname_mismatch", "finding_type": "trust_problem"})
-        elif "self-signed" in h_lower:
-            fallback_issues.append({"issue": "self_signed_certificate", "finding_type": "trust_problem"})
-        elif "rc4" in h_lower:
-            fallback_issues.append({"issue": "weak_cipher:RC4", "finding_type": "weak_cipher"})
-        elif "null" in h_lower:
-            fallback_issues.append({"issue": "insecure_cipher:NULL", "finding_type": "weak_cipher"})
-        elif "revoked" in h_lower:
-            fallback_issues.append({"issue": "revoked_certificate", "finding_type": "trust_problem"})
+            return {
+                "endpoint": host,
+                "port": port,
+                "scan_status": "failed",
+                "detected_issues": [],
+                "raw_finding": None,
+                "error": str(e),
+            }
 
         return {
             "endpoint": host,
             "port": port,
-            "scan_status": "success",
-            "detected_issues": fallback_issues,
+            "scan_status": "failed",
+            "detected_issues": [],
             "raw_finding": None,
         }
 
