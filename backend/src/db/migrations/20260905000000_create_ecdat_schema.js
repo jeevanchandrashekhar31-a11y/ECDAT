@@ -39,9 +39,35 @@ exports.up = async function (knex) {
     table.timestamp("updated_at", { useTz: true }).defaultTo(knex.fn.now());
   });
 
+  // Seed default policy profile row as part of migration so fresh knex migrate:latest
+  // always leaves at least one valid policy_profile_id for scans to reference.
+  await knex("policy_profiles").insert({
+    id: "internal_enterprise",
+    name: "Internal Enterprise Network",
+    description: "Internal microservices, intranet applications, and backend service-to-service communication.",
+    min_rsa_bits: 2048,
+    min_ecc_bits: 256,
+    allow_self_signed: false,
+    cicd_fail_threshold: "high",
+    config: JSON.stringify({
+      default_data_sensitivity: "internal",
+      default_business_criticality: "medium",
+      key_size_policy: { min_rsa_bits: 2048, min_ecc_bits: 256 },
+    }),
+  });
+
   // 3. scans
+  const hasTenantsTable = await knex.schema.hasTable("tenants");
   await knex.schema.createTable("scans", (table) => {
     table.string("id", 100).primary();
+    const tenantCol = table
+      .string("tenant_id", 100)
+      .notNullable()
+      .defaultTo("default-tenant")
+      .index();
+    if (hasTenantsTable) {
+      tenantCol.references("id").inTable("tenants").onDelete("CASCADE");
+    }
     table.string("project_id", 100).defaultTo("default_project").index();
     table.string("target_name", 255).notNullable();
     table.string("scanner_type", 50).notNullable().defaultTo("combined");

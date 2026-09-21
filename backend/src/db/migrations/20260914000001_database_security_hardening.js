@@ -51,7 +51,45 @@ exports.up = async function (knex) {
     }
   };
 
+  // Ensure scans has tenant_id if upgrading an existing older DB
+  const scansExists = await knex.schema.hasTable("scans");
+  if (scansExists) {
+    const hasTenantCol = await knex.schema.hasColumn("scans", "tenant_id");
+    if (!hasTenantCol) {
+      const hasTenantsTable = await knex.schema.hasTable("tenants");
+      await knex.schema.alterTable("scans", (table) => {
+        const col = table.string("tenant_id", 100).notNullable().defaultTo("default-tenant").index();
+        if (hasTenantsTable) {
+          col.references("id").inTable("tenants").onDelete("CASCADE");
+        }
+      });
+    }
+  }
+
+  // Ensure policy_profiles has at least one default profile if upgrading an older DB
+  const policyProfilesExists = await knex.schema.hasTable("policy_profiles");
+  if (policyProfilesExists) {
+    const defaultProfile = await knex("policy_profiles").first();
+    if (!defaultProfile) {
+      await knex("policy_profiles").insert({
+        id: "internal_enterprise",
+        name: "Internal Enterprise Network",
+        description: "Internal microservices, intranet applications, and backend service-to-service communication.",
+        min_rsa_bits: 2048,
+        min_ecc_bits: 256,
+        allow_self_signed: false,
+        cicd_fail_threshold: "high",
+        config: JSON.stringify({
+          default_data_sensitivity: "internal",
+          default_business_criticality: "medium",
+          key_size_policy: { min_rsa_bits: 2048, min_ecc_bits: 256 },
+        }),
+      });
+    }
+  }
+
   await safeAddIndex("scans", ["project_id", "created_at"], "idx_scans_project_created");
+  await safeAddIndex("scans", ["tenant_id", "created_at"], "idx_scans_tenant_created");
   await safeAddIndex("assets", ["scan_id", "highest_severity"], "idx_assets_scan_severity");
   await safeAddIndex("assets", ["scan_id", "at_quantum_risk"], "idx_assets_scan_quantum");
   await safeAddIndex("findings", ["scan_id", "algorithm", "key_size"], "idx_findings_scan_algo_keysize");

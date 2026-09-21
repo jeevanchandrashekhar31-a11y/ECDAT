@@ -241,10 +241,8 @@ router.get("/", async (req, res, next) => {
           })),
         });
       } catch (dbErr) {
-        console.warn(
-          "Database query fallback to in-memory for findings:",
-          dbErr.message,
-        );
+        // Fail loudly on database query errors and schema mismatches instead of quietly degrading
+        return next(dbErr);
       }
     }
 
@@ -457,10 +455,8 @@ router.get("/:findingId", async (req, res, next) => {
           });
         }
       } catch (dbErr) {
-        console.warn(
-          "Database query fallback to in-memory for finding detail:",
-          dbErr.message,
-        );
+        // Fail loudly on database query errors and schema mismatches instead of quietly degrading
+        return next(dbErr);
       }
     }
 

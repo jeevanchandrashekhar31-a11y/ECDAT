@@ -19,6 +19,7 @@ const config = require("../config");
 const { RATE_LIMITS } = require("../security/resource_governance");
 const passwordResetTokens = new Map();
 const { cbomIngestionService, inMemoryScansStore, clearScans } = require("../services/cbom_ingestion");
+const { db, isDbConnected } = require("../db/connection");
 const { getDefaultApprovalEngine } = require("../remediation");
 const {
   defaultTokenService,
@@ -921,11 +922,24 @@ async function seedDemoDataset() {
     };
   }
 
+  let activePolicyProfile = "internal_enterprise";
+  try {
+    const connected = await isDbConnected({ timeoutMs: 1500 });
+    if (connected && db) {
+      const seededRow = await db("policy_profiles").select("id").first();
+      if (seededRow?.id) {
+        activePolicyProfile = seededRow.id;
+      }
+    }
+  } catch (_err) {
+    // Non-fatal if DB is disconnected/in-memory mode
+  }
+
   return await cbomIngestionService.ingestCbom(rawCbom, {
     scanName: "Demo Environment — synthetic dataset",
     scannerType: "static",
     projectName: "Demo Cryptographic Discovery",
-    policyProfile: "internal_enterprise",
+    policyProfile: activePolicyProfile,
     scenario: "baseline",
     tenantId: "demo-tenant",
     tenantContext: {
@@ -1080,14 +1094,18 @@ router.post("/demo/reset", async (req, res) => {
 });
 
 // POST /demo/seed: Explicitly seed synthetic data
-router.post("/demo/seed", async (req, res) => {
+router.post("/demo/seed", async (req, res, next) => {
   const authMode = config.AUTH_MODE || "production";
   if (authMode !== "demo") {
     return res.status(403).json({ error: "Forbidden", message: "Demo mode is disabled." });
   }
 
-  const record = await seedDemoDataset();
-  return res.json({ success: true, scan_id: record.id, message: "Synthetic dataset seeded for demo tenant." });
+  try {
+    const record = await seedDemoDataset();
+    return res.json({ success: true, scan_id: record.id, message: "Synthetic dataset seeded for demo tenant." });
+  } catch (err) {
+    return next(err);
+  }
 });
 
 /**
