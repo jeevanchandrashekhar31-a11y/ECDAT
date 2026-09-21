@@ -11,10 +11,15 @@
  */
 
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const express = require("express");
 const router = express.Router();
+const config = require("../config");
 const { RATE_LIMITS } = require("../security/resource_governance");
 const passwordResetTokens = new Map();
+const { cbomIngestionService, inMemoryScansStore, clearScans } = require("../services/cbom_ingestion");
+const { getDefaultApprovalEngine } = require("../remediation");
 const {
   defaultTokenService,
   defaultSecretManager,
@@ -813,6 +818,277 @@ router.delete(
     });
   }
 );
+
+/**
+ * Helper to seed synthetic demo dataset into demo-tenant.
+ */
+async function seedDemoDataset() {
+  const samplePath = path.resolve(__dirname, "../../../examples/FINAL_CBOM_SAMPLE.json");
+  let rawCbom = null;
+  if (fs.existsSync(samplePath)) {
+    try {
+      rawCbom = JSON.parse(fs.readFileSync(samplePath, "utf8"));
+    } catch {
+      rawCbom = null;
+    }
+  }
+
+  if (!rawCbom) {
+    rawCbom = {
+      bomFormat: "CycloneDX",
+      specVersion: "1.6",
+      serialNumber: `urn:uuid:${crypto.randomUUID()}`,
+      version: 1,
+      metadata: {
+        component: {
+          type: "application",
+          name: "Demo Payments & Cryptographic Gateway",
+          version: "2.4.0-synthetic",
+          description: "Demo Environment — synthetic dataset representing enterprise cryptographic posture",
+        },
+      },
+      components: [
+        {
+          type: "cryptographic-asset",
+          name: "legacy-session-signing-rsa",
+          version: "1.0.0",
+          cryptoProperties: {
+            assetType: "algorithm",
+            algorithmProperties: {
+              primitive: "signature",
+              parameterSetIdentifier: "RSA-1024",
+              classicalSecurityLevel: 80,
+              nistQuantumSecurityLevel: 0,
+            },
+          },
+          evidence: {
+            occurrences: [
+              {
+                location: "src/auth/legacy_token_signer.c",
+                line: 42,
+                symbol: "RSA_generate_key_ex",
+              },
+            ],
+          },
+        },
+        {
+          type: "cryptographic-asset",
+          name: "data-at-rest-3des",
+          version: "1.1.0",
+          cryptoProperties: {
+            assetType: "algorithm",
+            algorithmProperties: {
+              primitive: "block-cipher",
+              parameterSetIdentifier: "3DES-EDE-CBC",
+              classicalSecurityLevel: 80,
+              nistQuantumSecurityLevel: 0,
+            },
+          },
+          evidence: {
+            occurrences: [
+              {
+                location: "services/storage/legacy_crypto_driver.py",
+                line: 88,
+                symbol: "DES3.new",
+              },
+            ],
+          },
+        },
+        {
+          type: "cryptographic-asset",
+          name: "quantum-resistant-kem-candidate",
+          version: "1.0.0",
+          cryptoProperties: {
+            assetType: "algorithm",
+            algorithmProperties: {
+              primitive: "kem",
+              parameterSetIdentifier: "ML-KEM-768",
+              classicalSecurityLevel: 192,
+              nistQuantumSecurityLevel: 3,
+            },
+          },
+          evidence: {
+            occurrences: [
+              {
+                location: "src/crypto/pqc_hybrid_exchange.rs",
+                line: 15,
+                symbol: "ml_kem_768_keypair",
+              },
+            ],
+          },
+        },
+      ],
+    };
+  }
+
+  return await cbomIngestionService.ingestCbom(rawCbom, {
+    scanName: "Demo Environment — synthetic dataset",
+    scannerType: "static",
+    projectName: "Demo Cryptographic Discovery",
+    policyProfile: "internal_enterprise",
+    scenario: "baseline",
+    tenantId: "demo-tenant",
+    tenantContext: {
+      tenantId: "demo-tenant",
+      userId: "demo-system",
+      roles: ["viewer"],
+      isPlatformAdmin: false,
+    },
+  });
+}
+
+/**
+ * POST /api/v1/auth/demo/login & POST /auth/demo/login
+ * Constrained 1-click authentication session for judge demo story.
+ * Only enabled when AUTH_MODE=demo.
+ * Strictly scoped to tenant 'demo-tenant', isPlatformAdmin: false.
+ */
+async function handleDemoLogin(req, res) {
+  const authMode = config.AUTH_MODE || "production";
+  if (authMode !== "demo") {
+    return res.status(403).json({
+      error: "Forbidden",
+      code: "DEMO_MODE_DISABLED",
+      message: "Demo authentication is disabled. Server is running in production authentication mode (AUTH_MODE=production).",
+    });
+  }
+
+  const requestedPersona = String(req.body?.persona || req.query?.persona || "developer").toLowerCase();
+
+  const DEMO_PERSONAS = {
+    developer: {
+      userId: "demo-developer",
+      username: "demo-developer",
+      name: "Demo Developer (Proposer)",
+      roles: ["developer"],
+    },
+    reviewer: {
+      userId: "demo-reviewer",
+      username: "demo-reviewer",
+      name: "Demo Peer Reviewer",
+      roles: ["reviewer", "viewer"],
+    },
+    security_lead: {
+      userId: "demo-security-lead",
+      username: "demo-security-lead",
+      name: "Demo Security Lead (Approver)",
+      roles: ["security_lead", "secops", "verifier"],
+    },
+    secops: {
+      userId: "demo-security-lead",
+      username: "demo-security-lead",
+      name: "Demo Security Lead (Approver)",
+      roles: ["security_lead", "secops", "verifier"],
+    },
+    admin: {
+      userId: "demo-security-lead",
+      username: "demo-security-lead",
+      name: "Demo Security Lead (Approver)",
+      roles: ["security_lead", "secops", "verifier"],
+    },
+  };
+
+  const persona = DEMO_PERSONAS[requestedPersona] || DEMO_PERSONAS.developer;
+
+  const tokens = defaultTokenService.issueTokenPair({
+    userId: persona.userId,
+    email: `${persona.username}@demo.ecdat.local`,
+    name: persona.name,
+    roles: persona.roles,
+    provider: "demo_auth",
+    customClaims: {
+      tenantId: "demo-tenant",
+      isPlatformAdmin: false,
+    },
+  });
+
+  const csrfToken = generateCsrfToken();
+  setAuthCookies(res, {
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    csrfToken,
+  });
+
+  // Auto-seed synthetic data if demo tenant is empty and caller didn't explicitly request empty
+  const shouldSeed = req.body?.seed !== false && req.query?.seed !== "false" && req.query?.empty !== "true";
+  let seededScan = null;
+  if (shouldSeed) {
+    const existingScans = Array.from(inMemoryScansStore.values()).filter(
+      (s) => s.tenantId === "demo-tenant"
+    );
+    if (existingScans.length === 0) {
+      try {
+        seededScan = await seedDemoDataset();
+      } catch (seedErr) {
+        console.warn("Demo dataset auto-seed notice:", seedErr.message);
+      }
+    }
+  }
+
+  defaultAuditService.logEvent({
+    category: AUDIT_CATEGORIES.LOGIN,
+    action: AUDIT_ACTIONS.LOGIN,
+    actor: {
+      id: persona.userId,
+      username: persona.username,
+      role: persona.roles[0],
+      ipAddress: req.ip || req.socket?.remoteAddress || "127.0.0.1",
+    },
+    tenantId: "demo-tenant",
+    status: AUDIT_STATUSES.SUCCESS,
+    details: { method: "demo_auth", persona: requestedPersona, seeded: Boolean(seededScan) },
+  }).catch(() => {});
+
+  return res.json({
+    ...tokens,
+    csrfToken,
+    demoMode: true,
+    user: {
+      userId: persona.userId,
+      username: persona.username,
+      displayName: persona.name,
+      email: `${persona.username}@demo.ecdat.local`,
+      roles: persona.roles,
+      tenantId: "demo-tenant",
+      isPlatformAdmin: false,
+      isDemo: true,
+    },
+  });
+}
+
+router.post("/demo/login", RATE_LIMITS.login.middleware(), handleDemoLogin);
+
+// POST /demo/reset: Reset demo tenant for testing empty state
+router.post("/demo/reset", async (req, res) => {
+  const authMode = config.AUTH_MODE || "production";
+  if (authMode !== "demo") {
+    return res.status(403).json({ error: "Forbidden", message: "Demo mode is disabled." });
+  }
+
+  // Clear scans for demo-tenant
+  await clearScans({ tenantId: "demo-tenant", isPlatformAdmin: false });
+
+  // Clear remediation approvals for demo-tenant
+  const engine = getDefaultApprovalEngine();
+  for (const [id, r] of engine.approvals.entries()) {
+    if (r.tenantId === "demo-tenant") {
+      engine.approvals.delete(id);
+    }
+  }
+
+  return res.json({ success: true, message: "Demo tenant reset to empty state." });
+});
+
+// POST /demo/seed: Explicitly seed synthetic data
+router.post("/demo/seed", async (req, res) => {
+  const authMode = config.AUTH_MODE || "production";
+  if (authMode !== "demo") {
+    return res.status(403).json({ error: "Forbidden", message: "Demo mode is disabled." });
+  }
+
+  const record = await seedDemoDataset();
+  return res.json({ success: true, scan_id: record.id, message: "Synthetic dataset seeded for demo tenant." });
+});
 
 /**
  * POST /api/v1/auth/local/login

@@ -7,6 +7,8 @@ import { AssetDetail } from './pages/AssetDetail';
 import { Reports } from './pages/Reports';
 import { Roadmap } from './pages/Roadmap';
 import { CryptoGraph } from './pages/CryptoGraph';
+import { Findings } from './pages/Findings';
+import { Remediation } from './pages/Remediation';
 
 import { Login } from './pages/Login';
 
@@ -72,6 +74,8 @@ export const App: React.FC = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/assets" element={<Assets />} />
             <Route path="/assets/:assetId" element={<AssetDetail />} />
+            <Route path="/findings" element={<Findings />} />
+            <Route path="/remediation" element={<Remediation />} />
             <Route path="/roadmap" element={<Roadmap />} />
             <Route path="/graph" element={<CryptoGraph />} />
             <Route path="/reports" element={<Reports />} />

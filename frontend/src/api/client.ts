@@ -1,4 +1,17 @@
-import { DashboardSummary, AssetsResponse, AssetDetail, FindingsResponse, FindingItem, ScanItem, Metrics, DashboardViewsResponse, CryptoGraphResponse } from '../types';
+import {
+  DashboardSummary,
+  AssetsResponse,
+  AssetDetail,
+  FindingsResponse,
+  FindingItem,
+  ScanItem,
+  Metrics,
+  DashboardViewsResponse,
+  CryptoGraphResponse,
+  RemediationApprovalsResponse,
+  RemediationApprovalRecord,
+  ApprovalState,
+} from '../types';
 import {
   purgeLocalStorageSecrets,
   attachCsrfHeader,
@@ -43,8 +56,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!response.ok) {
     let errorMsg = `HTTP Error ${response.status}: ${response.statusText}`;
+    let backendError: Record<string, unknown> | null = null;
     try {
       const errBody = await response.json();
+      backendError = errBody;
       if (errBody) {
         if (errBody.message && errBody.error && errBody.error !== errBody.message) {
           errorMsg = `${errBody.error}: ${errBody.message}`;
@@ -62,7 +77,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     authManager.handleResponseStatus(response.status, errorMsg);
 
     const error = new Error(errorMsg);
-    (error as unknown as { status: number }).status = response.status;
+    (error as unknown as { status: number; data?: unknown }).status = response.status;
+    (error as unknown as { status: number; data?: unknown }).data = backendError;
     throw error;
   }
 
@@ -568,8 +584,161 @@ export const api = {
       email?: string;
       roles?: string[];
       tenantId?: string;
+      isDemo?: boolean;
     };
   }> => {
     return request('/api/v1/auth/me');
+  },
+
+  // --------------------------------------------------------------------------
+  // Demo Mode 1-Click Authentication & Governance
+  // --------------------------------------------------------------------------
+  loginDemo: async (
+    persona: string = 'developer',
+    seed: boolean = true
+  ): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    csrfToken?: string;
+    demoMode: boolean;
+    user: {
+      userId: string;
+      username: string;
+      displayName: string;
+      email: string;
+      roles: string[];
+      tenantId: string;
+      isPlatformAdmin: boolean;
+      isDemo: boolean;
+    };
+  }> => {
+    return request('/api/v1/auth/demo/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ persona, seed }),
+    });
+  },
+
+  resetDemoTenant: async (): Promise<{ success: boolean; message: string }> => {
+    return request('/api/v1/auth/demo/reset', {
+      method: 'POST',
+    });
+  },
+
+  seedDemoTenant: async (): Promise<{ success: boolean; scan_id: string; message: string }> => {
+    return request('/api/v1/auth/demo/seed', {
+      method: 'POST',
+    });
+  },
+
+  // --------------------------------------------------------------------------
+  // Safe Remediation & Four-Eyes Governance Lifecycle
+  // --------------------------------------------------------------------------
+  getRemediationApprovals: async (filters: {
+    state?: string;
+    category?: string;
+    environment?: string;
+  } = {}): Promise<RemediationApprovalsResponse> => {
+    const params = new URLSearchParams();
+    if (filters.state && filters.state !== 'ALL') params.append('state', filters.state);
+    if (filters.category && filters.category !== 'ALL') params.append('category', filters.category);
+    if (filters.environment && filters.environment !== 'ALL') params.append('environment', filters.environment);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<RemediationApprovalsResponse>(`/api/v1/remediation/approvals${query}`);
+  },
+
+  getRemediationApprovalById: async (
+    approvalId: string
+  ): Promise<{
+    success: boolean;
+    approval: RemediationApprovalRecord;
+    chain_verification: {
+      valid: boolean;
+      total_transitions: number;
+      genesis_hash?: string;
+      head_hash?: string;
+    };
+  }> => {
+    return request(`/api/v1/remediation/approvals/${encodeURIComponent(approvalId)}`);
+  },
+
+  proposeRemediation: async (data: {
+    title: string;
+    description?: string;
+    category?: string;
+    environment?: string;
+    finding_id?: string | null;
+    affected_asset?: string | null;
+    target_standard?: string | null;
+    patch_diff?: string | null;
+    test_plan?: string | null;
+    rollback_plan?: string | null;
+    comments?: string;
+  }): Promise<{ success: boolean } & RemediationApprovalRecord> => {
+    return request('/api/v1/remediation/approvals/propose', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  },
+
+  reviewRemediation: async (
+    approvalId: string,
+    comments?: string
+  ): Promise<{ success: boolean; state: ApprovalState; approval: RemediationApprovalRecord }> => {
+    return request(`/api/v1/remediation/approvals/${encodeURIComponent(approvalId)}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comments: comments || 'Peer review completed.' }),
+    });
+  },
+
+  approveRemediation: async (
+    approvalId: string,
+    comments?: string
+  ): Promise<{ success: boolean; state: ApprovalState; approval: RemediationApprovalRecord }> => {
+    return request(`/api/v1/remediation/approvals/${encodeURIComponent(approvalId)}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comments: comments || 'Approved for execution.' }),
+    });
+  },
+
+  applyRemediation: async (
+    approvalId: string
+  ): Promise<{ success: boolean; state: ApprovalState; approval: RemediationApprovalRecord }> => {
+    return request(`/api/v1/remediation/approvals/${encodeURIComponent(approvalId)}/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  },
+
+  verifyRemediation: async (
+    approvalId: string,
+    verification_results: Record<string, unknown>
+  ): Promise<{ success: boolean; state: ApprovalState; approval: RemediationApprovalRecord }> => {
+    return request(`/api/v1/remediation/approvals/${encodeURIComponent(approvalId)}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verification_results }),
+    });
+  },
+
+  getRemediationPlanForFinding: async (
+    findingId: string
+  ): Promise<{
+    success: boolean;
+    plan: {
+      finding_id: string;
+      dimensions: Record<string, unknown>;
+      suggested_patch?: string;
+      rollback_procedure?: string;
+    };
+  }> => {
+    return request(`/api/v1/remediation/plan/${encodeURIComponent(findingId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dry_run: true }),
+    });
   },
 };

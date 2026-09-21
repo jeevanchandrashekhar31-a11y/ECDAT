@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
 from scanners.compliance_mapping import sanitize_evidence_data
+from scanners.migration_planner import detect_cryptographic_use_case, validate_migration_use_case_match
 
 
 def derive_why_it_matters(finding: Dict[str, Any], asset: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -172,38 +173,40 @@ def derive_recommended_remediation(finding: Dict[str, Any], asset: Optional[Dict
         ]
         target_standard = "CA/Browser Forum Baseline Requirements"
         target_year = 2026
-    elif any(k in algo for k in ["ECDH", "X25519", "DIFFIE-HELLMAN"]) or algo.startswith("TLS"):
-        action_type = "CONFIG_UPDATE"
-        summary = "Enable hybrid post-quantum key establishment (X25519MLKEM768) on TLS endpoints."
-        steps = [
-            "Ensure underlying TLS stack is upgraded to OpenSSL 3.2+, BoringSSL, or Go 1.23+.",
-            "Configure supported named groups to prefer 'X25519MLKEM768' followed by 'x25519'.",
-            "Validate that TLS ClientHello sends hybrid key shares without MTU fragmentation.",
-            "Monitor handshake latency and verify zero handshake fallback failures.",
-        ]
-        target_standard = "NIST FIPS 203 (ML-KEM) & IETF TLS Hybrid Design"
-        target_year = 2026
-    elif any(s in algo for s in ["RSA", "ECDSA", "DSA"]):
-        action_type = "CODE_REFACTOR"
-        summary = "Implement post-quantum digital signature migration using ML-DSA-65 or hybrid dual-signatures."
-        steps = [
-            "Evaluate payload size tolerance for ML-DSA-65 (~3.3 KB signature) vs classical signature (~64-256 bytes).",
-            "Implement composite dual-signature verification to support legacy and post-quantum validators.",
-            "Upgrade crypto provider to NIST FIPS 204 compliant library.",
-            "Phase out classical-only signature verification after ecosystem migration.",
-        ]
-        target_standard = "NIST FIPS 204 (ML-DSA)"
-        target_year = 2027
     else:
-        action_type = "CODE_REFACTOR"
-        summary = "Modernize cryptographic asset to comply with NIST SP 800-57 Part 1 Rev 5."
-        steps = [
-            "Review current cryptographic usage and algorithm constraints.",
-            "Upgrade parameters to quantum-resistant or current classical standards.",
-            "Execute automated regression testing suite.",
-        ]
-        target_standard = "NIST SP 800-57 Part 1 Rev 5"
-        target_year = 2026
+        use_case = detect_cryptographic_use_case(finding, asset)
+        if use_case == "KEY_ESTABLISHMENT":
+            action_type = "CONFIG_UPDATE"
+            summary = "Enable hybrid post-quantum key establishment (X25519MLKEM768) on TLS endpoints."
+            steps = [
+                "Ensure underlying TLS stack is upgraded to OpenSSL 3.2+, BoringSSL, or Go 1.23+.",
+                "Configure supported named groups to prefer 'X25519MLKEM768' followed by 'x25519'.",
+                "Validate that TLS ClientHello sends hybrid key shares without MTU fragmentation.",
+                "Monitor handshake latency and verify zero handshake fallback failures.",
+            ]
+            target_standard = "NIST FIPS 203 (ML-KEM) & IETF TLS Hybrid Design"
+            target_year = 2026
+        elif use_case == "DIGITAL_SIGNATURE":
+            action_type = "CODE_REFACTOR"
+            summary = "Implement post-quantum digital signature migration using ML-DSA-65 or hybrid dual-signatures."
+            steps = [
+                "Evaluate payload size tolerance for ML-DSA-65 (~3.3 KB signature) vs classical signature (~64-256 bytes).",
+                "Implement composite dual-signature verification to support legacy and post-quantum validators.",
+                "Upgrade crypto provider to NIST FIPS 204 compliant library.",
+                "Phase out classical-only signature verification after ecosystem migration.",
+            ]
+            target_standard = "NIST FIPS 204 (ML-DSA)"
+            target_year = 2027
+        else:
+            action_type = "CODE_REFACTOR"
+            summary = "Modernize cryptographic asset to comply with NIST SP 800-57 Part 1 Rev 5."
+            steps = [
+                "Review current cryptographic usage and algorithm constraints.",
+                "Upgrade parameters to quantum-resistant or current classical standards.",
+                "Execute automated regression testing suite.",
+            ]
+            target_standard = "NIST SP 800-57 Part 1 Rev 5"
+            target_year = 2026
 
     return {
         "action_type": action_type,
@@ -219,8 +222,9 @@ def build_migration_options(finding: Dict[str, Any], asset: Optional[Dict[str, A
     asset = asset or {}
     algo = str(finding.get("algorithm") or asset.get("algorithm") or finding.get("name") or "").upper()
     options = []
+    use_case = detect_cryptographic_use_case(finding, asset)
 
-    if any(k in algo for k in ["ECDH", "X25519", "DIFFIE-HELLMAN"]) or algo.startswith("TLS"):
+    if use_case == "KEY_ESTABLISHMENT":
         options.append(
             {
                 "option_id": "OPT-1-PQC-HYBRID",
@@ -267,7 +271,7 @@ def build_migration_options(finding: Dict[str, Any], asset: Optional[Dict[str, A
                 "risk_rating": "HIGH",
             }
         )
-    elif any(s in algo for s in ["RSA", "ECDSA", "DSA"]):
+    elif use_case == "DIGITAL_SIGNATURE":
         options.append(
             {
                 "option_id": "OPT-1-PQC-SIGNATURE",

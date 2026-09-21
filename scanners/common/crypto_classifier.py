@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
@@ -65,7 +66,8 @@ VALID_FALCON_PARAMETERS = {
 # Approved classical asymmetric algorithms broken by Shor's polynomial-time algorithm
 SHOR_VULNERABLE_FAMILIES = {
     "rsa", "dsa", "dh", "diffie-hellman", "dhe", "ffdh", "ecdh", "ecdsa",
-    "ecies", "ed25519", "ed448", "x25519", "x448", "elgamal", "sm2", "gost-r3410"
+    "ecies", "ed25519", "ed448", "x25519", "x448", "elgamal", "sm2", "gost-r3410",
+    "ecc", "elliptic-curve", "ellipticcurve"
 }
 
 # Classical symmetric ciphers & hashes
@@ -100,6 +102,243 @@ class AlgorithmClassificationResult:
             "is_approved": self.is_approved,
             "hybrid_details": self.hybrid_details,
         }
+
+
+class PqcReadinessTier(str, Enum):
+    """
+    Evidence tiers for PQC readiness classification:
+    - DEPENDENCY_INSTALLED: Library installed in dependencies (package.json, pom.xml, requirements.txt, etc.)
+    - ALGORITHM_IMPORTED: Algorithm actually imported in application source code.
+    - RUNTIME_INVOKED: Algorithm actually invoked/executed at runtime (eBPF, instrumentation, live handshake).
+    - EXPLICITLY_CONFIGURED: Algorithm explicitly configured in cipher suites, policies, or KMS profiles.
+    """
+    DEPENDENCY_INSTALLED = "dependency_installed"
+    ALGORITHM_IMPORTED = "algorithm_imported"
+    RUNTIME_INVOKED = "runtime_invoked"
+    EXPLICITLY_CONFIGURED = "explicitly_configured"
+
+
+class PqcReadinessStatus(str, Enum):
+    PQC_READY = "PQC_READY"
+    PQC_CAPABLE = "PQC_CAPABLE"
+    NOT_READY = "NOT_READY"
+    NOT_ASSESSED = "NOT_ASSESSED"
+
+
+@dataclass
+class PqcReadinessEvidence:
+    """Individual evidence item supporting PQC readiness evaluation."""
+    tier: PqcReadinessTier | str
+    source: str
+    details: Optional[str] = None
+    line_number: Optional[int] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "tier": str(self.tier.value if hasattr(self.tier, "value") else self.tier),
+            "source": self.source,
+            "details": self.details,
+            "line_number": self.line_number,
+        }
+
+
+@dataclass
+class PqcReadinessEvaluation:
+    """
+    Formal PQC readiness assessment result.
+    Invariant: A component must NEVER be marked PQC_READY on dependency presence alone.
+    """
+    status: PqcReadinessStatus | str
+    is_pqc_ready: bool
+    readiness_score: Optional[float]
+    algorithm: str
+    classification: str
+    primary_tier: Optional[PqcReadinessTier | str] = None
+    evidence_chain: List[Dict[str, Any]] = field(default_factory=list)
+    justification: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "status": str(self.status.value if hasattr(self.status, "value") else self.status),
+            "is_pqc_ready": self.is_pqc_ready,
+            "readiness_score": self.readiness_score,
+            "algorithm": self.algorithm,
+            "classification": self.classification,
+            "primary_tier": str(self.primary_tier.value if hasattr(self.primary_tier, "value") else self.primary_tier) if self.primary_tier else None,
+            "evidence_chain": self.evidence_chain,
+            "justification": self.justification,
+        }
+
+
+def evaluate_pqc_readiness(
+    algorithm: Optional[str],
+    evidence: Optional[List[Any]] = None,
+    key_size: Optional[int] = None,
+    parameters: Optional[Dict[str, Any]] = None,
+) -> PqcReadinessEvaluation:
+    """
+    Evaluates PQC readiness of an asset or component across four evidence tiers:
+    1. DEPENDENCY_INSTALLED: Library present in dependencies/manifest (e.g. package.json).
+       CRITICAL INVARIANT: Dependency presence ALONE must NEVER mark an asset as PQC_READY.
+    2. ALGORITHM_IMPORTED: Algorithm/module actually imported in source code.
+    3. RUNTIME_INVOKED: Algorithm actually invoked/executed at runtime.
+    4. EXPLICITLY_CONFIGURED: Algorithm explicitly configured in cipher suites or settings.
+    
+    If 0 assets or unassessed algorithm, returns NOT_ASSESSED with readiness_score=None.
+    """
+    if not algorithm or str(algorithm).strip() == "" or str(algorithm).lower() in ("unknown", "null", "none"):
+        return PqcReadinessEvaluation(
+            status=PqcReadinessStatus.NOT_ASSESSED,
+            is_pqc_ready=False,
+            readiness_score=None,
+            algorithm=str(algorithm or "UNKNOWN"),
+            classification=CLASS_UNKNOWN,
+            primary_tier=None,
+            evidence_chain=[],
+            justification="No cryptographic asset or algorithm identified. Not assessed.",
+        )
+
+    algo_res = CryptoClassifier.classify(str(algorithm), key_size=key_size, parameters=parameters)
+    raw_evidence = evidence or []
+    norm_evidence = []
+    tiers_present: Set[str] = set()
+
+    for item in raw_evidence:
+        if isinstance(item, PqcReadinessEvidence):
+            norm_evidence.append(item.to_dict())
+            tiers_present.add(str(item.tier.value if hasattr(item.tier, "value") else item.tier).lower())
+        elif isinstance(item, dict):
+            norm_evidence.append(item)
+            t = item.get("tier") or item.get("type") or item.get("level")
+            if t:
+                tiers_present.add(str(t).lower())
+        elif isinstance(item, str):
+            tiers_present.add(item.lower())
+            norm_evidence.append({"tier": item, "source": "unspecified"})
+
+    # Check tier presence
+    has_dependency = any(t in tiers_present for t in ["dependency_installed", "library_installed", "dependency"])
+    has_imported = any(t in tiers_present for t in ["algorithm_imported", "imported", "import", "ast_import"])
+    has_runtime = any(t in tiers_present for t in ["runtime_invoked", "invoked", "runtime", "runtime_execution"])
+    has_configured = any(t in tiers_present for t in ["explicitly_configured", "configured", "config"])
+
+    is_quantum_secure = algo_res.classification in (CLASS_QUANTUM_RESISTANT, CLASS_HYBRID)
+
+    # 1. Classical / Quantum-Vulnerable Algorithms
+    if algo_res.classification == CLASS_QUANTUM_VULNERABLE:
+        primary = None
+        if has_runtime:
+            primary = PqcReadinessTier.RUNTIME_INVOKED
+        elif has_imported:
+            primary = PqcReadinessTier.ALGORITHM_IMPORTED
+        elif has_configured:
+            primary = PqcReadinessTier.EXPLICITLY_CONFIGURED
+        elif has_dependency:
+            primary = PqcReadinessTier.DEPENDENCY_INSTALLED
+
+        return PqcReadinessEvaluation(
+            status=PqcReadinessStatus.NOT_READY,
+            is_pqc_ready=False,
+            readiness_score=0.0,
+            algorithm=algo_res.algorithm,
+            classification=algo_res.classification,
+            primary_tier=primary,
+            evidence_chain=norm_evidence,
+            justification=f"Algorithm '{algo_res.algorithm}' is {algo_res.classification} ({algo_res.threat_model} threat model). Cannot be PQC ready.",
+        )
+
+    # 2. Unknown or Unverified Algorithms
+    if algo_res.classification == CLASS_UNKNOWN:
+        return PqcReadinessEvaluation(
+            status=PqcReadinessStatus.NOT_ASSESSED,
+            is_pqc_ready=False,
+            readiness_score=None,
+            algorithm=algo_res.algorithm,
+            classification=algo_res.classification,
+            primary_tier=None,
+            evidence_chain=norm_evidence,
+            justification=f"Algorithm '{algo_res.algorithm}' could not be verified against standards. Readiness is not assessed.",
+        )
+
+    # 3. Quantum-Resistant or Hybrid Algorithms: Check Evidence Tiers
+    # CRITICAL INVARIANT: Dependency presence alone NEVER yields PQC_READY!
+    if has_dependency and not (has_imported or has_runtime or has_configured):
+        return PqcReadinessEvaluation(
+            status=PqcReadinessStatus.PQC_CAPABLE,
+            is_pqc_ready=False,  # STRICTLY FALSE ON DEPENDENCY PRESENCE ALONE
+            readiness_score=0.25,
+            algorithm=algo_res.algorithm,
+            classification=algo_res.classification,
+            primary_tier=PqcReadinessTier.DEPENDENCY_INSTALLED,
+            evidence_chain=norm_evidence,
+            justification=(
+                f"PQC library/dependency present for '{algo_res.algorithm}', but algorithm is NOT "
+                f"imported, explicitly configured, or invoked at runtime. Cannot be marked PQC_READY on dependency presence alone."
+            ),
+        )
+
+    # Algorithm actually invoked at runtime
+    if has_runtime and is_quantum_secure:
+        return PqcReadinessEvaluation(
+            status=PqcReadinessStatus.PQC_READY,
+            is_pqc_ready=True,
+            readiness_score=1.0,
+            algorithm=algo_res.algorithm,
+            classification=algo_res.classification,
+            primary_tier=PqcReadinessTier.RUNTIME_INVOKED,
+            evidence_chain=norm_evidence,
+            justification=f"Verified PQC algorithm '{algo_res.algorithm}' actively invoked at runtime with confirmed evidence.",
+        )
+
+    # Explicitly configured
+    if has_configured and is_quantum_secure:
+        return PqcReadinessEvaluation(
+            status=PqcReadinessStatus.PQC_READY,
+            is_pqc_ready=True,
+            readiness_score=0.9,
+            algorithm=algo_res.algorithm,
+            classification=algo_res.classification,
+            primary_tier=PqcReadinessTier.EXPLICITLY_CONFIGURED,
+            evidence_chain=norm_evidence,
+            justification=f"Verified PQC algorithm '{algo_res.algorithm}' explicitly configured in active policy/cipher suites.",
+        )
+
+    # Algorithm imported in code
+    if has_imported and is_quantum_secure:
+        return PqcReadinessEvaluation(
+            status=PqcReadinessStatus.PQC_READY,
+            is_pqc_ready=True,
+            readiness_score=0.75,
+            algorithm=algo_res.algorithm,
+            classification=algo_res.classification,
+            primary_tier=PqcReadinessTier.ALGORITHM_IMPORTED,
+            evidence_chain=norm_evidence,
+            justification=f"Verified PQC algorithm '{algo_res.algorithm}' actually imported in application source code.",
+        )
+
+    # Fallback if no evidence provided but algorithm is quantum-resistant
+    if is_quantum_secure and not raw_evidence:
+        return PqcReadinessEvaluation(
+            status=PqcReadinessStatus.PQC_CAPABLE,
+            is_pqc_ready=False,
+            readiness_score=0.5,
+            algorithm=algo_res.algorithm,
+            classification=algo_res.classification,
+            primary_tier=None,
+            evidence_chain=[],
+            justification=f"Algorithm '{algo_res.algorithm}' is {algo_res.classification}, but lacks invocation or configuration evidence.",
+        )
+
+    return PqcReadinessEvaluation(
+        status=PqcReadinessStatus.NOT_ASSESSED,
+        is_pqc_ready=False,
+        readiness_score=None,
+        algorithm=algo_res.algorithm,
+        classification=algo_res.classification,
+        primary_tier=None,
+        evidence_chain=norm_evidence,
+        justification="Insufficient evidence to assess PQC readiness.",
+    )
 
 
 class CryptoClassifier:
@@ -154,21 +393,35 @@ class CryptoClassifier:
             return pqc_res
 
         # -------------------------------------------------------------------
-        # 3. ASYMMETRIC CLASSICAL (Shor's Algorithm Breakdown)
+        # 3. PROTOCOLS (TLS 1.2, TLS 1.3, SSL)
+        # -------------------------------------------------------------------
+        proto_res = cls._evaluate_protocol(algo_raw, algo_norm, algo_clean, params)
+        if proto_res:
+            return proto_res
+
+        # -------------------------------------------------------------------
+        # 4. CERTIFICATES (X.509)
+        # -------------------------------------------------------------------
+        cert_res = cls._evaluate_certificate(algo_raw, algo_norm, algo_clean, params)
+        if cert_res:
+            return cert_res
+
+        # -------------------------------------------------------------------
+        # 5. ASYMMETRIC CLASSICAL (Shor's Algorithm Breakdown)
         # -------------------------------------------------------------------
         shor_res = cls._evaluate_asymmetric_classical(algo_raw, algo_norm, algo_clean, key_size)
         if shor_res:
             return shor_res
 
         # -------------------------------------------------------------------
-        # 4. SYMMETRIC CIPHERS (Grover's Algorithm Quadratic Speedup)
+        # 6. SYMMETRIC CIPHERS (Grover's Algorithm Quadratic Speedup)
         # -------------------------------------------------------------------
         symmetric_res = cls._evaluate_symmetric(algo_raw, algo_norm, algo_clean, key_size, mode)
         if symmetric_res:
             return symmetric_res
 
         # -------------------------------------------------------------------
-        # 5. CRYPTOGRAPHIC HASH FUNCTIONS
+        # 7. CRYPTOGRAPHIC HASH FUNCTIONS
         # -------------------------------------------------------------------
         hash_res = cls._evaluate_hash(algo_raw, algo_norm, algo_clean, key_size)
         if hash_res:
@@ -352,6 +605,16 @@ class CryptoClassifier:
                     ),
                     is_approved=True,
                 )
+            elif not param_val and algo_clean in ("mlkem", "kyber", "fips203", "fips203mlkem"):
+                return AlgorithmClassificationResult(
+                    algorithm=algo_raw,
+                    classification=CLASS_QUANTUM_RESISTANT,
+                    threat_model="Validated_PQC",
+                    nist_pqc_category=3,
+                    security_level_bits=192,
+                    justification="NIST FIPS 203 standardized ML-KEM post-quantum key encapsulation mechanism.",
+                    is_approved=True,
+                )
             else:
                 # Algorithm name has "kyber" or "mlkem" but invalid/missing parameter!
                 return AlgorithmClassificationResult(
@@ -388,6 +651,16 @@ class CryptoClassifier:
                     ),
                     is_approved=True,
                 )
+            elif not raw_param and algo_clean in ("mldsa", "dilithium", "fips204", "fips204mldsa"):
+                return AlgorithmClassificationResult(
+                    algorithm=algo_raw,
+                    classification=CLASS_QUANTUM_RESISTANT,
+                    threat_model="Validated_PQC",
+                    nist_pqc_category=3,
+                    security_level_bits=192,
+                    justification="NIST FIPS 204 standardized ML-DSA lattice-based digital signature scheme.",
+                    is_approved=True,
+                )
             else:
                 return AlgorithmClassificationResult(
                     algorithm=algo_raw,
@@ -403,7 +676,7 @@ class CryptoClassifier:
         # 3. FIPS 205 SLH-DSA / SPHINCS+
         if "slhdsa" in algo_clean or "sphincs" in algo_clean:
             has_param = any(p in algo_clean for p in VALID_SLH_DSA_PARAMETERS)
-            if has_param or "shake" in algo_clean or "sha2" in algo_clean:
+            if has_param or "shake" in algo_clean or "sha2" in algo_clean or algo_clean in ("slhdsa", "sphincs", "sphincsplus", "fips205"):
                 return AlgorithmClassificationResult(
                     algorithm=algo_raw,
                     classification=CLASS_QUANTUM_RESISTANT,
@@ -472,6 +745,90 @@ class CryptoClassifier:
         return None
 
     @classmethod
+    def _evaluate_protocol(
+        cls,
+        algo_raw: str,
+        algo_norm: str,
+        algo_clean: str,
+        params: Dict[str, Any],
+    ) -> Optional[AlgorithmClassificationResult]:
+        """
+        Evaluates cryptographic transport and security protocols (e.g. TLS 1.2, TLS 1.3).
+        Standard classical TLS handshakes (RSA/ECDHE key exchange and classical PKI certificates)
+        are broken by Shor's algorithm on a CRQC.
+        """
+        if any(p in algo_clean for p in ["tls12", "tls13", "tlsv12", "tlsv13", "ssl3", "sslv3"]):
+            is_tls13 = "13" in algo_clean
+            kex = params.get("key_exchange") or params.get("kex")
+            # If TLS 1.3 specifies a verified hybrid or PQC key exchange
+            if is_tls13 and kex:
+                kex_clean = re.sub(r"[^a-z0-9]", "", str(kex).lower())
+                if any(p in kex_clean for p in ["mlkem", "kyber", "hybrid"]):
+                    return AlgorithmClassificationResult(
+                        algorithm=algo_raw,
+                        classification=CLASS_HYBRID,
+                        threat_model="Validated_Hybrid",
+                        security_level_bits=192,
+                        nist_pqc_category=3,
+                        justification=f"Protocol '{algo_raw}' with hybrid post-quantum key exchange '{kex}'.",
+                        is_approved=True,
+                    )
+            # Default classical TLS 1.2 and TLS 1.3
+            return AlgorithmClassificationResult(
+                algorithm=algo_raw,
+                classification=CLASS_QUANTUM_VULNERABLE,
+                threat_model="Shor",
+                security_level_bits=112 if "12" in algo_clean else 128,
+                nist_pqc_category=0,
+                justification=(
+                    f"Protocol '{algo_raw}' relies on classical key exchange and classical PKI signatures "
+                    f"vulnerable to Shor's algorithm on a CRQC."
+                ),
+                is_approved=True,
+            )
+        return None
+
+    @classmethod
+    def _evaluate_certificate(
+        cls,
+        algo_raw: str,
+        algo_norm: str,
+        algo_clean: str,
+        params: Dict[str, Any],
+    ) -> Optional[AlgorithmClassificationResult]:
+        """
+        Evaluates public key certificates (e.g., X.509).
+        Classical X.509 certificates rely on classical asymmetric signatures (RSA, ECDSA)
+        vulnerable to Shor's algorithm.
+        """
+        if "x509" in algo_clean or "x-509" in algo_norm or algo_clean in ("certificate", "x509certificate"):
+            sig_algo = params.get("signature_algorithm") or params.get("public_key_algorithm")
+            if sig_algo:
+                res = cls.classify(str(sig_algo), parameters=params)
+                return AlgorithmClassificationResult(
+                    algorithm=algo_raw,
+                    classification=res.classification,
+                    threat_model=res.threat_model,
+                    security_level_bits=res.security_level_bits,
+                    nist_pqc_category=res.nist_pqc_category,
+                    justification=f"X.509 certificate with underlying {sig_algo}: {res.justification}",
+                    is_approved=res.is_approved,
+                )
+            return AlgorithmClassificationResult(
+                algorithm=algo_raw,
+                classification=CLASS_QUANTUM_VULNERABLE,
+                threat_model="Shor",
+                security_level_bits=112,
+                nist_pqc_category=0,
+                justification=(
+                    f"X.509 public key certificate ('{algo_raw}') relies on classical asymmetric "
+                    f"signature schemes vulnerable to Shor's algorithm on a CRQC."
+                ),
+                is_approved=True,
+            )
+        return None
+
+    @classmethod
     def _evaluate_asymmetric_classical(
         cls,
         algo_raw: str,
@@ -487,6 +844,8 @@ class CryptoClassifier:
         is_shor = any(shor_fam in algo_norm or shor_fam in algo_clean for shor_fam in SHOR_VULNERABLE_FAMILIES)
         if not is_shor:
             if re.match(r"^rsa(?:[-_]?(?:1024|2048|3072|4096))?", algo_norm) or algo_clean.startswith("rsa"):
+                is_shor = True
+            elif algo_clean.startswith("ecc") or algo_clean == "ecc":
                 is_shor = True
 
         if is_shor:
@@ -627,6 +986,16 @@ class CryptoClassifier:
                 threat_model="Grover/BHT",
                 security_level_bits=256,
                 justification="SHA-256 provides 128-bit quantum collision resistance and 256-bit pre-image resistance.",
+                is_approved=True,
+            )
+
+        if algo_clean in ("sha2", "sha224") or algo_norm in ("sha-2", "sha2"):
+            return AlgorithmClassificationResult(
+                algorithm=algo_raw,
+                classification=CLASS_QUANTUM_RESISTANT,
+                threat_model="Grover/BHT",
+                security_level_bits=key_size or 256,
+                justification=f"SHA-2 family hash function '{algo_raw}' provides quantum collision and pre-image resistance.",
                 is_approved=True,
             )
 

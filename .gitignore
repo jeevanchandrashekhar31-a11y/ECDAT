@@ -1,4 +1,5 @@
 bad_dir/
+backend/artifacts/
 artifacts/*.json
 reports/*.html
 __pycache__/

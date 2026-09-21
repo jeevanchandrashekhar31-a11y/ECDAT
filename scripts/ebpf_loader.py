@@ -219,7 +219,7 @@ def run_native_ebpf_loader(args: argparse.Namespace) -> int:
 
     # 3. Load BPF program via BCC
     try:
-        from bcc import BPF
+        from bcc import BPF  # type: ignore  # pyrefly: ignore [missing-import]
     except ImportError:
         logger.error("BCC python module (python3-bpfcc) is not installed. Run 'apt-get install python3-bpfcc'.")
         return 1

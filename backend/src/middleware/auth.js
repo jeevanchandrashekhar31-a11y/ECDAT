@@ -70,6 +70,7 @@ const ROUTE_CLASSIFICATIONS = Object.freeze({
 });
 
 const PUBLIC_AUTH_PATHS = Object.freeze([
+  "/api/v1/auth/demo/login",
   "/api/v1/auth/oidc/login",
   "/api/v1/auth/oidc/callback",
   "/api/v1/auth/ldap/login",
@@ -85,6 +86,7 @@ const PUBLIC_AUTH_PATHS = Object.freeze([
   "/api/v1/auth/password-reset/confirm",
   "/api/v1/auth/forgot-password",
   "/api/v1/auth/reset-password",
+  "/auth/demo/login",
   "/auth/oidc/login",
   "/auth/oidc/callback",
   "/auth/ldap/login",

@@ -162,13 +162,13 @@ class Pkcs11HsmConnector(BaseKmsConnector):
     def _parse_hsm_algorithm(self, key_type: str, modulus_bits: Optional[int], value_len: Optional[int]):
         kt = str(key_type).upper()
         if "RSA" in kt:
-            bits = modulus_bits or 2048
-            return f"RSA-{bits}", bits
+            bits = modulus_bits
+            return (f"RSA-{bits}" if bits else "RSA-unknown"), bits
         if "EC" in kt:
-            return "ECDSA-P256", 256
+            return "ECDSA-unknown", modulus_bits
         if "AES" in kt:
-            bits = (value_len or 32) * 8
-            return f"AES-{bits}-GCM", bits
+            bits = (value_len * 8) if value_len else None
+            return (f"AES-{bits}-GCM" if bits else "AES-unknown-GCM"), bits
         if "DES3" in kt or "3DES" in kt:
             return "3DES-EDE", 168
-        return kt, modulus_bits or 256
+        return kt, modulus_bits

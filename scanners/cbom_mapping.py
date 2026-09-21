@@ -22,6 +22,7 @@ from cyclonedx.output.json import JsonV1Dot6, JsonV1Dot7
 from cyclonedx.validation.json import JsonValidator
 from cyclonedx.schema import SchemaVersion
 from scanners.models import NetworkCryptoFinding, CodeCryptoFinding, BinaryContainerFinding
+from scanners.common.crypto_classifier import CryptoClassifier
 
 CYCLONEDX_17_ALGORITHM_FAMILIES = {
     "3DES",
@@ -179,6 +180,9 @@ def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
 
     target_ref = f"net:target/{finding.host}:{finding.port}"
     target_comp = Component(type=ComponentType.APPLICATION, name=f"{finding.host}:{finding.port}", bom_ref=target_ref)
+    target_comp.properties.add(Property(name="ecdat:scanner", value="network_scanner"))
+    target_comp.properties.add(Property(name="ecdat:file", value=f"{finding.host}:{finding.port}"))
+    target_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=f"{finding.host}:{finding.port}")])
     if finding.authorization_id:
         target_comp.properties.add(Property(name="ecdat:authorizationId", value=finding.authorization_id))
     if finding.audit_id:
@@ -228,6 +232,8 @@ def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
             crypto_properties=crypto_props,
             evidence=evidence,
         )
+        comp.properties.add(Property(name="ecdat:scanner", value="network_scanner"))
+        comp.properties.add(Property(name="ecdat:file", value=f"{finding.host}:{finding.port}"))
         bom.components.add(comp)
         dependencies.add(comp)
 
@@ -257,14 +263,20 @@ def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
             crypto_properties=crypto_props,
             evidence=evidence,
         )
+        comp.properties.add(Property(name="ecdat:scanner", value="network_scanner"))
+        comp.properties.add(Property(name="ecdat:file", value=f"{finding.host}:{finding.port}"))
         if cert.get("isExpired") is not None:
             comp.properties.add(Property(name="ecdat:isExpired", value=str(cert.get("isExpired")).lower()))
         if cert.get("isSelfSigned") is not None:
             comp.properties.add(Property(name="ecdat:isSelfSigned", value=str(cert.get("isSelfSigned")).lower()))
         if cert.get("algo_family"):
             comp.properties.add(Property(name="ecdat:algorithm", value=str(cert.get("algo_family"))))
+        else:
+            comp.properties.add(Property(name="ecdat:algorithm", value="unknown"))
         if cert.get("key_size"):
             comp.properties.add(Property(name="ecdat:key_size", value=str(cert.get("key_size"))))
+        else:
+            comp.properties.add(Property(name="ecdat:key_size", value="unknown"))
         if cert.get("signature_algorithm"):
             comp.properties.add(Property(name="ecdat:signatureAlgorithm", value=str(cert.get("signature_algorithm"))))
         if cert.get("trust_problems"):
@@ -281,10 +293,12 @@ def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
         dependencies.add(comp)
 
     for algo_family, size in finding.key_sizes.items():
-        slug = f"{algo_family.lower()}-{size}"
+        algo_name = algo_family or "unknown"
+        size_str = str(size) if (size is not None and size != 0) else None
+        slug = f"{algo_name.lower()}-{size_str or 'unknown'}"
         comp_ref = f"net:algorithm/{slug}@{finding.bom_ref}"
 
-        algo_props = AlgorithmProperties(parameter_set_identifier=str(size), nist_quantum_security_level=0)
+        algo_props = AlgorithmProperties(parameter_set_identifier=size_str, nist_quantum_security_level=0)
         crypto_props = CryptoProperties(asset_type=CryptoAssetType.ALGORITHM, algorithm_properties=algo_props)
         evidence = ComponentEvidence(
             occurrences=[Occurrence(location=finding.bom_ref, additional_context="key exchange/signature material")]
@@ -292,11 +306,17 @@ def network_finding_to_cbom(finding: NetworkCryptoFinding) -> Bom:
 
         comp = Component(
             type=ComponentType.CRYPTOGRAPHIC_ASSET,
-            name=f"{algo_family}-{size}",
+            name=f"{algo_name}-{size_str}" if size_str else algo_name,
             bom_ref=comp_ref,
             crypto_properties=crypto_props,
             evidence=evidence,
         )
+        comp.properties.add(Property(name="ecdat:scanner", value="network_scanner"))
+        comp.properties.add(Property(name="ecdat:file", value=f"{finding.host}:{finding.port}"))
+        comp.properties.add(Property(name="ecdat:algorithm", value=algo_name))
+        comp.properties.add(Property(name="ecdat:key_size", value=size_str or "unknown"))
+        clf_res = CryptoClassifier.classify(algo_name, key_size=size)
+        comp.properties.add(Property(name="ecdat:quantumClassification", value=clf_res.classification))
         bom.components.add(comp)
         dependencies.add(comp)
 
@@ -309,20 +329,26 @@ def code_finding_to_cbom(finding: CodeCryptoFinding) -> Bom:
     bom = Bom()
 
     target_comp = Component(type=ComponentType.FILE, name=finding.file_path, bom_ref=f"code:file@{finding.file_path}")
+    target_comp.properties.add(Property(name="ecdat:scanner", value="static_scanner"))
+    target_comp.properties.add(Property(name="ecdat:file", value=finding.file_path))
+    target_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=finding.file_path, line=finding.line)])
     bom.components.add(target_comp)
+
+    algo_name = finding.algorithm or "unknown"
+    key_size_str = str(finding.key_size) if (finding.key_size is not None and finding.key_size != 0) else None
 
     if finding.finding_type == "hardcoded_key":
         related_props = RelatedCryptoMaterialProperties(type=RelatedCryptoMaterialType.PRIVATE_KEY)
         crypto_props = CryptoProperties(
             asset_type=CryptoAssetType.RELATED_CRYPTO_MATERIAL, related_crypto_material_properties=related_props
         )
-        comp_name = f"Hardcoded {finding.algorithm} Key" if finding.algorithm else "Hardcoded Key"
+        comp_name = f"Hardcoded {algo_name} Key" if algo_name != "unknown" else "Hardcoded Key"
     else:
         algo_props = AlgorithmProperties(
-            parameter_set_identifier=str(finding.key_size) if finding.key_size else None, nist_quantum_security_level=0
+            parameter_set_identifier=key_size_str, nist_quantum_security_level=0
         )
         crypto_props = CryptoProperties(asset_type=CryptoAssetType.ALGORITHM, algorithm_properties=algo_props)
-        comp_name = f"{finding.algorithm}-{finding.key_size}" if finding.key_size else finding.algorithm
+        comp_name = f"{algo_name}-{key_size_str}" if key_size_str else algo_name
 
     evidence = ComponentEvidence(occurrences=[Occurrence(location=finding.file_path, line=finding.line)])
 
@@ -346,6 +372,11 @@ def code_finding_to_cbom(finding: CodeCryptoFinding) -> Bom:
         comp.properties.add(Property(name="ecdat:fingerprint", value=finding.fingerprint))
     comp.properties.add(Property(name="ecdat:scanner", value="static_scanner"))
     comp.properties.add(Property(name="ecdat:scanner_version", value="1.0.0"))
+    comp.properties.add(Property(name="ecdat:file", value=finding.file_path))
+    comp.properties.add(Property(name="ecdat:algorithm", value=algo_name))
+    comp.properties.add(Property(name="ecdat:key_size", value=key_size_str or "unknown"))
+    clf_code_res = CryptoClassifier.classify(algo_name, key_size=finding.key_size)
+    comp.properties.add(Property(name="ecdat:quantumClassification", value=clf_code_res.classification))
     comp.properties.add(Property(name="ecdat:timestamp", value=datetime.now(timezone.utc).isoformat()))
     comp.properties.add(Property(name="ecdat:source", value=getattr(finding, "analysis_source", "source_code")))
     comp.properties.add(Property(name="ecdat:evidence_nature", value="observed"))
@@ -375,6 +406,10 @@ def binary_finding_to_cbom(finding: BinaryContainerFinding) -> Bom:
         except Exception:
             comp.properties.add(Property(name="purl", value=finding.purl))
 
+    loc = finding.artifact_path or finding.target or "unknown"
+    comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=loc)])
+    comp.properties.add(Property(name="ecdat:scanner", value="binary_container_scanner"))
+    comp.properties.add(Property(name="ecdat:file", value=loc))
     comp.properties.add(Property(name="ecdat:data_sensitivity", value=finding.data_sensitivity))
     comp.properties.add(Property(name="ecdat:business_criticality", value=finding.business_criticality))
     comp.properties.add(Property(name="ecdat:evidence_type", value=finding.evidence_type))
@@ -411,6 +446,9 @@ def binary_metadata_to_cbom(meta, target_name: str = "") -> Bom:
     fmt_val = meta.binary_format.value if hasattr(meta.binary_format, "value") else str(meta.binary_format)
     endian_val = meta.endianness.value if hasattr(meta.endianness, "value") else str(meta.endianness)
 
+    target_comp.properties.add(Property(name="ecdat:scanner", value="binary_scanner"))
+    target_comp.properties.add(Property(name="ecdat:file", value=file_name))
+    target_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=file_name)])
     target_comp.properties.add(Property(name="ecdat:binary_format", value=fmt_val))
     target_comp.properties.add(Property(name="ecdat:architecture", value=meta.architecture or "unknown"))
     target_comp.properties.add(Property(name="ecdat:endianness", value=endian_val))
@@ -442,6 +480,9 @@ def binary_metadata_to_cbom(meta, target_name: str = "") -> Bom:
             name=lib_name,
             bom_ref=comp_ref,
         )
+        lib_comp.properties.add(Property(name="ecdat:scanner", value="binary_scanner"))
+        lib_comp.properties.add(Property(name="ecdat:file", value=file_name))
+        lib_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=file_name)])
         lib_comp.properties.add(Property(name="ecdat:confidence", value=ind.confidence))
         if ind.description:
             lib_comp.properties.add(Property(name="ecdat:description", value=ind.description[:255]))
@@ -462,19 +503,21 @@ def binary_metadata_to_cbom(meta, target_name: str = "") -> Bom:
     # Map certificates if discovered
     for i, cert in enumerate(getattr(meta, "certificates", [])):
         cert_ref = f"binary:cert/{i}@{target_ref}"
+        algo_name = cert.public_key_algorithm or "unknown"
         cert_comp = Component(
             type=ComponentType.CRYPTOGRAPHIC_ASSET,
-            name=f"Certificate {i + 1} ({cert.public_key_algorithm or 'X.509'})",
+            name=f"Certificate {i + 1} ({algo_name})",
             bom_ref=cert_ref,
         )
+        cert_comp.properties.add(Property(name="ecdat:scanner", value="binary_scanner"))
+        cert_comp.properties.add(Property(name="ecdat:file", value=file_name))
+        cert_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=file_name)])
+        cert_comp.properties.add(Property(name="ecdat:public_key_algorithm", value=algo_name))
+        cert_comp.properties.add(Property(name="ecdat:key_size_bits", value=str(cert.key_size_bits) if cert.key_size_bits else "unknown"))
         if cert.subject:
             cert_comp.properties.add(Property(name="ecdat:subject", value=cert.subject))
         if cert.issuer:
             cert_comp.properties.add(Property(name="ecdat:issuer", value=cert.issuer))
-        if cert.public_key_algorithm:
-            cert_comp.properties.add(Property(name="ecdat:public_key_algorithm", value=cert.public_key_algorithm))
-        if cert.key_size_bits:
-            cert_comp.properties.add(Property(name="ecdat:key_size_bits", value=str(cert.key_size_bits)))
         if cert.sha256_fingerprint:
             cert_comp.properties.add(Property(name="ecdat:fingerprint", value=cert.sha256_fingerprint))
         bom.components.add(cert_comp)
@@ -506,6 +549,9 @@ def hybrid_analysis_to_cbom(analysis_props: Any) -> Bom:
         name=endpoint,
         bom_ref=endpoint_ref,
     )
+    endpoint_comp.properties.add(Property(name="ecdat:scanner", value="network_hybrid_analyzer"))
+    endpoint_comp.properties.add(Property(name="ecdat:file", value=endpoint))
+    endpoint_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=endpoint)])
     endpoint_comp.properties.add(
         Property(
             name="ecdat:evidenceSource", value=str(getattr(analysis_props, "evidence_source", "network_handshake"))
@@ -540,6 +586,9 @@ def hybrid_analysis_to_cbom(analysis_props: Any) -> Bom:
         bom_ref=kex_ref,
         crypto_properties=crypto_props,
     )
+    kex_comp.properties.add(Property(name="ecdat:scanner", value="network_hybrid_analyzer"))
+    kex_comp.properties.add(Property(name="ecdat:file", value=endpoint))
+    kex_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=endpoint)])
     kex_comp.properties.add(
         Property(name="ecdat:category", value=str(getattr(analysis_props, "category", "classical")))
     )
@@ -588,6 +637,9 @@ def hybrid_analysis_to_cbom(analysis_props: Any) -> Bom:
                 bom_ref=sub_ref,
                 crypto_properties=sub_crypto_props,
             )
+            sub_comp.properties.add(Property(name="ecdat:scanner", value="network_hybrid_analyzer"))
+            sub_comp.properties.add(Property(name="ecdat:file", value=endpoint))
+            sub_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=endpoint)])
             sub_comp.properties.add(Property(name="ecdat:componentRole", value=props.get("role", "pre_master_secret")))
             sub_comp.properties.add(Property(name="ecdat:quantumResilient", value=str(is_pqc).lower()))
 
@@ -602,6 +654,9 @@ def hybrid_analysis_to_cbom(analysis_props: Any) -> Bom:
                 name=combiner_func,
                 bom_ref=comb_ref,
             )
+            comb_comp.properties.add(Property(name="ecdat:scanner", value="network_hybrid_analyzer"))
+            comb_comp.properties.add(Property(name="ecdat:file", value=endpoint))
+            comb_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=endpoint)])
             comb_comp.properties.add(
                 Property(name="ecdat:combinerStrategy", value=props.get("combining_strategy", "kdf"))
             )
@@ -635,6 +690,9 @@ def runtime_event_to_cbom(event: Any) -> Bom:
         name=app_name,
         bom_ref=app_ref,
     )
+    app_comp.properties.add(Property(name="ecdat:scanner", value="runtime_engine"))
+    app_comp.properties.add(Property(name="ecdat:file", value=app_name))
+    app_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=app_name)])
     if getattr(event, "container_id", None):
         app_comp.properties.add(Property(name="ecdat:containerId", value=event.container_id))
     if getattr(event, "service_name", None):
@@ -651,6 +709,9 @@ def runtime_event_to_cbom(event: Any) -> Bom:
         name=f"{proc_name} (PID {proc_pid})",
         bom_ref=proc_ref,
     )
+    proc_comp.properties.add(Property(name="ecdat:scanner", value="runtime_engine"))
+    proc_comp.properties.add(Property(name="ecdat:file", value=app_name))
+    proc_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=f"{proc_name}:{proc_pid}")])
     proc_comp.properties.add(Property(name="ecdat:pid", value=str(proc_pid)))
     proc_comp.properties.add(Property(name="ecdat:processName", value=proc_name))
     bom.components.add(proc_comp)
@@ -663,6 +724,9 @@ def runtime_event_to_cbom(event: Any) -> Bom:
         name=lib_name,
         bom_ref=lib_ref,
     )
+    lib_comp.properties.add(Property(name="ecdat:scanner", value="runtime_engine"))
+    lib_comp.properties.add(Property(name="ecdat:file", value=app_name))
+    lib_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=lib_name)])
     lib_comp.properties.add(Property(name="ecdat:cryptoLibrary", value=lib_name))
     lib_comp.properties.add(Property(name="ecdat:functionHooked", value=getattr(event, "function_name", "unknown")))
     lib_comp.properties.add(
@@ -692,6 +756,9 @@ def runtime_event_to_cbom(event: Any) -> Bom:
         bom_ref=algo_ref,
         crypto_properties=crypto_props,
     )
+    algo_comp.properties.add(Property(name="ecdat:scanner", value="runtime_engine"))
+    algo_comp.properties.add(Property(name="ecdat:file", value=app_name))
+    algo_comp.evidence = ComponentEvidence(occurrences=[Occurrence(location=f"{proc_name}@{lib_name}")])
     algo_comp.properties.add(Property(name="ecdat:reachabilityLevel", value="RUNTIME_CONFIRMED"))
     algo_comp.properties.add(Property(name="ecdat:evidenceSource", value="runtime"))
     for p_k, p_v in params.items():
@@ -722,10 +789,10 @@ def merge_cboms(cboms: List[Bom]) -> Bom:
     return merged
 
 
-def serialize_cbom(bom: Bom, spec_version: str = "1.7") -> str:
+def serialize_cbom(bom: Bom, spec_version: str = "1.6") -> str:
     """
     Serializes a CycloneDX CBOM document.
-    Defaults to CycloneDX 1.7. Supports CycloneDX 1.6 if requested.
+    Defaults to CycloneDX 1.6 (baseline production contract). Supports CycloneDX 1.7 if requested.
     Ensures strict schema compliance with official CycloneDX specification:
     - Never injects invalid/invented properties.
     - Only injects official algorithmFamily enum values in 1.7.

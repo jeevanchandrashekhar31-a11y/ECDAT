@@ -71,13 +71,94 @@ def identify_why_risky(asset: Dict[str, Any]) -> Dict[str, Any]:
     return risks
 
 
+def detect_cryptographic_use_case(asset_or_finding: Dict[str, Any], extra_asset: Optional[Dict[str, Any]] = None) -> str:
+    """
+    Determines the detected cryptographic use case:
+    - "KEY_ESTABLISHMENT": Key exchange, KEM, key agreement, encryption
+    - "DIGITAL_SIGNATURE": Digital signature, verification, certificate signing
+    - "SYMMETRIC_ENCRYPTION": Symmetric block/stream cipher
+    - "HASH": Cryptographic hash/digest
+    - "UNKNOWN": Unknown or unclassified
+    """
+    asset = extra_asset or {}
+    algo = str(asset_or_finding.get("algorithm") or asset.get("algorithm") or asset_or_finding.get("name") or "").upper()
+    asset_type = str(asset_or_finding.get("asset_type") or asset_or_finding.get("assetType") or asset.get("asset_type") or asset.get("assetType") or "").lower()
+    category = str(asset_or_finding.get("category") or asset.get("category") or "").lower()
+    finding_type = str(asset_or_finding.get("finding_type") or "").lower()
+    use_case = str(asset_or_finding.get("use_case") or asset_or_finding.get("cryptographic_use_case") or "").lower()
+
+    # 1. Explicit use case / category / finding type indicators
+    if any(k in use_case or k in category or k in finding_type for k in ["signature", "signing", "sign", "verify"]):
+        return "DIGITAL_SIGNATURE"
+    if any(k in use_case or k in category or k in finding_type for k in ["key_exchange", "key_agreement", "kex", "kem", "encryption", "kdf"]):
+        return "KEY_ESTABLISHMENT"
+
+    # 2. Asset type indicators
+    if asset_type in ["signing_key", "certificate", "cert", "firmware", "bootloader"]:
+        return "DIGITAL_SIGNATURE"
+    if asset_type in ["key_exchange", "kex", "handshake", "session"]:
+        return "KEY_ESTABLISHMENT"
+
+    # 3. Algorithm-specific indicators
+    # Digital Signatures
+    if any(s in algo for s in ["ECDSA", "ED25519", "ED448", "EDDSA", "DSA", "RSASSA", "PSS", "ML-DSA", "DILITHIUM", "SLH-DSA", "SPHINCS", "LMS", "XMSS"]):
+        return "DIGITAL_SIGNATURE"
+
+    # Key Establishment
+    if any(k in algo for k in ["ECDH", "X25519", "X448", "DIFFIE-HELLMAN", "DH", "DHE", "FFDH", "ML-KEM", "KYBER", "RSAES", "OAEP", "KEM"]) or algo.startswith("TLS"):
+        return "KEY_ESTABLISHMENT"
+
+    # Symmetric Ciphers
+    if any(c in algo for c in ["AES", "CHACHA20", "DES", "3DES", "RC4", "BLOWFISH", "CAMELLIA"]):
+        return "SYMMETRIC_ENCRYPTION"
+
+    # Hashes
+    if any(h in algo for h in ["SHA", "MD5", "MD4", "BLAKE", "RIPEMD"]):
+        return "HASH"
+
+    # Plain RSA disambiguation
+    if "RSA" in algo:
+        if "SIGN" in algo or "SIGN" in category or "SIGN" in use_case:
+            return "DIGITAL_SIGNATURE"
+        if "ENCRYPT" in algo or "OAEP" in algo or "ENC" in algo:
+            return "KEY_ESTABLISHMENT"
+        # If no explicit operation, default to DIGITAL_SIGNATURE for asymmetric key/cert,
+        # but respect key_exchange if in context
+        return "DIGITAL_SIGNATURE"
+
+    return "UNKNOWN"
+
+
+def validate_migration_use_case_match(use_case: str, recommended_algo: str) -> bool:
+    """
+    Validates that a recommended algorithm strictly matches the detected cryptographic use case.
+    A key-establishment finding must NEVER recommend a signature algorithm (ML-DSA, SLH-DSA, LMS, etc.),
+    and a signature finding must NEVER recommend a key-establishment algorithm (ML-KEM, X25519MLKEM768, etc.).
+    Raises ValueError if there is a mismatch.
+    """
+    rec_upper = recommended_algo.upper()
+    is_rec_sig = any(s in rec_upper for s in ["ML-DSA", "SLH-DSA", "DILITHIUM", "SPHINCS", "LMS", "XMSS", "SIGNATURE", "DUAL-SIGN"])
+    is_rec_kex = any(k in rec_upper for k in ["ML-KEM", "KYBER", "X25519MLKEM768", "SECP256R1MLKEM768", "HYBRID_KEM", "KEX", "KEM"])
+
+    if use_case == "KEY_ESTABLISHMENT" and is_rec_sig:
+        raise ValueError(
+            f"Cryptographic Use Case Mismatch: Key-establishment finding cannot recommend digital signature algorithm '{recommended_algo}'."
+        )
+    if use_case == "DIGITAL_SIGNATURE" and is_rec_kex:
+        raise ValueError(
+            f"Cryptographic Use Case Mismatch: Digital signature finding cannot recommend key-establishment algorithm '{recommended_algo}'."
+        )
+    return True
+
+
 def identify_replacement_candidates(asset: Dict[str, Any]) -> List[Dict[str, Any]]:
     """2. Identifies compatible replacement candidates from the PQC Knowledge Base."""
     algo = str(asset.get("algorithm") or asset.get("name") or "").upper()
     asset_type = asset.get("asset_type") or asset.get("assetType") or "file"
+    use_case = detect_cryptographic_use_case(asset)
     candidates = []
 
-    if any(k in algo for k in ["X25519", "ECDH", "DIFFIE-HELLMAN", "DH"]) or algo.startswith("TLS"):
+    if use_case == "KEY_ESTABLISHMENT":
         candidates.append(
             {
                 "role": "PRIMARY_PQC_HYBRID",
@@ -100,7 +181,28 @@ def identify_replacement_candidates(asset: Dict[str, Any]) -> List[Dict[str, Any
                 "trade_offs": "Standard MTU compliance; FIPS 140-3 validated.",
             }
         )
-    elif "RSA" in algo and asset_type in ["certificate", "signing_key"]:
+        candidates.append(
+            {
+                "role": "PRIMARY_PQC_KEM",
+                "algorithm": "ML-KEM-768",
+                "standard": "NIST FIPS 203",
+                "security_level": 3,
+                "rationale": "Standardized standalone lattice-based module learning-with-errors KEM.",
+                "trade_offs": "Pure PQC; requires post-quantum TLS stack.",
+            }
+        )
+    elif use_case == "DIGITAL_SIGNATURE":
+        if asset_type in ["firmware", "bootloader"]:
+            candidates.append(
+                {
+                    "role": "STATEFUL_HASH_PRIMARY",
+                    "algorithm": "LMS/HSS",
+                    "standard": "NIST SP 800-208 & RFC 8554",
+                    "security_level": 3,
+                    "rationale": "Mandated under CNSA 2.0 for firmware signing; extremely fast ASIC verification.",
+                    "trade_offs": "Strict monotonic non-volatile state management required. Key reuse destroys private key.",
+                }
+            )
         candidates.append(
             {
                 "role": "PRIMARY_PQC_SIGNATURE",
@@ -121,18 +223,7 @@ def identify_replacement_candidates(asset: Dict[str, Any]) -> List[Dict[str, Any
                 "trade_offs": "Signatures are 7856 bytes; slower signing speed.",
             }
         )
-    elif asset_type in ["firmware", "bootloader"]:
-        candidates.append(
-            {
-                "role": "STATEFUL_HASH_PRIMARY",
-                "algorithm": "LMS/HSS",
-                "standard": "NIST SP 800-208 & RFC 8554",
-                "security_level": 3,
-                "rationale": "Mandated under CNSA 2.0 for firmware signing; extremely fast ASIC verification.",
-                "trade_offs": "Strict monotonic non-volatile state management required. Key reuse destroys private key.",
-            }
-        )
-    elif any(h in algo for h in ["MD5", "SHA1", "SHA-1"]):
+    elif use_case == "HASH":
         candidates.append(
             {
                 "role": "PRIMARY_HASH",
@@ -143,7 +234,7 @@ def identify_replacement_candidates(asset: Dict[str, Any]) -> List[Dict[str, Any
                 "trade_offs": "Universal compatibility.",
             }
         )
-    elif any(c in algo for c in ["DES", "3DES", "RC4"]):
+    elif use_case == "SYMMETRIC_ENCRYPTION":
         candidates.append(
             {
                 "role": "PRIMARY_SYMMETRIC",
@@ -165,6 +256,10 @@ def identify_replacement_candidates(asset: Dict[str, Any]) -> List[Dict[str, Any
                 "trade_offs": "Requires TLS 1.3.",
             }
         )
+
+    # Invariant enforcement: verify all candidates match the use case
+    for c in candidates:
+        validate_migration_use_case_match(use_case, c["algorithm"])
 
     return candidates
 

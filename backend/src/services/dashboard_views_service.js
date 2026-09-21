@@ -83,9 +83,9 @@ function getZeroViews(policyProfile = "regulated_bfsi", scenario = "baseline") {
       id: "kpi_pqc_readiness",
       title: "PQC Migration Readiness",
       label: "PQC Migration Readiness",
-      value: "100%",
-      change: "No vulnerable algorithms",
-      status: "safe",
+      value: null,
+      change: "Not assessed",
+      status: "info",
       evidenceCount: 0,
       evidence_items: [],
       evidenceFilter: {},
@@ -137,7 +137,7 @@ function getZeroViews(policyProfile = "regulated_bfsi", scenario = "baseline") {
         matrix: heatmapMatrix,
       },
       pqc_readiness: {
-        overall_readiness_score: 100,
+        overall_readiness_score: null,
         shor_vulnerable_count: 0,
         shor_evidence: [],
         grover_vulnerable_count: 0,
@@ -356,8 +356,8 @@ async function getEnterpriseDashboardViews(options = {}) {
   // Weighted enterprise security posture score (0 - 100)
   const penalty = criticalCount * 15 + highCount * 7 + mediumCount * 3 + quantumAtRiskCount * 5;
   const postureScore = Math.max(12, Math.min(100, Math.round(100 - penalty / Math.max(1, totalFindings))));
-  const pqcReadinessPct = Math.round(
-    (findings.filter((f) => f.mosca_status === "SAFE" || f.algorithm.toLowerCase().includes("kyber")).length /
+  const pqcReadinessPct = (totalFindings === 0 || totalAssets === 0) ? null : Math.round(
+    (findings.filter((f) => f.mosca_status === "SAFE" || f.algorithm.toLowerCase().includes("kyber") || f.algorithm.toLowerCase().includes("ml-kem") || f.algorithm.toLowerCase().includes("ml-dsa") || f.algorithm.toLowerCase().includes("slh-dsa")).length /
       Math.max(1, totalFindings)) *
       100
   );
@@ -414,9 +414,9 @@ async function getEnterpriseDashboardViews(options = {}) {
         id: "kpi_pqc_readiness",
         title: "PQC Migration Readiness",
         label: "PQC Migration Readiness",
-        value: `${pqcReadinessPct}%`,
-        change: "NIST FIPS 203/204/205 alignment",
-        status: pqcReadinessPct >= 75 ? "safe" : "warning",
+        value: pqcReadinessPct !== null ? `${pqcReadinessPct}%` : null,
+        change: pqcReadinessPct !== null ? "NIST FIPS 203/204/205 alignment" : "Not assessed",
+        status: pqcReadinessPct !== null ? (pqcReadinessPct >= 75 ? "safe" : "warning") : "info",
         evidenceCount: findings.filter((f) => f.mosca_status === "SAFE").length,
         evidence_items: findings.filter((f) => f.mosca_status === "SAFE").map((f) => f.id),
         evidenceFilter: { mosca_status: "SAFE" },

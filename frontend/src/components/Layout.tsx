@@ -14,7 +14,9 @@ import {
   X,
   Network,
   AlertTriangle,
+  AlertCircle,
   UserCheck,
+  Wrench,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { authManager } from '../security';
@@ -37,6 +39,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     username?: string;
     roles?: string[];
     role?: string;
+    tenantId?: string;
+    isDemo?: boolean;
   } | null>(null);
   const [securityAlert, setSecurityAlert] = useState<{ status: number; message: string } | null>(null);
   const [currentRole, setCurrentRole] = useState<string>(authManager.getSession().role || 'Viewer');
@@ -72,11 +76,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       const res = await api.getCurrentUser();
       if (res && res.user) {
         const primaryRole = (res.user.roles && res.user.roles[0]) || 'Viewer';
+        const isDemo = res.user.tenantId === 'demo-tenant' || res.user.isDemo;
         setCurrentUser({
           userId: res.user.userId,
           username: res.user.username || res.user.userId,
           roles: res.user.roles,
           role: primaryRole,
+          tenantId: res.user.tenantId,
+          isDemo,
         });
         setCurrentRole(primaryRole);
         authManager.setSession({
@@ -217,6 +224,34 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </NavLink>
 
           <NavLink
+            to="/findings"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
+                isActive
+                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              }`
+            }
+          >
+            <AlertCircle size={17} />
+            <span>Findings</span>
+          </NavLink>
+
+          <NavLink
+            to="/remediation"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
+                isActive
+                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              }`
+            }
+          >
+            <Wrench size={17} />
+            <span>Remediation</span>
+          </NavLink>
+
+          <NavLink
             to="/roadmap"
             className={({ isActive }) =>
               `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
@@ -299,6 +334,28 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* 2. Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Demo Mode Persistent Banner */}
+        {currentUser?.tenantId === 'demo-tenant' && (
+          <div className="bg-gradient-to-r from-amber-500/15 via-cyan-500/10 to-indigo-500/15 border-b border-amber-500/40 px-6 py-2 flex items-center justify-between text-xs text-amber-200">
+            <div className="flex items-center gap-2.5">
+              <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-2xs uppercase border border-amber-500/40">
+                Demo Environment — synthetic dataset
+              </span>
+              <span className="text-slate-300 text-xs hidden sm:inline">
+                Tenant: <code className="text-cyan-300 font-mono">demo-tenant</code> (Constrained Session — No Cross-Tenant Access)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <NavLink
+                to="/remediation"
+                className="px-2.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-semibold text-2xs transition-colors border border-amber-500/30"
+              >
+                Four-Eyes Remediation
+              </NavLink>
+            </div>
+          </div>
+        )}
+
         {/* Top Header */}
         <header className="h-16 bg-slate-900/60 backdrop-blur-md border-b border-slate-800/80 px-6 flex items-center justify-between gap-4 sticky top-0 z-30">
           {/* Active Scan Selector */}

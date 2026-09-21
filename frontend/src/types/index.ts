@@ -629,4 +629,72 @@ export interface CryptoGraphResponse {
   evidence_lookup: Record<string, EvidenceFinding>;
 }
 
+export type ApprovalState = 'PROPOSED' | 'REVIEWED' | 'APPROVED' | 'APPLIED' | 'VERIFIED' | 'REJECTED' | 'ROLLED_BACK';
+
+export interface RemediationAuditItem {
+  event_id: string;
+  from_state: ApprovalState | null;
+  to_state: ApprovalState;
+  actor: string;
+  role: string;
+  timestamp: string;
+  comments: string;
+  hash: string;
+}
+
+export interface RemediationApprovalRecord {
+  approval_id: string;
+  state: ApprovalState;
+  title: string;
+  description: string;
+  category: string;
+  environment: string;
+  requires_explicit_approval: boolean;
+  finding_id: string | null;
+  affected_asset: string | null;
+  tenantId: string;
+  project_id?: string | null;
+  target_standard?: string | null;
+  patch_diff?: string | null;
+  test_plan?: string | null;
+  rollback_plan?: string | null;
+  proposer: {
+    username: string;
+    role: string;
+    proposed_at: string;
+  };
+  reviewer?: {
+    username: string;
+    role: string;
+    reviewed_at: string;
+    comments?: string;
+  } | null;
+  approver?: {
+    username: string;
+    role: string;
+    approved_at: string;
+    comments?: string;
+  } | null;
+  deployer?: {
+    username: string;
+    role: string;
+    applied_at: string;
+  } | null;
+  verifier?: {
+    username: string;
+    role: string;
+    verified_at: string;
+    verification_results?: Record<string, unknown>;
+  } | null;
+  audit_history: RemediationAuditItem[];
+  current_state_hash: string;
+}
+
+export interface RemediationApprovalsResponse {
+  success: boolean;
+  total_approvals: number;
+  approvals: RemediationApprovalRecord[];
+}
+
+
 

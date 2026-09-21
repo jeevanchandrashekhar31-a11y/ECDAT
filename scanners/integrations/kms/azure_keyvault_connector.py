@@ -151,19 +151,19 @@ class AzureKeyVaultConnector(BaseKmsConnector):
             },
         )
 
-    def _parse_algorithm(self, kty: str, crv: Optional[str], size: int):
+    def _parse_algorithm(self, kty: str, crv: Optional[str], size: Optional[int]):
         if "RSA" in kty:
-            return f"RSA-{size or 2048}", size or 2048
+            return (f"RSA-{size}" if size else "RSA-unknown"), size
         if "EC" in kty:
             if crv in ["P-256", "SECP256R1"]:
-                return "ECDSA-P256", 256
+                return "ECDSA-P256", (size or 256)
             if crv == "P-384":
-                return "ECDSA-P384", 384
+                return "ECDSA-P384", (size or 384)
             if crv == "P-521":
-                return "ECDSA-P521", 521
+                return "ECDSA-P521", (size or 521)
             if crv == "SECP256K1":
-                return "ECDSA-SECP256K1", 256
-            return f"ECDSA-{crv or 'P256'}", size or 256
+                return "ECDSA-SECP256K1", (size or 256)
+            return (f"ECDSA-{crv}" if crv else "ECDSA-unknown"), size
         if kty == "OCT":
-            return f"AES-{size or 256}-GCM", size or 256
-        return kty, size or 256
+            return (f"AES-{size}-GCM" if size else "AES-unknown-GCM"), size
+        return kty, size

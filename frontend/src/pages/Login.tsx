@@ -86,6 +86,42 @@ export const Login: React.FC = () => {
     }
   };
 
+  // 0. 1-Click Judge Demo Mode Login
+  const handleEnterDemo = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await api.loginDemo('developer');
+      if (res.accessToken) {
+        memoryTokenStore.setToken('access_token', res.accessToken);
+      }
+      if (res.user) {
+        setSessionUser({
+          userId: res.user.userId,
+          username: res.user.username,
+          email: res.user.email,
+          role: res.user.roles?.[0],
+          tenantId: res.user.tenantId,
+        });
+        authManager.setSession({
+          userId: res.user.userId,
+          tenantId: res.user.tenantId,
+          role: (res.user.roles?.[0] as UserRole) || 'Developer',
+          isAuthenticated: true,
+        });
+      }
+      setStep('authenticated');
+      setSuccessMsg('Authenticated as Demo Judge. Redirecting to Executive Dashboard...');
+      setTimeout(() => navigate('/'), 400);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Demo login failed.';
+      setErrorMsg(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 1. Submit Credentials to /api/v1/auth/local/login
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,6 +348,32 @@ export const Login: React.FC = () => {
             <p className="text-xs text-slate-400 mt-1">
               Authenticate via local credentials. Session established using secure HTTP-only cookies.
             </p>
+          </div>
+
+          {/* 1-Click Judge Demo Mode Action */}
+          <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-amber-500/10 via-cyan-500/10 to-indigo-500/10 border border-amber-500/30 text-center space-y-2.5">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-300">
+              <ShieldCheck size={16} />
+              <span>Judge Evaluation Access</span>
+            </div>
+            <p className="text-2xs text-slate-300">
+              One-click entry into the scoped <code className="text-cyan-300 font-mono">demo-tenant</code> environment with synthetic cryptographic inventory.
+            </p>
+            <button
+              type="button"
+              onClick={handleEnterDemo}
+              disabled={loading}
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-cyan-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-slate-950 font-extrabold text-xs shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            >
+              {loading ? <RefreshCw size={15} className="animate-spin" /> : <ArrowRight size={15} />}
+              <span>Enter Demo Mode (1-Click)</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px bg-slate-800" />
+            <span className="text-2xs uppercase tracking-wider text-slate-500 font-semibold">Or Sign In with Credentials</span>
+            <div className="flex-1 h-px bg-slate-800" />
           </div>
 
           <form onSubmit={handleLoginSubmit} className="space-y-4">
