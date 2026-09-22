@@ -201,25 +201,25 @@ function buildTechnicalDrillDownItem(raw = {}, idx = 1) {
   const certificate = {
     is_certificate_asset: isCert,
     subject_dn: raw.certificate?.subject_dn || raw.subject_dn || "NOT OBSERVED",
-    issuer_dn: "CN=Let's Encrypt Authority X3",
-    serial_number: "04:3A:8B:9C:1D:2E:3F",
-    fingerprint_sha256: "3a8b9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
-    valid_from: "2026-01-01T00:00:00Z",
-    valid_to: "2026-10-15T00:00:00Z",
-    days_remaining: 28,
-    is_self_signed: false,
+    issuer_dn: raw.certificate?.issuer_dn || raw.issuer_dn || (isCert ? "UNKNOWN" : "NOT OBSERVED"),
+    serial_number: raw.certificate?.serial_number || raw.serial_number || (isCert ? "UNKNOWN" : "NOT OBSERVED"),
+    fingerprint_sha256: raw.certificate?.fingerprint_sha256 || raw.certificate?.fingerprint || raw.fingerprint_sha256 || raw.fingerprint || null,
+    valid_from: raw.certificate?.valid_from || raw.valid_from || null,
+    valid_to: raw.certificate?.valid_to || raw.valid_to || null,
+    days_remaining: raw.certificate?.days_remaining ?? raw.days_remaining ?? null,
+    is_self_signed: Boolean(raw.certificate?.is_self_signed || raw.is_self_signed),
     san_domains: raw.certificate?.san_domains || raw.san_domains || "NOT OBSERVED",
   };
 
   // 9. Network Endpoint
   const networkEndpoint = {
     hostname: raw.network_endpoint?.hostname || raw.hostname || "NOT OBSERVED",
-    ip_address: "198.51.100.24",
-    port: 443,
-    protocol: "https",
-    tls_version: isNetwork ? "TLS 1.2" : "TLS 1.3",
-    cipher_suite: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-    alpn_protocols: ["h2", "http/1.1"],
+    ip_address: raw.network_endpoint?.ip_address || raw.ip_address || "NOT OBSERVED",
+    port: raw.network_endpoint?.port || raw.port || 443,
+    protocol: raw.network_endpoint?.protocol || raw.protocol || "https",
+    tls_version: raw.network_endpoint?.tls_version || (isNetwork ? "TLS 1.2" : "TLS 1.3"),
+    cipher_suite: raw.network_endpoint?.cipher_suite || (algoLower.includes("gcm") ? "TLS_AES_256_GCM_SHA384" : "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"),
+    alpn_protocols: raw.network_endpoint?.alpn_protocols || ["h2", "http/1.1"],
   };
 
   // 10. Runtime Evidence
@@ -294,6 +294,44 @@ function buildTechnicalDrillDownItem(raw = {}, idx = 1) {
   };
 }
 
+function getZeroTechnicalReport(options = {}) {
+  const timestamp = new Date().toISOString();
+  const limit = Math.min(Number(options.limit || 50), 100);
+  const offset = Number(options.offset || 0);
+
+  const report = {
+    metadata: {
+      report_id: `tech_rpt_empty_${Date.now()}`,
+      scan_id: null,
+      scan_name: "No Active Scan",
+      generated_at: timestamp,
+      total_findings: 0,
+      limit,
+      offset,
+      filters_applied: {
+        findingId: options.findingId || null,
+        severity: options.severity || null,
+        algorithm: options.algorithm || null,
+      },
+    },
+    evidence_integrity: buildEvidenceIntegrity({
+      scanRow: null,
+      scanTimestamp: timestamp,
+      reportContent: {
+        metadata: {
+          scan_id: null,
+          scan_name: "No Active Scan",
+          total_findings: 0,
+        },
+        findings: [],
+      },
+      evidenceList: [],
+    }),
+    findings: [],
+  };
+  return report;
+}
+
 /**
  * Generates the complete technical drill-down report.
  *
@@ -336,10 +374,13 @@ async function generateTechnicalDrillDownReport(options = {}) {
   }
 
   if (!scanRow && !inMemoryScan) {
-    const notFoundErr = new Error(requestedScanId ? `Scan '${requestedScanId}' not found` : "No scan data available");
-    notFoundErr.statusCode = 404;
-    notFoundErr.name = "NotFoundError";
-    throw notFoundErr;
+    if (requestedScanId) {
+      const notFoundErr = new Error(`Scan '${requestedScanId}' not found`);
+      notFoundErr.statusCode = 404;
+      notFoundErr.name = "NotFoundError";
+      throw notFoundErr;
+    }
+    return getZeroTechnicalReport(options);
   }
 
   const scanId = scanRow?.id || inMemoryScan?.id;
@@ -364,25 +405,8 @@ async function generateTechnicalDrillDownReport(options = {}) {
     }
   }
 
-  // Canonical baseline items ensuring rich coverage if database has sparse records
-  if (requestedFindingId) {
-    if (rawFindings.length === 0) {
-      if (connected) {
-        try {
-          rawFindings = await db("findings").where("id", requestedFindingId);
-        } catch (_e) {}
-      }
-      if (rawFindings.length === 0) {
-        const matched = CANONICAL_BASELINE_FINDINGS.find(
-          (f) => f.id === requestedFindingId || f.finding_id === requestedFindingId
-        );
-        if (matched) {
-          rawFindings = [matched];
-        }
-      }
-    }
-  } else if (rawFindings.length < 3) {
-    rawFindings = CANONICAL_BASELINE_FINDINGS;
+  if (rawFindings.length === 0) {
+    return getZeroTechnicalReport(options);
   }
 
   // Apply optional filters
@@ -664,6 +688,7 @@ function generateTechnicalHtmlReport(report) {
 module.exports = {
   buildTechnicalDrillDownItem,
   generateTechnicalDrillDownReport,
+  getZeroTechnicalReport,
   validateTechnicalReportCompleteness,
   validateEvidenceIntegrity,
   generateTechnicalHtmlReport,

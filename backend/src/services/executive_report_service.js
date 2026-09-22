@@ -52,6 +52,118 @@ function createEvidenceReference(item = {}) {
   };
 }
 
+function getZeroExecutiveReport(policyProfile = "regulated_bfsi", scenario = "baseline") {
+  const timestamp = new Date().toISOString();
+  const report = {
+    report_metadata: {
+      report_id: `exec_rpt_empty_${Date.now()}`,
+      scan_id: null,
+      scan_name: "No Active Scan",
+      generated_at: timestamp,
+      policy_profile: policyProfile,
+      scenario,
+      scope: "enterprise",
+      status: "UNASSESSED",
+    },
+    total_crypto_assets: {
+      total_count: 0,
+      by_type: {
+        algorithm: 0,
+        certificate: 0,
+        key: 0,
+        protocol: 0,
+        library: 0,
+      },
+      evidence_items: [],
+    },
+    weak_deprecated_assets: {
+      total_weak_count: 0,
+      broken_count: 0,
+      deprecated_count: 0,
+      short_key_count: 0,
+      evidence_items: [],
+    },
+    pqc_readiness: {
+      total_assessed: 0,
+      overall_readiness_score: null,
+      quantum_vulnerable_count: 0,
+      quantum_safe_count: 0,
+      hybrid_count: 0,
+      mosca_calculus: {
+        quantum_collapse_year: 2033,
+        mosca_delta_years: null,
+        in_quantum_deficit: false,
+        urgency: "NOT_ASSESSED",
+      },
+      quantum_vulnerable_evidence: [],
+      quantum_safe_evidence: [],
+      hybrid_evidence: [],
+    },
+    critical_applications: {
+      total_critical_applications: 0,
+      tier_0_mission_critical_count: 0,
+      tier_1_business_critical_count: 0,
+      tier_2_operational_count: 0,
+      tier_3_internal_count: 0,
+      applications: [],
+    },
+    certificates: {
+      total_certificates: 0,
+      valid_count: 0,
+      expiring_30_days_count: 0,
+      expired_count: 0,
+      self_signed_count: 0,
+      weak_signature_count: 0,
+      evidence_items: [],
+      certificate_details: [],
+    },
+    policy_violations: {
+      total_violations: 0,
+      by_framework: {
+        nist_sp800_131a: 0,
+        bsi_tr02102_1: 0,
+        pci_dss_v4: 0,
+        cnsa_2_0: 0,
+        fips_140_3: 0,
+      },
+      violations: [],
+    },
+    remediation_progress: {
+      total_findings: 0,
+      remediation_rate_percentage: null,
+      status_counts: {
+        pending: 0,
+        approved: 0,
+        verifying: 0,
+        verified: 0,
+        rejected: 0,
+      },
+      evidence_items: [],
+    },
+    business_ownership: {
+      total_owners_count: 0,
+      owners: [],
+    },
+    trend_over_time: {
+      historical_periods: [],
+      velocity_summary: {
+        direction: "UNKNOWN",
+        velocity_findings_per_month: 0,
+      },
+    },
+    evidence_index: {},
+  };
+
+  report.evidence_integrity = buildEvidenceIntegrity({
+    scanRow: null,
+    scanTimestamp: timestamp,
+    reportContent: report,
+    evidenceList: [],
+  });
+
+  return report;
+}
+
 /**
  * Builds the comprehensive enterprise executive report for a given scan and policy profile.
  *
@@ -100,10 +212,13 @@ async function generateExecutiveReport(options = {}) {
   }
 
   if (!scanRow && !inMemoryScan) {
-    const notFoundErr = new Error(requestedScanId ? `Scan '${requestedScanId}' not found` : "No scan data available");
-    notFoundErr.statusCode = 404;
-    notFoundErr.name = "NotFoundError";
-    throw notFoundErr;
+    if (requestedScanId) {
+      const notFoundErr = new Error(`Scan '${requestedScanId}' not found`);
+      notFoundErr.statusCode = 404;
+      notFoundErr.name = "NotFoundError";
+      throw notFoundErr;
+    }
+    return getZeroExecutiveReport(policyProfile, scenario);
   }
 
   const scanId = scanRow?.id || inMemoryScan?.id;
@@ -162,122 +277,9 @@ async function generateExecutiveReport(options = {}) {
     }));
   }
 
-  // Canonical baseline dataset ensuring complete coverage if scanning an empty or sparse test state
-  if (findings.length < 4) {
-    findings = [
-      {
-        id: "find_rsa_1024_auth",
-        scan_id: scanId,
-        asset_id: "svc_payment_gateway",
-        component_id: "comp_jwt_signer",
-        algorithm: "RSA-1024",
-        key_size: 1024,
-        category: "algorithm",
-        finding_type: "static",
-        location: "services/auth/token_signer.go",
-        line_number: 42,
-        evidence_context: "rsa.GenerateKey(rand.Reader, 1024)",
-        severity: "Critical",
-        owner: "Identity & Access Team",
-        app_tier: "tier_0_mission_critical",
-      },
-      {
-        id: "find_md5_cache",
-        scan_id: scanId,
-        asset_id: "svc_payment_gateway",
-        component_id: "comp_cache_hasher",
-        algorithm: "MD5",
-        key_size: 128,
-        category: "algorithm",
-        finding_type: "static",
-        location: "pkg/cache/etag.go",
-        line_number: 19,
-        evidence_context: "md5.New().Sum([]byte(data))",
-        severity: "Critical",
-        owner: "Payments & Checkout Team",
-        app_tier: "tier_0_mission_critical",
-      },
-      {
-        id: "find_sha1_git_signer",
-        scan_id: scanId,
-        asset_id: "svc_core_ledger",
-        component_id: "comp_commit_signer",
-        algorithm: "SHA-1",
-        key_size: 160,
-        category: "algorithm",
-        finding_type: "static",
-        location: "ledger/crypto/hasher.rs",
-        line_number: 88,
-        evidence_context: "Sha1::digest(payload.as_bytes())",
-        severity: "High",
-        owner: "Core Platform & Infrastructure",
-        app_tier: "tier_1_business_critical",
-      },
-      {
-        id: "find_des3_legacy_pin",
-        scan_id: scanId,
-        asset_id: "svc_atm_switch",
-        component_id: "comp_pin_block",
-        algorithm: "3DES",
-        key_size: 112,
-        category: "algorithm",
-        finding_type: "static",
-        location: "switch/pin/crypto.c",
-        line_number: 114,
-        evidence_context: "DES_ede3_cbc_encrypt(input, output, len, &ks1, &ks2, &ks3, &iv, 1)",
-        severity: "Critical",
-        owner: "Payments & Checkout Team",
-        app_tier: "tier_0_mission_critical",
-      },
-      {
-        id: "find_ecc_p256_tls",
-        scan_id: scanId,
-        asset_id: "svc_api_gateway",
-        component_id: "comp_ingress_tls",
-        algorithm: "ECDSA-P256",
-        key_size: 256,
-        category: "algorithm",
-        finding_type: "network",
-        location: "gateway/ingress/tls.conf",
-        line_number: 12,
-        evidence_context: "ssl_ecdh_curve prime256v1;",
-        severity: "High",
-        owner: "Core Platform & Infrastructure",
-        app_tier: "tier_0_mission_critical",
-      },
-      {
-        id: "find_pqc_hybrid_x25519_mlkem",
-        scan_id: scanId,
-        asset_id: "svc_cloud_broker",
-        component_id: "comp_pqc_tunnel",
-        algorithm: "X25519+ML-KEM-768",
-        key_size: 256,
-        category: "algorithm",
-        finding_type: "network",
-        location: "tunnel/pqc_wireguard.go",
-        line_number: 31,
-        evidence_context: "hybrid.NewKeyExchange(x25519.Curve, mlkem768.KEM)",
-        severity: "Low",
-        owner: "Data Platform & Storage",
-        app_tier: "tier_1_business_critical",
-      },
-      {
-        id: "find_aes_256_gcm_vault",
-        scan_id: scanId,
-        asset_id: "svc_customer_vault",
-        component_id: "comp_field_cipher",
-        algorithm: "AES-256-GCM",
-        key_size: 256,
-        category: "algorithm",
-        finding_type: "static",
-        location: "vault/storage/aes.py",
-        line_number: 56,
-        evidence_context: "AESGCM(key).encrypt(nonce, data, aad)",
-        severity: "Low",
-        owner: "Data Platform & Storage",
-        app_tier: "tier_0_mission_critical",
-      }
-    ];
+  // If clean state with zero findings, return pure authentic zero report
+  if (findings.length === 0) {
+    return getZeroExecutiveReport(policyProfile, scenario);
   }
 
   // Master evidence lookup index
@@ -491,44 +493,44 @@ async function generateExecutiveReport(options = {}) {
   // -------------------------------------------------------------------------
   // 5. Certificates & PKI
   // -------------------------------------------------------------------------
-  const certInventory = [
-    {
-      fingerprint: "3a8b9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
-      subject: "NOT OBSERVED",
-      issuer: "CN=Let's Encrypt Authority X3",
-      valid_to: "2026-10-15T00:00:00.000Z",
-      days_remaining: 28,
-      key_algorithm: "RSA",
-      key_size: 2048,
-      signature_algorithm: "SHA-256withRSA",
-      is_self_signed: false,
-      status: "expiring_30_days",
-    },
-    {
-      fingerprint: "7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e3d4c5b6a7f8e",
-      subject: "NOT OBSERVED",
-      issuer: "CN=ECDAT Internal Enterprise Root CA",
-      valid_to: "2027-05-01T00:00:00.000Z",
-      days_remaining: 226,
-      key_algorithm: "ECDSA",
-      key_size: 256,
-      signature_algorithm: "SHA-256withECDSA",
-      is_self_signed: false,
-      status: "valid",
-    },
-    {
-      fingerprint: "11223344556677889900aabbccddeeff00112233445566778899aabbccddeeff",
-      subject: "CN=dev-cluster.local",
-      issuer: "CN=dev-cluster.local",
-      valid_to: "2026-08-01T00:00:00.000Z",
-      days_remaining: -47,
-      key_algorithm: "RSA",
-      key_size: 1024,
-      signature_algorithm: "SHA-1withRSA",
-      is_self_signed: true,
-      status: "expired_and_weak",
-    },
-  ];
+  let certInventory = [];
+  if (globalCertInventory && typeof globalCertInventory.getAllCertificates === "function") {
+    const fromGlobal = globalCertInventory.getAllCertificates();
+    if (Array.isArray(fromGlobal) && fromGlobal.length > 0) {
+      certInventory = fromGlobal.map((c) => ({
+        fingerprint: c.fingerprint_sha256 || c.fingerprint || c.id,
+        subject: c.subject_dn || c.subject || "NOT OBSERVED",
+        issuer: c.issuer_dn || c.issuer || "UNKNOWN",
+        valid_to: c.validity_end || c.valid_to || null,
+        days_remaining: c.days_remaining ?? null,
+        key_algorithm: c.algorithm || "RSA",
+        key_size: c.key_size || 2048,
+        signature_algorithm: c.signature_algorithm || "SHA-256withRSA",
+        is_self_signed: Boolean(c.is_self_signed),
+        status: c.renewal_state || "valid",
+      }));
+    }
+  }
+  if (certInventory.length === 0) {
+    const certFindings = findings.filter(
+      (f) =>
+        f.category === "certificate" ||
+        f.finding_type === "certificate" ||
+        (f.algorithm || "").toUpperCase().includes("CERT")
+    );
+    certInventory = certFindings.map((cf) => ({
+      fingerprint: cf.metadata?.fingerprint || cf.id,
+      subject: cf.metadata?.subject_dn || cf.location || "NOT OBSERVED",
+      issuer: cf.metadata?.issuer_dn || "UNKNOWN",
+      valid_to: cf.metadata?.validity_end || null,
+      days_remaining: cf.metadata?.days_remaining ?? null,
+      key_algorithm: cf.algorithm || "RSA",
+      key_size: cf.key_size || 2048,
+      signature_algorithm: cf.metadata?.signature_algorithm || "SHA-256withRSA",
+      is_self_signed: Boolean(cf.metadata?.is_self_signed),
+      status: cf.metadata?.renewal_state || "valid",
+    }));
+  }
 
   const certEvidence = certInventory.map((c) => ({
     evidence_id: `ev_cert_${c.fingerprint.substring(0, 12)}`,
@@ -1152,6 +1154,7 @@ function generateExecutiveHtmlReport(report) {
 
 module.exports = {
   generateExecutiveReport,
+  getZeroExecutiveReport,
   validateReportTraceability,
   validateEvidenceIntegrity,
   generateExecutiveHtmlReport,
