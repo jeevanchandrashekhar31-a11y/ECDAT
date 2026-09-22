@@ -15,6 +15,7 @@ import {
 import {
   purgeLocalStorageSecrets,
   attachCsrfHeader,
+  setCsrfToken,
   authManager,
   isSafeUrl,
 } from '../security';
@@ -73,6 +74,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       // not json
     }
 
+    // User-facing normalized message for 401 in UI context
+    if (response.status === 401) {
+      errorMsg = 'Session expired or authentication required. Please sign in.';
+    }
+
     // Intercept 401 Unauthorized / 403 Forbidden
     authManager.handleResponseStatus(response.status, errorMsg);
 
@@ -88,7 +94,16 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     return (await response.text()) as unknown as T;
   }
 
-  return (await response.json()) as T;
+  const data = (await response.json()) as T;
+  if (
+    data &&
+    typeof data === 'object' &&
+    'csrfToken' in data &&
+    typeof (data as { csrfToken?: unknown }).csrfToken === 'string'
+  ) {
+    setCsrfToken((data as { csrfToken: string }).csrfToken);
+  }
+  return data;
 }
 
 export const api = {
@@ -348,16 +363,17 @@ export const api = {
     cbom: unknown;
   }> => {
     const session = authManager.getSession();
-    const authorized_by = options.authorized_by || session.userId || undefined;
+    const authorized_by = options.authorized_by?.trim() || session.userId || 'demo-developer';
+    const { authorized_by: _ignored, ...restOptions } = options;
     return request('/scan/network', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        ...restOptions,
         url: targetOrHost,
         host: targetOrHost,
         port,
         authorized_by,
-        ...options,
       }),
     });
   },

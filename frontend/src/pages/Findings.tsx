@@ -58,7 +58,7 @@ export const Findings: React.FC = () => {
     setErrorDetails(null);
 
     try {
-      const activeScan = selectedScanId && selectedScanId !== 'all' ? selectedScanId : undefined;
+      const activeScan = selectedScanId;
       const res = await api.getFindings({
         scanId: activeScan,
         severity: severityFilter !== 'ALL' ? severityFilter : undefined,

@@ -65,7 +65,7 @@ export const Assets: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const activeScanParam = selectedScanId && selectedScanId !== 'all' ? selectedScanId : undefined;
+      const activeScanParam = selectedScanId;
       if (activeTab === 'assets') {
         const res: AssetsResponse = await api.getAssets({
           scanId: activeScanParam,
@@ -513,7 +513,7 @@ export const Assets: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-200 font-sans">
                     {assets.map((asset) => (
-                      <tr key={asset.asset_id} className="hover:bg-slate-800/40 transition-colors">
+                      <tr key={`${asset.asset_id}-${selectedScanId || 'all'}`} className="hover:bg-slate-800/40 transition-colors">
                         {/* Asset Identifier & Type */}
                         <td className="py-3.5 px-4 max-w-xs">
                           <div className="flex items-center gap-2">
@@ -658,7 +658,7 @@ export const Assets: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-200 font-sans">
                   {findings.map((f) => (
-                    <tr key={f.id} className="hover:bg-slate-800/40 transition-colors">
+                    <tr key={`${f.id}-${selectedScanId || 'all'}`} className="hover:bg-slate-800/40 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2 font-mono">
                           <span className="font-bold text-white">{f.algorithm}</span>

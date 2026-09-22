@@ -16,7 +16,13 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { api } from '../api/client';
-import { authManager, memoryTokenStore, UserRole } from '../security';
+import {
+  authManager,
+  memoryTokenStore,
+  UserRole,
+  setCsrfToken,
+  clearCsrfToken,
+} from '../security';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -96,6 +102,9 @@ export const Login: React.FC = () => {
       if (res.accessToken) {
         memoryTokenStore.setToken('access_token', res.accessToken);
       }
+      if (res.csrfToken) {
+        setCsrfToken(res.csrfToken);
+      }
       if (res.user) {
         setSessionUser({
           userId: res.user.userId,
@@ -145,6 +154,9 @@ export const Login: React.FC = () => {
         if (res.accessToken) {
           memoryTokenStore.setToken('access_token', res.accessToken);
         }
+        if (res.csrfToken) {
+          setCsrfToken(res.csrfToken);
+        }
         if (res.user) {
           setSessionUser({
             userId: res.user.userId,
@@ -192,6 +204,9 @@ export const Login: React.FC = () => {
 
       if (res.accessToken) {
         memoryTokenStore.setToken('access_token', res.accessToken);
+      }
+      if (res.csrfToken) {
+        setCsrfToken(res.csrfToken);
       }
       if (res.user) {
         setSessionUser({
@@ -273,6 +288,7 @@ export const Login: React.FC = () => {
       // Best-effort
     } finally {
       authManager.clearSession();
+      clearCsrfToken();
       setSessionUser(null);
       setStep('login');
       setUsername('');

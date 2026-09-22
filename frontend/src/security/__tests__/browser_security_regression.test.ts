@@ -269,6 +269,11 @@ describe('Phase 17.3 — Frontend Security Subsystem & Browser Regression Tests'
   });
 
   describe('4. Token Storage & Zero-Secrets localStorage Invariant', () => {
+    beforeEach(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
     it('manages tokens exclusively in-memory with automatic TTL expiration', () => {
       memoryTokenStore.setToken('session_jwt', 'jwt.header.payload', 100); // 100ms TTL
 
@@ -325,15 +330,14 @@ describe('Phase 17.3 — Frontend Security Subsystem & Browser Regression Tests'
       sessionAuthStorage.setApiKey('sec-test-key-2026');
 
       expect(sessionAuthStorage.getApiKey()).toBe('sec-test-key-2026');
-      expect(sessionStorage.getItem('ecdat_session_api_key')).toBe('sec-test-key-2026');
 
-      // Verify ZERO credentials were saved to localStorage
+      // Verify ZERO credentials were saved to localStorage or sessionStorage
       expect(localStorage.length).toBe(0);
+      expect(sessionStorage.length).toBe(0);
       expect(() => assertNoLocalStorageSecrets()).not.toThrow();
 
       sessionAuthStorage.clear();
       expect(sessionAuthStorage.getApiKey()).toBeNull();
-      expect(sessionStorage.getItem('ecdat_session_api_key')).toBeNull();
     });
   });
 

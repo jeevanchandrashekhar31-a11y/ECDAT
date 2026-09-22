@@ -58,6 +58,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       setEngineOnline(false);
     }
 
+    if (!authManager.getSession().isAuthenticated) {
+      setScans([]);
+      return;
+    }
+
     try {
       const scansRes = await api.getScans();
       const list = scansRes.scans || [];
@@ -72,6 +77,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const checkUserSession = async () => {
+    if (!authManager.getSession().isAuthenticated) {
+      setCurrentUser(null);
+      return;
+    }
     try {
       const res = await api.getCurrentUser();
       if (res && res.user) {
@@ -101,17 +110,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   useEffect(() => {
+    // removed automatic clear of securityAlert on /login to preserve 401 messages
     checkHealthAndScans();
     checkUserSession();
     setCurrentRole(authManager.getSession().role || 'Viewer');
 
     const unsub401 = authManager.onUnauthorized((session, err) => {
-      setSecurityAlert({
-        status: 401,
-        message: err?.message || 'Session expired or unauthenticated. Please log in.',
-      });
       setCurrentRole(session.role || 'Viewer');
       setCurrentUser(null);
+      if (location.pathname !== '/login') {
+        setSecurityAlert({
+          status: 401,
+          message: err?.message || 'Session expired or unauthenticated. Please log in.',
+        });
+        navigate('/login');
+      }
     });
 
     const unsub403 = authManager.onForbidden((session, err) => {
@@ -194,6 +207,27 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* Navigation Items */}
         <nav className="p-4 space-y-1.5 flex-1 text-xs">
+          {/* Prominent Demo Entry Badge/Button */}
+          {!currentUser ? (
+            <div className="mb-3 p-2 rounded-xl bg-gradient-to-r from-amber-500/15 via-cyan-500/15 to-indigo-500/15 border border-amber-500/30 text-center">
+              <NavLink
+                to="/login"
+                className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-cyan-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 hover:brightness-110 transition-all"
+              >
+                <ShieldCheck size={15} />
+                <span>Enter Demo Mode (1-Click)</span>
+              </NavLink>
+            </div>
+          ) : currentUser.isDemo ? (
+            <div className="mb-3 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between text-2xs text-emerald-300 font-semibold">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Judge Demo Active
+              </span>
+              <span className="font-mono text-emerald-400/80">demo-tenant</span>
+            </div>
+          ) : null}
+
           <NavLink
             to="/"
             end
@@ -304,7 +338,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             }
           >
             <Key size={17} />
-            <span>Authentication & MFA</span>
+            <span>{currentUser?.isDemo ? 'Demo Mode & Auth' : (currentUser ? 'User Session & MFA' : 'Enter Demo / Sign In')}</span>
           </NavLink>
 
           <div className="pt-4 mt-4 border-t border-slate-800/80">
@@ -412,15 +446,31 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 `inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
                   isActive
                     ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-                    : currentUser
+                    : currentUser?.isDemo
                     ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
-                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    : currentUser
+                    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 font-bold shadow-sm'
                 }`
               }
-              title="Authentication & MFA Management"
+              title="Enter Demo Mode or Manage Session"
             >
-              {currentUser ? <UserCheck size={13} /> : <Key size={13} />}
-              <span>{currentUser ? `${currentUser.username}` : 'Sign In'}</span>
+              {currentUser?.isDemo ? (
+                <>
+                  <ShieldCheck size={13} className="text-emerald-400" />
+                  <span>Demo Mode Active</span>
+                </>
+              ) : currentUser ? (
+                <>
+                  <UserCheck size={13} />
+                  <span>{currentUser.username}</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck size={13} className="text-amber-400" />
+                  <span>Enter Demo Mode</span>
+                </>
+              )}
             </NavLink>
 
             {/* Core Status */}
@@ -429,7 +479,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* Security Alert Interceptor Banner */}
-        {securityAlert && (
+        {securityAlert && location.pathname !== '/login' && (
           <div className="bg-rose-950/90 border-b border-rose-500/60 px-6 py-2.5 flex items-center justify-between text-xs text-rose-200 animate-in slide-in-from-top duration-200">
             <div className="flex items-center gap-2.5">
               <div className="p-1 rounded-md bg-rose-900/60 text-rose-400 border border-rose-700/50">

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Upload, X, FileCode, CheckCircle2, AlertTriangle, Loader2, Globe } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Upload, X, FileCode, CheckCircle2, AlertTriangle, Loader2, Globe, Folder, ShieldCheck } from 'lucide-react';
 import { api } from '../api/client';
+import { authManager } from '../security';
 
 interface CbomUploadModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface CbomUploadModalProps {
 const MAX_CBOM_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const session = authManager.getSession();
   const [file, setFile] = useState<File | null>(null);
   const [jsonText, setJsonText] = useState('');
   const [mode, setMode] = useState<'scan' | 'file' | 'text'>('scan');
@@ -18,11 +20,22 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
   
   // Live Scanner State
   const [scanTarget, setScanTarget] = useState('');
-  const [staticSubMode, setStaticSubMode] = useState<'upload' | 'git'>('upload');
+  const [authorizedBy, setAuthorizedBy] = useState(session.userId || 'demo-developer');
+  const [staticSubMode, setStaticSubMode] = useState<'upload' | 'folder' | 'git'>('upload');
   const [scanUploadFile, setScanUploadFile] = useState<File | null>(null);
+  const [folderFiles, setFolderFiles] = useState<File[] | null>(null);
   const [scanGitUrl, setScanGitUrl] = useState('');
   const [binarySubMode, setBinarySubMode] = useState<'upload' | 'image'>('upload');
   const [binaryImageName, setBinaryImageName] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      const cur = authManager.getSession();
+      if (cur.userId) {
+        setAuthorizedBy(cur.userId);
+      }
+    }
+  }, [isOpen]);
 
   const [scanLabel, setScanLabel] = useState('');
   const [policyProfile, setPolicyProfile] = useState('regulated_bfsi');
@@ -33,9 +46,32 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
 
   if (!isOpen) return null;
 
+  const isArchiveFile = (name: string) => {
+    const lower = name.toLowerCase();
+    return (
+      lower.endsWith('.zip') ||
+      lower.endsWith('.tar') ||
+      lower.endsWith('.tar.gz') ||
+      lower.endsWith('.tgz') ||
+      lower.endsWith('.jar')
+    );
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
+      if (isArchiveFile(selected.name)) {
+        // User picked a .zip or archive on File Upload tab: seamlessly switch them to Static Scan!
+        setMode('scan');
+        setScanType('static');
+        setStaticSubMode('upload');
+        setScanUploadFile(selected);
+        if (!scanLabel) {
+          setScanLabel(selected.name.replace(/\.[^/.]+$/, ''));
+        }
+        setError(null);
+        return;
+      }
       if (selected.size > MAX_CBOM_UPLOAD_BYTES) {
         setFile(null);
         setError('CBOM files must be 10 MB or smaller.');
@@ -53,6 +89,17 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const dropped = e.dataTransfer.files[0];
+      if (isArchiveFile(dropped.name)) {
+        setMode('scan');
+        setScanType('static');
+        setStaticSubMode('upload');
+        setScanUploadFile(dropped);
+        if (!scanLabel) {
+          setScanLabel(dropped.name.replace(/\.[^/.]+$/, ''));
+        }
+        setError(null);
+        return;
+      }
       if (dropped.size > MAX_CBOM_UPLOAD_BYTES) {
         setFile(null);
         setError('CBOM files must be 10 MB or smaller.');
@@ -83,7 +130,15 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               policy_profile: policyProfile,
               scenario,
             });
+          } else if (staticSubMode === 'folder') {
+            if (!folderFiles || folderFiles.length === 0) throw new Error('Please select a project folder containing source code.');
+            scanRes = await api.triggerStaticScan(folderFiles, {
+              scan_label: scanLabel.trim() || undefined,
+              policy_profile: policyProfile,
+              scenario,
+            });
           } else {
+            if (!scanUploadFile) throw new Error('Please select a project .ZIP archive or source file to scan.');
             scanRes = await api.triggerStaticScan(scanUploadFile || undefined, {
               scan_label: scanLabel.trim() || undefined,
               policy_profile: policyProfile,
@@ -97,6 +152,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
             scan_label: scanLabel.trim() || undefined,
             policy_profile: policyProfile,
             scenario,
+            authorized_by: authorizedBy.trim() || 'demo-developer',
           });
         } else {
           if (binarySubMode === 'image') {
@@ -269,17 +325,39 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               </div>
 
               {scanType === 'network' && (
-                <div className="space-y-2">
-                  <label className="block text-slate-400 font-medium">Target URL or Hostname</label>
-                  <div className="relative flex items-center">
-                    <Globe className="w-4 h-4 text-emerald-400 absolute left-3 pointer-events-none" />
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-slate-400 font-medium mb-1">Target URL or Hostname</label>
+                    <div className="relative flex items-center">
+                      <Globe className="w-4 h-4 text-emerald-400 absolute left-3 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={scanTarget}
+                        onChange={(e) => setScanTarget(e.target.value)}
+                        placeholder="e.g. https://api.yourdomain.com or 192.168.1.1"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-slate-400 font-medium flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Authorized By</span>
+                      </label>
+                      <span className="text-[10px] text-slate-500">Required by NIST / SSRF Security Guard</span>
+                    </div>
                     <input
                       type="text"
-                      value={scanTarget}
-                      onChange={(e) => setScanTarget(e.target.value)}
-                      placeholder="e.g. https://api.yourdomain.com or 192.168.1.1"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono text-xs"
+                      value={authorizedBy}
+                      onChange={(e) => setAuthorizedBy(e.target.value)}
+                      placeholder="e.g. demo-developer or your user ID"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono text-xs"
                     />
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Must match your active session identity (<span className="text-emerald-400 font-mono">{session.userId || 'demo-developer'}</span>) or an administrator role.
+                    </p>
                   </div>
                 </div>
               )}
@@ -291,23 +369,32 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                       type="button"
                       onClick={() => setStaticSubMode('upload')}
                       className={`px-2.5 py-1 rounded text-2xs font-medium transition-all ${
-                        staticSubMode === 'upload' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'
+                        staticSubMode === 'upload' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       Upload Project (.ZIP)
                     </button>
                     <button
                       type="button"
+                      onClick={() => setStaticSubMode('folder')}
+                      className={`px-2.5 py-1 rounded text-2xs font-medium transition-all ${
+                        staticSubMode === 'folder' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Local Folder
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setStaticSubMode('git')}
                       className={`px-2.5 py-1 rounded text-2xs font-medium transition-all ${
-                        staticSubMode === 'git' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'
+                        staticSubMode === 'git' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       Git Repository URL
                     </button>
                   </div>
 
-                  {staticSubMode === 'upload' ? (
+                  {staticSubMode === 'upload' && (
                     <div>
                       <label className="w-full flex items-center justify-between bg-slate-900 border border-dashed border-slate-700 hover:border-cyan-500/60 rounded-lg px-3 py-2.5 text-xs text-slate-300 cursor-pointer">
                         <div className="flex items-center gap-2 truncate">
@@ -321,7 +408,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                         </span>
                         <input
                           type="file"
-                          accept=".zip,.c,.h,.cpp,.hpp,.go,.js,.py"
+                          accept=".zip,.tar,.gz,.tgz,.c,.h,.cpp,.hpp,.go,.js,.jsx,.ts,.tsx,.py,.java"
                           className="hidden"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
@@ -334,8 +421,51 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                           }}
                         />
                       </label>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Select a .ZIP archive containing your codebase or an individual source code file.
+                      </p>
                     </div>
-                  ) : (
+                  )}
+
+                  {staticSubMode === 'folder' && (
+                    <div>
+                      <label className="w-full flex items-center justify-between bg-slate-900 border border-dashed border-slate-700 hover:border-cyan-500/60 rounded-lg px-3 py-2.5 text-xs text-slate-300 cursor-pointer">
+                        <div className="flex items-center gap-2 truncate">
+                          <Folder className="w-4 h-4 text-cyan-400 shrink-0" />
+                          <span className="truncate">
+                            {folderFiles && folderFiles.length > 0
+                              ? `Selected folder with ${folderFiles.length} files (${(folderFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024)).toFixed(2)} MB)`
+                              : 'Select local project directory / folder'}
+                          </span>
+                        </div>
+                        <span className="text-2xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700 font-medium">
+                          Choose Folder
+                        </span>
+                        <input
+                          type="file"
+                          multiple
+                          {...({ webkitdirectory: '', directory: '' } as unknown as React.InputHTMLAttributes<HTMLInputElement>)}
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              const filesArr = Array.from(e.target.files);
+                              setFolderFiles(filesArr);
+                              if (!scanLabel) {
+                                const relPath = filesArr[0]?.webkitRelativePath || '';
+                                const rootFolderName = relPath.split('/')[0] || 'Local Project';
+                                setScanLabel(rootFolderName);
+                              }
+                            }
+                          }}
+                        />
+                      </label>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Selects an entire local folder using your browser's folder picker. All source files will be discovered and analyzed.
+                      </p>
+                    </div>
+                  )}
+
+                  {staticSubMode === 'git' && (
                     <div className="space-y-1">
                       <input
                         type="text"
@@ -420,33 +550,55 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
 
           {/* Mode 2: File Drag & Drop */}
           {mode === 'file' && (
-            <div
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
-              className="border-2 border-dashed border-slate-700/80 hover:border-cyan-500/60 rounded-xl p-6 text-center transition-colors bg-slate-950/40"
-            >
-              <input
-                type="file"
-                id="cbom-file"
-                accept=".json,application/json"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <label htmlFor="cbom-file" className="cursor-pointer block">
-                {file ? (
-                  <div className="flex items-center justify-center gap-2 text-cyan-300">
-                    <FileCode size={24} className="text-cyan-400" />
-                    <span className="font-semibold truncate max-w-[280px]">{file.name}</span>
-                    <span className="text-slate-500 text-[11px]">({(file.size / 1024).toFixed(1)} KB)</span>
-                  </div>
-                ) : (
-                  <>
-                    <Upload size={28} className="mx-auto text-slate-500 mb-2" />
-                    <p className="font-semibold text-slate-200">Click to browse or drag CycloneDX JSON here</p>
-                    <p className="text-slate-500 mt-1">Supports CycloneDX v1.4, v1.5, v1.6</p>
-                  </>
-                )}
-              </label>
+            <div className="space-y-3">
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDrop}
+                className="border-2 border-dashed border-slate-700/80 hover:border-cyan-500/60 rounded-xl p-6 text-center transition-colors bg-slate-950/40"
+              >
+                <input
+                  type="file"
+                  id="cbom-file"
+                  accept=".json,application/json,.zip,application/zip"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <label htmlFor="cbom-file" className="cursor-pointer block">
+                  {file ? (
+                    <div className="flex items-center justify-center gap-2 text-cyan-300">
+                      <FileCode size={24} className="text-cyan-400" />
+                      <span className="font-semibold truncate max-w-[280px]">{file.name}</span>
+                      <span className="text-slate-500 text-[11px]">({(file.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload size={28} className="mx-auto text-slate-500 mb-2" />
+                      <p className="font-semibold text-slate-200">Click to browse or drag CycloneDX JSON here</p>
+                      <p className="text-slate-500 mt-1">Supports CycloneDX v1.4, v1.5, v1.6</p>
+                    </>
+                  )}
+                </label>
+              </div>
+
+              <div className="p-3 bg-cyan-950/30 border border-cyan-500/20 rounded-lg flex items-center justify-between text-xs">
+                <div className="text-slate-300">
+                  <span className="text-cyan-400 font-semibold">Want to scan source code or a .ZIP project?</span>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Use the Live Code Scanner to analyze source code repositories, folders, or archives.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('scan');
+                    setScanType('static');
+                    setStaticSubMode('upload');
+                  }}
+                  className="shrink-0 px-2.5 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded font-medium transition-all ml-3"
+                >
+                  Switch to Code Scan &rarr;
+                </button>
+              </div>
             </div>
           )}
 
@@ -537,6 +689,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 (mode === 'scan' && (
                   (scanType === 'network' && !scanTarget.trim()) ||
                   (scanType === 'static' && staticSubMode === 'upload' && !scanUploadFile) ||
+                  (scanType === 'static' && staticSubMode === 'folder' && (!folderFiles || folderFiles.length === 0)) ||
                   (scanType === 'static' && staticSubMode === 'git' && !scanGitUrl.trim()) ||
                   (scanType === 'binary' && binarySubMode === 'upload' && !scanUploadFile) ||
                   (scanType === 'binary' && binarySubMode === 'image' && !binaryImageName.trim())

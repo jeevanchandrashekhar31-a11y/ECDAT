@@ -98,8 +98,8 @@ export const Reports: React.FC = () => {
     }
   };
 
-  const safeScanId = encodeURIComponent(activeScanId);
-  const htmlReportUrl = sanitizeUrl(`/api/v1/reports/${safeScanId}/html`);
+  const queryParam = activeScanId && activeScanId !== 'latest' ? `?scanId=${encodeURIComponent(activeScanId)}` : '';
+  const htmlReportUrl = sanitizeUrl(`/api/v1/reports/executive/html${queryParam}`);
 
   return (
     <div className="space-y-8 animate-fade-in">
