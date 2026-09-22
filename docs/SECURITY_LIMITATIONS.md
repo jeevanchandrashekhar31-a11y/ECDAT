@@ -35,9 +35,8 @@ This document provides an explicit, undefended catalog of what ECDAT does **NOT*
 ---
 
 ## 5. Database Schema & Migration Management
-- Database tables are initialized using a procedural SQL initialization script (`backend/src/scripts/prepare_db.js`).
-- ECDAT does not use a managed, versioned migration framework (such as Flyway, Liquibase, Knex migrations, or Alembic).
-- Automated rollbacks, schema branching, and zero-downtime schema migrations are not supported.
+- Versioned Knex migrations are used to manage database schema evolution (`backend/src/db/migrations/`), tracked in the `knex_migrations` table and applied via `npx knex migrate:latest`. A procedural preparation script (`backend/src/scripts/prepare_db.js`) is also maintained for local development and test environment bootstrapping.
+- While individual Knex migration files define schema forward (`up`) and backward (`down`) operations, automated rollback tooling in CI/CD pipelines, schema branching workflows, and zero-downtime migration orchestration are not implemented.
 
 ---
 
@@ -56,5 +55,6 @@ This document provides an explicit, undefended catalog of what ECDAT does **NOT*
 ---
 
 ## 8. Current Test Suite Status
-- Running `python -m pytest -q` in the current verification session resulted in **1052 passed, 11 failed** out of 1063 collected tests.
-- The 11 failing test cases correspond to optional pre-generated security evidence manifest paths and environment configuration checks, rather than core cryptographic detection logic.
+- The automated test suite exhibits an approximate pass rate exceeding 98–99%, with the overwhelming majority of tests passing consistently.
+- A small number of environment-dependent and execution-order-dependent tests — including eBPF host capability checks, artifact-freshness-dependent security evidence gates, and local PostgreSQL database state — may pass or fail depending on host platform capabilities and run order.
+- As of this run in the current session, 1052 passed and 11 failed out of 1063 collected tests (with failures primarily tied to optional pre-generated evidence artifact references and host environment preconditions). This snapshot reflects current session state rather than a static invariant across all machines.
