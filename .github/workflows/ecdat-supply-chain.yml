@@ -74,7 +74,7 @@ jobs:
 
       - name: 19.1 Execute Multi-Ecosystem Vulnerability Scanner
         run: |
-          python scripts/scan_vulnerabilities.py --sbom artifacts/sbom/ecdat_sbom_cyclonedx.json --fail-on critical
+          python scripts/scan_vulnerabilities.py --sbom artifacts/sbom/ecdat_sbom_cyclonedx.json --fail-on high
 
       - name: 19.2 Generate SLSA v1.0 Provenance Attestation
         run: |
@@ -103,11 +103,15 @@ jobs:
             --type cyclonedx \
             --output-signature artifacts/sbom/ecdat_sbom_cyclonedx.json.sig \
             --output-certificate artifacts/sbom/ecdat_sbom_cyclonedx.json.pem \
-            artifacts/sbom/ecdat_sbom_cyclonedx.json || true
+            artifacts/sbom/ecdat_sbom_cyclonedx.json
 
       - name: 19.3 Execute Zero-Trust Release Gate
         run: |
           python scripts/release_gate.py --output-dir artifacts/security
+
+      - name: 19.4 Execute Final Enterprise Quality Gate (17 Domains)
+        run: |
+          python scripts/final_quality_gate.py
 
       - name: Publish Supply-Chain Artifacts & Attestations
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1

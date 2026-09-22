@@ -82,6 +82,18 @@ jobs:
             --summary-out artifacts/ci/summary.json \
             --annotated-out artifacts/ci/annotated_cbom.json
 
+      - name: Validate CBOM schema compliance
+        run: |
+          python -c "
+          from scanners.cbom_mapping import validate_cbom_detailed
+          with open('artifacts/ci/static_cbom.json', 'r', encoding='utf-8') as f:
+              valid, err = validate_cbom_detailed(f.read())
+          if not valid:
+              print(f'::error::CBOM schema validation failed: {err}')
+              exit(1)
+          print('CycloneDX CBOM successfully validated against schema.')
+          "
+
       - name: Run Python tests
         run: python -m pytest --cov=scanners --cov-report=term-missing
 
@@ -110,22 +122,21 @@ jobs:
           npm test --prefix frontend
           npm run build --prefix frontend
 
-      # This deliberately scans only committed test data. continue-on-error
-      # makes the expected non-zero result demonstrative rather than disruptive.
-      - name: Demonstrate Critical gate on vulnerable fixture
-        id: critical_gate
-        continue-on-error: true
+      # Genuinely verify the Critical gate blocks vulnerable code fixtures
+      - name: Verify Critical gate blocks vulnerable fixture
         run: |
+          set +e
           python -m scanners.static.main tests/fixtures/static \
             --output artifacts/ci/vulnerable_fixture_cbom.json \
             --output-sarif artifacts/ci/vulnerable_fixture.sarif \
             --fail-on critical
-
-      - name: Verify vulnerable fixture was blocked
-        if: steps.critical_gate.outcome != 'failure'
-        run: |
-          echo "The intentionally vulnerable fixture did not trigger the Critical gate."
-          exit 1
+          GATE_EXIT_CODE=$?
+          set -e
+          if [ $GATE_EXIT_CODE -eq 0 ]; then
+            echo "::error::The intentionally vulnerable fixture did not trigger the Critical gate (expected failure, got exit code 0)."
+            exit 1
+          fi
+          echo "Successfully verified: Critical gate blocked vulnerable fixture with exit code $GATE_EXIT_CODE."
 
       - name: Upload scan artifacts
         if: always()
