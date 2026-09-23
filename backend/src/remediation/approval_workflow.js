@@ -280,13 +280,13 @@ class ApprovalWorkflowEngine {
 
   async deleteApproval(approvalId) {
     const rows = await db("remediations").where({ id: approvalId }).del();
-    if (rows === 0) throw new ApprovalWorkflowError(Approval request '' not found, 404);
+    if (rows === 0) throw new ApprovalWorkflowError(`Approval request '${approvalId}' not found`, 404);
     return true;
   }
 
   async getApproval(approvalId) {
     const record = await db("remediations").where({ id: approvalId }).first();
-    if (!record) throw new ApprovalWorkflowError(Approval request '' not found, 404);
+    if (!record) throw new ApprovalWorkflowError(`Approval request '${approvalId}' not found`, 404);
     record.audit_history = typeof record.audit_history === "string" ? JSON.parse(record.audit_history) : record.audit_history || [];
     record.metadata = typeof record.metadata === "string" ? JSON.parse(record.metadata) : record.metadata || {};
     // map DB fields back to memory fields for backwards compatibility
