@@ -50,7 +50,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   authManager.attachAuthHeaders(headers);
 
   const response = await fetch(url, {
-    credentials: 'same-origin',
+    credentials: 'include',
     ...options,
     headers,
   });

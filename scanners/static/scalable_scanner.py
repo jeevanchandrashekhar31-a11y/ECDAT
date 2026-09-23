@@ -60,7 +60,7 @@ DEFAULT_INCLUDE_EXTS = {
     ".rs",
 }
 
-DEFAULT_EXCLUDE_DIRS = {".git", "node_modules", "vendor", "dist", "build", ".venv", "__pycache__", ".pytest_cache"}
+DEFAULT_EXCLUDE_DIRS = {".git", "node_modules", "vendor", "dist", "build", ".venv", "__pycache__", ".pytest_cache", "tests", "testing", "rules", "scanners", "risk_engine", "security_tests"}
 
 
 def scan_single_file(

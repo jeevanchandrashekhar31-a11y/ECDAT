@@ -214,11 +214,20 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
     return set;
   }, [activeFocusId, edges]);
 
-  // Mouse wheel zoom
+  // Mouse wheel pan/zoom
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-    setZoom((prev) => Math.min(2.2, Math.max(0.4, prev * zoomFactor)));
+    if (e.ctrlKey || e.metaKey) {
+      // Zoom with Ctrl/Cmd + Scroll
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      setZoom((prev) => Math.min(2.2, Math.max(0.4, prev * zoomFactor)));
+    } else {
+      // Pan with normal Scroll
+      setPan((prev) => ({
+        x: prev.x - e.deltaX,
+        y: prev.y - e.deltaY,
+      }));
+    }
   };
 
   // Pan interaction

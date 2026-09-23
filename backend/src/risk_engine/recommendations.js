@@ -66,7 +66,7 @@ function derivePqcMigration(algo, matchedRec, assetType) {
   if (algoUpper === "RSA" || algoUpper === "ECDSA" || algoUpper === "DSA") {
     return "Evaluate ML-KEM hybrid key establishment for encryption and ML-DSA-65 / SLH-DSA for digital signing based on ecosystem support.";
   }
-  if (algoUpper === "AES") {
+  if (algoUpper === "AES" || algoUpper === "DES" || algoUpper === "3DES" || algoUpper === "RC4" || algoUpper === "RC2") {
     return "Upgrade to AES-256 to guarantee 128 bits of post-quantum security margin against Grover exhaustive search.";
   }
   if (assetType === "library_presence") {
@@ -175,6 +175,17 @@ function getRecommendationForFinding(finding) {
   }
   // 10. Symmetric Quantum Margin (AES-128)
   else if (algoUpper === "AES" && keySize === 128) {
+    matchedRec = recommendations.find(
+      (r) => r.recommendation_id === "rec_symmetric_quantum_margin",
+    );
+  }
+  // 11. Symmetric Legacy (DES, 3DES, RC4)
+  else if (
+    algoUpper === "DES" ||
+    algoUpper === "3DES" ||
+    algoUpper === "RC2" ||
+    algoUpper === "RC4"
+  ) {
     matchedRec = recommendations.find(
       (r) => r.recommendation_id === "rec_symmetric_quantum_margin",
     );

@@ -32,8 +32,8 @@ export const ExecutiveOverviewView: React.FC<Props> = ({
       {/* Top Banner: Enterprise Posture Gauge & CI/CD Status */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Posture Score Gauge */}
-        <div className="lg:col-span-5 glass-card p-6 flex items-center justify-between relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-48 h-48 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none" />
+        <div className="lg:col-span-5 glass-panel p-8 flex items-center justify-between relative overflow-hidden group">
+          <div className="absolute right-0 top-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none group-hover:bg-primary/20 transition-all duration-500" />
           <div>
             <div className="flex items-center gap-2 mb-1">
               <ShieldAlert className="w-4 h-4 text-cyan-400" />
@@ -41,7 +41,7 @@ export const ExecutiveOverviewView: React.FC<Props> = ({
                 Enterprise Posture Index
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-slate-100">Cryptographic Health</h3>
+            <h3 className="text-3xl font-display font-bold text-white tracking-tight">Cryptographic Health</h3>
             <p className="text-xs text-slate-400 mt-1 max-w-xs">
               Algorithmic strength, key lengths, quantum horizons, and policy adherence.
             </p>
@@ -65,7 +65,7 @@ export const ExecutiveOverviewView: React.FC<Props> = ({
                     allFindingIds
                   )
                 }
-                className="text-xs text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-1 font-medium transition-colors"
+                className="text-xs text-primary hover:text-primary/80 inline-flex items-center gap-1 font-medium transition-colors"
               >
                 <span>View Evidence ({allFindingIds.length})</span>
                 <ExternalLink className="w-3 h-3" />
@@ -86,8 +86,8 @@ export const ExecutiveOverviewView: React.FC<Props> = ({
             )}`}
             title="Click to view all findings influencing posture score"
           >
-            <span className="text-4xl font-extrabold tracking-tight">{data.posture_score}</span>
-            <span className="text-[10px] uppercase font-mono tracking-widest text-slate-400">
+            <span className="text-5xl font-display font-extrabold tracking-tighter">{data.posture_score}</span>
+            <span className="text-[10px] uppercase font-mono tracking-widest text-slate-400 mt-1">
               Score / 100
             </span>
           </div>

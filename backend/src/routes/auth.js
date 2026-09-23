@@ -1084,10 +1084,9 @@ router.post("/demo/reset", async (req, res) => {
 
   // Clear remediation approvals for demo-tenant
   const engine = getDefaultApprovalEngine();
-  for (const [id, r] of engine.approvals.entries()) {
-    if (r.tenantId === "demo-tenant") {
-      engine.approvals.delete(id);
-    }
+  const list = await engine.listApprovals({ tenantId: "demo-tenant" });
+  for (const r of list) {
+    await engine.deleteApproval(r.approval_id);
   }
 
   return res.json({ success: true, message: "Demo tenant reset to empty state." });

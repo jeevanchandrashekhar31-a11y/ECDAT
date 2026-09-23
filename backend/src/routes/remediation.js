@@ -310,7 +310,7 @@ router.post("/verify-patch", (req, res) => {
  * POST /api/v1/remediation/apply-patch
  * Applies patch only after full safety lifecycle passes and approval is verified if required.
  */
-router.post("/apply-patch", (req, res) => {
+router.post("/apply-patch", async (req, res) => {
   try {
     const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
     const callerTenant = req.tenantContext?.tenantId || "default-tenant";
@@ -331,7 +331,7 @@ router.post("/apply-patch", (req, res) => {
     const approvalId = req.body.approval_id || null;
     if (approvalId) {
       const engine = getDefaultApprovalEngine();
-      const existing = engine.getApproval(approvalId);
+      const existing = await engine.getApproval(approvalId);
       if (existing && !isPlatformAdmin && existing.tenantId && existing.tenantId !== callerTenant) {
         return res.status(403).json({
           error: "TenantBoundaryViolation",
@@ -377,7 +377,7 @@ router.post("/apply-patch", (req, res) => {
       }
 
       const engine = getDefaultApprovalEngine();
-      const approval = engine.getApproval(approvalId);
+      const approval = await engine.getApproval(approvalId);
       if (!isPlatformAdmin && approval.tenantId && approval.tenantId !== callerTenant) {
         return res.status(403).json({
           error: "TenantBoundaryViolation",
@@ -428,6 +428,10 @@ router.post("/apply-patch", (req, res) => {
 
     if (!dryRun && fs.existsSync(filePath)) {
       fs.writeFileSync(filePath, patchResult.patched_code, "utf-8");
+      if (approvalId) {
+        const engine = getDefaultApprovalEngine();
+        await engine.applyRemediation(approvalId, { username: req.tenantContext?.userId || "automation_pipeline", role: "deployer" });
+      }
     }
 
     return res.status(200).json({
@@ -481,12 +485,12 @@ function verifyApprovalTenant(req, approval) {
  * POST /api/v1/remediation/approvals/propose
  * Creates a remediation proposal in PROPOSED state.
  */
-router.post("/approvals/propose", (req, res) => {
+router.post("/approvals/propose", async (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
     const actor = getActorFromReq(req);
     const callerTenant = req.tenantContext?.tenantId || "default-tenant";
-    const record = engine.proposeRemediation({ ...req.body, tenantId: callerTenant }, actor);
+    const record = await engine.proposeRemediation({ ...req.body, tenantId: callerTenant }, actor);
     defaultMetricsCollector.recordRemediation("proposed");
 
     return res.status(201).json({
@@ -508,7 +512,7 @@ router.post("/approvals/propose", (req, res) => {
  * GET /api/v1/remediation/approvals
  * Lists approvals with optional filters (?state=...&category=...).
  */
-router.get("/approvals", (req, res) => {
+router.get("/approvals", async (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
     const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
@@ -519,7 +523,7 @@ router.get("/approvals", (req, res) => {
       environment: req.query.environment,
       tenantId: isPlatformAdmin ? (req.query.tenantId || null) : callerTenant,
     };
-    const list = engine.listApprovals(filters);
+    const list = await engine.listApprovals(filters);
 
     return res.status(200).json({
       success: true,
@@ -535,12 +539,12 @@ router.get("/approvals", (req, res) => {
  * GET /api/v1/remediation/approvals/:approvalId
  * Retrieves specific approval request and verifies state chain integrity.
  */
-router.get("/approvals/:approvalId", (req, res) => {
+router.get("/approvals/:approvalId", async (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
-    const record = engine.getApproval(req.params.approvalId);
+    const record = await engine.getApproval(req.params.approvalId);
     verifyApprovalTenant(req, record);
-    const chainVerification = engine.verifyStateChain(req.params.approvalId);
+    const chainVerification = await engine.verifyStateChain(req.params.approvalId);
 
     return res.status(200).json({
       success: true,
@@ -562,14 +566,14 @@ router.get("/approvals/:approvalId", (req, res) => {
  * POST /api/v1/remediation/approvals/:approvalId/review
  * Transitions from PROPOSED -> REVIEWED.
  */
-router.post("/approvals/:approvalId/review", (req, res) => {
+router.post("/approvals/:approvalId/review", async (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
-    const existing = engine.getApproval(req.params.approvalId);
+    const existing = await engine.getApproval(req.params.approvalId);
     verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const comments = req.body.comments || "Peer review completed.";
-    const record = engine.reviewRemediation(req.params.approvalId, actor, comments);
+    const record = await engine.reviewRemediation(req.params.approvalId, actor, comments);
 
     return res.status(200).json({
       success: true,
@@ -591,14 +595,14 @@ router.post("/approvals/:approvalId/review", (req, res) => {
  * POST /api/v1/remediation/approvals/:approvalId/approve
  * Transitions from REVIEWED -> APPROVED. Enforces Four-Eyes Principle.
  */
-router.post("/approvals/:approvalId/approve", (req, res) => {
+router.post("/approvals/:approvalId/approve", async (req, res) => {
   try {
     const engine = getDefaultApprovalEngine();
-    const existing = engine.getApproval(req.params.approvalId);
+    const existing = await engine.getApproval(req.params.approvalId);
     verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const comments = req.body.comments || "Approved for execution.";
-    const record = engine.approveRemediation(req.params.approvalId, actor, comments);
+    const record = await engine.approveRemediation(req.params.approvalId, actor, comments);
     defaultMetricsCollector.recordRemediation("approved");
 
     defaultAuditService.logEvent({
@@ -631,7 +635,7 @@ router.post("/approvals/:approvalId/approve", (req, res) => {
  * POST /api/v1/remediation/approvals/:approvalId/apply
  * Transitions from APPROVED -> APPLIED.
  */
-router.post("/approvals/:approvalId/apply", (req, res) => {
+router.post("/approvals/:approvalId/apply", async (req, res) => {
   try {
     const allowedApplyRoles = [
       "admin",
@@ -651,10 +655,10 @@ router.post("/approvals/:approvalId/apply", (req, res) => {
     }
 
     const engine = getDefaultApprovalEngine();
-    const existing = engine.getApproval(req.params.approvalId);
+    const existing = await engine.getApproval(req.params.approvalId);
     verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
-    const record = engine.applyRemediation(req.params.approvalId, actor);
+    const record = await engine.applyRemediation(req.params.approvalId, actor);
     defaultMetricsCollector.recordRemediation("applied");
 
     defaultAuditService.logEvent({
@@ -687,7 +691,7 @@ router.post("/approvals/:approvalId/apply", (req, res) => {
  * POST /api/v1/remediation/approvals/:approvalId/verify
  * Transitions from APPLIED -> VERIFIED.
  */
-router.post("/approvals/:approvalId/verify", (req, res) => {
+router.post("/approvals/:approvalId/verify", async (req, res) => {
   try {
     const allowedVerifyRoles = [
       "admin",
@@ -709,7 +713,7 @@ router.post("/approvals/:approvalId/verify", (req, res) => {
     }
 
     const engine = getDefaultApprovalEngine();
-    const existing = engine.getApproval(req.params.approvalId);
+    const existing = await engine.getApproval(req.params.approvalId);
     verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const results = req.body.verification_results;
@@ -721,7 +725,7 @@ router.post("/approvals/:approvalId/verify", (req, res) => {
         message: "verification_results must be supplied. Absent evidence is never treated as a pass.",
       });
     }
-    const record = engine.verifyRemediation(req.params.approvalId, actor, results);
+    const record = await engine.verifyRemediation(req.params.approvalId, actor, results);
     defaultMetricsCollector.recordRemediation("verified");
 
     return res.status(200).json({
@@ -744,7 +748,7 @@ router.post("/approvals/:approvalId/verify", (req, res) => {
  * POST /api/v1/remediation/approvals/:approvalId/rollback
  * Transitions to ROLLED_BACK.
  */
-router.post("/approvals/:approvalId/rollback", (req, res) => {
+router.post("/approvals/:approvalId/rollback", async (req, res) => {
   try {
     const allowedRollbackRoles = [
       "admin",
@@ -765,11 +769,11 @@ router.post("/approvals/:approvalId/rollback", (req, res) => {
     }
 
     const engine = getDefaultApprovalEngine();
-    const existing = engine.getApproval(req.params.approvalId);
+    const existing = await engine.getApproval(req.params.approvalId);
     verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const reason = req.body.reason || "Manual rollback requested.";
-    const record = engine.rollbackRemediation(req.params.approvalId, actor, reason);
+    const record = await engine.rollbackRemediation(req.params.approvalId, actor, reason);
 
     return res.status(200).json({
       success: true,
@@ -791,7 +795,7 @@ router.post("/approvals/:approvalId/rollback", (req, res) => {
  * POST /api/v1/remediation/approvals/:approvalId/reject
  * Transitions to FAILED.
  */
-router.post("/approvals/:approvalId/reject", (req, res) => {
+router.post("/approvals/:approvalId/reject", async (req, res) => {
   try {
     const allowedRejectRoles = [
       "admin",
@@ -812,11 +816,11 @@ router.post("/approvals/:approvalId/reject", (req, res) => {
     }
 
     const engine = getDefaultApprovalEngine();
-    const existing = engine.getApproval(req.params.approvalId);
+    const existing = await engine.getApproval(req.params.approvalId);
     verifyApprovalTenant(req, existing);
     const actor = getActorFromReq(req);
     const reason = req.body.reason || "Remediation rejected.";
-    const record = engine.failRemediation(req.params.approvalId, actor, reason);
+    const record = await engine.failRemediation(req.params.approvalId, actor, reason);
 
     return res.status(200).json({
       success: true,
@@ -838,7 +842,7 @@ router.post("/approvals/:approvalId/reject", (req, res) => {
  * DELETE /api/v1/remediation/approvals/:approvalId
  * Privileged operation: deletes an approval record.
  */
-router.delete(["/approvals/:approvalId", "/:approvalId"], (req, res) => {
+router.delete(["/approvals/:approvalId", "/:approvalId"], async (req, res) => {
   try {
     const allowedDeleteRoles = [
       "admin",
@@ -857,9 +861,9 @@ router.delete(["/approvals/:approvalId", "/:approvalId"], (req, res) => {
 
     const engine = getDefaultApprovalEngine();
     const approvalId = req.params.approvalId;
-    const existing = engine.getApproval(approvalId);
+    const existing = await engine.getApproval(approvalId);
     verifyApprovalTenant(req, existing);
-    engine.deleteApproval(approvalId);
+    await engine.deleteApproval(approvalId);
     return res.status(200).json({
       success: true,
       message: `Remediation approval '${approvalId}' deleted successfully.`,
@@ -876,3 +880,5 @@ router.delete(["/approvals/:approvalId", "/:approvalId"], (req, res) => {
 });
 
 module.exports = router;
+
+

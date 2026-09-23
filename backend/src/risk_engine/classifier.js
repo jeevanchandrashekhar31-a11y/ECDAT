@@ -275,6 +275,15 @@ function classifyFinding(input) {
     );
   }
 
+  // 6.5. Override Mosca Status if classical severity is Critical/High (prevent SAFE + Critical contradictions)
+  if (severity === Severities.CRITICAL) {
+    moscaResult.status = MoscaStatus.CRITICAL_URGENT;
+    moscaResult.explanation = "Critical classical vulnerability supersedes Mosca status urgency.";
+  } else if (severity === Severities.HIGH && moscaResult.status !== MoscaStatus.CRITICAL_URGENT) {
+    moscaResult.status = MoscaStatus.AT_RISK;
+    moscaResult.explanation = "High classical vulnerability supersedes Mosca status urgency.";
+  }
+
   // 7. Get Context-Aware Recommendation
   const protocolName =
     input.protocol || input.protocolProperties?.protocol || protoVersion;

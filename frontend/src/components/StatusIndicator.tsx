@@ -19,7 +19,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ online, versio
         )}
       </span>
       <span className={online ? 'text-emerald-300' : 'text-rose-300'}>
-        {online ? `Core Engine Live${version ? ` (v${version})` : ''}` : 'Engine Offline'}
+        {online ? `Core Engine Live${version && version !== 'undefined' ? ` (v${version})` : ''}` : 'Engine Offline'}
       </span>
     </div>
   );

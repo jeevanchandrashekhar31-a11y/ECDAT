@@ -32,7 +32,7 @@ def main():
     )
     parser.add_argument(
         "--exclude-dir",
-        default=".git,node_modules,vendor,dist,build,.venv,fixtures,artifacts,examples,coverage",
+        default=".git,node_modules,vendor,dist,build,.venv,fixtures,artifacts,examples,coverage,tests,testing,rules,scanners,risk_engine,security_tests",
         help="Comma-separated list of directories to exclude",
     )
     parser.add_argument("--max-file-size-mb", type=int, default=5, help="Maximum file size to scan in MB")
@@ -209,9 +209,10 @@ def main():
     cboms = []
 
     for finding in findings:
+        normalized_path = str(finding.file_path).replace("\\", "/")
         ccf = CodeCryptoFinding(
-            bom_ref=f"code:{finding.file_path}:{finding.line_number}:{finding.algorithm}",
-            file_path=finding.file_path,
+            bom_ref=f"code:{normalized_path}:{finding.line_number}:{finding.algorithm}",
+            file_path=normalized_path,
             language="Unknown",
             line=finding.line_number,
             algorithm=finding.algorithm,

@@ -304,14 +304,14 @@ export const Dashboard: React.FC = () => {
               onChange={(e) => setSelectedScenario(e.target.value)}
               className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-medium"
             >
-              <option value="conservative" className="bg-slate-900 text-slate-200">
-                Conservative (2030)
-              </option>
-              <option value="baseline" className="bg-slate-900 text-slate-200">
+              <option value="baseline_2030" className="bg-slate-900 text-slate-200">
                 Baseline (2033)
               </option>
-              <option value="aggressive" className="bg-slate-900 text-slate-200">
-                Aggressive (2036)
+              <option value="aggressive_2026" className="bg-slate-900 text-slate-200">
+                Aggressive (2026)
+              </option>
+              <option value="store_now_decrypt_later" className="bg-slate-900 text-slate-200">
+                SNDL Immediate
               </option>
             </select>
           </div>

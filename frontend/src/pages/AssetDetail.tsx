@@ -373,7 +373,7 @@ export const AssetDetail: React.FC = () => {
                         <td className="py-3.5 pr-3">
                           <div className="font-mono font-bold text-white flex items-center gap-2">
                             <span>{item.algorithm}</span>
-                            {item.key_size && (
+                            {item.key_size !== undefined && item.key_size !== null && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">
                                 {item.key_size} bit
                               </span>
@@ -386,10 +386,10 @@ export const AssetDetail: React.FC = () => {
                         <td className="py-3.5 pr-3">
                           <div className="flex items-center gap-1.5 text-slate-300 font-mono text-[11px]">
                             <FileCode className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate max-w-[180px]" title={item.location}>
+                            <span className="truncate max-w-[180px]" title={item.location || 'Endpoint / Session'}>
                               {item.location || 'Endpoint / Session'}
                             </span>
-                            {item.line_number && <span className="text-slate-500">:{item.line_number}</span>}
+                            {item.line_number ? <span className="text-slate-500">:{item.line_number}</span> : null}
                           </div>
                         </td>
                         <td className="py-3.5 text-right">

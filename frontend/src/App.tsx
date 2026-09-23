@@ -70,9 +70,9 @@ export const App: React.FC = () => {
     <BrowserRouter>
       <ErrorBoundary>
         <Routes>
-          <Route element={<Layout />}>
-            <Route path="/login" element={<Login />} />
-            <Route element={<ProtectedRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/assets" element={<Assets />} />
               <Route path="/assets/:assetId" element={<AssetDetail />} />
@@ -82,8 +82,8 @@ export const App: React.FC = () => {
               <Route path="/graph" element={<CryptoGraph />} />
               <Route path="/reports" element={<Reports />} />
             </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ErrorBoundary>
     </BrowserRouter>

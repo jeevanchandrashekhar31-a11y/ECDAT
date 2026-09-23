@@ -441,13 +441,13 @@ export const Findings: React.FC = () => {
                   <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                     <span className="text-slate-500 block mb-1">Location &amp; Line</span>
                     <span className="text-slate-200 font-mono break-all">
-                      {selectedFinding.location || 'N/A'}:{selectedFinding.line_number || '1'}
+                      {selectedFinding.location || 'N/A'}{selectedFinding.line_number ? `:${selectedFinding.line_number}` : ''}
                     </span>
                   </div>
                   <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                     <span className="text-slate-500 block mb-1">Key Size</span>
                     <span className="text-cyan-300 font-mono font-bold">
-                      {selectedFinding.key_size ? `${selectedFinding.key_size} bits` : 'Unbounded / Unknown'}
+                      {selectedFinding.key_size !== undefined && selectedFinding.key_size !== null ? `${selectedFinding.key_size} bits` : 'Unbounded / Unknown'}
                     </span>
                   </div>
                   <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
@@ -471,7 +471,7 @@ export const Findings: React.FC = () => {
                       <span>Recommended Migration Target</span>
                     </span>
                     <p className="text-slate-300">
-                      Migrate to <strong className="text-cyan-300 font-mono">{selectedFinding.recommendation_target}</strong> {selectedFinding.pqc_migration ? `(${selectedFinding.pqc_migration})` : ''}.
+                      Migrate to <strong className="text-cyan-300 font-mono">{selectedFinding.recommendation_target}</strong> {selectedFinding.pqc_migration && selectedFinding.pqc_migration !== selectedFinding.recommendation_target ? `(${selectedFinding.pqc_migration})` : ''}.
                     </p>
                   </div>
                 )}
@@ -497,7 +497,7 @@ export const Findings: React.FC = () => {
                       algorithmProperties: {
                         primitive: selectedFinding.category || 'public-key',
                         parameterSetIdentifier: selectedFinding.algorithm,
-                        classicalSecurityLevel: selectedFinding.key_size ? Math.floor(selectedFinding.key_size / 16) : 80,
+                        classicalSecurityLevel: selectedFinding.key_size !== undefined && selectedFinding.key_size !== null ? Math.floor(selectedFinding.key_size / 16) : 80,
                         nistQuantumSecurityLevel: selectedFinding.quantum_relevance === 'HIGH' || selectedFinding.quantum_relevance === 'CRITICAL' ? 0 : 3,
                       },
                     },
@@ -548,11 +548,13 @@ export const Findings: React.FC = () => {
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-white">NIST FIPS 203/204 Replacement Target</h4>
                   <p className="text-slate-400">
-                    Target: <strong className="text-cyan-300 font-mono">{selectedFinding.recommendation_target || 'ML-KEM-768'}</strong>
+                    Target: <strong className="text-cyan-300 font-mono">{selectedFinding.recommendation_target || 'N/A'}</strong>
                   </p>
-                  <p className="text-slate-400">
-                    Category: <span className="text-slate-200">{selectedFinding.pqc_migration || 'Post-Quantum Algorithm Migration'}</span>
-                  </p>
+                  {(!selectedFinding.pqc_migration || selectedFinding.pqc_migration !== selectedFinding.recommendation_target) && (
+                    <p className="text-slate-400">
+                      Category: <span className="text-slate-200">{selectedFinding.pqc_migration || 'N/A'}</span>
+                    </p>
+                  )}
                 </div>
               </div>
             )}

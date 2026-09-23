@@ -55,18 +55,21 @@ export const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, 
   const styles = getVariantStyles();
 
   return (
-    <div className={`glass-card p-5 border-l-4 ${styles.accent} glass-card-hover flex flex-col justify-between`}>
-      <div className="flex items-start justify-between">
+    <div className={`glass-card p-5 border-l-4 ${styles.accent} glass-card-hover flex flex-col justify-between group overflow-hidden relative`}>
+      {/* Decorative gradient orb */}
+      <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full blur-[40px] opacity-20 ${styles.iconBg.split(' ')[0]} pointer-events-none group-hover:opacity-40 transition-opacity duration-500`} />
+
+      <div className="flex items-start justify-between relative z-10">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-400">{title}</p>
-          <h3 className="text-3xl font-bold tracking-tight text-white mt-1.5">{value}</h3>
+          <p className="text-xs font-medium uppercase tracking-widest text-slate-400">{title}</p>
+          <h3 className="text-4xl font-display font-bold tracking-tight text-white mt-2 leading-none">{value}</h3>
         </div>
-        <div className={`p-3 rounded-xl border ${styles.iconBg} shrink-0`}>{icon}</div>
+        <div className={`p-3 rounded-xl border ${styles.iconBg} shrink-0 shadow-lg shadow-black/20`}>{icon}</div>
       </div>
 
       {(subtitle || badge) && (
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-800/70 text-xs">
-          {subtitle && <span className="text-slate-400">{subtitle}</span>}
+        <div className="flex items-center justify-between mt-5 pt-4 border-t border-border/50 text-xs relative z-10">
+          {subtitle && <span className="text-slate-400 font-medium">{subtitle}</span>}
           {badge && (
             <span className={`px-2 py-0.5 rounded font-semibold border text-[11px] ${styles.badgeBg}`}>{badge}</span>
           )}

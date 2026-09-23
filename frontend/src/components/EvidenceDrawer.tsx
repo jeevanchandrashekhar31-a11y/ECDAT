@@ -230,7 +230,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                   <div>
                     <span className="text-slate-500 block text-[10px] uppercase font-mono">Algorithm</span>
                     <span className="text-slate-200 font-medium">
-                      {item.algorithm} {item.key_size ? `(${item.key_size} bit)` : ''}
+                      {item.algorithm} {item.key_size !== undefined && item.key_size !== null ? `(${item.key_size} bit)` : ''}
                     </span>
                   </div>
                   <div>
@@ -244,17 +244,15 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                 </div>
 
                 {/* Exact Code Location */}
-                {item.location && (
-                  <div className="flex items-center gap-2 mb-2 text-xs font-mono text-slate-400 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-slate-800">
-                    <FileCode className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                    <span className="truncate">{item.location}</span>
-                    {item.line_number && (
-                      <span className="text-cyan-300 font-semibold shrink-0">
-                        :line {item.line_number}
-                      </span>
-                    )}
-                  </div>
-                )}
+                <div className="flex items-center gap-2 mb-2 text-xs font-mono text-slate-400 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-slate-800">
+                  <FileCode className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span className="truncate">{item.location || 'Endpoint / Session'}</span>
+                  {item.line_number ? (
+                    <span className="text-cyan-300 font-semibold shrink-0">
+                      :line {item.line_number}
+                    </span>
+                  ) : null}
+                </div>
 
                 {/* Evidence Code Snippet / AST context */}
                 {item.evidence_context && (

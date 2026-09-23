@@ -374,7 +374,7 @@ router.get("/:assetId", async (req, res, next) => {
           }
         }
 
-        if (scanId) {
+        if (scanId && scanId !== 'all' && scanId !== 'ALL') {
           assetQuery = assetQuery.andWhere("assets.scan_id", scanId);
         }
 
@@ -495,7 +495,8 @@ router.get("/:assetId", async (req, res, next) => {
     }
 
     // In-memory fallback
-    const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
+    const targetScanId = (scanId && scanId !== 'all' && scanId !== 'ALL') ? scanId : null;
+    const scan = targetScanId ? await getScanById(targetScanId, req.tenantContext) : getLatestScan(req.tenantContext);
     if (!scan) {
       return res.status(404).json({
         error: "NotFound",

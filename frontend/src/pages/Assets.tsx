@@ -522,7 +522,7 @@ export const Assets: React.FC = () => {
                             </span>
                             <div className="min-w-0">
                               <Link
-                                to={`/assets/${encodeURIComponent(asset.asset_id)}${selectedScanId ? `?scanId=${selectedScanId}` : ''}`}
+                                to={`/assets/${encodeURIComponent(asset.asset_id)}${selectedScanId && selectedScanId !== 'all' ? `?scanId=${selectedScanId}` : ''}`}
                                 className="font-mono font-bold text-slate-100 hover:text-cyan-400 truncate block transition-colors"
                                 title={asset.primary_identifier}
                               >
@@ -569,7 +569,7 @@ export const Assets: React.FC = () => {
                         {/* Inspect Details */}
                         <td className="py-3.5 px-4 text-right">
                           <Link
-                            to={`/assets/${encodeURIComponent(asset.asset_id)}${selectedScanId ? `?scanId=${selectedScanId}` : ''}`}
+                            to={`/assets/${encodeURIComponent(asset.asset_id)}${selectedScanId && selectedScanId !== 'all' ? `?scanId=${selectedScanId}` : ''}`}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-colors"
                           >
                             <span>Inspect</span>
@@ -698,7 +698,7 @@ export const Assets: React.FC = () => {
 
                       <td className="py-3.5 px-4 text-right">
                         <Link
-                          to={`/assets/${encodeURIComponent(f.asset_id)}${selectedScanId ? `?scanId=${selectedScanId}` : ''}`}
+                          to={`/assets/${encodeURIComponent(f.asset_id)}${selectedScanId && selectedScanId !== 'all' ? `?scanId=${selectedScanId}` : ''}`}
                           className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline font-semibold"
                         >
                           <span>Inspect</span>

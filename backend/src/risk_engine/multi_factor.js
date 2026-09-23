@@ -378,6 +378,15 @@ function calculateMultiFactorRisk(context = {}, customWeights = {}) {
     }
   }
 
+  // Override Mosca Status if classical severity is Critical/High (prevent SAFE + Critical contradictions)
+  if (severity === Severities.CRITICAL) {
+    moscaStatus = MoscaStatus.CRITICAL_URGENT;
+    moscaExplanation = "Critical classical vulnerability supersedes Mosca status urgency.";
+  } else if (severity === Severities.HIGH && moscaStatus !== MoscaStatus.CRITICAL_URGENT) {
+    moscaStatus = MoscaStatus.AT_RISK;
+    moscaExplanation = "High classical vulnerability supersedes Mosca status urgency.";
+  }
+
   const quantumDimension = {
     is_shor_vulnerable: isShor,
     is_grover_sensitive: isGrover,

@@ -8,29 +8,31 @@ export default {
   theme: {
     extend: {
       colors: {
-        slate: {
-          950: '#060913',
-          900: '#0f172a',
-          850: '#131d36',
-          800: '#1e293b',
-        },
-        quantum: {
-          50: '#f5f3ff',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          900: '#4c1d95',
-        },
-        cyber: {
-          blue: '#0284c7',
-          cyan: '#06b6d4',
-          emerald: '#10b981',
-          rose: '#f43f5e',
-          amber: '#f59e0b',
-        }
+        background: '#040B16',
+        surface: '#0A1428',
+        surfaceHover: '#112240',
+        primary: '#38BDF8',
+        secondary: '#818CF8',
+        accent: '#2DD4BF',
+        danger: '#F43F5E',
+        warning: '#FBBF24',
+        border: 'rgba(56, 189, 248, 0.15)',
+        glow: 'rgba(56, 189, 248, 0.4)'
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Outfit', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+      },
+      animation: {
+        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'float': 'float 6s ease-in-out infinite',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        }
       }
     },
   },

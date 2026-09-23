@@ -17,6 +17,7 @@ import {
   AlertCircle,
   UserCheck,
   Wrench,
+  Zap,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { authManager } from '../security';
@@ -101,6 +102,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           tenantId: res.user.tenantId,
           isAuthenticated: true,
         });
+        setSecurityAlert(null); // Clear any stale alerts on successful auth
       } else {
         setCurrentUser(null);
       }
@@ -151,7 +153,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     } else if (selectedScanId !== 'all') {
       setSelectedScanId('all');
     }
-  }, [location.search]);
+  }, [location.search, selectedScanId]);
 
   // Update selected scan query param when scan changes
   const handleScanChange = (newScanId: string) => {
@@ -184,23 +186,25 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex text-slate-100">
-      {/* 1. Left Sidebar Navigation */}
-      <aside className="w-64 bg-slate-900/90 border-r border-slate-800/80 flex flex-col shrink-0">
-        {/* Brand Header */}
-        <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
+    <div className="flex h-screen bg-background text-slate-100 font-sans selection:bg-primary/20 selection:text-primary">
+      {/* Sidebar Navigation */}
+      <aside className="w-64 glass-panel m-4 flex flex-col z-20 overflow-hidden shrink-0">
+        {/* Branding */}
+        <div className="p-6 border-b border-border/50">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-600 text-slate-950 shadow-lg shadow-cyan-500/20">
-              <Shield size={22} className="stroke-[2.5]" />
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary to-secondary shadow-lg shadow-primary/20 text-white flex-shrink-0">
+              <Shield size={24} className="animate-float" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold tracking-tight text-white text-base">ECDAT</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-semibold uppercase">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-display font-bold tracking-tight text-white m-0 leading-none">
+                  ECDAT
+                </h1>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-primary/20 border border-primary/30 text-primary font-bold uppercase tracking-wider">
                   PQC
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">Crypto Discovery & Mosca</p>
+              <p className="text-[10px] text-slate-400 mt-1 font-medium tracking-wide">Enterprise Crypto Discovery</p>
             </div>
           </div>
         </div>
@@ -232,10 +236,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             to="/"
             end
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
+              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
                 isActive
-                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(56,189,248,0.2)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-surfaceHover/50'
               }`
             }
           >
@@ -246,10 +250,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <NavLink
             to="/assets"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
+              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
                 isActive
-                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(56,189,248,0.2)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-surfaceHover/50'
               }`
             }
           >
@@ -260,10 +264,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <NavLink
             to="/findings"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
+              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
                 isActive
-                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(56,189,248,0.2)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-surfaceHover/50'
               }`
             }
           >
@@ -274,10 +278,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <NavLink
             to="/remediation"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
+              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
                 isActive
-                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(56,189,248,0.2)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-surfaceHover/50'
               }`
             }
           >
@@ -288,10 +292,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <NavLink
             to="/roadmap"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
+              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
                 isActive
-                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(56,189,248,0.2)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-surfaceHover/50'
               }`
             }
           >
@@ -366,8 +370,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </aside>
 
-      {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Background glow effects */}
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/10 blur-[120px] pointer-events-none" />
+
         {/* Demo Mode Persistent Banner */}
         {currentUser?.tenantId === 'demo-tenant' && (
           <div className="bg-gradient-to-r from-amber-500/15 via-cyan-500/10 to-indigo-500/15 border-b border-amber-500/40 px-6 py-2 flex items-center justify-between text-xs text-amber-200">
@@ -391,15 +399,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         )}
 
         {/* Top Header */}
-        <header className="h-16 bg-slate-900/60 backdrop-blur-md border-b border-slate-800/80 px-6 flex items-center justify-between gap-4 sticky top-0 z-30">
+        <header className="h-16 glass-panel rounded-none border-t-0 border-x-0 border-b border-border/50 flex items-center justify-between px-6 z-10 sticky top-0">
           {/* Active Scan Selector */}
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Active Scan:</span>
             <div className="relative">
+              <Zap className="w-3.5 h-3.5 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
               <select
+                className="pl-9 pr-8 py-2 bg-slate-800/50 border border-slate-700/50 text-slate-200 text-xs font-semibold rounded-lg appearance-none cursor-pointer hover:bg-slate-800/80 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                 value={selectedScanId || 'all'}
                 onChange={(e) => handleScanChange(e.target.value)}
-                className="appearance-none bg-slate-800/90 text-slate-200 border border-slate-700/80 rounded-lg pl-3 pr-8 py-1.5 text-xs font-medium focus:outline-none focus:border-cyan-500 cursor-pointer min-w-[290px]"
               >
                 <option value="all">⚡ All Scans (Consolidated Enterprise Portfolio)</option>
                 {scans.map((s) => {

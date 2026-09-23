@@ -182,7 +182,7 @@ router.get("/summary", async (req, res, next) => {
           }
 
           // 3. Top Recommendations
-          const recRows = await db("recommendations")
+          const allRecRows = await db("recommendations")
             .where("scan_id", currentScanId)
             .orderByRaw(
               `
@@ -193,8 +193,18 @@ router.get("/summary", async (req, res, next) => {
                 ELSE 4
               END ASC
             `,
-            )
-            .limit(10);
+            );
+            
+          const recRows = [];
+          const seenRecs = new Set();
+          for (const r of allRecRows) {
+            const key = `${r.current_state}|${r.recommended_target}`;
+            if (!seenRecs.has(key)) {
+              seenRecs.add(key);
+              recRows.push(r);
+              if (recRows.length >= 10) break;
+            }
+          }
 
           // 4. Mosca Analysis Table
           const raRows = await db("risk_assessments")
@@ -224,15 +234,15 @@ router.get("/summary", async (req, res, next) => {
                 zYears = scenarioZ;
                 const sum =
                   Number(r.mosca_x_years || 0) + Number(r.mosca_y_years || 0);
-                marginYears = zYears - sum;
+                marginYears = sum - zYears;
                 status =
-                  marginYears < 0
-                    ? marginYears < -3
-                      ? "CRITICAL_URGENT"
-                      : "AT_RISK"
-                    : marginYears <= 2
-                      ? "WATCH"
-                      : "SAFE";
+                  marginYears > 2.5
+                    ? "CRITICAL_URGENT"
+                    : marginYears > 0
+                      ? "AT_RISK"
+                      : marginYears >= -2.0
+                        ? "WATCH"
+                        : "SAFE";
               }
             }
 
@@ -319,7 +329,11 @@ router.get("/summary", async (req, res, next) => {
           }));
 
           // 8. Percentage of Asset Inventory with Unknown / Unclassified Posture
-          const totalAssets = Number(scanRow.total_assets) || 0;
+          const liveAssetsCountRow = await db("assets").where("scan_id", currentScanId).count("id as count").first();
+          const totalAssets = parseInt(liveAssetsCountRow?.count || 0, 10);
+          
+          const liveFindingsCountRow = await db("findings").where("scan_id", currentScanId).count("id as count").first();
+          const totalFindings = parseInt(liveFindingsCountRow?.count || 0, 10);
           const unclassifiedRows = await db("assets")
             .where("scan_id", currentScanId)
             .andWhere(function () {
@@ -380,7 +394,7 @@ router.get("/summary", async (req, res, next) => {
             status: scanRow.status,
             metrics: {
               total_assets: totalAssets,
-              total_findings: scanRow.total_findings,
+              total_findings: totalFindings,
               critical_findings: scanRow.critical_count,
               assets_at_quantum_risk:
                 moscaCounts.AT_RISK + moscaCounts.CRITICAL_URGENT,
