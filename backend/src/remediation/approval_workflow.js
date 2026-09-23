@@ -233,7 +233,7 @@ class ApprovalWorkflowEngine {
 
   async rollbackRemediation(approvalId, actor = { username: "secops", role: "admin" }, reason = "Rollback triggered") {
     const record = await this.getApproval(approvalId);
-    if (![ApprovalState.APPLIED, ApprovalState.APPROVED, ApprovalState.REVIEWED].includes(record.state)) throw new ApprovalWorkflowError(Cannot rollback remediation in state ''.);
+    if (![ApprovalState.APPLIED, ApprovalState.APPROVED, ApprovalState.REVIEWED].includes(record.state)) throw new ApprovalWorkflowError(`Cannot rollback remediation in state ${record.state}.`);
 
     const nowTs = new Date().toISOString();
     const newHash = this._computeTransitionHash(record.metadata.current_state_hash, {
