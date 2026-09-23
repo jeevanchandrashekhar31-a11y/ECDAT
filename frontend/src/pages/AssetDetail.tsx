@@ -30,6 +30,8 @@ export const AssetDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showMoscaDetails, setShowMoscaDetails] = useState(false);
+  const [showPolicyDetails, setShowPolicyDetails] = useState(false);
 
   // Sub-inventory categorization tab
   const [inventoryTab, setInventoryTab] = useState<'all' | 'certs' | 'protocols' | 'code'>('all');
@@ -258,7 +260,7 @@ export const AssetDetail: React.FC = () => {
           </div>
 
           {/* Quick Telemetry Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 border-t border-slate-800/60">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-800/60">
             <div>
               <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Data Sensitivity</p>
               <p className="text-sm font-semibold text-slate-200 capitalize mt-0.5">
@@ -277,28 +279,43 @@ export const AssetDetail: React.FC = () => {
                 {asset.evidence?.length || 0} Component{asset.evidence?.length === 1 ? '' : 's'}
               </p>
             </div>
-            <div>
-              <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Scan Reference</p>
-              <p className="text-xs font-mono text-slate-400 truncate mt-1">
-                {asset.scan_id ? asset.scan_id.slice(0, 16) : 'Active Scan'}
-              </p>
-            </div>
           </div>
         </div>
       </div>
 
       {/* 3. Interactive Mosca Visualization Timeline & What-If Modeler */}
       {asset.mosca && (
-        <MoscaTimeline
-          initialX={asset.mosca.shelf_life_X}
-          initialY={asset.mosca.migration_time_Y}
-          initialZ={asset.mosca.quantum_threat_Z}
-          initialSensitivity={asset.data_sensitivity}
-          initialScenario="baseline"
-          initialStatus={asset.mosca.status}
-          assetIdentifier={asset.primary_identifier}
-          policyProfile={asset.policy_profile}
-        />
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 shadow-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Mosca Theorem Status</span>
+                <MoscaStatusBadge status={asset.mosca.status} />
+              </div>
+            </div>
+            <button
+              onClick={() => setShowMoscaDetails(!showMoscaDetails)}
+              className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+            >
+              {showMoscaDetails ? 'Hide Mosca Calculus Details' : 'View Detailed Mosca Calculus'}
+            </button>
+          </div>
+          
+          {showMoscaDetails && (
+            <div className="mt-6 pt-6 border-t border-slate-800">
+              <MoscaTimeline
+                initialX={asset.mosca.shelf_life_X}
+                initialY={asset.mosca.migration_time_Y}
+                initialZ={asset.mosca.quantum_threat_Z}
+                initialSensitivity={asset.data_sensitivity}
+                initialScenario="baseline"
+                initialStatus={asset.mosca.status}
+                assetIdentifier={asset.primary_identifier}
+                policyProfile={asset.policy_profile}
+              />
+            </div>
+          )}
+        </div>
       )}
 
       {/* 4. Two-Column Layout: Evidence / Findings vs Remediation Roadmap */}
@@ -436,36 +453,50 @@ export const AssetDetail: React.FC = () => {
                     <p className="text-xs text-slate-300 leading-relaxed font-sans">{risk.explanation}</p>
 
                     <div className="space-y-2 pt-2 border-t border-slate-900">
-                      <div className="flex items-start gap-2 text-xs">
-                        <span className="text-slate-500 font-mono shrink-0">Quantum Relevance:</span>
-                        <span className="text-amber-300 font-sans">{risk.quantum_relevance}</span>
+                      <div className="flex items-start justify-between text-xs">
+                        <div className="flex gap-2">
+                          <span className="text-slate-500 font-mono shrink-0">Quantum Relevance:</span>
+                          <span className="text-amber-300 font-sans">{risk.quantum_relevance}</span>
+                        </div>
+                        {((risk.applied_rules && risk.applied_rules.length > 0) || (risk.policy_violations && risk.policy_violations.length > 0)) && (
+                          <button
+                            onClick={() => setShowPolicyDetails(!showPolicyDetails)}
+                            className="text-[11px] text-cyan-400 hover:text-cyan-300 font-medium"
+                          >
+                            {showPolicyDetails ? 'Hide Policy Matrix' : 'View Policy Matrix'}
+                          </button>
+                        )}
                       </div>
 
-                      {risk.applied_rules && risk.applied_rules.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          <span className="text-xs text-slate-500 mr-1 font-mono">Standards:</span>
-                          {risk.applied_rules.map((rule, rIdx) => (
-                            <span
-                              key={rIdx}
-                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800"
-                            >
-                              {rule}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      {showPolicyDetails && (
+                        <div className="pt-2 space-y-2">
+                          {risk.applied_rules && risk.applied_rules.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                              <span className="text-xs text-slate-500 mr-1 font-mono">Standards:</span>
+                              {risk.applied_rules.map((rule, rIdx) => (
+                                <span
+                                  key={rIdx}
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800"
+                                >
+                                  {rule}
+                                </span>
+                              ))}
+                            </div>
+                          )}
 
-                      {risk.policy_violations && risk.policy_violations.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          <span className="text-xs text-rose-400 mr-1 font-mono">Violations:</span>
-                          {risk.policy_violations.map((violation, vIdx) => (
-                            <span
-                              key={vIdx}
-                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-900/60"
-                            >
-                              {violation}
-                            </span>
-                          ))}
+                          {risk.policy_violations && risk.policy_violations.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                              <span className="text-xs text-rose-400 mr-1 font-mono">Violations:</span>
+                              {risk.policy_violations.map((violation, vIdx) => (
+                                <span
+                                  key={vIdx}
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-900/60"
+                                >
+                                  {violation}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -518,10 +549,21 @@ export const AssetDetail: React.FC = () => {
                         </div>
                       )}
 
+                      {rec.hybrid_transition_recommended && (
+                        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+                          <p className="text-[11px] font-semibold text-fuchsia-400 uppercase tracking-wider">
+                            Phase 2: Hybrid Transition
+                          </p>
+                          <p className="text-xs text-slate-200">
+                            Deploy hybrid cryptographic schemes combining classical (e.g. ECDH/ECDSA) and PQC (e.g. ML-KEM/ML-DSA) to maintain compliance while introducing quantum resistance.
+                          </p>
+                        </div>
+                      )}
+
                       {rec.pqc_migration && (
                         <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
                           <p className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider">
-                            Phase 2: Post-Quantum Migration
+                            {rec.hybrid_transition_recommended ? 'Phase 3: Native PQC Enforcement' : 'Phase 2: Post-Quantum Migration'}
                           </p>
                           <p className="text-xs text-slate-200">{rec.pqc_migration}</p>
                         </div>

@@ -42,9 +42,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     role?: string;
     tenantId?: string;
     isDemo?: boolean;
+    isEvaluation?: boolean;
+    displayName?: string;
   } | null>(null);
   const [securityAlert, setSecurityAlert] = useState<{ status: number; message: string } | null>(null);
-  const [currentRole, setCurrentRole] = useState<string>(authManager.getSession().role || 'Viewer');
+
+  const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -78,26 +81,32 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const checkUserSession = async () => {
-    if (!authManager.getSession().isAuthenticated) {
+    // Attempt session hydration if credentials exist
+    const hasCredentials = !!localStorage.getItem('ecdat_api_key') || !!sessionStorage.getItem('ecdat_auth_token');
+    if (!hasCredentials && !authManager.getSession().isAuthenticated) {
       setCurrentUser(null);
       return;
     }
+    
     try {
       const res = await api.getCurrentUser();
       if (res && res.user) {
         const primaryRole = (res.user.roles && res.user.roles[0]) || 'Viewer';
         const isDemo = res.user.tenantId === 'demo-tenant' || res.user.isDemo;
+        const u = res.user as any;
+        const activeUserId = u.userId || u.sub || u.id || 'unknown-user';
         setCurrentUser({
-          userId: res.user.userId,
-          username: res.user.username || res.user.userId,
+          userId: activeUserId,
+          username: res.user.username || activeUserId,
           roles: res.user.roles,
           role: primaryRole,
           tenantId: res.user.tenantId,
           isDemo,
         });
-        setCurrentRole(primaryRole);
+
         authManager.setSession({
-          userId: res.user.userId,
+          userId: activeUserId,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           role: primaryRole as any,
           tenantId: res.user.tenantId,
           isAuthenticated: true,
@@ -115,10 +124,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     // removed automatic clear of securityAlert on /login to preserve 401 messages
     checkHealthAndScans();
     checkUserSession();
-    setCurrentRole(authManager.getSession().role || 'Viewer');
 
-    const unsub401 = authManager.onUnauthorized((session, err) => {
-      setCurrentRole(session.role || 'Viewer');
+
+    const unsub401 = authManager.onUnauthorized((_session, err) => {
+
       setCurrentUser(null);
       if (location.pathname !== '/login') {
         setSecurityAlert({
@@ -129,12 +138,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       }
     });
 
-    const unsub403 = authManager.onForbidden((session, err) => {
+    const unsub403 = authManager.onForbidden((_session, err) => {
       setSecurityAlert({
         status: 403,
         message: err?.message || 'Access denied (403 Forbidden). Insufficient permissions for requested operation.',
       });
-      setCurrentRole(session.role || 'Viewer');
+
     });
 
     return () => {
@@ -186,9 +195,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen bg-background text-slate-100 font-sans selection:bg-primary/20 selection:text-primary">
+    <div className="flex h-screen print:h-auto bg-background text-slate-100 font-sans selection:bg-primary/20 selection:text-primary">
       {/* Sidebar Navigation */}
-      <aside className="w-64 glass-panel m-4 flex flex-col z-20 overflow-hidden shrink-0">
+      <aside className="w-64 glass-panel m-4 flex flex-col z-20 overflow-hidden shrink-0 print:hidden">
         {/* Branding */}
         <div className="p-6 border-b border-border/50">
           <div className="flex items-center gap-3">
@@ -211,7 +220,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* Navigation Items */}
         <nav className="p-4 space-y-1.5 flex-1 text-xs">
-          {/* Prominent Demo Entry Badge/Button */}
+          {/* Prominent Evaluation Entry Badge/Button */}
           {!currentUser ? (
             <div className="mb-3 p-2 rounded-xl bg-gradient-to-r from-amber-500/15 via-cyan-500/15 to-indigo-500/15 border border-amber-500/30 text-center">
               <NavLink
@@ -219,16 +228,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-cyan-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 hover:brightness-110 transition-all"
               >
                 <ShieldCheck size={15} />
-                <span>Enter Demo Mode (1-Click)</span>
+                <span>Enter Evaluation Environment</span>
               </NavLink>
             </div>
-          ) : currentUser.isDemo ? (
+          ) : currentUser.isEvaluation ? (
             <div className="mb-3 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between text-2xs text-emerald-300 font-semibold">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Judge Demo Active
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                Evaluation Active
               </span>
-              <span className="font-mono text-emerald-400/80">demo-tenant</span>
             </div>
           ) : null}
 
@@ -342,7 +350,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             }
           >
             <Key size={17} />
-            <span>{currentUser?.isDemo ? 'Demo Mode & Auth' : (currentUser ? 'User Session & MFA' : 'Enter Demo / Sign In')}</span>
+            <span>{currentUser?.isEvaluation ? 'Evaluation Options' : (currentUser ? 'Account Options' : 'Enter Evaluation / Sign In')}</span>
           </NavLink>
 
           <div className="pt-4 mt-4 border-t border-slate-800/80">
@@ -351,7 +359,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold transition-all shadow-sm"
             >
               <Upload size={16} />
-              <span>Ingest New CBOM</span>
+              <span>New Scan / Upload</span>
             </button>
           </div>
         </nav>
@@ -376,25 +384,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/10 blur-[120px] pointer-events-none" />
 
-        {/* Demo Mode Persistent Banner */}
-        {currentUser?.tenantId === 'demo-tenant' && (
-          <div className="bg-gradient-to-r from-amber-500/15 via-cyan-500/10 to-indigo-500/15 border-b border-amber-500/40 px-6 py-2 flex items-center justify-between text-xs text-amber-200">
-            <div className="flex items-center gap-2.5">
-              <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-2xs uppercase border border-amber-500/40">
-                Demo Environment — synthetic dataset
-              </span>
-              <span className="text-slate-300 text-xs hidden sm:inline">
-                Tenant: <code className="text-cyan-300 font-mono">demo-tenant</code> (Constrained Session — No Cross-Tenant Access)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <NavLink
-                to="/remediation"
-                className="px-2.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-semibold text-2xs transition-colors border border-amber-500/30"
-              >
-                Four-Eyes Remediation
-              </NavLink>
-            </div>
+        {/* Evaluation Environment Persistent Banner */}
+        {currentUser?.isEvaluation && (
+          <div className="bg-gradient-to-r from-indigo-950 via-cyan-950/60 to-indigo-950 border-b border-indigo-500/40 px-6 py-2 flex items-center justify-center text-xs text-indigo-200">
+            <span className="font-semibold">
+              Evaluation Environment · Synthetic data · No production systems connected
+            </span>
           </div>
         )}
 
@@ -439,48 +434,104 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* Right Header Actions */}
           <div className="flex items-center gap-3">
-            {/* RBAC Role Indicator */}
-            <div
-              className="px-2.5 py-1 rounded-lg text-2xs font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/50 flex items-center gap-1.5"
-              title="Active client-side RBAC authorization tier"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              <span>Role: {currentRole}</span>
-            </div>
 
-            {/* User Session / Login Button */}
-            <NavLink
-              to="/login"
-              className={({ isActive }) =>
-                `inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                  isActive
-                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-                    : currentUser?.isDemo
-                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
-                    : currentUser
-                    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25'
-                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 font-bold shadow-sm'
-                }`
-              }
-              title="Enter Demo Mode or Manage Session"
-            >
-              {currentUser?.isDemo ? (
-                <>
+            {/* Persona Switcher / User Session */}
+            {currentUser?.isEvaluation ? (
+              <div className="relative">
+                <button
+                  onClick={() => setPersonaDropdownOpen(!personaDropdownOpen)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25 cursor-pointer"
+                >
                   <ShieldCheck size={13} className="text-emerald-400" />
-                  <span>Demo Mode Active</span>
-                </>
-              ) : currentUser ? (
-                <>
-                  <UserCheck size={13} />
-                  <span>{currentUser.username}</span>
-                </>
-              ) : (
-                <>
-                  <ShieldCheck size={13} className="text-amber-400" />
-                  <span>Enter Demo Mode</span>
-                </>
-              )}
-            </NavLink>
+                  <span>{currentUser.displayName} ▾</span>
+                </button>
+                {/* Dropdown */}
+                {personaDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl z-50 py-1">
+                  <div className="px-3 py-2 border-b border-slate-800 text-2xs uppercase tracking-wider text-slate-500 font-bold">
+                    Evaluation Environment ▾
+                  </div>
+                  <button
+                    onClick={async () => {
+                      await api.switchEvaluationPersona('analyst');
+                      window.location.reload();
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-cyan-400"
+                  >
+                    Security Analyst
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await api.switchEvaluationPersona('approver');
+                      window.location.reload();
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-cyan-400"
+                  >
+                    Security Approver
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await api.switchEvaluationPersona('executive');
+                      window.location.reload();
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-cyan-400"
+                  >
+                    Executive Viewer
+                  </button>
+                  <div className="border-t border-slate-800 my-1"></div>
+                  <div className="px-4 py-2 text-xs text-indigo-400 hover:bg-slate-800 font-semibold cursor-pointer">
+                    Evaluation Guide
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("Reset Evaluation Environment?\n\nThis will restore the evaluation environment to its clean starting state.\n\nProduction data is not affected.")) {
+                        await api.resetEvaluationTenant();
+                        await api.seedEvaluationTenant();
+                        window.location.reload();
+                      }
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-amber-400 hover:bg-slate-800 font-semibold"
+                  >
+                    Reset Evaluation
+                  </button>
+                  <button
+                    onClick={async () => {
+                      authManager.clearSession();
+                      window.location.href = '/login';
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:bg-slate-800 font-semibold"
+                  >
+                    Exit Evaluation
+                  </button>
+                </div>
+                )}
+              </div>
+            ) : (
+              <NavLink
+                to="/login"
+                className={({ isActive }) =>
+                  `inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                    isActive
+                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                      : currentUser
+                      ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25'
+                      : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 hover:bg-indigo-500/30 font-bold shadow-sm'
+                  }`
+                }
+              >
+                {currentUser ? (
+                  <>
+                    <UserCheck size={13} />
+                    <span>{currentUser.username}</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={13} className="text-indigo-400" />
+                    <span>Enter Evaluation</span>
+                  </>
+                )}
+              </NavLink>
+            )}
 
             {/* Core Status */}
             <StatusIndicator online={engineOnline} version={engineVersion} />
@@ -518,7 +569,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         )}
 
         {/* Routed Page Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-6 overflow-y-auto print:overflow-visible print:h-auto">
           {children || <Outlet context={{ selectedScanId, scans, onUploadSuccess: handleUploadSuccess }} />}
         </main>
       </div>

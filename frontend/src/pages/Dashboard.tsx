@@ -13,10 +13,10 @@ import {
   FileWarning,
   Wrench,
   Users,
-  History,
+  Play,
   Sliders,
   RefreshCw,
-  Play,
+
   Loader2,
   AlertTriangle,
   CheckCircle2,
@@ -41,7 +41,6 @@ import { RuntimeObservationsView } from '../components/dashboard/RuntimeObservat
 import { PolicyViolationsView } from '../components/dashboard/PolicyViolationsView';
 import { RemediationView } from '../components/dashboard/RemediationView';
 import { OwnershipView } from '../components/dashboard/OwnershipView';
-import { AuditTrailView } from '../components/dashboard/AuditTrailView';
 
 export type DashboardTab =
   | 'executive_overview'
@@ -55,8 +54,7 @@ export type DashboardTab =
   | 'runtime_observations'
   | 'policy_violations'
   | 'remediation'
-  | 'ownership'
-  | 'audit_trail';
+  | 'ownership';
 
 interface TabConfig {
   id: DashboardTab;
@@ -132,7 +130,7 @@ export const Dashboard: React.FC = () => {
       isOpen: true,
       title,
       subtitle,
-      evidenceIds: evidenceIds.length > 0 ? evidenceIds : Object.keys(viewsData?.evidence_lookup || {}).slice(0, 3),
+      evidenceIds: evidenceIds,
     });
   };
 
@@ -242,12 +240,6 @@ export const Dashboard: React.FC = () => {
       icon: Users,
       badge: viewsData?.views.ownership.total_teams,
     },
-    {
-      id: 'audit_trail',
-      label: 'Audit Trail',
-      icon: History,
-      badge: viewsData?.views.audit_trail.total_events,
-    },
   ];
 
   return (
@@ -255,17 +247,11 @@ export const Dashboard: React.FC = () => {
       {/* Top Header & Governance Controls */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 glass-card p-5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            <span className="text-[11px] font-mono uppercase tracking-widest text-cyan-400 font-semibold">
-              Enterprise Cryptographic Intelligence
-            </span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">
-            Cryptographic Security & PQC Executive Center
+            Cryptographic Posture Dashboard
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Continuous CBOM discovery, Mosca quantum deficit horizons, and cryptographic compliance with zero unevidenced metrics.
+            Enterprise cryptographic inventory and quantum risk assessment.
           </p>
         </div>
 
@@ -556,11 +542,7 @@ export const Dashboard: React.FC = () => {
             />
           )}
 
-          {activeTab === 'audit_trail' && (
-            <AuditTrailView
-              data={viewsData.views.audit_trail}
-            />
-          )}
+
         </div>
       ) : null}
 

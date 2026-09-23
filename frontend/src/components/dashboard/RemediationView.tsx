@@ -67,14 +67,14 @@ export const RemediationView: React.FC<Props> = ({
             return (
               <div
                 key={win.id}
-                className="glass-card p-5 flex flex-col justify-between hover:border-emerald-700/60 transition-all group"
+                className="glass-card p-5 flex flex-col justify-between hover:border-emerald-700/60 transition-all group min-w-0"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                  <div className="flex items-start justify-between gap-2 mb-2 min-w-0">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 shrink-0">
                       QUICK WIN
                     </span>
-                    <span className="text-[10px] font-mono text-slate-500">{win.finding_id}</span>
+                    <span className="text-[10px] font-mono text-slate-500 truncate min-w-0 text-right" title={win.finding_id}>{win.finding_id}</span>
                   </div>
 
                   <h5 className="font-bold text-slate-100 text-sm mb-1">{win.algorithm} Upgrade</h5>
@@ -127,8 +127,8 @@ export const RemediationView: React.FC<Props> = ({
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-slate-500">Asset: {win.asset_id}</span>
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 min-w-0">
+                  <span className="text-[10px] font-mono text-slate-500 truncate min-w-0 block" title={`Asset: ${win.asset_id}`}>Asset: {win.asset_id}</span>
                   <button
                     onClick={() =>
                       onOpenEvidence(
@@ -137,7 +137,7 @@ export const RemediationView: React.FC<Props> = ({
                         relatedEvidenceIds
                       )
                     }
-                    className="text-xs text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1"
+                    className="text-xs text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1 shrink-0"
                   >
                     <span>Inspect Evidence</span>
                     <ExternalLink className="w-3 h-3" />
@@ -165,14 +165,14 @@ export const RemediationView: React.FC<Props> = ({
             return (
               <div
                 key={mig.id}
-                className="glass-card p-5 flex flex-col justify-between hover:border-violet-700/60 transition-all group"
+                className="glass-card p-5 flex flex-col justify-between hover:border-violet-700/60 transition-all group min-w-0"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-violet-950 text-violet-300 border border-violet-800">
+                  <div className="flex items-start justify-between gap-2 mb-2 min-w-0">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-violet-950 text-violet-300 border border-violet-800 shrink-0">
                       PQC ROADMAP
                     </span>
-                    <span className="text-[10px] font-mono text-slate-500">{mig.finding_id}</span>
+                    <span className="text-[10px] font-mono text-slate-500 truncate min-w-0 text-right" title={mig.finding_id}>{mig.finding_id}</span>
                   </div>
 
                   <h5 className="font-bold text-slate-100 text-sm mb-1">{mig.algorithm} Transition</h5>
@@ -190,8 +190,8 @@ export const RemediationView: React.FC<Props> = ({
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-slate-500">Asset: {mig.asset_id}</span>
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 min-w-0">
+                  <span className="text-[10px] font-mono text-slate-500 truncate min-w-0 block" title={`Asset: ${mig.asset_id}`}>Asset: {mig.asset_id}</span>
                   <button
                     onClick={() =>
                       onOpenEvidence(
@@ -200,7 +200,7 @@ export const RemediationView: React.FC<Props> = ({
                         relatedEvidenceIds
                       )
                     }
-                    className="text-xs text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1"
+                    className="text-xs text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1 shrink-0"
                   >
                     <span>Inspect Evidence</span>
                     <ExternalLink className="w-3 h-3" />

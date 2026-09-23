@@ -77,6 +77,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     // User-facing normalized message for 401 in UI context
     if (response.status === 401) {
       errorMsg = 'Session expired or authentication required. Please sign in.';
+    } else if (response.status >= 500) {
+      // Sanitize backend 5xx errors to prevent leaking raw stack traces to users
+      errorMsg = 'An unexpected system error occurred while processing your request. Please try again or contact the platform team.';
+    } else if (/at .*:\d+:\d+/.test(errorMsg) || /Error:/.test(errorMsg)) {
+      // Catch any stray stack traces leaking in 4xx responses
+      errorMsg = 'A request validation error occurred. Please verify your input and try again.';
     }
 
     // Intercept 401 Unauthorized / 403 Forbidden
@@ -363,7 +369,8 @@ export const api = {
     cbom: unknown;
   }> => {
     const session = authManager.getSession();
-    const authorized_by = options.authorized_by?.trim() || session.userId || 'demo-developer';
+    const authorized_by = options.authorized_by?.trim() || session.userId || 'Evaluation Executive';
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { authorized_by: _ignored, ...restOptions } = options;
     return request('/scan/network', {
       method: 'POST',
@@ -601,22 +608,23 @@ export const api = {
       roles?: string[];
       tenantId?: string;
       isDemo?: boolean;
+      isEvaluation?: boolean;
     };
   }> => {
     return request('/api/v1/auth/me');
   },
 
   // --------------------------------------------------------------------------
-  // Demo Mode 1-Click Authentication & Governance
+  // Evaluation Environment One-Click Authentication & Governance
   // --------------------------------------------------------------------------
-  loginDemo: async (
-    persona: string = 'developer',
+  enterEvaluation: async (
+    persona: string = 'analyst',
     seed: boolean = true
   ): Promise<{
     accessToken: string;
     refreshToken: string;
     csrfToken?: string;
-    demoMode: boolean;
+    evaluationMode: boolean;
     user: {
       userId: string;
       username: string;
@@ -625,24 +633,34 @@ export const api = {
       roles: string[];
       tenantId: string;
       isPlatformAdmin: boolean;
-      isDemo: boolean;
+      isEvaluation: boolean;
     };
   }> => {
-    return request('/api/v1/auth/demo/login', {
+    return request('/api/v1/auth/evaluation/enter', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ persona, seed }),
     });
   },
 
-  resetDemoTenant: async (): Promise<{ success: boolean; message: string }> => {
-    return request('/api/v1/auth/demo/reset', {
+  switchEvaluationPersona: async (
+    persona: string
+  ): Promise<unknown> => {
+    return request('/api/v1/auth/evaluation/persona', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ persona, seed: false }),
+    });
+  },
+
+  resetEvaluationTenant: async (): Promise<{ success: boolean; message: string }> => {
+    return request('/api/v1/auth/evaluation/reset', {
       method: 'POST',
     });
   },
 
-  seedDemoTenant: async (): Promise<{ success: boolean; scan_id: string; message: string }> => {
-    return request('/api/v1/auth/demo/seed', {
+  seedEvaluationTenant: async (): Promise<{ success: boolean; scan_id: string; message: string }> => {
+    return request('/api/v1/auth/evaluation/seed', {
       method: 'POST',
     });
   },

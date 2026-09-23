@@ -33,7 +33,8 @@ export const ProtectedRoute: React.FC = () => {
           const primaryRole = (res.user?.roles && res.user.roles[0]) || res.role || 'Viewer';
           authManager.setSession({
             userId: res.user?.userId,
-            role: primaryRole as any,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            role: primaryRole as unknown as any,
             tenantId: res.user?.tenantId,
             isAuthenticated: true,
           });

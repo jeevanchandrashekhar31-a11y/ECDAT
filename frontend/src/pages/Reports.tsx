@@ -28,6 +28,7 @@ export const Reports: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [previewHeight, setPreviewHeight] = useState<'standard' | 'tall' | 'compact'>('standard');
   const [iframeKey, setIframeKey] = useState(0);
+  const [showAdvancedExports, setShowAdvancedExports] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -138,119 +139,136 @@ export const Reports: React.FC = () => {
       </div>
 
       {/* Export Format Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Card 1: Risk-Annotated CycloneDX 1.6 */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-colors">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="p-2 bg-cyan-950/60 text-cyan-400 rounded-lg border border-cyan-800/40">
-                <Shield className="w-5 h-5" />
-              </div>
-              <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/50">
-                CycloneDX 1.6
-              </span>
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-white">Risk-Annotated CBOM</h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Full cryptographic Bill of Materials enriched with classical risk ratings, Mosca parameters, and NIST
-                PQC migration targets.
-              </p>
-            </div>
-          </div>
-          <div className="pt-4 mt-2 border-t border-slate-800/80 flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-mono">Format: JSON</span>
-            <button
-              onClick={() => handleDownload('annotated')}
-              disabled={downloading === 'annotated'}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs rounded-lg transition-colors disabled:opacity-50"
-            >
-              {downloading === 'annotated' ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : downloadSuccess === 'annotated' ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              <span>Export CBOM</span>
-            </button>
-          </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-white">Available Exports</h2>
+          <button
+            onClick={() => setShowAdvancedExports(!showAdvancedExports)}
+            className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+          >
+            {showAdvancedExports ? 'Hide Advanced Data Exports' : 'Show Advanced Data Exports'}
+          </button>
         </div>
-
-        {/* Card 2: Raw Immutable Source CBOM */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-colors">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="p-2 bg-purple-950/60 text-purple-400 rounded-lg border border-purple-800/40">
-                <Code2 className="w-5 h-5" />
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Card 1: Executive Summary JSON (Always Visible) */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-colors md:col-span-1">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="p-2 bg-amber-950/60 text-amber-400 rounded-lg border border-amber-800/40">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800/50">
+                  Telemetry
+                </span>
               </div>
-              <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800/50">
-                Evidence
-              </span>
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-white">Raw Ingested CBOM</h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Unmodified scanner evidence captured during initial static, network, or certificate ingestion prior to
-                risk engine enrichment.
-              </p>
-            </div>
-          </div>
-          <div className="pt-4 mt-2 border-t border-slate-800/80 flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-mono">Format: JSON</span>
-            <button
-              onClick={() => handleDownload('raw')}
-              disabled={downloading === 'raw'}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-lg transition-colors border border-slate-700 disabled:opacity-50"
-            >
-              {downloading === 'raw' ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : downloadSuccess === 'raw' ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              <span>Export Raw</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Card 3: Executive Summary JSON */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-colors">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="p-2 bg-amber-950/60 text-amber-400 rounded-lg border border-amber-800/40">
-                <Layers className="w-5 h-5" />
+              <div>
+                <h3 className="text-base font-semibold text-white">Executive Summary JSON</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  High-level metrics, Mosca Theorem threat timeline tables, compliance gate evaluation, and priority
+                  remediation queues.
+                </p>
               </div>
-              <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800/50">
-                Telemetry
-              </span>
             </div>
-            <div>
-              <h3 className="text-base font-semibold text-white">Executive Summary JSON</h3>
-              <p className="text-xs text-slate-400 mt-1">
-                High-level metrics, Mosca Theorem threat timeline tables, compliance gate evaluation, and priority
-                remediation queues.
-              </p>
+            <div className="pt-4 mt-2 border-t border-slate-800/80 flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-mono">Format: JSON</span>
+              <button
+                onClick={() => handleDownload('summary')}
+                disabled={downloading === 'summary'}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-lg transition-colors border border-slate-700 disabled:opacity-50"
+              >
+                {downloading === 'summary' ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : downloadSuccess === 'summary' ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                <span>Export Summary</span>
+              </button>
             </div>
           </div>
-          <div className="pt-4 mt-2 border-t border-slate-800/80 flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-mono">Format: JSON</span>
-            <button
-              onClick={() => handleDownload('summary')}
-              disabled={downloading === 'summary'}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-lg transition-colors border border-slate-700 disabled:opacity-50"
-            >
-              {downloading === 'summary' ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : downloadSuccess === 'summary' ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              <span>Export Summary</span>
-            </button>
-          </div>
+
+          {/* Advanced Exports */}
+          {showAdvancedExports && (
+            <>
+              {/* Card 2: Risk-Annotated CycloneDX 1.6 */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-colors">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2 bg-cyan-950/60 text-cyan-400 rounded-lg border border-cyan-800/40">
+                      <Shield className="w-5 h-5" />
+                    </div>
+                    <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/50">
+                      CycloneDX 1.6
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-white">Risk-Annotated CBOM</h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Full cryptographic Bill of Materials enriched with classical risk ratings, Mosca parameters, and NIST
+                      PQC migration targets.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-4 mt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <span className="text-xs text-slate-500 font-mono">Format: JSON</span>
+                  <button
+                    onClick={() => handleDownload('annotated')}
+                    disabled={downloading === 'annotated'}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {downloading === 'annotated' ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : downloadSuccess === 'annotated' ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    <span>Export CBOM</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 3: Raw Immutable Source CBOM */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-colors">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2 bg-purple-950/60 text-purple-400 rounded-lg border border-purple-800/40">
+                      <Code2 className="w-5 h-5" />
+                    </div>
+                    <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800/50">
+                      Evidence
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-white">Raw Ingested CBOM</h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Unmodified scanner evidence captured during initial static, network, or certificate ingestion prior to
+                      risk engine enrichment.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-4 mt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <span className="text-xs text-slate-500 font-mono">Format: JSON</span>
+                  <button
+                    onClick={() => handleDownload('raw')}
+                    disabled={downloading === 'raw'}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-lg transition-colors border border-slate-700 disabled:opacity-50"
+                  >
+                    {downloading === 'raw' ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : downloadSuccess === 'raw' ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    <span>Export Raw</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

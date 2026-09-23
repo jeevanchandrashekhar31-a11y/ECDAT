@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { DashboardSummary, TopRiskyAsset } from '../types';
+import { pdf } from '@react-pdf/renderer';
+import { RoadmapPDFDocument } from '../components/RoadmapPDFDocument';
 
 // Suggested 5-step sequence definition adhering to specification
 interface SequenceStep {
@@ -101,6 +103,11 @@ export const Roadmap: React.FC = () => {
   const [activeStepFilter, setActiveStepFilter] = useState<number | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'critical' | 'high' | 'medium' | 'low'>('all');
   const [downloadingJson, setDownloadingJson] = useState(false);
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState<Record<number, boolean>>({});
+
+  const toggleTechnicalDetails = (id: number) => {
+    setShowTechnicalDetails((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -138,11 +145,7 @@ export const Roadmap: React.FC = () => {
 
       let stepId = 1;
       if (
-        current.includes('md5') ||
-        current.includes('sha-1') ||
-        current.includes('des') ||
-        current.includes('rc4') ||
-        current.includes('hardcoded') ||
+        /\b(md5|sha-?1|des|rc4|hardcoded)\b/i.test(current) ||
         current.includes('1024') ||
         classical.includes('immediately') ||
         classical.includes('revoke')
@@ -151,15 +154,11 @@ export const Roadmap: React.FC = () => {
       } else if (
         current.includes('tls 1.0') ||
         current.includes('tls 1.1') ||
-        current.includes('ssh') ||
-        current.includes('transport')
+        /\b(ssh|transport)\b/i.test(current)
       ) {
         stepId = 2;
       } else if (
-        current.includes('stored') ||
-        current.includes('data') ||
-        current.includes('aes-128') ||
-        current.includes('shelf')
+        /\b(stored|data|aes-128|shelf)\b/i.test(current)
       ) {
         stepId = 3;
       } else if (target.includes('hybrid') || target.includes('ml-kem') || rec.hybrid_transition_recommended) {
@@ -230,9 +229,28 @@ export const Roadmap: React.FC = () => {
     }
   };
 
-  // Browser print flow for PDF / Print
-  const handlePrint = () => {
-    window.print();
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (downloadingPdf) return;
+    setDownloadingPdf(true);
+    try {
+      const doc = <RoadmapPDFDocument summary={summary} sequenceSteps={SEQUENCE_STEPS} enrichedRecommendations={enrichedRecommendations} />;
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ECDAT_Roadmap_${summary?.scan_id || 'Active'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   if (loading) {
@@ -275,7 +293,7 @@ export const Roadmap: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in print:text-slate-900 print:bg-white print:p-0">
       {/* 1. Header & Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-5 print:border-b-2 print:border-slate-400">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-5 print:border-b-2 print:border-slate-800 print:pb-6 print:mb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-purple-950/60 border border-purple-800/50 text-purple-400 print:hidden">
@@ -310,12 +328,17 @@ export const Roadmap: React.FC = () => {
           </button>
 
           <button
-            onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all shadow-sm"
-            title="Print roadmap or save as PDF via browser print flow"
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all shadow-sm disabled:opacity-50"
+            title="Download formal PDF Roadmap"
           >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print / Save PDF</span>
+            {downloadingPdf ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Printer className="w-3.5 h-3.5" />
+            )}
+            <span>{downloadingPdf ? 'Generating PDF...' : 'Download Formal PDF'}</span>
           </button>
 
           <Link
@@ -330,7 +353,7 @@ export const Roadmap: React.FC = () => {
       </div>
 
       {/* 2. Pragmatic Engineering Notice (No Overpromising) */}
-      <div className="p-4 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-amber-900/40 relative overflow-hidden print:border-slate-300 print:bg-slate-50">
+      <div className="p-4 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-amber-900/40 relative overflow-hidden print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
         <div className="flex items-start gap-3">
           <div className="p-1.5 rounded-lg bg-amber-950/60 border border-amber-800/50 text-amber-400 shrink-0 mt-0.5 print:text-amber-700">
             <Info className="w-4 h-4" />
@@ -371,7 +394,7 @@ export const Roadmap: React.FC = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-5 print:grid-cols-2 gap-4 print:gap-6">
           {SEQUENCE_STEPS.map((step) => {
             const isSelected = activeStepFilter === step.id;
             const StepIcon = step.icon;
@@ -384,7 +407,7 @@ export const Roadmap: React.FC = () => {
                   isSelected
                     ? 'bg-cyan-950/40 border-cyan-500 ring-1 ring-cyan-500/50 shadow-lg'
                     : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
-                } print:border-slate-300 print:bg-white`}
+                } print:border-slate-300 print:bg-white print:break-inside-avoid print:shadow-md print:rounded-xl print:p-8 print:shadow-md print:rounded-xl print:p-8`}
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -470,7 +493,7 @@ export const Roadmap: React.FC = () => {
             {filteredRecommendations.map((rec) => (
               <div
                 key={rec.id}
-                className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-5 hover:border-slate-700 transition-colors print:border-slate-300 print:bg-white print:break-inside-avoid"
+                className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-5 hover:border-slate-700 transition-colors print:border-slate-300 print:bg-white print:break-inside-avoid print:shadow-md print:rounded-xl print:p-8"
               >
                 {/* Header: Priority & Target */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
@@ -479,10 +502,10 @@ export const Roadmap: React.FC = () => {
                       <span
                         className={`text-[10px] font-mono uppercase px-2.5 py-0.5 rounded font-bold ${
                           rec.priority === 'critical'
-                            ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
+                            ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60 print:bg-rose-100 print:text-rose-800 print:border-rose-300'
                             : rec.priority === 'high'
-                              ? 'bg-amber-950/70 text-amber-300 border border-amber-800/60'
-                              : 'bg-purple-950/70 text-purple-300 border border-purple-800/60'
+                              ? 'bg-amber-950/70 text-amber-300 border border-amber-800/60 print:bg-amber-100 print:text-amber-800 print:border-amber-300'
+                              : 'bg-purple-950/70 text-purple-300 border border-purple-800/60 print:bg-purple-100 print:text-purple-800 print:border-purple-300'
                         }`}
                       >
                         {rec.priority} Priority
@@ -512,7 +535,7 @@ export const Roadmap: React.FC = () => {
                 {/* Current State vs Dual-Track Remediation */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Current State */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 print:border-slate-300 print:bg-slate-50">
+                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                       Current Cryptographic State
                     </p>
@@ -520,7 +543,7 @@ export const Roadmap: React.FC = () => {
                   </div>
 
                   {/* Phase 1: Classical Remediation */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 print:border-slate-300 print:bg-slate-50">
+                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
                     <p className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider print:text-amber-800">
                       Phase 1: Classical Remediation
                     </p>
@@ -530,7 +553,7 @@ export const Roadmap: React.FC = () => {
                   </div>
 
                   {/* Phase 2: PQC / Hybrid Path */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 print:border-slate-300 print:bg-slate-50">
+                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
                     <p className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider print:text-cyan-800">
                       Phase 2: Post-Quantum Migration
                     </p>
@@ -540,59 +563,72 @@ export const Roadmap: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Engineering Impact Matrix */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                  <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-slate-300 print:bg-slate-50">
-                    <span className="text-slate-500 block text-[10px] uppercase font-mono">Complexity</span>
-                    <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
-                      {rec.migration_complexity || 'Medium'}
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-slate-300 print:bg-slate-50">
-                    <span className="text-slate-500 block text-[10px] uppercase font-mono">Latency Impact</span>
-                    <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
-                      {rec.latency_impact || 'Low (<5ms)'}
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-slate-300 print:bg-slate-50">
-                    <span className="text-slate-500 block text-[10px] uppercase font-mono">Bandwidth Overhead</span>
-                    <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
-                      {rec.bandwidth_impact || 'Moderate (+1-2KB)'}
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-slate-300 print:bg-slate-50">
-                    <span className="text-slate-500 block text-[10px] uppercase font-mono">Cost Category</span>
-                    <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
-                      {rec.cost_category || 'Operational'}
-                    </span>
-                  </div>
+                <div className="flex justify-end pt-2 border-t border-slate-800/60 print:hidden">
+                  <button
+                    onClick={() => toggleTechnicalDetails(rec.id)}
+                    className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+                  >
+                    {showTechnicalDetails[rec.id] ? 'Hide Technical Details' : 'Show Technical Details'}
+                  </button>
                 </div>
 
-                {/* Architectural Rationale & Standards References */}
-                <div className="space-y-3 pt-2 border-t border-slate-800/60">
-                  {rec.rationale && (
-                    <div className="text-xs text-slate-300 leading-relaxed font-sans print:text-slate-700">
-                      <strong className="text-white block mb-1 print:text-slate-900 font-mono">
-                        Architectural Rationale:
-                      </strong>
-                      {rec.rationale}
-                    </div>
-                  )}
-
-                  {rec.references && rec.references.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[11px] text-slate-400 font-mono mr-1">Standards References:</span>
-                      {rec.references.map((refStr, rIdx) => (
-                        <span
-                          key={rIdx}
-                          className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 print:border-slate-300 print:text-slate-800 print:bg-slate-100"
-                        >
-                          {refStr}
+                {showTechnicalDetails[rec.id] && (
+                  <div className="space-y-4 pt-4 border-t border-slate-800/60 mt-4">
+                    {/* Engineering Impact Matrix */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Complexity</span>
+                        <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
+                          {rec.migration_complexity || 'Medium'}
                         </span>
-                      ))}
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Latency Impact</span>
+                        <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
+                          {rec.latency_impact || 'Low (<5ms)'}
+                        </span>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Bandwidth Overhead</span>
+                        <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
+                          {rec.bandwidth_impact || 'Moderate (+1-2KB)'}
+                        </span>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Cost Category</span>
+                        <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
+                          {rec.cost_category || 'Operational'}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Architectural Rationale & Standards References */}
+                    <div className="space-y-3">
+                      {rec.rationale && (
+                        <div className="text-xs text-slate-300 leading-relaxed font-sans print:text-slate-700">
+                          <strong className="text-white block mb-1 print:text-slate-900 font-mono">
+                            Architectural Rationale:
+                          </strong>
+                          {rec.rationale}
+                        </div>
+                      )}
+
+                      {rec.references && rec.references.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <span className="text-[11px] text-slate-400 font-mono mr-1">Standards References:</span>
+                          {rec.references.map((refStr, rIdx) => (
+                            <span
+                              key={rIdx}
+                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 print:border-slate-300 print:text-slate-800 print:bg-slate-100"
+                            >
+                              {refStr}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -618,7 +654,7 @@ export const Roadmap: React.FC = () => {
 
       {/* 6. Highest Priority Assets Table */}
       {summary.top_risky_assets && summary.top_risky_assets.length > 0 && (
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 print:border-slate-300 print:bg-white print:break-inside-avoid">
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 print:border-slate-300 print:bg-white print:break-inside-avoid print:shadow-md print:rounded-xl print:p-8">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-rose-400" />
@@ -667,8 +703,8 @@ export const Roadmap: React.FC = () => {
                       <span
                         className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
                           asset.severity === 'Critical'
-                            ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
-                            : 'bg-amber-950/70 text-amber-300 border border-amber-800/60'
+                            ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60 print:bg-rose-100 print:text-rose-800 print:border-rose-300'
+                            : 'bg-amber-950/70 text-amber-300 border border-amber-800/60 print:bg-amber-100 print:text-amber-800 print:border-amber-300'
                         }`}
                       >
                         {asset.severity}
@@ -706,7 +742,7 @@ export const Roadmap: React.FC = () => {
       )}
 
       {/* 7. Dependencies & Assumptions Section */}
-      <div className="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4 print:border-slate-300 print:bg-slate-50 print:break-inside-avoid">
+      <div className="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm print:break-inside-avoid">
         <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
           <Info className="w-5 h-5 text-cyan-400" />
           <h2 className="text-sm font-bold text-white uppercase tracking-wider print:text-slate-900">

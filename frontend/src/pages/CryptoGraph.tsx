@@ -25,6 +25,7 @@ export const CryptoGraph: React.FC = () => {
   const [pqcReadiness, setPqcReadiness] = useState<string>('ALL');
   const [exposure, setExposure] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [showFilters, setShowFilters] = useState<boolean>(false);
 
   // Graph Data state
   const [graphData, setGraphData] = useState<CryptoGraphResponse | null>(null);
@@ -142,16 +143,20 @@ export const CryptoGraph: React.FC = () => {
       {/* Filter Toolbar (Severity, Owner, Environment, Algorithm, PQC Readiness, Exposure) */}
       <div className="glass-card p-4 space-y-3">
         <div className="flex items-center justify-between border-b border-slate-800/70 pb-2.5">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
-            <Filter className="w-4 h-4 text-cyan-400" />
-            <span>Topology & Blast Radius Filters</span>
-          </div>
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-cyan-400 transition-colors"
+          >
+            <Filter className={`w-4 h-4 ${showFilters ? 'text-cyan-400' : 'text-slate-400'}`} />
+            <span>{showFilters ? 'Hide Advanced Filters' : 'Topology & Blast Radius Filters'}</span>
+          </button>
           <span className="text-[11px] text-slate-500 font-mono">
             {graphData ? `${graphData.graph.total_nodes} of ${graphData.graph.unfiltered_nodes_count} Nodes Visible` : 'Loading...'}
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
+        {showFilters && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs pb-2 border-b border-slate-800/50">
           {/* Severity */}
           <div>
             <label htmlFor="filter-severity" className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
@@ -271,7 +276,8 @@ export const CryptoGraph: React.FC = () => {
               ))}
             </select>
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Search row */}
         <div className="relative">

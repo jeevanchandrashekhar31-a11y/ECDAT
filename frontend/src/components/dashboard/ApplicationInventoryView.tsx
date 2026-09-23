@@ -113,18 +113,18 @@ export const ApplicationInventoryView: React.FC<Props> = ({
             return (
               <div
                 key={app.id}
-                className="glass-card p-5 flex flex-col justify-between hover:border-slate-700/90 transition-all group"
+                className="glass-card p-5 flex flex-col justify-between hover:border-slate-700/90 transition-all group min-w-0"
               >
                 <div>
                   {/* Header row */}
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      {getAppIcon(appType)}
-                      <div>
-                        <h4 className="font-semibold text-slate-100 text-sm group-hover:text-cyan-300 transition-colors">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="shrink-0">{getAppIcon(appType)}</div>
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-slate-100 text-sm group-hover:text-cyan-300 transition-colors truncate" title={appName}>
                           {appName}
                         </h4>
-                        <span className="text-[10px] font-mono text-slate-500">{app.id}</span>
+                        <span className="text-[10px] font-mono text-slate-500 block truncate" title={app.id}>{app.id}</span>
                       </div>
                     </div>
 

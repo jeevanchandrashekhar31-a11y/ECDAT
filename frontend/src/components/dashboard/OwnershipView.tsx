@@ -55,17 +55,17 @@ export const OwnershipView: React.FC<Props> = ({
           return (
             <div
               key={team.team_name}
-              className="glass-card p-5 flex flex-col justify-between hover:border-slate-700 transition-all group"
+              className="glass-card p-5 flex flex-col justify-between hover:border-slate-700 transition-all group min-w-0"
             >
               <div>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <h4 className="font-bold text-slate-100 text-base group-hover:text-cyan-300 transition-colors">
+                <div className="flex items-start justify-between gap-2 mb-2 min-w-0">
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-slate-100 text-base group-hover:text-cyan-300 transition-colors truncate" title={team.team_name}>
                       {team.team_name}
                     </h4>
-                    <span className="text-xs text-slate-400 flex items-center gap-1 mt-0.5 font-mono">
-                      <Mail className="w-3 h-3 text-slate-500" />
-                      {team.lead}
+                    <span className="text-xs text-slate-400 flex items-center gap-1 mt-0.5 font-mono truncate" title={team.lead}>
+                      <Mail className="w-3 h-3 text-slate-500 shrink-0" />
+                      <span className="truncate">{team.lead}</span>
                     </span>
                   </div>
 

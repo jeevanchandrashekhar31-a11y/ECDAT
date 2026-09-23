@@ -56,8 +56,6 @@ export const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, 
 
   return (
     <div className={`glass-card p-5 border-l-4 ${styles.accent} glass-card-hover flex flex-col justify-between group overflow-hidden relative`}>
-      {/* Decorative gradient orb */}
-      <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full blur-[40px] opacity-20 ${styles.iconBg.split(' ')[0]} pointer-events-none group-hover:opacity-40 transition-opacity duration-500`} />
 
       <div className="flex items-start justify-between relative z-10">
         <div>

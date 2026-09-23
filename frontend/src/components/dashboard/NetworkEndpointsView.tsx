@@ -46,20 +46,20 @@ export const NetworkEndpointsView: React.FC<Props> = ({
           return (
             <div
               key={ep.id}
-              className="glass-card p-5 flex flex-col justify-between hover:border-slate-700 transition-all group"
+              className="glass-card p-5 flex flex-col justify-between hover:border-slate-700 transition-all group min-w-0"
             >
               <div>
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-slate-800 text-cyan-400">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="p-2 rounded-lg bg-slate-800 text-cyan-400 shrink-0">
                       <Radio className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h4 className="font-bold text-slate-100 text-sm group-hover:text-cyan-300 transition-colors">
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-slate-100 text-sm group-hover:text-cyan-300 transition-colors truncate" title={`${ep.host}:${ep.port}`}>
                         {ep.host}:{ep.port}
                       </h4>
-                      <span className="text-[10px] font-mono text-slate-500">{ep.protocol}</span>
+                      <span className="text-[10px] font-mono text-slate-500 block truncate" title={ep.protocol}>{ep.protocol}</span>
                     </div>
                   </div>
 

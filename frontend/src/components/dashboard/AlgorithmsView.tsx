@@ -67,22 +67,22 @@ export const AlgorithmsView: React.FC<Props> = ({
           const evidenceIds = algo.evidence_occurrences.map((o) => o.finding_id);
           const isQuantumThreat =
             algo.quantum_relevance?.toLowerCase().includes('shor') ||
-            algo.name.toLowerCase().includes('rsa') ||
-            algo.name.toLowerCase().includes('ec');
+            /\brsa\b/i.test(algo.name) ||
+            /\b(ec|ecc|ecdsa|ecdh)\b/i.test(algo.name);
 
           return (
             <div
               key={algo.name}
-              className="glass-card p-5 flex flex-col justify-between hover:border-slate-700 transition-all group"
+              className="glass-card p-5 flex flex-col justify-between hover:border-slate-700 transition-all group min-w-0"
             >
               <div>
                 {/* Header row */}
                 <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h4 className="font-bold text-slate-100 text-base group-hover:text-cyan-300 transition-colors">
+                  <div className="min-w-0 pr-2">
+                    <h4 className="font-bold text-slate-100 text-base group-hover:text-cyan-300 transition-colors truncate" title={algo.name}>
                       {algo.name}
                     </h4>
-                    <span className="text-[11px] font-mono text-slate-400">{algo.primitive}</span>
+                    <span className="text-[11px] font-mono text-slate-400 block truncate" title={algo.primitive}>{algo.primitive}</span>
                   </div>
 
                   <button

@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Shield,
   Lock,
-  User,
-  Key,
   CheckCircle,
   AlertCircle,
   Smartphone,
@@ -92,13 +90,13 @@ export const Login: React.FC = () => {
     }
   };
 
-  // 0. 1-Click Judge Demo Mode Login
-  const handleEnterDemo = async () => {
+  // 0. 1-Click Evaluation Environment Login
+  const handleEnterEvaluation = async () => {
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      const res = await api.loginDemo('developer');
+      const res = await api.enterEvaluation('analyst');
       if (res.accessToken) {
         memoryTokenStore.setToken('access_token', res.accessToken);
       }
@@ -116,15 +114,15 @@ export const Login: React.FC = () => {
         authManager.setSession({
           userId: res.user.userId,
           tenantId: res.user.tenantId,
-          role: (res.user.roles?.[0] as UserRole) || 'Developer',
+          role: (res.user.roles?.[0] as UserRole) || 'Analyst',
           isAuthenticated: true,
         });
       }
       setStep('authenticated');
-      setSuccessMsg('Authenticated as Demo Judge. Redirecting to Executive Dashboard...');
+      setSuccessMsg('Entered Evaluation Environment. Redirecting to Executive Dashboard...');
       setTimeout(() => navigate('/'), 400);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Demo login failed.';
+      const msg = err instanceof Error ? err.message : 'Evaluation login failed.';
       setErrorMsg(msg);
     } finally {
       setLoading(false);
@@ -307,47 +305,31 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      {/* Header Banner */}
-      <div className="flex items-center justify-between pb-6 mb-8 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-slate-950 shadow-xl shadow-cyan-500/10">
-            <Shield size={28} className="stroke-[2.5]" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
-              Authentication &amp; Session Management
-              <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">
-                HTTP-Only Cookies
-              </span>
-            </h1>
-            <p className="text-sm text-slate-400">
-              Enterprise local authentication, RFC 6238 TOTP multi-factor verification, and session governance.
-            </p>
-          </div>
+    <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
+      {/* ECDAT Logo & Branding */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-slate-950 shadow-xl shadow-cyan-500/20">
+          <Shield size={36} className="stroke-[2.5]" />
         </div>
-
-        {step === 'authenticated' && (
-          <button
-            onClick={() => navigate('/')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all"
-          >
-            <span>Go to Dashboard</span>
-            <ArrowRight size={14} />
-          </button>
-        )}
+        <div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            ECDAT
+          </h1>
+          <p className="text-sm text-slate-400 font-medium tracking-wide">
+            Enterprise Cryptographic Discovery and Assessment Tool
+          </p>
+        </div>
       </div>
 
       {/* Alert Notices */}
       {errorMsg && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-300 text-sm">
+        <div className="max-w-md w-full mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-300 text-sm shadow-lg">
           <AlertCircle size={18} className="shrink-0 mt-0.5 text-rose-400" />
           <div className="flex-1">{errorMsg}</div>
         </div>
       )}
-
       {successMsg && (
-        <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3 text-emerald-300 text-sm">
+        <div className="max-w-md w-full mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3 text-emerald-300 text-sm shadow-lg">
           <CheckCircle size={18} className="shrink-0 mt-0.5 text-emerald-400" />
           <div className="flex-1">{successMsg}</div>
         </div>
@@ -355,88 +337,76 @@ export const Login: React.FC = () => {
 
       {/* STEP 1: Login Form */}
       {step === 'login' && (
-        <div className="glass-card max-w-lg mx-auto p-8 rounded-2xl border border-slate-800 bg-slate-900/60 shadow-2xl">
-          <div className="text-center mb-6">
-            <div className="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center mx-auto mb-3">
-              <Lock size={24} />
+        <div className="w-full max-w-md space-y-6">
+          {/* Evaluation Environment Primary Action */}
+          <div className="glass-card p-8 rounded-3xl border border-slate-700 bg-slate-900/80 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-3">
+              <span className="text-xs px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-300 font-bold border border-cyan-500/20 uppercase tracking-widest">
+                Evaluation
+              </span>
             </div>
-            <h2 className="text-xl font-bold text-white">Sign In to ECDAT</h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Authenticate via local credentials. Session established using secure HTTP-only cookies.
-            </p>
-          </div>
 
-          {/* 1-Click Judge Demo Mode Action */}
-          <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-amber-500/10 via-cyan-500/10 to-indigo-500/10 border border-amber-500/30 text-center space-y-2.5">
-            <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-300">
-              <ShieldCheck size={16} />
-              <span>Judge Evaluation Access</span>
-            </div>
-            <p className="text-2xs text-slate-300">
-              One-click entry into the scoped <code className="text-cyan-300 font-mono">demo-tenant</code> environment with synthetic cryptographic inventory.
+            <h2 className="text-xl font-bold text-white mb-2">Enter Evaluation Environment</h2>
+            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+              Explore cryptographic discovery, CBOM, PQC assessment, migration planning and remediation using synthetic evaluation data. No production systems connected.
             </p>
+
             <button
               type="button"
-              onClick={handleEnterDemo}
+              onClick={handleEnterEvaluation}
               disabled={loading}
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-cyan-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-slate-950 font-extrabold text-xs shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50 group cursor-pointer"
             >
-              {loading ? <RefreshCw size={15} className="animate-spin" /> : <ArrowRight size={15} />}
-              <span>Enter Demo Mode (1-Click)</span>
+              {loading ? <RefreshCw size={18} className="animate-spin" /> : <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
+              <span>Enter Evaluation Environment</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px bg-slate-800" />
-            <span className="text-2xs uppercase tracking-wider text-slate-500 font-semibold">Or Sign In with Credentials</span>
-            <div className="flex-1 h-px bg-slate-800" />
-          </div>
-
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Username</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. admin or secops"
-                  required
-                  autoFocus
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
-                />
-                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          {/* Technical / Production Login Details Collapsed */}
+          <details className="group glass-card rounded-2xl border border-slate-800 bg-slate-900/40">
+            <summary className="px-6 py-4 cursor-pointer flex items-center justify-between text-sm font-semibold text-slate-400 hover:text-slate-200 transition-colors list-none select-none">
+              <div className="flex items-center gap-2">
+                <Lock size={16} />
+                <span>Production Authentication</span>
               </div>
+              <div className="text-slate-600 group-open:rotate-180 transition-transform">▼</div>
+            </summary>
+            
+            <div className="p-6 pt-0 border-t border-slate-800/50 mt-2">
+              <p className="text-xs text-slate-500 mb-4">
+                Authorized personnel only. Authenticate via local credentials. Session established using secure HTTP-only cookies.
+              </p>
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Username</label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter username"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-600"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all disabled:opacity-50"
+                >
+                  {loading ? 'Authenticating...' : 'Sign In'}
+                </button>
+              </form>
             </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Password</label>
-              <div className="relative">
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
-                />
-                <Key size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? <RefreshCw size={16} className="animate-spin" /> : <Lock size={16} />}
-              <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
-            </button>
-          </form>
-
-          <div className="mt-6 pt-5 border-t border-slate-800 text-center text-xs text-slate-400">
-            <p>Protected by Double-Submit CSRF Defense &amp; Ambient Cookie Extraction.</p>
-          </div>
+          </details>
         </div>
       )}
 

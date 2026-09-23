@@ -61,18 +61,20 @@ export const PolicyViolationsView: React.FC<Props> = ({
           return (
             <div
               key={violation.rule_id}
-              className="glass-card p-5 hover:border-slate-700 transition-all group"
+              className="glass-card p-5 hover:border-slate-700 transition-all group min-w-0"
             >
               <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
-                <div className="flex items-center gap-2.5">
-                  <ShieldAlert
-                    className={`w-5 h-5 ${isBlocker ? 'text-rose-400' : 'text-amber-400'}`}
-                  />
-                  <div>
-                    <h4 className="font-bold text-slate-100 text-sm group-hover:text-cyan-300 transition-colors">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="shrink-0">
+                    <ShieldAlert
+                      className={`w-5 h-5 ${isBlocker ? 'text-rose-400' : 'text-amber-400'}`}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-slate-100 text-sm group-hover:text-cyan-300 transition-colors truncate" title={violation.rule_name}>
                       {violation.rule_name}
                     </h4>
-                    <span className="text-[10px] font-mono text-slate-400">{violation.rule_id}</span>
+                    <span className="text-[10px] font-mono text-slate-400 block truncate" title={violation.rule_id}>{violation.rule_id}</span>
                   </div>
                 </div>
 

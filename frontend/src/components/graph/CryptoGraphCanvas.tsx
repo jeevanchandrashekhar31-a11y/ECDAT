@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   AppWindow,
   Server,
@@ -39,6 +39,172 @@ const TIER_ORDER: GraphTier[] = [
   'Data',
 ];
 
+const getTierMeta = (tier: GraphTier) => {
+  switch (tier) {
+    case 'Application':
+      return {
+        color: 'text-cyan-400',
+        bg: 'bg-cyan-950/80',
+        border: 'border-cyan-700/70',
+        icon: AppWindow,
+        ring: 'ring-cyan-500/30',
+      };
+    case 'Service':
+      return {
+        color: 'text-blue-400',
+        bg: 'bg-blue-950/80',
+        border: 'border-blue-700/70',
+        icon: Server,
+        ring: 'ring-blue-500/30',
+      };
+    case 'Certificate':
+      return {
+        color: 'text-amber-400',
+        bg: 'bg-amber-950/80',
+        border: 'border-amber-700/70',
+        icon: FileCheck2,
+        ring: 'ring-amber-500/30',
+      };
+    case 'Protocol':
+      return {
+        color: 'text-emerald-400',
+        bg: 'bg-emerald-950/80',
+        border: 'border-emerald-700/70',
+        icon: Globe,
+        ring: 'ring-emerald-500/30',
+      };
+    case 'Algorithm':
+      return {
+        color: 'text-purple-400',
+        bg: 'bg-purple-950/80',
+        border: 'border-purple-700/70',
+        icon: Binary,
+        ring: 'ring-purple-500/30',
+      };
+    case 'Data':
+      return {
+        color: 'text-rose-400',
+        bg: 'bg-rose-950/80',
+        border: 'border-rose-700/70',
+        icon: Database,
+        ring: 'ring-rose-500/30',
+      };
+  }
+};
+
+const getSeverityBadge = (sev: SeverityLevel) => {
+  switch (sev) {
+    case 'Critical':
+      return 'text-rose-400 border-rose-500/60 bg-rose-950/70';
+    case 'High':
+      return 'text-amber-400 border-amber-500/60 bg-amber-950/70';
+    case 'Medium':
+      return 'text-yellow-400 border-yellow-500/60 bg-yellow-950/70';
+    case 'Low':
+      return 'text-sky-400 border-sky-500/60 bg-sky-950/70';
+    default:
+      return 'text-slate-400 border-slate-700 bg-slate-850';
+  }
+};
+
+
+const MemoizedEdge = React.memo(({ srcNode, tgtNode, isEdgeHighlighted, isDimmed }: any) => {
+  if (!srcNode || !tgtNode) return null;
+  const startX = srcNode.x + srcNode.width;
+  const startY = srcNode.y + srcNode.height / 2;
+  const endX = tgtNode.x;
+  const endY = tgtNode.y + tgtNode.height / 2;
+  const dx = (endX - startX) * 0.5;
+  const pathData = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${endX - dx} ${endY}, ${endX} ${endY}`;
+  return (
+    <g>
+      <path
+        d={pathData}
+        fill="none"
+        stroke={isEdgeHighlighted ? '#06b6d4' : '#334155'}
+        strokeWidth={isEdgeHighlighted ? 3 : 1.5}
+        strokeOpacity={isDimmed ? 0.15 : isEdgeHighlighted ? 1 : 0.6}
+        markerEnd={isEdgeHighlighted ? 'url(#edge-arrow-highlight)' : 'url(#edge-arrow)'}
+        className="transition-all duration-200"
+      />
+    </g>
+  );
+});
+
+const MemoizedNode = React.memo(({ node, isSelected, isHovered, isDimmed, onSelect, onHoverStart, onHoverEnd }: any) => {
+  const tierMeta = getTierMeta(node.tier);
+  const Icon = tierMeta.icon;
+  return (
+    <g
+      data-testid={`graph-node-${node.id}`}
+      transform={`translate(${node.x}, ${node.y})`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(node.id);
+      }}
+      onMouseEnter={() => onHoverStart(node.id)}
+      onMouseLeave={() => onHoverEnd()}
+      className="cursor-pointer"
+      opacity={isDimmed ? 0.25 : 1}
+    >
+      <rect
+        width={node.width}
+        height={node.height}
+        rx="14"
+        fill={isSelected ? '#09152e' : '#0a101f'}
+        stroke={
+          isSelected
+            ? '#06b6d4'
+            : isHovered
+            ? '#38bdf8'
+            : node.severity === 'Critical'
+            ? '#f43f5e'
+            : '#1e293b'
+        }
+        strokeWidth={isSelected ? 2.5 : isHovered ? 2 : 1}
+        className="transition-all duration-150"
+      />
+      <rect x="10" y="10" width="32" height="32" rx="8" fill="#1e293b" className="opacity-70" />
+      <g transform="translate(16, 16)">
+        <Icon className={`w-5 h-5 ${tierMeta.color}`} />
+      </g>
+      <text x="50" y="25" className="text-xs font-semibold fill-slate-100 font-sans">
+        {node.label.length > 24 ? node.label.substring(0, 24) + '...' : node.label}
+      </text>
+      <text x="50" y="39" className="text-[10px] font-mono fill-slate-400">
+        {node.owner.length > 28 ? node.owner.substring(0, 28) + '...' : node.owner}
+      </text>
+      <g transform="translate(10, 52)">
+        <rect width="70" height="18" rx="4" fill="#0f172a" stroke="#334155" />
+        <text
+          x="35"
+          y="13"
+          textAnchor="middle"
+          className={`text-[9px] font-bold uppercase font-mono ${
+            node.severity === 'Critical' ? 'fill-rose-400' : node.severity === 'High' ? 'fill-amber-400' : 'fill-slate-300'
+          }`}
+        >
+          {node.severity}
+        </text>
+      </g>
+      <g transform="translate(86, 52)">
+        <rect width="80" height="18" rx="4" fill="#0f172a" stroke="#334155" />
+        <text x="40" y="13" textAnchor="middle" className="text-[9px] font-medium fill-violet-300 font-mono">
+          {node.pqc_readiness}
+        </text>
+      </g>
+      {node.evidence_items && node.evidence_items.length > 0 && (
+        <g transform={`translate(${node.width - 24}, 8)`}>
+          <circle r="8" fill="#0e7490" />
+          <text textAnchor="middle" dy="3" className="text-[9px] font-bold fill-white font-mono">
+            {node.evidence_items.length}
+          </text>
+        </g>
+      )}
+    </g>
+  );
+});
+
 export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
   nodes,
   edges,
@@ -55,76 +221,28 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
   const [isPanning, setIsPanning] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  // Tier Colors & Icons
-  const getTierMeta = (tier: GraphTier) => {
-    switch (tier) {
-      case 'Application':
-        return {
-          color: 'text-cyan-400',
-          bg: 'bg-cyan-950/80',
-          border: 'border-cyan-700/70',
-          icon: AppWindow,
-          ring: 'ring-cyan-500/30',
-        };
-      case 'Service':
-        return {
-          color: 'text-blue-400',
-          bg: 'bg-blue-950/80',
-          border: 'border-blue-700/70',
-          icon: Server,
-          ring: 'ring-blue-500/30',
-        };
-      case 'Certificate':
-        return {
-          color: 'text-amber-400',
-          bg: 'bg-amber-950/80',
-          border: 'border-amber-700/70',
-          icon: FileCheck2,
-          ring: 'ring-amber-500/30',
-        };
-      case 'Protocol':
-        return {
-          color: 'text-emerald-400',
-          bg: 'bg-emerald-950/80',
-          border: 'border-emerald-700/70',
-          icon: Globe,
-          ring: 'ring-emerald-500/30',
-        };
-      case 'Algorithm':
-        return {
-          color: 'text-purple-400',
-          bg: 'bg-purple-950/80',
-          border: 'border-purple-700/70',
-          icon: Binary,
-          ring: 'ring-purple-500/30',
-        };
-      case 'Data':
-        return {
-          color: 'text-rose-400',
-          bg: 'bg-rose-950/80',
-          border: 'border-rose-700/70',
-          icon: Database,
-          ring: 'ring-rose-500/30',
-        };
-    }
-  };
+  // DOM Refs for high-performance direct manipulation (bypassing React re-renders)
+  const transformGroupRef = useRef<SVGGElement>(null);
+  const panRef = useRef(pan);
+  const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const getSeverityBadge = (sev: SeverityLevel) => {
-    switch (sev) {
-      case 'Critical':
-        return 'text-rose-400 border-rose-500/60 bg-rose-950/70';
-      case 'High':
-        return 'text-amber-400 border-amber-500/60 bg-amber-950/70';
-      case 'Medium':
-        return 'text-yellow-400 border-yellow-500/60 bg-yellow-950/70';
-      case 'Low':
-        return 'text-sky-400 border-sky-500/60 bg-sky-950/70';
-      default:
-        return 'text-slate-400 border-slate-700 bg-slate-850';
+  // Keep panRef synced with any external pan state changes (like resetView)
+  useEffect(() => {
+    panRef.current = pan;
+    if (transformGroupRef.current) {
+      transformGroupRef.current.setAttribute('transform', `translate(${pan.x}, ${pan.y}) scale(${zoom})`);
     }
-  };
+  }, [pan, zoom]);
+
+  // Tier Colors & Icons
+
 
   // Group nodes by tier and compute positions
+
+  const handleSelect = useCallback((id: string) => setSelectedNodeId(id), []);
+  const handleHoverStart = useCallback((id: string) => setHoveredNodeId(id), []);
+  const handleHoverEnd = useCallback(() => setHoveredNodeId(null), []);
+
   const { positionedNodes, nodeMap, canvasHeight } = useMemo(() => {
     const nodeWidth = 230;
     const nodeHeight = 84;
@@ -220,13 +338,21 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
       // Zoom with Ctrl/Cmd + Scroll
       e.preventDefault();
       const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-      setZoom((prev) => Math.min(2.2, Math.max(0.4, prev * zoomFactor)));
+      setZoom((prev) => Math.min(2.2, Math.max(0.02, prev * zoomFactor)));
     } else {
       // Pan with normal Scroll
-      setPan((prev) => ({
-        x: prev.x - e.deltaX,
-        y: prev.y - e.deltaY,
-      }));
+      const newX = panRef.current.x - e.deltaX;
+      const newY = panRef.current.y - e.deltaY;
+      panRef.current = { x: newX, y: newY };
+      
+      if (transformGroupRef.current) {
+        transformGroupRef.current.setAttribute('transform', `translate(${newX}, ${newY}) scale(${zoom})`);
+      }
+
+      if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
+      wheelTimeoutRef.current = setTimeout(() => {
+        setPan(panRef.current);
+      }, 150);
     }
   };
 
@@ -234,28 +360,57 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) {
       setIsPanning(true);
-      setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      setDragStart({ x: e.clientX - panRef.current.x, y: e.clientY - panRef.current.y });
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isPanning) {
-      setPan({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
+      const newX = e.clientX - dragStart.x;
+      const newY = e.clientY - dragStart.y;
+      panRef.current = { x: newX, y: newY };
+      
+      if (transformGroupRef.current) {
+        transformGroupRef.current.setAttribute('transform', `translate(${newX}, ${newY}) scale(${zoom})`);
+      }
     }
   };
 
   const handleMouseUp = () => {
-    setIsPanning(false);
+    if (isPanning) {
+      setIsPanning(false);
+      setPan(panRef.current); // Sync state on drop
+    }
   };
 
-  const resetView = () => {
-    setZoom(0.85);
-    setPan({ x: 30, y: 30 });
-    setSelectedNodeId(null);
-  };
+  const resetView = useCallback(() => {
+    if (containerRef.current) {
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      const graphWidth = TIER_ORDER.length * 280 + 100;
+      const graphHeight = canvasHeight;
+      const scaleX = width / graphWidth;
+      const scaleY = height / graphHeight;
+      const newZoom = Math.min(scaleX, scaleY, 1) * 0.95;
+      
+      setZoom(Math.max(0.02, newZoom));
+      setPan({ 
+        x: (width - graphWidth * newZoom) / 2, 
+        y: Math.max(20, (height - graphHeight * newZoom) / 2) 
+      });
+      setSelectedNodeId(null);
+    } else {
+      setZoom(0.85);
+      setPan({ x: 30, y: 30 });
+      setSelectedNodeId(null);
+    }
+  }, [canvasHeight]);
+
+  useEffect(() => {
+    // Automatically fit to screen when nodes load or change
+    if (nodes.length > 0) {
+      resetView();
+    }
+  }, [nodes.length, resetView]);
 
   // Selected node entity
   const selectedNode = selectedNodeId ? nodeMap.get(selectedNodeId) : null;
@@ -274,7 +429,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
           <ZoomIn className="w-3.5 h-3.5" />
         </button>
         <button
-          onClick={() => setZoom((z) => Math.max(0.4, z * 0.85))}
+          onClick={() => setZoom((z) => Math.max(0.02, z * 0.85))}
           className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
           title="Zoom Out"
         >
@@ -361,7 +516,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
           </defs>
 
           {/* Transform group for Pan and Zoom */}
-          <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+          <g ref={transformGroupRef} transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
             {/* Column Background Dividers */}
             {TIER_ORDER.map((tier, idx) => {
               const colX = 60 + idx * 280;
@@ -394,165 +549,29 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
               const srcNode = nodeMap.get(edge.source);
               const tgtNode = nodeMap.get(edge.target);
               if (!srcNode || !tgtNode) return null;
-
-              const isEdgeHighlighted =
-                connectedIds && connectedIds.has(edge.source) && connectedIds.has(edge.target);
+              const isEdgeHighlighted = connectedIds && connectedIds.has(edge.source) && connectedIds.has(edge.target);
               const isDimmed = connectedIds && !isEdgeHighlighted;
-
-              const startX = srcNode.x + srcNode.width;
-              const startY = srcNode.y + srcNode.height / 2;
-              const endX = tgtNode.x;
-              const endY = tgtNode.y + tgtNode.height / 2;
-              const dx = (endX - startX) * 0.5;
-
-              const pathData = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${endX - dx} ${endY}, ${endX} ${endY}`;
-
-              return (
-                <g key={edge.id}>
-                  <path
-                    d={pathData}
-                    fill="none"
-                    stroke={isEdgeHighlighted ? '#06b6d4' : '#334155'}
-                    strokeWidth={isEdgeHighlighted ? 3 : 1.5}
-                    strokeOpacity={isDimmed ? 0.15 : isEdgeHighlighted ? 1 : 0.6}
-                    markerEnd={isEdgeHighlighted ? 'url(#edge-arrow-highlight)' : 'url(#edge-arrow)'}
-                    className="transition-all duration-200"
-                  />
-                </g>
-              );
+              return <MemoizedEdge key={edge.id} edge={edge} srcNode={srcNode} tgtNode={tgtNode} isEdgeHighlighted={isEdgeHighlighted} isDimmed={isDimmed} />;
             })}
 
             {/* Render Positioned Nodes */}
             {positionedNodes.map((node) => {
-              const tierMeta = getTierMeta(node.tier);
-              const Icon = tierMeta.icon;
               const isSelected = selectedNodeId === node.id;
               const isHovered = hoveredNodeId === node.id;
               const isConnected = connectedIds ? connectedIds.has(node.id) : true;
               const isDimmed = connectedIds && !isConnected;
 
               return (
-                <g
-                  key={node.id}
-                  data-testid={`graph-node-${node.id}`}
-                  transform={`translate(${node.x}, ${node.y})`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedNodeId(node.id);
-                  }}
-                  onMouseEnter={() => setHoveredNodeId(node.id)}
-                  onMouseLeave={() => setHoveredNodeId(null)}
-                  className="cursor-pointer"
-                  opacity={isDimmed ? 0.25 : 1}
-                >
-                  {/* Outer Node Card */}
-                  <rect
-                    width={node.width}
-                    height={node.height}
-                    rx="14"
-                    fill={isSelected ? '#09152e' : '#0a101f'}
-                    stroke={
-                      isSelected
-                        ? '#06b6d4'
-                        : isHovered
-                        ? '#38bdf8'
-                        : node.severity === 'Critical'
-                        ? '#f43f5e'
-                        : '#1e293b'
-                    }
-                    strokeWidth={isSelected ? 2.5 : isHovered ? 2 : 1}
-                    className="transition-all duration-150"
-                  />
-
-                  {/* Icon Box */}
-                  <rect
-                    x="10"
-                    y="10"
-                    width="32"
-                    height="32"
-                    rx="8"
-                    fill="#1e293b"
-                    className="opacity-70"
-                  />
-                  <g transform="translate(16, 16)">
-                    <Icon className={`w-5 h-5 ${tierMeta.color}`} />
-                  </g>
-
-                  {/* Sanitized Node Label (Never exposes raw keys or credentials) */}
-                  <text
-                    x="50"
-                    y="25"
-                    className="text-xs font-semibold fill-slate-100 font-sans"
-                  >
-                    {node.label}
-                  </text>
-
-                  {/* Node ID & Owner */}
-                  <text
-                    x="50"
-                    y="39"
-                    className="text-[10px] font-mono fill-slate-400"
-                  >
-                    {node.owner}
-                  </text>
-
-                  {/* Severity Badge & PQC Status Pill */}
-                  <g transform="translate(10, 52)">
-                    <rect
-                      width="70"
-                      height="18"
-                      rx="4"
-                      fill="#0f172a"
-                      stroke="#334155"
-                    />
-                    <text
-                      x="35"
-                      y="13"
-                      textAnchor="middle"
-                      className={`text-[9px] font-bold uppercase font-mono ${
-                        node.severity === 'Critical'
-                          ? 'fill-rose-400'
-                          : node.severity === 'High'
-                          ? 'fill-amber-400'
-                          : 'fill-slate-300'
-                      }`}
-                    >
-                      {node.severity}
-                    </text>
-                  </g>
-
-                  <g transform="translate(86, 52)">
-                    <rect
-                      width="80"
-                      height="18"
-                      rx="4"
-                      fill="#0f172a"
-                      stroke="#334155"
-                    />
-                    <text
-                      x="40"
-                      y="13"
-                      textAnchor="middle"
-                      className="text-[9px] font-medium fill-violet-300 font-mono"
-                    >
-                      {node.pqc_readiness}
-                    </text>
-                  </g>
-
-                  {/* Evidence Items count badge */}
-                  {node.evidence_items && node.evidence_items.length > 0 && (
-                    <g transform={`translate(${node.width - 24}, 8)`}>
-                      <circle r="8" fill="#0e7490" />
-                      <text
-                        textAnchor="middle"
-                        dy="3"
-                        className="text-[9px] font-bold fill-white font-mono"
-                      >
-                        {node.evidence_items.length}
-                      </text>
-                    </g>
-                  )}
-                </g>
+                <MemoizedNode 
+                  key={node.id} 
+                  node={node} 
+                  isSelected={isSelected} 
+                  isHovered={isHovered} 
+                  isDimmed={isDimmed} 
+                  onSelect={handleSelect} 
+                  onHoverStart={handleHoverStart} 
+                  onHoverEnd={handleHoverEnd} 
+                />
               );
             })}
           </g>

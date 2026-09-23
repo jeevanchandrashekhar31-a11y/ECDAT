@@ -42,8 +42,8 @@ export const Findings: React.FC = () => {
 
   // Filters
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
-  const [algorithmFilter, setAlgorithmFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showFilters, setShowFilters] = useState<boolean>(false);
 
   // Active selected finding drawer
   const [selectedFinding, setSelectedFinding] = useState<FindingItem | null>(null);
@@ -62,7 +62,6 @@ export const Findings: React.FC = () => {
       const res = await api.getFindings({
         scanId: activeScan,
         severity: severityFilter !== 'ALL' ? severityFilter : undefined,
-        algorithm: algorithmFilter.trim() || undefined,
         pageSize: 50,
       });
       setFindings(res.findings || []);
@@ -78,7 +77,7 @@ export const Findings: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedScanId, severityFilter, algorithmFilter]);
+  }, [selectedScanId, severityFilter]);
 
   useEffect(() => {
     fetchFindings();
@@ -89,7 +88,7 @@ export const Findings: React.FC = () => {
     setTriggeringScan(true);
     setScanMessage(null);
     try {
-      const seedRes = await api.seedDemoTenant();
+      const seedRes = await api.seedEvaluationTenant();
       setScanMessage(`Scan initiated successfully (${seedRes.scan_id}). Reloading findings...`);
       await fetchFindings();
     } catch (err: unknown) {
@@ -192,47 +191,50 @@ export const Findings: React.FC = () => {
       )}
 
       {/* Filter Bar */}
-      <div className="glass-card p-4 rounded-xl border border-slate-800/80 bg-slate-900/50 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
-          {/* Search Box */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search algorithm, file location, explanation..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-            />
-          </div>
-
-          {/* Severity Filter */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <Filter size={13} className="text-cyan-400" />
-            <span>Severity:</span>
-            <select
-              value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
-            >
-              <option value="ALL">All Severities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-              <option value="informational">Informational</option>
-            </select>
-          </div>
-
-          {/* Algorithm Filter */}
-          <input
-            type="text"
-            placeholder="Filter Algorithm (e.g. RSA, 3DES)"
-            value={algorithmFilter}
-            onChange={(e) => setAlgorithmFilter(e.target.value)}
-            className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 w-44"
-          />
+      <div className="glass-card p-4 rounded-xl border border-slate-800/80 bg-slate-900/50 space-y-3">
+        <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 hover:text-cyan-400 transition-colors"
+          >
+            <Filter size={14} className={showFilters ? "text-cyan-400" : "text-slate-400"} />
+            <span>{showFilters ? "Hide Filters & Search" : "Show Filters & Search"}</span>
+          </button>
         </div>
+
+        {showFilters && (
+          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-800">
+            {/* Search Box */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search algorithm, explanation..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            {/* Severity Filter */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <Filter size={13} className="text-cyan-400" />
+              <span>Severity:</span>
+              <select
+                value={severityFilter}
+                onChange={(e) => setSeverityFilter(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              >
+                <option value="ALL">All Severities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+                <option value="informational">Informational</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* REAL LOADING STATE */}
@@ -277,7 +279,7 @@ export const Findings: React.FC = () => {
           <div className="max-w-md mx-auto">
             <h3 className="text-base font-bold text-white mb-1">No Cryptographic Findings Detected</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              This demo tenant has not executed any cryptographic scans yet, or no findings match the selected filter.
+              This Evaluation Environment has not executed any cryptographic scans yet, or no findings match the selected filter.
               Trigger a scan below to discover cryptographic primitives, identify quantum vulnerabilities, and populate findings.
             </p>
           </div>
@@ -288,7 +290,7 @@ export const Findings: React.FC = () => {
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-2"
             >
               {triggeringScan ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-              <span>{triggeringScan ? 'Triggering Scan...' : 'Start Demo Scan'}</span>
+              <span>{triggeringScan ? 'Triggering Scan...' : 'Start Evaluation Scan'}</span>
             </button>
           </div>
         </div>
@@ -301,12 +303,11 @@ export const Findings: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 text-2xs uppercase tracking-wider font-semibold">
+                  <th className="py-3 px-4">Finding ID</th>
                   <th className="py-3 px-4">Severity</th>
-                  <th className="py-3 px-4">Algorithm / Primitive</th>
-                  <th className="py-3 px-4">Key Size</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Location / File</th>
-                  <th className="py-3 px-4">Mosca Quantum Risk</th>
+                  <th className="py-3 px-4">Algorithm &amp; Key Size</th>
+                  <th className="py-3 px-4">Policy Profile</th>
+                  <th className="py-3 px-4">Assessment Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -317,24 +318,27 @@ export const Findings: React.FC = () => {
                     onClick={() => setSelectedFinding(finding)}
                     className="hover:bg-slate-800/40 cursor-pointer transition-colors group"
                   >
+                    <td className="py-3 px-4 font-mono text-slate-300 text-[11px] truncate max-w-[120px]" title={finding.id}>
+                      {finding.id}
+                    </td>
                     <td className="py-3 px-4">
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-bold border ${getSeverityBadgeClass(finding.severity)}`}>
                         {finding.severity || 'Medium'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-mono font-bold text-slate-100 flex items-center gap-1.5">
-                      <Cpu size={14} className="text-cyan-400 shrink-0" />
-                      <span>{finding.algorithm}</span>
-                    </td>
-                    <td className="py-3 px-4 font-mono text-slate-300">
-                      {finding.key_size ? `${finding.key_size} bits` : <span className="text-slate-600">N/A</span>}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5 font-mono font-bold text-slate-100">
+                        <Cpu size={14} className="text-cyan-400 shrink-0" />
+                        <span>{finding.algorithm}</span>
+                        {finding.key_size && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">
+                            {finding.key_size}b
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-slate-300 font-medium">
-                      {finding.category || 'cryptographic-asset'}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-slate-400 text-2xs max-w-xs truncate" title={finding.location}>
-                      {finding.location || 'Runtime / External'}
-                      {finding.line_number && <span className="text-cyan-400 ml-1">:{finding.line_number}</span>}
+                      {finding.policy_profile || 'Default CNSA'}
                     </td>
                     <td className="py-3 px-4">
                       <span className={`inline-flex px-2 py-0.5 rounded text-2xs font-mono font-bold border ${getMoscaBadgeClass(finding.mosca_status)}`}>

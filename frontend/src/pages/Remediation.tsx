@@ -17,6 +17,7 @@ import {
   Code2,
 } from 'lucide-react';
 import { api } from '../api/client';
+import { authManager } from '../security/auth';
 import { RemediationApprovalRecord, ApprovalState } from '../types';
 
 export const Remediation: React.FC = () => {
@@ -39,9 +40,8 @@ export const Remediation: React.FC = () => {
   // Selected approval for detailed inspector
   const [selectedApprovalId, setSelectedApprovalId] = useState<string | null>(null);
 
-  // Active persona for demonstration of real Four-Eyes principle
-  const [activePersona, setActivePersona] = useState<'developer' | 'reviewer' | 'security_lead'>('developer');
-  const [switchingPersona, setSwitchingPersona] = useState<boolean>(false);
+  // Global persona switching is now handled via the Layout Header using switchEvaluationPersona
+  const activePersona = authManager.getSession().role || 'Viewer';
 
   // Propose Modal State
   const [proposeModalOpen, setProposeModalOpen] = useState<boolean>(Boolean(prefillFindingId));
@@ -98,22 +98,6 @@ export const Remediation: React.FC = () => {
     fetchApprovals();
   }, [fetchApprovals]);
 
-  // Handle persona switch
-  const handlePersonaSwitch = async (newPersona: 'developer' | 'reviewer' | 'security_lead') => {
-    setSwitchingPersona(true);
-    setActionError(null);
-    setActionSuccess(null);
-    try {
-      await api.loginDemo(newPersona);
-      setActivePersona(newPersona);
-      setActionSuccess(`Active session switched to ${newPersona === 'security_lead' ? 'Security Lead (Approver)' : newPersona === 'reviewer' ? 'Peer Reviewer' : 'Developer (Proposer)'}.`);
-    } catch (err: unknown) {
-      const e = err as Error;
-      setActionError({ message: `Persona switch error: ${e.message}` });
-    } finally {
-      setSwitchingPersona(false);
-    }
-  };
 
   // Submit Propose Remediation
   const handleProposeSubmit = async (e: React.FormEvent) => {
@@ -133,7 +117,7 @@ export const Remediation: React.FC = () => {
         patch_diff: proposePatchDiff,
         test_plan: proposeTestPlan,
         rollback_plan: proposeRollbackPlan,
-        comments: 'Initial cryptographic remediation proposal created via judge demo console.',
+        comments: 'Initial cryptographic remediation proposal created via judge evaluation environment.',
       });
 
       setProposeModalOpen(false);
@@ -299,42 +283,10 @@ export const Remediation: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
-          {/* Persona Switcher for Real Role-Separation Testing */}
+          {/* Active persona is managed globally in the header now */}
           <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
             <span className="text-slate-400 text-2xs px-2 font-medium">Active Persona:</span>
-            <button
-              onClick={() => handlePersonaSwitch('developer')}
-              disabled={switchingPersona}
-              className={`px-2.5 py-1 rounded-lg font-semibold text-2xs transition-all ${
-                activePersona === 'developer'
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Developer (Proposer)
-            </button>
-            <button
-              onClick={() => handlePersonaSwitch('reviewer')}
-              disabled={switchingPersona}
-              className={`px-2.5 py-1 rounded-lg font-semibold text-2xs transition-all ${
-                activePersona === 'reviewer'
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Reviewer
-            </button>
-            <button
-              onClick={() => handlePersonaSwitch('security_lead')}
-              disabled={switchingPersona}
-              className={`px-2.5 py-1 rounded-lg font-semibold text-2xs transition-all ${
-                activePersona === 'security_lead'
-                  ? 'bg-violet-500 text-slate-950 font-bold shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Security Lead (Approver)
-            </button>
+            <span className="text-cyan-400 font-bold px-2 py-1 text-2xs uppercase tracking-wider">{authManager.getSession().role || 'Analyst'}</span>
           </div>
 
           <button
@@ -362,13 +314,7 @@ export const Remediation: React.FC = () => {
               )}
               {actionError.message.includes('Four-Eyes') && (
                 <div className="mt-2 pt-2 border-t border-rose-900 flex items-center gap-2">
-                  <span className="text-slate-300">Switch to Security Lead to satisfy role-separation:</span>
-                  <button
-                    onClick={() => handlePersonaSwitch('security_lead')}
-                    className="px-2 py-1 rounded bg-rose-900 hover:bg-rose-800 text-white font-bold text-2xs"
-                  >
-                    Switch to Security Lead
-                  </button>
+                  <span className="text-slate-300">Use the Evaluation Persona dropdown in the header to switch to a Security Approver to satisfy role-separation.</span>
                 </div>
               )}
             </div>
@@ -580,7 +526,7 @@ export const Remediation: React.FC = () => {
                       <p className="text-xs text-slate-300">
                         Proposal has been peer-reviewed. Requires approval from Security Lead (Four-Eyes: proposer cannot approve).
                       </p>
-                      {activePersona === 'developer' && (
+                      {activePersona === ('developer' as string) && (
                         <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-2xs flex items-center gap-2">
                           <AlertTriangle size={14} className="shrink-0" />
                           <span>Active persona is Developer. Attempting approval will trigger real 403 Four-Eyes block!</span>
@@ -595,14 +541,7 @@ export const Remediation: React.FC = () => {
                           {actionLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                           <span>Approve Remediation (REVIEWED ➔ APPROVED)</span>
                         </button>
-                        {activePersona !== 'security_lead' && (
-                          <button
-                            onClick={() => handlePersonaSwitch('security_lead')}
-                            className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-2xs font-semibold whitespace-nowrap"
-                          >
-                            Switch to Security Lead
-                          </button>
-                        )}
+
                       </div>
                     </div>
                   )}
