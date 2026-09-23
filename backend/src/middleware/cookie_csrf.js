@@ -120,18 +120,62 @@ function csrfProtectionMiddleware(req, res, next) {
 
   const path = (req.path || "").toLowerCase();
   const rawPath = (req.originalUrl || "").split("?")[0].toLowerCase();
+  const cleanPath = path.replace(/\/+$/, "") || "/";
+  const cleanRawPath = rawPath.replace(/\/+$/, "") || "/";
   const exemptLoginPaths = [
+    "/api/v1/auth/demo/login",
+    "/auth/demo/login",
+    "/demo/login",
+    "/api/v1/auth/demo/reset",
+    "/auth/demo/reset",
+    "/demo/reset",
+    "/api/v1/auth/demo/seed",
+    "/auth/demo/seed",
+    "/demo/seed",
     "/api/v1/auth/local/login",
-    "/api/v1/auth/cookie/login",
-    "/api/v1/auth/ldap/login",
-    "/api/v1/auth/oidc/callback",
     "/auth/local/login",
+    "/local/login",
+    "/api/v1/auth/cookie/login",
     "/auth/cookie/login",
+    "/cookie/login",
+    "/api/v1/auth/ldap/login",
     "/auth/ldap/login",
+    "/ldap/login",
+    "/api/v1/auth/oidc/callback",
     "/auth/oidc/callback",
+    "/oidc/callback",
+    "/api/v1/auth/mfa/verify",
+    "/auth/mfa/verify",
+    "/mfa/verify",
+    "/api/v1/auth/local/register",
+    "/auth/local/register",
+    "/local/register",
+    "/api/v1/auth/register",
+    "/auth/register",
+    "/register",
+    "/api/v1/auth/token/refresh",
+    "/auth/token/refresh",
+    "/token/refresh",
+    "/api/v1/auth/password-reset/request",
+    "/auth/password-reset/request",
+    "/password-reset/request",
+    "/api/v1/auth/password-reset/confirm",
+    "/auth/password-reset/confirm",
+    "/password-reset/confirm",
+    "/api/v1/auth/forgot-password",
+    "/auth/forgot-password",
+    "/forgot-password",
+    "/api/v1/auth/reset-password",
+    "/auth/reset-password",
+    "/reset-password",
   ];
 
-  if (exemptLoginPaths.includes(path) || exemptLoginPaths.includes(rawPath)) {
+  if (
+    exemptLoginPaths.includes(cleanPath) ||
+    exemptLoginPaths.includes(cleanRawPath) ||
+    exemptLoginPaths.includes(path) ||
+    exemptLoginPaths.includes(rawPath)
+  ) {
     return next();
   }
 

@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:demo": "node -e \"process.env.AUTH_MODE='demo'; require('./src/server.js')\"",
     "dev": "nodemon src/server.js",
     "test": "node --test",
     "test:coverage": "node --test --experimental-test-coverage",

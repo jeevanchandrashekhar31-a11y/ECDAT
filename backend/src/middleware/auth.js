@@ -81,6 +81,7 @@ const PUBLIC_AUTH_PATHS = Object.freeze([
   "/api/v1/auth/cookie/login",
   "/api/v1/auth/csrf-token",
   "/api/v1/auth/rbac/catalog",
+  "/api/v1/auth/rbac/matrix",
   "/api/v1/auth/token/refresh",
   "/api/v1/auth/password-reset/request",
   "/api/v1/auth/password-reset/confirm",
@@ -97,6 +98,7 @@ const PUBLIC_AUTH_PATHS = Object.freeze([
   "/auth/cookie/login",
   "/auth/csrf-token",
   "/auth/rbac/catalog",
+  "/auth/rbac/matrix",
   "/auth/token/refresh",
   "/auth/password-reset/request",
   "/auth/password-reset/confirm",
@@ -253,14 +255,35 @@ function apiKeyAuthMiddleware(req, res, next) {
     }
   };
 
-  // 1. If an API key or token was provided, validate it strictly.
-  // Presenting an invalid credential fails with 401 for Bearer tokens or 403 for API keys.
+  // 1. Public auth endpoints (login, registration, CSRF token, demo, etc.)
+  const isPublicAuthPath =
+    publicAuthPaths.includes(pathOnly) ||
+    publicAuthPaths.includes(originalPathOnly);
+
+  if (isPublicAuthPath) {
+    if (providedKey) {
+      const authResult = verifyCredentials(providedKey);
+      if (authResult) {
+        req.auth = authResult;
+        if (authResult.user) req.user = authResult.user;
+      } else {
+        req.auth = { authenticated: false, role: "anonymous", roles: [] };
+      }
+    } else {
+      req.auth = { authenticated: false, role: "anonymous", roles: [] };
+    }
+    return next();
+  }
+
+  // 2. If an API key or token was provided, validate it strictly.
+  // Presenting an invalid credential fails with 401 for Bearer/cookie tokens or 403 for API keys.
   if (providedKey) {
     const authResult = verifyCredentials(providedKey);
     if (!authResult) {
       const authHeader = (req.headers["authorization"] || "").trim().toLowerCase();
       const isBearer = authHeader.startsWith("bearer");
-      if (isBearer) {
+      const hasCookie = req.headers && req.headers.cookie && req.headers.cookie.includes("ecdat_access_token=");
+      if (isBearer || hasCookie) {
         return res.status(401).json({
           error: "Unauthorized",
           message: "Invalid, expired, or revoked token.",
@@ -273,16 +296,6 @@ function apiKeyAuthMiddleware(req, res, next) {
     }
     req.auth = authResult;
     if (authResult.user) req.user = authResult.user;
-    return next();
-  }
-
-  // 3. Public auth endpoints (login, registration, CSRF, etc.)
-  const isPublicAuthPath =
-    publicAuthPaths.includes(pathOnly) ||
-    publicAuthPaths.includes(originalPathOnly);
-
-  if (isPublicAuthPath) {
-    req.auth = { authenticated: false, role: "anonymous", roles: [] };
     return next();
   }
 

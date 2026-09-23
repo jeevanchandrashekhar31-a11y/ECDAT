@@ -369,3 +369,34 @@ test("Auth Hardening API - Multi-Device Global Session Revocation", async () => 
     assert.equal(resMeAfter.status, 401);
   });
 });
+
+test("Auth Hardening API - Demo login with existing/stale cookies succeeds without CSRF token error", async () => {
+  await withServer(async (baseUrl) => {
+    const config = require("../../src/config");
+    const prevMode = config.AUTH_MODE;
+    config.AUTH_MODE = "demo";
+    try {
+      // Client sends request to /api/v1/auth/demo/login with an ambient cookie from a previous session
+      // but no CSRF header or matching cookie: must succeed (200 OK), not fail with 403 CSRFValidationFailed.
+      const resDemo = await fetch(`${baseUrl}/api/v1/auth/demo/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: "ecdat_access_token=stale_or_expired_cookie_value; other_cookie=xyz",
+          Origin: "http://localhost:5173",
+        },
+        body: JSON.stringify({ persona: "developer", seed: false }),
+      });
+
+      const demoData = await resDemo.json();
+      assert.equal(resDemo.status, 200, "Demo login must not be blocked by CSRF middleware when cookies are present");
+      assert.ok(demoData.accessToken);
+      assert.ok(demoData.csrfToken, "Demo login must issue a fresh CSRF token");
+      assert.equal(demoData.user.username, "demo-developer");
+      assert.equal(demoData.demoMode, true);
+    } finally {
+      config.AUTH_MODE = prevMode;
+    }
+  });
+});
+

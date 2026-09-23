@@ -46,9 +46,22 @@ router.get("/", async (req, res, next) => {
     if (connected) {
       try {
         // Resolve target scan_id if explicitly specified and not 'all'
-        let targetScanId = scanId;
-        if (targetScanId === 'all' || targetScanId === 'ALL') {
+        let targetScanId = null;
+        if (scanId === 'all' || scanId === 'ALL') {
           targetScanId = null;
+        } else if (scanId) {
+          targetScanId = scanId;
+        } else {
+          let latestScanQuery = db("scans").select("id").orderBy("created_at", "desc");
+          const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
+          const callerTenant = req.tenantContext?.tenantId;
+          if (!isPlatformAdmin && callerTenant) {
+             latestScanQuery = latestScanQuery.where("tenant_id", callerTenant);
+          }
+          const latestScan = await latestScanQuery.first();
+          if (latestScan) {
+            targetScanId = latestScan.id;
+          }
         }
 
         let query = db("assets")

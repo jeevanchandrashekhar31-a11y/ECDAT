@@ -652,7 +652,7 @@ function generateTechnicalHtmlReport(report) {
             <div class="panel-title">8. Linked Certificate (X.509)</div>
             <div>Subject: <code>${item.certificate.subject_dn.split(",")[0]}</code></div>
             <div>Issuer: <code>${item.certificate.issuer_dn}</code></div>
-            <div>Fingerprint: <code>${item.certificate.fingerprint_sha256.slice(0, 16)}...</code></div>
+            <div>Fingerprint: <code>${(item.certificate.fingerprint_sha256 || 'N/A').slice(0, 16)}...</code></div>
             <div>Valid Days: <b>${item.certificate.days_remaining}d</b></div>
           </div>
           <div class="panel">

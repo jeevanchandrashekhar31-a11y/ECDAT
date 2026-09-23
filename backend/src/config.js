@@ -90,7 +90,7 @@ const rawDatabaseUrl = getEnv(
 const config = {
   NODE_ENV: nodeEnv,
   PORT: parseInt(getEnv("PORT", "5000"), 10),
-  AUTH_MODE: getEnv("AUTH_MODE", "production"),
+  AUTH_MODE: getEnv("AUTH_MODE", nodeEnv === "production" ? "production" : "demo"),
   MAX_JSON_SIZE: parseBodySize(getEnv("MAX_JSON_SIZE", "10mb")),
   MAX_UPLOAD_BYTES: parsePositiveInt(
     "MAX_UPLOAD_BYTES",

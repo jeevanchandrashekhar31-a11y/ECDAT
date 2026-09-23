@@ -93,7 +93,9 @@ test("API - Bad JSON payload returns safe 400 error", async () => {
 
 test("API - 404 Route returns clean JSON error", async () => {
   await withServer(async (baseUrl) => {
-    const res = await fetch(`${baseUrl}/api/v1/nonexistent_endpoint`);
+    const res = await fetch(`${baseUrl}/api/v1/nonexistent_endpoint`, {
+      headers: { "X-API-Key": config.ECDAT_API_KEY },
+    });
     assert.strictEqual(res.status, 404);
     const data = await res.json();
     assert.strictEqual(data.error, "NotFound");
