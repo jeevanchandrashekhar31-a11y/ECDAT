@@ -118,8 +118,13 @@ function calculateMosca({
     moscaMargin >= -Math.abs(urgencyDeltaThreshold) ||
     finalZ - moscaTotal <= 2.0
   ) {
-    status = MoscaStatus.WATCH;
-    reason = `Watch: Mosca margin (${moscaMargin} yrs) is within policy urgency buffer. Migration preparation must begin soon.`;
+    if (moscaMargin === 0) {
+      status = MoscaStatus.WATCH;
+      reason = `Watch: Margin is exactly 0. Migration must begin immediately to avoid falling behind the threat horizon.`;
+    } else {
+      status = MoscaStatus.WATCH;
+      reason = `Watch: Mosca margin (${moscaMargin} yrs) is within policy urgency buffer. Migration preparation must begin soon.`;
+    }
   } else {
     status = MoscaStatus.SAFE;
     reason = `Safe: Safe quantum margin of ${Math.abs(moscaMargin)} yrs remaining before CRQC estimated arrival.`;

@@ -28,15 +28,17 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# Four canonical PQC classes
+# Canonical PQC classes
 CLASS_QUANTUM_VULNERABLE = "quantum-vulnerable"
 CLASS_QUANTUM_RESISTANT = "quantum-resistant"
+CLASS_QUANTUM_SAFE_SYMMETRIC = "quantum-safe-symmetric"
 CLASS_HYBRID = "hybrid"
 CLASS_UNKNOWN = "unknown"
 
 CANONICAL_CLASSES = {
     CLASS_QUANTUM_VULNERABLE,
     CLASS_QUANTUM_RESISTANT,
+    CLASS_QUANTUM_SAFE_SYMMETRIC,
     CLASS_HYBRID,
     CLASS_UNKNOWN,
 }
@@ -934,7 +936,7 @@ class CryptoClassifier:
             else:
                 return AlgorithmClassificationResult(
                     algorithm=algo_raw,
-                    classification=CLASS_QUANTUM_RESISTANT,
+                    classification=CLASS_QUANTUM_SAFE_SYMMETRIC,
                     threat_model="Grover",
                     security_level_bits=effective_bits,
                     nist_pqc_category=1 if effective_bits == 256 else 5,

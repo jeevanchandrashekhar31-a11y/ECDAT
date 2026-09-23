@@ -356,9 +356,17 @@ async function getEnterpriseDashboardViews(options = {}) {
   // Weighted enterprise security posture score (0 - 100)
   const penalty = criticalCount * 15 + highCount * 7 + mediumCount * 3 + quantumAtRiskCount * 5;
   const postureScore = Math.max(12, Math.min(100, Math.round(100 - penalty / Math.max(1, totalFindings))));
-  const pqcReadinessPct = (totalFindings === 0 || totalAssets === 0) ? null : Math.round(
-    (findings.filter((f) => f.mosca_status === "SAFE" || f.algorithm.toLowerCase().includes("kyber") || f.algorithm.toLowerCase().includes("ml-kem") || f.algorithm.toLowerCase().includes("ml-dsa") || f.algorithm.toLowerCase().includes("slh-dsa")).length /
-      Math.max(1, totalFindings)) *
+  const asymmetricFindings = findings.filter(f => {
+    const algoLower = (f.algorithm || "").toLowerCase();
+    return algoLower.includes("ml-kem") || algoLower.includes("ml-dsa") || algoLower.includes("slh-dsa") || 
+      algoLower.includes("hybrid") || algoLower.includes("+") || algoLower.includes("kyber") ||
+      algoLower.includes("rsa") || algoLower.includes("ecdsa") || algoLower.includes("ecdh") || 
+      algoLower.includes("dsa") || algoLower.includes("diffie-hellman") || algoLower.includes("x25519");
+  });
+
+  const pqcReadinessPct = (asymmetricFindings.length === 0) ? null : Math.round(
+    (asymmetricFindings.filter((f) => f.mosca_status === "SAFE" || f.algorithm.toLowerCase().includes("kyber") || f.algorithm.toLowerCase().includes("ml-kem") || f.algorithm.toLowerCase().includes("ml-dsa") || f.algorithm.toLowerCase().includes("slh-dsa")).length /
+      Math.max(1, asymmetricFindings.length)) *
       100
   );
 
@@ -527,15 +535,16 @@ async function getEnterpriseDashboardViews(options = {}) {
   // ==========================================================================
   const shorVulnerable = findings.filter((f) => {
     const a = f.algorithm.toLowerCase();
-    return a.includes("rsa") || a.includes("ec") || a.includes("dsa") || a.includes("diffie");
+    return /\b(rsa|dsa|diffie|ec|ecc|ecdsa|ecdh|ed25519|ed448|curve25519|x25519)\b/.test(a) ||
+           a.startsWith("ec/");
   });
   const groverVulnerable = findings.filter((f) => {
     const a = f.algorithm.toLowerCase();
-    return (a.includes("aes") && f.key_size === 128) || a.includes("3des") || a.includes("des");
+    return (/\baes\b/.test(a) && f.key_size === 128) || /\b(3des|des)\b/.test(a);
   });
   const pqcSafe = findings.filter((f) => {
     const a = f.algorithm.toLowerCase();
-    return a.includes("kyber") || a.includes("dilithium") || a.includes("sphincs") || (a.includes("aes") && f.key_size === 256);
+    return /\b(kyber|dilithium|sphincs)\b/.test(a) || (/\baes\b/.test(a) && f.key_size === 256);
   });
 
   const mlKemMatches = findings.filter((f) => {
@@ -581,22 +590,15 @@ async function getEnterpriseDashboardViews(options = {}) {
       },
     ],
     mosca_timeline: findings.map((f) => {
-      const moscaRes = calculateMosca({
-        assetType: f.asset_type || "software_library",
-        dataSensitivity: f.data_sensitivity || "CONFIDENTIAL",
-        businessCriticality: f.business_criticality || "MEDIUM",
-        scenario,
-        algorithm: f.algorithm,
-      });
       return {
         finding_id: f.id,
         asset_id: f.asset_id,
         algorithm: f.algorithm,
-        x_shelf_life_years: moscaRes.x_shelf_life_years,
-        y_migration_years: moscaRes.y_migration_years,
-        z_quantum_threat_years: moscaRes.z_quantum_threat_years,
-        margin_years: moscaRes.mosca_margin_years ?? f.mosca_margin_years,
-        status: moscaRes.status || f.mosca_status,
+        x_shelf_life_years: Number(f.mosca_x_years) || 0,
+        y_migration_years: Number(f.mosca_y_years) || 0,
+        z_quantum_threat_years: Number(f.mosca_z_years) || 9,
+        margin_years: Number(f.mosca_margin_years) || 0,
+        status: f.mosca_status || "SAFE",
         evidence_context: f.evidence_context,
         location: f.location,
       };
@@ -824,16 +826,16 @@ async function getEnterpriseDashboardViews(options = {}) {
     .map((f, idx) => {
       const algo = (f.algorithm || "").toUpperCase();
       let target = "SHA-256";
-      let rationale = `Deprecated ${f.algorithm} should be upgraded immediately to a modern standard.`;
+      let rationale = `Deprecated ${f.algorithm} violates cryptographic hygiene standards and must be upgraded to neutralize known practical attacks.`;
       if (algo.includes("RSA")) {
         target = "RSA-3072 or ML-KEM-768";
-        rationale = "Increasing RSA key size eliminates immediate factorization exposure.";
+        rationale = "Increasing RSA modulus to >= 3072 bits provides ~128 bits of classical entropy, halting IFP factoring via General Number Field Sieve (GNFS).";
       } else if (algo.includes("TLS")) {
         target = "TLS 1.3 / TLS 1.2";
-        rationale = "Disables insecure legacy protocols to enforce PFS and modern AEAD ciphers.";
+        rationale = "Deprecates CBC-mode malleability and padding oracles. Enforces Ephemeral Elliptic Curve Diffie-Hellman (ECDHE) for Perfect Forward Secrecy (PFS) and authenticated encryption (AEAD).";
       } else if (algo.includes("MD5") || algo.includes("SHA")) {
         target = "SHA-256 / SHA-3";
-        rationale = "Eliminates practical hash collision attacks without extensive architectural refactoring.";
+        rationale = "Neutralizes O(2^(n/2)) differential collision vulnerabilities. SHA-256 enforces 128-bit collision and 256-bit pre-image resistance bounds.";
       }
 
       return {
@@ -888,7 +890,7 @@ async function getEnterpriseDashboardViews(options = {}) {
         pqc_migration: pqcMigration,
         location: f.location,
         line_number: f.line_number,
-        rationale: `Cryptographic primitive ${f.algorithm} is vulnerable to quantum cryptanalysis (Shor's algorithm).`,
+        rationale: `Cryptographic primitive ${f.algorithm} is catastrophically vulnerable to Shor's algorithm on a CRQC, enabling O((log N)^3) polynomial time key extraction.`,
       };
     });
 

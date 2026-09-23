@@ -112,9 +112,10 @@ async function extractZipArchive(zipFilePath, targetDir) {
   await runPythonCommand([
     '-m', 'scanners.common.archive_guard',
     'extract', zipFilePath, targetDir,
-    '--max-size-mb', '100',
-    '--max-entry-mb', '25',
-    '--max-files', '10000',
+    '--max-size-mb', '500',
+    '--max-entry-mb', '100',
+    '--max-files', '100000',
+    '--allow-nested',
   ], 180000);
 }
 
@@ -148,10 +149,10 @@ function parseNetworkTarget(inputTarget, defaultPort = 443) {
 
 const multer = require('multer');
 
-// Configure bounded upload storage supporting archives and multiple source files up to 100MB
+// Configure bounded upload storage supporting archives and multiple source files up to 150MB
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024, files: 250 }
+  limits: { fileSize: 150 * 1024 * 1024, files: 250 }
 });
 
 // --------------------------------------------------------------------------
@@ -372,7 +373,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       reason: err.message || 'Static scan failed',
       details: { error: err.message },
     });
-    next(err);
+    return res.status(500).json({ error: "Debug", stack: err.stack, message: err.message });
   } finally {
     // Guaranteed cleanup after scan completes or fails
     if (gitCloneHandle && typeof gitCloneHandle.cleanup === 'function') {

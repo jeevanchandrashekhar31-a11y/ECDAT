@@ -1,0 +1,3 @@
+algorithm_name: RSA-2048
+algorithm_name: AES-256-GCM
+expected_detection: false

@@ -1,0 +1,1 @@
+# This comment mentions RSA-2048, AES-256-GCM, SHA-256 and ML-KEM-768 but performs no cryptographic operation.

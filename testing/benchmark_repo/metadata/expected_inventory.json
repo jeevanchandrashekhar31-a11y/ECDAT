@@ -1,0 +1,1008 @@
+{
+  "benchmark_version": "1.0",
+  "total_assets": 100,
+  "positive_assets": 95,
+  "negative_controls": 5,
+  "assets": [
+    {
+      "asset_id": "sym-01-aes128",
+      "category": "symmetric",
+      "algorithm": "AES-128",
+      "primitive": "AES",
+      "usage": "encryption",
+      "file": "01-symmetric/01_aes128.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-02-aes256",
+      "category": "symmetric",
+      "algorithm": "AES-256",
+      "primitive": "AES",
+      "usage": "encryption",
+      "file": "01-symmetric/02_aes256.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-03-aes128gcm",
+      "category": "symmetric",
+      "algorithm": "AES-128-GCM",
+      "primitive": "AES-GCM",
+      "usage": "AEAD",
+      "file": "01-symmetric/03_aes128gcm.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-04-aes256gcm",
+      "category": "symmetric",
+      "algorithm": "AES-256-GCM",
+      "primitive": "AES-GCM",
+      "usage": "AEAD",
+      "file": "01-symmetric/04_aes256gcm.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-05-aes192",
+      "category": "symmetric",
+      "algorithm": "AES-192",
+      "primitive": "AES",
+      "usage": "encryption",
+      "file": "01-symmetric/05_aes192.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-06-des",
+      "category": "symmetric",
+      "algorithm": "DES",
+      "primitive": "DES",
+      "usage": "encryption",
+      "file": "01-symmetric/06_des.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-07-3des",
+      "category": "symmetric",
+      "algorithm": "3DES",
+      "primitive": "3DES",
+      "usage": "encryption",
+      "file": "01-symmetric/07_3des.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-08-chacha20",
+      "category": "symmetric",
+      "algorithm": "ChaCha20",
+      "primitive": "ChaCha20",
+      "usage": "encryption",
+      "file": "01-symmetric/08_chacha20.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-09-chacha20poly1305",
+      "category": "symmetric",
+      "algorithm": "ChaCha20-Poly1305",
+      "primitive": "AEAD",
+      "usage": "encryption",
+      "file": "01-symmetric/09_chacha20poly1305.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-10-camellia256",
+      "category": "symmetric",
+      "algorithm": "Camellia-256",
+      "primitive": "Camellia",
+      "usage": "encryption",
+      "file": "01-symmetric/10_camellia256.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-11-blowfish",
+      "category": "symmetric",
+      "algorithm": "Blowfish",
+      "primitive": "Blowfish",
+      "usage": "encryption",
+      "file": "01-symmetric/11_blowfish.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-12-twofish",
+      "category": "symmetric",
+      "algorithm": "Twofish",
+      "primitive": "Twofish",
+      "usage": "encryption",
+      "file": "01-symmetric/12_twofish.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-13-idea",
+      "category": "symmetric",
+      "algorithm": "IDEA",
+      "primitive": "IDEA",
+      "usage": "encryption",
+      "file": "01-symmetric/13_idea.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-14-rc4",
+      "category": "symmetric",
+      "algorithm": "RC4",
+      "primitive": "RC4",
+      "usage": "stream cipher",
+      "file": "01-symmetric/14_rc4.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "sym-15-cast5",
+      "category": "symmetric",
+      "algorithm": "CAST5",
+      "primitive": "CAST5",
+      "usage": "encryption",
+      "file": "01-symmetric/15_cast5.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "hash-01-md5",
+      "category": "hashing",
+      "algorithm": "MD5",
+      "primitive": "hash",
+      "usage": "digest",
+      "file": "02-hashing/01_md5.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "hash-02-sha_1",
+      "category": "hashing",
+      "algorithm": "SHA-1",
+      "primitive": "hash",
+      "usage": "digest",
+      "file": "02-hashing/02_sha_1.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "hash-03-sha_224",
+      "category": "hashing",
+      "algorithm": "SHA-224",
+      "primitive": "hash",
+      "usage": "digest",
+      "file": "02-hashing/03_sha_224.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "hash-04-sha_256",
+      "category": "hashing",
+      "algorithm": "SHA-256",
+      "primitive": "hash",
+      "usage": "digest",
+      "file": "02-hashing/04_sha_256.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "hash-05-sha_384",
+      "category": "hashing",
+      "algorithm": "SHA-384",
+      "primitive": "hash",
+      "usage": "digest",
+      "file": "02-hashing/05_sha_384.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "hash-06-sha_512",
+      "category": "hashing",
+      "algorithm": "SHA-512",
+      "primitive": "hash",
+      "usage": "digest",
+      "file": "02-hashing/06_sha_512.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "hash-07-sha_512_256",
+      "category": "hashing",
+      "algorithm": "SHA-512/256",
+      "primitive": "hash",
+      "usage": "digest",
+      "file": "02-hashing/07_sha_512_256.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "hash-08-sha3_256",
+      "category": "hashing",
+      "algorithm": "SHA3-256",
+      "primitive": "hash",
+      "usage": "digest",
+      "file": "02-hashing/08_sha3_256.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "hash-09-sha3_512",
+      "category": "hashing",
+      "algorithm": "SHA3-512",
+      "primitive": "hash",
+      "usage": "digest",
+      "file": "02-hashing/09_sha3_512.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "hash-10-blake2b_512",
+      "category": "hashing",
+      "algorithm": "BLAKE2b-512",
+      "primitive": "hash",
+      "usage": "digest",
+      "file": "02-hashing/10_blake2b_512.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "mac-01-hmac_sha1",
+      "category": "mac-kdf",
+      "algorithm": "HMAC-SHA1",
+      "primitive": "HMAC",
+      "usage": "MAC",
+      "file": "03-mac-kdf/01_hmac_sha1.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "mac-02-hmac_sha256",
+      "category": "mac-kdf",
+      "algorithm": "HMAC-SHA256",
+      "primitive": "HMAC",
+      "usage": "MAC",
+      "file": "03-mac-kdf/02_hmac_sha256.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "mac-03-hmac_sha512",
+      "category": "mac-kdf",
+      "algorithm": "HMAC-SHA512",
+      "primitive": "HMAC",
+      "usage": "MAC",
+      "file": "03-mac-kdf/03_hmac_sha512.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "mac-04-cmac_aes",
+      "category": "mac-kdf",
+      "algorithm": "CMAC-AES",
+      "primitive": "CMAC",
+      "usage": "MAC",
+      "file": "03-mac-kdf/04_cmac_aes.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "mac-05-gmac_aes",
+      "category": "mac-kdf",
+      "algorithm": "GMAC-AES",
+      "primitive": "GMAC",
+      "usage": "MAC",
+      "file": "03-mac-kdf/05_gmac_aes.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "mac-06-hkdf_sha256",
+      "category": "mac-kdf",
+      "algorithm": "HKDF-SHA256",
+      "primitive": "HKDF",
+      "usage": "KDF",
+      "file": "03-mac-kdf/06_hkdf_sha256.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "mac-07-hkdf_sha512",
+      "category": "mac-kdf",
+      "algorithm": "HKDF-SHA512",
+      "primitive": "HKDF",
+      "usage": "KDF",
+      "file": "03-mac-kdf/07_hkdf_sha512.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "mac-08-pbkdf2_hmac_sha256",
+      "category": "mac-kdf",
+      "algorithm": "PBKDF2-HMAC-SHA256",
+      "primitive": "PBKDF2",
+      "usage": "KDF",
+      "file": "03-mac-kdf/08_pbkdf2_hmac_sha256.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "mac-09-scrypt",
+      "category": "mac-kdf",
+      "algorithm": "scrypt",
+      "primitive": "scrypt",
+      "usage": "KDF",
+      "file": "03-mac-kdf/09_scrypt.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "mac-10-argon2id",
+      "category": "mac-kdf",
+      "algorithm": "Argon2id",
+      "primitive": "Argon2",
+      "usage": "KDF",
+      "file": "03-mac-kdf/10_argon2id.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "rsa-01-1024",
+      "category": "rsa",
+      "algorithm": "RSA-1024",
+      "primitive": "RSA",
+      "usage": "asymmetric",
+      "file": "04-rsa/01_rsa1024-01.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "rsa-02-1536",
+      "category": "rsa",
+      "algorithm": "RSA-1536",
+      "primitive": "RSA",
+      "usage": "asymmetric",
+      "file": "04-rsa/02_rsa1536-02.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "rsa-03-2048",
+      "category": "rsa",
+      "algorithm": "RSA-2048",
+      "primitive": "RSA",
+      "usage": "asymmetric",
+      "file": "04-rsa/03_rsa2048-03.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "rsa-04-3072",
+      "category": "rsa",
+      "algorithm": "RSA-3072",
+      "primitive": "RSA",
+      "usage": "asymmetric",
+      "file": "04-rsa/04_rsa3072-04.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "rsa-05-4096",
+      "category": "rsa",
+      "algorithm": "RSA-4096",
+      "primitive": "RSA",
+      "usage": "asymmetric",
+      "file": "04-rsa/05_rsa4096-05.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "rsa-06-1024",
+      "category": "rsa",
+      "algorithm": "RSA-1024",
+      "primitive": "RSA",
+      "usage": "asymmetric",
+      "file": "04-rsa/06_rsa1024-06.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "rsa-07-1536",
+      "category": "rsa",
+      "algorithm": "RSA-1536",
+      "primitive": "RSA",
+      "usage": "asymmetric",
+      "file": "04-rsa/07_rsa1536-07.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "rsa-08-2048",
+      "category": "rsa",
+      "algorithm": "RSA-2048",
+      "primitive": "RSA",
+      "usage": "asymmetric",
+      "file": "04-rsa/08_rsa2048-08.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "rsa-09-3072",
+      "category": "rsa",
+      "algorithm": "RSA-3072",
+      "primitive": "RSA",
+      "usage": "asymmetric",
+      "file": "04-rsa/09_rsa3072-09.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "rsa-10-4096",
+      "category": "rsa",
+      "algorithm": "RSA-4096",
+      "primitive": "RSA",
+      "usage": "asymmetric",
+      "file": "04-rsa/10_rsa4096-10.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "ecc-01-ecdsa_p256",
+      "category": "ecc",
+      "algorithm": "ECDSA-P256",
+      "primitive": "ECC/EdDSA",
+      "usage": "signature/key agreement",
+      "file": "05-ecc/01_ecdsa_p256.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "ecc-02-ecdsa_p384",
+      "category": "ecc",
+      "algorithm": "ECDSA-P384",
+      "primitive": "ECC/EdDSA",
+      "usage": "signature/key agreement",
+      "file": "05-ecc/02_ecdsa_p384.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "ecc-03-ecdsa_p521",
+      "category": "ecc",
+      "algorithm": "ECDSA-P521",
+      "primitive": "ECC/EdDSA",
+      "usage": "signature/key agreement",
+      "file": "05-ecc/03_ecdsa_p521.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "ecc-04-ecdh_p256",
+      "category": "ecc",
+      "algorithm": "ECDH-P256",
+      "primitive": "ECC/EdDSA",
+      "usage": "signature/key agreement",
+      "file": "05-ecc/04_ecdh_p256.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "ecc-05-ecdh_p384",
+      "category": "ecc",
+      "algorithm": "ECDH-P384",
+      "primitive": "ECC/EdDSA",
+      "usage": "signature/key agreement",
+      "file": "05-ecc/05_ecdh_p384.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "ecc-06-ed25519",
+      "category": "ecc",
+      "algorithm": "Ed25519",
+      "primitive": "ECC/EdDSA",
+      "usage": "signature/key agreement",
+      "file": "05-ecc/06_ed25519.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "ecc-07-ed448",
+      "category": "ecc",
+      "algorithm": "Ed448",
+      "primitive": "ECC/EdDSA",
+      "usage": "signature/key agreement",
+      "file": "05-ecc/07_ed448.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "ecc-08-secp256k1",
+      "category": "ecc",
+      "algorithm": "secp256k1",
+      "primitive": "ECC/EdDSA",
+      "usage": "signature/key agreement",
+      "file": "05-ecc/08_secp256k1.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "ecc-09-x25519_key",
+      "category": "ecc",
+      "algorithm": "X25519-key",
+      "primitive": "ECC/EdDSA",
+      "usage": "signature/key agreement",
+      "file": "05-ecc/09_x25519_key.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "ecc-10-x448_key",
+      "category": "ecc",
+      "algorithm": "X448-key",
+      "primitive": "ECC/EdDSA",
+      "usage": "signature/key agreement",
+      "file": "05-ecc/10_x448_key.py",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "kex-01-dh_2048",
+      "category": "key-exchange",
+      "algorithm": "DH-2048",
+      "primitive": "KEX",
+      "usage": "key establishment",
+      "file": "06-key-exchange/01_dh_2048.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "kex-02-dh_3072",
+      "category": "key-exchange",
+      "algorithm": "DH-3072",
+      "primitive": "KEX",
+      "usage": "key establishment",
+      "file": "06-key-exchange/02_dh_3072.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "kex-03-dh_4096",
+      "category": "key-exchange",
+      "algorithm": "DH-4096",
+      "primitive": "KEX",
+      "usage": "key establishment",
+      "file": "06-key-exchange/03_dh_4096.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "kex-04-ecdh_p256",
+      "category": "key-exchange",
+      "algorithm": "ECDH-P256",
+      "primitive": "KEX",
+      "usage": "key establishment",
+      "file": "06-key-exchange/04_ecdh_p256.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "kex-05-ecdh_p384",
+      "category": "key-exchange",
+      "algorithm": "ECDH-P384",
+      "primitive": "KEX",
+      "usage": "key establishment",
+      "file": "06-key-exchange/05_ecdh_p384.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "kex-06-x25519",
+      "category": "key-exchange",
+      "algorithm": "X25519",
+      "primitive": "KEX",
+      "usage": "key establishment",
+      "file": "06-key-exchange/06_x25519.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "kex-07-x448",
+      "category": "key-exchange",
+      "algorithm": "X448",
+      "primitive": "KEX",
+      "usage": "key establishment",
+      "file": "06-key-exchange/07_x448.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "kex-08-ffdhe2048",
+      "category": "key-exchange",
+      "algorithm": "FFDHE2048",
+      "primitive": "KEX",
+      "usage": "key establishment",
+      "file": "06-key-exchange/08_ffdhe2048.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "kex-09-ffdhe3072",
+      "category": "key-exchange",
+      "algorithm": "FFDHE3072",
+      "primitive": "KEX",
+      "usage": "key establishment",
+      "file": "06-key-exchange/09_ffdhe3072.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "kex-10-ffdhe4096",
+      "category": "key-exchange",
+      "algorithm": "FFDHE4096",
+      "primitive": "KEX",
+      "usage": "key establishment",
+      "file": "06-key-exchange/10_ffdhe4096.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "tls-01-1",
+      "category": "tls",
+      "algorithm": "TLSv1.0",
+      "primitive": "TLS",
+      "usage": "transport",
+      "file": "07-tls-protocols/01_tlsv1.0.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "tls-02-2",
+      "category": "tls",
+      "algorithm": "TLSv1.1",
+      "primitive": "TLS",
+      "usage": "transport",
+      "file": "07-tls-protocols/02_tlsv1.1.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "tls-03-3",
+      "category": "tls",
+      "algorithm": "TLSv1.2",
+      "primitive": "TLS",
+      "usage": "transport",
+      "file": "07-tls-protocols/03_tlsv1.2.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "tls-04-4",
+      "category": "tls",
+      "algorithm": "TLSv1.3",
+      "primitive": "TLS",
+      "usage": "transport",
+      "file": "07-tls-protocols/04_tlsv1.3.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "tls-05-5",
+      "category": "tls",
+      "algorithm": "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+      "primitive": "TLS",
+      "usage": "transport",
+      "file": "07-tls-protocols/05_tls_ecdhe_rsa_with_aes_128_gcm_sha256.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "tls-06-6",
+      "category": "tls",
+      "algorithm": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+      "primitive": "TLS",
+      "usage": "transport",
+      "file": "07-tls-protocols/06_tls_ecdhe_rsa_with_aes_256_gcm_sha384.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "tls-07-7",
+      "category": "tls",
+      "algorithm": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "primitive": "TLS",
+      "usage": "transport",
+      "file": "07-tls-protocols/07_tls_ecdhe_ecdsa_with_aes_128_gcm_sha256.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "tls-08-8",
+      "category": "tls",
+      "algorithm": "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+      "primitive": "TLS",
+      "usage": "transport",
+      "file": "07-tls-protocols/08_tls_ecdhe_ecdsa_with_aes_256_gcm_sha384.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "tls-09-9",
+      "category": "tls",
+      "algorithm": "TLS_CHACHA20_POLY1305_SHA256",
+      "primitive": "TLS",
+      "usage": "transport",
+      "file": "07-tls-protocols/09_tls_chacha20_poly1305_sha256.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "tls-10-10",
+      "category": "tls",
+      "algorithm": "TLS_AES_256_GCM_SHA384",
+      "primitive": "TLS",
+      "usage": "transport",
+      "file": "07-tls-protocols/10_tls_aes_256_gcm_sha384.conf",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "cert-01-rsa2048",
+      "category": "certificates-keys",
+      "algorithm": "RSA-2048",
+      "primitive": "certificate",
+      "usage": "X.509 certificate",
+      "file": "08-certificates-keys/01_rsa2048.cert.pem",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "cert-02-rsa3072",
+      "category": "certificates-keys",
+      "algorithm": "RSA-3072",
+      "primitive": "certificate",
+      "usage": "X.509 certificate",
+      "file": "08-certificates-keys/02_rsa3072.cert.pem",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "cert-03-rsa4096",
+      "category": "certificates-keys",
+      "algorithm": "RSA-4096",
+      "primitive": "certificate",
+      "usage": "X.509 certificate",
+      "file": "08-certificates-keys/03_rsa4096.cert.pem",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "cert-04-ecp256",
+      "category": "certificates-keys",
+      "algorithm": "EC-prime256v1",
+      "primitive": "certificate",
+      "usage": "X.509 certificate",
+      "file": "08-certificates-keys/04_ecp256.cert.pem",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "cert-05-ecp384",
+      "category": "certificates-keys",
+      "algorithm": "EC-secp384r1",
+      "primitive": "certificate",
+      "usage": "X.509 certificate",
+      "file": "08-certificates-keys/05_ecp384.cert.pem",
+      "expected_detection": true,
+      "notes": ""
+    },
+    {
+      "asset_id": "pqc-01-ml_kem_512",
+      "category": "pqc",
+      "algorithm": "ML-KEM-512",
+      "primitive": "PQC",
+      "usage": "KEM/signature",
+      "file": "09-pqc/01_ml_kem_512.txt",
+      "expected_detection": true,
+      "notes": "Identifier fixture; not an implementation"
+    },
+    {
+      "asset_id": "pqc-02-ml_kem_768",
+      "category": "pqc",
+      "algorithm": "ML-KEM-768",
+      "primitive": "PQC",
+      "usage": "KEM/signature",
+      "file": "09-pqc/02_ml_kem_768.txt",
+      "expected_detection": true,
+      "notes": "Identifier fixture; not an implementation"
+    },
+    {
+      "asset_id": "pqc-03-ml_kem_1024",
+      "category": "pqc",
+      "algorithm": "ML-KEM-1024",
+      "primitive": "PQC",
+      "usage": "KEM/signature",
+      "file": "09-pqc/03_ml_kem_1024.txt",
+      "expected_detection": true,
+      "notes": "Identifier fixture; not an implementation"
+    },
+    {
+      "asset_id": "pqc-04-ml_dsa_44",
+      "category": "pqc",
+      "algorithm": "ML-DSA-44",
+      "primitive": "PQC",
+      "usage": "KEM/signature",
+      "file": "09-pqc/04_ml_dsa_44.txt",
+      "expected_detection": true,
+      "notes": "Identifier fixture; not an implementation"
+    },
+    {
+      "asset_id": "pqc-05-ml_dsa_65",
+      "category": "pqc",
+      "algorithm": "ML-DSA-65",
+      "primitive": "PQC",
+      "usage": "KEM/signature",
+      "file": "09-pqc/05_ml_dsa_65.txt",
+      "expected_detection": true,
+      "notes": "Identifier fixture; not an implementation"
+    },
+    {
+      "asset_id": "pqc-06-ml_dsa_87",
+      "category": "pqc",
+      "algorithm": "ML-DSA-87",
+      "primitive": "PQC",
+      "usage": "KEM/signature",
+      "file": "09-pqc/06_ml_dsa_87.txt",
+      "expected_detection": true,
+      "notes": "Identifier fixture; not an implementation"
+    },
+    {
+      "asset_id": "pqc-07-slh_dsa_sha2_128s",
+      "category": "pqc",
+      "algorithm": "SLH-DSA-SHA2-128s",
+      "primitive": "PQC",
+      "usage": "KEM/signature",
+      "file": "09-pqc/07_slh_dsa_sha2_128s.txt",
+      "expected_detection": true,
+      "notes": "Identifier fixture; not an implementation"
+    },
+    {
+      "asset_id": "pqc-08-slh_dsa_sha2_192s",
+      "category": "pqc",
+      "algorithm": "SLH-DSA-SHA2-192s",
+      "primitive": "PQC",
+      "usage": "KEM/signature",
+      "file": "09-pqc/08_slh_dsa_sha2_192s.txt",
+      "expected_detection": true,
+      "notes": "Identifier fixture; not an implementation"
+    },
+    {
+      "asset_id": "pqc-09-slh_dsa_sha2_256s",
+      "category": "pqc",
+      "algorithm": "SLH-DSA-SHA2-256s",
+      "primitive": "PQC",
+      "usage": "KEM/signature",
+      "file": "09-pqc/09_slh_dsa_sha2_256s.txt",
+      "expected_detection": true,
+      "notes": "Identifier fixture; not an implementation"
+    },
+    {
+      "asset_id": "pqc-10-x25519mlkem768",
+      "category": "pqc",
+      "algorithm": "X25519MLKEM768",
+      "primitive": "PQC",
+      "usage": "KEM/signature",
+      "file": "09-pqc/10_x25519mlkem768.txt",
+      "expected_detection": true,
+      "notes": "Identifier fixture; not an implementation"
+    },
+    {
+      "asset_id": "neg-01-prose",
+      "category": "negative-control",
+      "algorithm": "MULTIPLE",
+      "primitive": "N/A",
+      "usage": "prose/metadata",
+      "file": "10-negative-controls/01_prose.txt",
+      "expected_detection": false,
+      "notes": "Must not be counted as active cryptographic usage"
+    },
+    {
+      "asset_id": "neg-02-comment",
+      "category": "negative-control",
+      "algorithm": "MULTIPLE",
+      "primitive": "N/A",
+      "usage": "prose/metadata",
+      "file": "10-negative-controls/02_comment.txt",
+      "expected_detection": false,
+      "notes": "Must not be counted as active cryptographic usage"
+    },
+    {
+      "asset_id": "neg-03-log",
+      "category": "negative-control",
+      "algorithm": "MULTIPLE",
+      "primitive": "N/A",
+      "usage": "prose/metadata",
+      "file": "10-negative-controls/03_log.txt",
+      "expected_detection": false,
+      "notes": "Must not be counted as active cryptographic usage"
+    },
+    {
+      "asset_id": "neg-04-documentation",
+      "category": "negative-control",
+      "algorithm": "MULTIPLE",
+      "primitive": "N/A",
+      "usage": "prose/metadata",
+      "file": "10-negative-controls/04_documentation.txt",
+      "expected_detection": false,
+      "notes": "Must not be counted as active cryptographic usage"
+    },
+    {
+      "asset_id": "neg-05-fixture_metadata",
+      "category": "negative-control",
+      "algorithm": "MULTIPLE",
+      "primitive": "N/A",
+      "usage": "prose/metadata",
+      "file": "10-negative-controls/05_fixture_metadata.txt",
+      "expected_detection": false,
+      "notes": "Must not be counted as active cryptographic usage"
+    },
+    {
+      "asset_id": "key-01-rsa-1024",
+      "category": "certificates-keys",
+      "algorithm": "RSA-1024",
+      "primitive": "RSA",
+      "usage": "key metadata",
+      "file": "08-certificates-keys/06_rsa_key_1024_1.pem",
+      "expected_detection": true,
+      "notes": "Benchmark metadata fixture; not private key material"
+    },
+    {
+      "asset_id": "key-02-rsa-2048",
+      "category": "certificates-keys",
+      "algorithm": "RSA-2048",
+      "primitive": "RSA",
+      "usage": "key metadata",
+      "file": "08-certificates-keys/07_rsa_key_2048_2.pem",
+      "expected_detection": true,
+      "notes": "Benchmark metadata fixture; not private key material"
+    },
+    {
+      "asset_id": "key-03-rsa-3072",
+      "category": "certificates-keys",
+      "algorithm": "RSA-3072",
+      "primitive": "RSA",
+      "usage": "key metadata",
+      "file": "08-certificates-keys/08_rsa_key_3072_3.pem",
+      "expected_detection": true,
+      "notes": "Benchmark metadata fixture; not private key material"
+    },
+    {
+      "asset_id": "key-04-rsa-4096",
+      "category": "certificates-keys",
+      "algorithm": "RSA-4096",
+      "primitive": "RSA",
+      "usage": "key metadata",
+      "file": "08-certificates-keys/09_rsa_key_4096_4.pem",
+      "expected_detection": true,
+      "notes": "Benchmark metadata fixture; not private key material"
+    },
+    {
+      "asset_id": "key-05-rsa-2048",
+      "category": "certificates-keys",
+      "algorithm": "RSA-2048",
+      "primitive": "RSA",
+      "usage": "key metadata",
+      "file": "08-certificates-keys/10_rsa_key_2048_5.pem",
+      "expected_detection": true,
+      "notes": "Benchmark metadata fixture; not private key material"
+    }
+  ]
+}

@@ -102,13 +102,13 @@ describe("Phase 4: Remediation / File-System Security", () => {
   describe("P0-08: Verification Fail-Closed (No Default Success)", () => {
     test("POST /approvals/:approvalId/verify rejects omitted verification_results with 400", async () => {
       const engine = getDefaultApprovalEngine();
-      const proposal = engine.proposeRemediation(
+      const proposal = await engine.proposeRemediation(
         { title: "Test Fix", category: "ciphersuite modernization", environment: "staging" },
         { username: "dev1", role: "developer" }
       );
-      engine.reviewRemediation(proposal.approval_id, { username: "rev1", role: "reviewer" });
-      engine.approveRemediation(proposal.approval_id, { username: "adm1", role: "admin" });
-      engine.applyRemediation(proposal.approval_id, { username: "dep1", role: "deployer" });
+      await engine.reviewRemediation(proposal.approval_id, { username: "rev1", role: "reviewer" });
+      await engine.approveRemediation(proposal.approval_id, { username: "adm1", role: "admin" });
+      await engine.applyRemediation(proposal.approval_id, { username: "dep1", role: "deployer" });
 
       const app = createTestApp({ auth: { authenticated: true, role: "admin" } });
       const server = http.createServer(app);
@@ -131,18 +131,20 @@ describe("Phase 4: Remediation / File-System Security", () => {
       }
     });
 
-    test("verifyRemediation throws ApprovalWorkflowError when results are missing", () => {
+    test("verifyRemediation throws ApprovalWorkflowError when results are missing", async () => {
       const engine = getDefaultApprovalEngine();
-      const proposal = engine.proposeRemediation(
+      const proposal = await engine.proposeRemediation(
         { title: "Unit Test Verification", category: "ciphersuite modernization", environment: "staging" },
         { username: "dev2", role: "developer" }
       );
-      engine.reviewRemediation(proposal.approval_id, { username: "rev2", role: "reviewer" });
-      engine.approveRemediation(proposal.approval_id, { username: "adm2", role: "admin" });
-      engine.applyRemediation(proposal.approval_id, { username: "dep2", role: "deployer" });
+      await engine.reviewRemediation(proposal.approval_id, { username: "rev2", role: "reviewer" });
+      await engine.approveRemediation(proposal.approval_id, { username: "adm2", role: "admin" });
+      await engine.applyRemediation(proposal.approval_id, { username: "dep2", role: "deployer" });
 
-      assert.throws(
-        () => engine.verifyRemediation(proposal.approval_id, { username: "ver1", role: "verifier" }),
+      await assert.rejects(
+        async () => {
+          await engine.verifyRemediation(proposal.approval_id, { username: "ver1", role: "verifier" });
+        },
         /verificationResults/
       );
     });

@@ -240,6 +240,16 @@ function normalizeAssetForPrioritization(item) {
     why_now: whyNow,
     recommendation: item.recommendation || null,
     explanation: item.explanation || "",
+    // Phase 1 Explicit Properties Passthrough
+    primitive: item.primitive || null,
+    usage: item.usage || null,
+    location: item.location || null,
+    service: item.service || item.application || null,
+    protocol: item.protocol || null,
+    certificate: item.certificate || null,
+    confidence: typeof item.confidence === 'number' ? item.confidence : 1.0,
+    source: item.source || null,
+    is_synthetic: Boolean(item.is_synthetic),
   };
 }
 

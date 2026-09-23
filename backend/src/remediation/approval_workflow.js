@@ -296,7 +296,7 @@ class ApprovalWorkflowEngine {
     record.category = record.metadata.category;
     record.environment = record.metadata.environment;
     record.requires_explicit_approval = record.metadata.requires_explicit_approval;
-    record.proposer = { username: record.proposer };
+    record.proposer = { username: record.proposer, role: record.audit_history[0]?.role || "developer" };
     record.approver = record.approver ? { username: record.approver } : null;
     return record;
   }

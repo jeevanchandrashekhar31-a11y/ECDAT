@@ -245,6 +245,11 @@ async function generateExecutiveReport(options = {}) {
         line_number: f.line_number,
         evidence_context: f.evidence_context,
         severity: f.severity || "High",
+        mosca_status: f.mosca_status || "SAFE",
+        mosca_margin_years: f.mosca_margin_years,
+        mosca_x_years: f.mosca_x_years,
+        mosca_y_years: f.mosca_y_years,
+        mosca_z_years: f.mosca_z_years,
       }));
       assets = aRows.map((a) => ({
         id: a.id,
@@ -385,37 +390,53 @@ async function generateExecutiveReport(options = {}) {
     const algoLower = (f.algorithm || "").toLowerCase();
     const ref = createEvidenceReference(f);
 
-    if (algoLower.includes("ml-kem") || algoLower.includes("ml-dsa") || algoLower.includes("slh-dsa") || algoLower.includes("hybrid") || algoLower.includes("+")) {
-      if (algoLower.includes("+") || algoLower.includes("hybrid")) {
-        hybridEvidence.push(ref);
+    const isAsymmetric = 
+      algoLower.includes("ml-kem") || algoLower.includes("ml-dsa") || algoLower.includes("slh-dsa") || 
+      algoLower.includes("hybrid") || algoLower.includes("+") || algoLower.includes("kyber") ||
+      algoLower.includes("rsa") || algoLower.includes("ecdsa") || algoLower.includes("ecdh") || 
+      algoLower.includes("dsa") || algoLower.includes("diffie-hellman") || algoLower.includes("x25519");
+
+    if (isAsymmetric) {
+      if (algoLower.includes("ml-kem") || algoLower.includes("ml-dsa") || algoLower.includes("slh-dsa") || algoLower.includes("hybrid") || algoLower.includes("+") || algoLower.includes("kyber")) {
+        if (algoLower.includes("+") || algoLower.includes("hybrid")) {
+          hybridEvidence.push(ref);
+        } else {
+          qsEvidence.push(ref);
+        }
       } else {
-        qsEvidence.push(ref);
+        qvEvidence.push(ref);
       }
-    } else if (
-      algoLower.includes("rsa") ||
-      algoLower.includes("ecdsa") ||
-      algoLower.includes("ecdh") ||
-      algoLower.includes("dsa") ||
-      algoLower.includes("diffie-hellman")
-    ) {
-      qvEvidence.push(ref);
-    } else if (algoLower.includes("aes-256") || algoLower.includes("sha-3") || algoLower.includes("sha-256") || algoLower.includes("sha-512")) {
-      qsEvidence.push(ref);
-    } else {
-      qvEvidence.push(ref);
     }
   });
 
   const totalAssessed = qvEvidence.length + qsEvidence.length + hybridEvidence.length;
   const pqcReadinessPercentage = totalAssessed > 0 ? Number((((qsEvidence.length + hybridEvidence.length) / totalAssessed) * 100).toFixed(1)) : 0;
 
-  // Mosca calculus: T_collapse = 2033; T_shelf = 10; T_migrate = 3
-  const collapseYear = 2033;
-  const currentYear = new Date().getFullYear();
-  const shelfLifeYears = 10;
-  const migrationTimeYears = 3;
-  const moscaDeltaYears = Number(((currentYear + shelfLifeYears + migrationTimeYears) - collapseYear).toFixed(1));
-  const inQuantumDeficit = moscaDeltaYears > 0;
+  // Derive aggregate Mosca Calculus from findings
+  let maxMargin = -999;
+  let avgShelfLife = 0;
+  let avgMigration = 0;
+  let moscaCount = 0;
+  let hasCriticalUrgent = false;
+
+  findings.forEach(f => {
+    if (f.mosca_margin_years !== undefined && f.mosca_margin_years !== null) {
+      if (Number(f.mosca_margin_years) > maxMargin) maxMargin = Number(f.mosca_margin_years);
+      avgShelfLife += Number(f.mosca_x_years || 0);
+      avgMigration += Number(f.mosca_y_years || 0);
+      moscaCount++;
+    }
+    if (f.mosca_status === "CRITICAL_URGENT" || f.mosca_status === "AT_RISK") hasCriticalUrgent = true;
+  });
+
+  if (moscaCount > 0) {
+    avgShelfLife = Math.round((avgShelfLife / moscaCount) * 10) / 10;
+    avgMigration = Math.round((avgMigration / moscaCount) * 10) / 10;
+  }
+  
+  const collapseYear = findings[0]?.mosca_z_years ? (new Date().getFullYear() + Number(findings[0].mosca_z_years)) : 2033;
+  const moscaDeltaYears = maxMargin !== -999 ? maxMargin : 0;
+  const inQuantumDeficit = hasCriticalUrgent;
 
   const pqcReadiness = {
     total_assessed: totalAssessed,
@@ -425,8 +446,8 @@ async function generateExecutiveReport(options = {}) {
     pqc_readiness_percentage: pqcReadinessPercentage,
     mosca_calculus: {
       quantum_collapse_year: collapseYear,
-      average_data_shelf_life_years: shelfLifeYears,
-      estimated_migration_years: migrationTimeYears,
+      average_data_shelf_life_years: avgShelfLife,
+      estimated_migration_years: avgMigration,
       mosca_delta_years: moscaDeltaYears,
       in_quantum_deficit: inQuantumDeficit,
       urgency: inQuantumDeficit ? "IMMEDIATE_PQC_MIGRATION_REQUIRED" : "MONITOR_AND_PLAN",

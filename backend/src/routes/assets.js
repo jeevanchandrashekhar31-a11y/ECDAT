@@ -29,6 +29,11 @@ router.get("/", async (req, res, next) => {
       req.query.businessCriticality || req.query.business_criticality;
     const policyProfile = req.query.policyProfile || req.query.policy_profile;
 
+    // Phase 1 Explicit Filtering
+    const algorithm = req.query.algorithm;
+    const location = req.query.location;
+    const usage = req.query.usage;
+
     // Enforce strict pagination bounds (page >= 1, 1 <= pageSize <= 100, offset >= 0)
     const paginationResult = validatePagination(req.query);
     if (!paginationResult.valid) {
@@ -76,9 +81,23 @@ router.get("/", async (req, res, next) => {
             "assets.highest_severity",
             "assets.at_quantum_risk",
             "assets.cicd_pass",
+            // Phase 1 Rich Properties
+            "assets.algorithm",
+            "assets.primitive",
+            "assets.key_size",
+            "assets.usage",
+            "assets.location",
+            "assets.owner",
+            "assets.service",
+            "assets.protocol",
+            "assets.certificate",
+            "assets.source as asset_source",
+            "assets.confidence",
+            "assets.is_synthetic",
+            "assets.discovered_at",
             "assets.metadata",
             "assets.created_at as asset_created_at",
-            "scans.scanner_type as source",
+            "scans.scanner_type as scan_source",
             "scans.policy_profile_id as policy_profile",
             "scans.created_at as scan_created_at",
           );
@@ -95,7 +114,17 @@ router.get("/", async (req, res, next) => {
 
         if (targetScanId) {
           query = query.where("assets.scan_id", targetScanId);
+          if (targetScanId !== "demo-synthetic-scan") {
+            query = query.where("assets.is_synthetic", false);
+          }
+        } else {
+          query = query.where("assets.is_synthetic", false);
         }
+
+        // Phase 1 Explicit Filtering
+        if (algorithm) query = query.where("assets.algorithm", algorithm);
+        if (location) query = query.where("assets.location", "like", `%${location}%`);
+        if (usage) query = query.where("assets.usage", usage);
 
         if (severity) {
           query = query.whereRaw("LOWER(assets.highest_severity) = LOWER(?)", [

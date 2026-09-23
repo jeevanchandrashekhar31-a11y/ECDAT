@@ -210,8 +210,9 @@ def main():
 
     for finding in findings:
         normalized_path = str(finding.file_path).replace("\\", "/")
+        key_size_str = f":{finding.key_size}" if getattr(finding, "key_size", None) else ""
         ccf = CodeCryptoFinding(
-            bom_ref=f"code:{normalized_path}:{finding.line_number}:{finding.algorithm}",
+            bom_ref=f"code:{normalized_path}:{finding.algorithm}{key_size_str}",
             file_path=normalized_path,
             language="Unknown",
             line=finding.line_number,

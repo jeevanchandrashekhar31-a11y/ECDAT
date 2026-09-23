@@ -1,0 +1,3 @@
+# ASSET_ID: hash-01-md5
+ALGORITHM = "MD5"
+HASH_CALL = "MD5"

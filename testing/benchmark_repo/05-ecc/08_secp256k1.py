@@ -1,0 +1,3 @@
+# ASSET_ID: ecc-08-secp256k1
+ALGORITHM = "secp256k1"
+CURVE_OR_SCHEME = "secp256k1"

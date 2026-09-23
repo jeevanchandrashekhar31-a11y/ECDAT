@@ -1,0 +1,459 @@
+{
+  "components": [
+    {
+      "bom-ref": "code:01-symmetric/06_des.py:DES",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "nistQuantumSecurityLevel": 0
+        },
+        "assetType": "algorithm"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "line": 2,
+            "location": "01-symmetric/06_des.py"
+          },
+          {
+            "line": 3,
+            "location": "01-symmetric/06_des.py"
+          },
+          {
+            "line": 4,
+            "location": "01-symmetric/06_des.py"
+          }
+        ]
+      },
+      "name": "DES",
+      "properties": [
+        {
+          "name": "ecdat:algorithm",
+          "value": "DES"
+        },
+        {
+          "name": "ecdat:analysis_source",
+          "value": "regex"
+        },
+        {
+          "name": "ecdat:confidence",
+          "value": "high"
+        },
+        {
+          "name": "ecdat:evidence_nature",
+          "value": "observed"
+        },
+        {
+          "name": "ecdat:file",
+          "value": "01-symmetric/06_des.py"
+        },
+        {
+          "name": "ecdat:key_size",
+          "value": "unknown"
+        },
+        {
+          "name": "ecdat:quantumClassification",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "ecdat:scanner",
+          "value": "static_scanner"
+        },
+        {
+          "name": "ecdat:scanner_version",
+          "value": "1.0.0"
+        },
+        {
+          "name": "ecdat:source",
+          "value": "regex"
+        },
+        {
+          "name": "ecdat:timestamp",
+          "value": "2026-09-23T15:08:06.608469+00:00"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "code:02-hashing/01_md5.py:MD5",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "nistQuantumSecurityLevel": 0
+        },
+        "assetType": "algorithm"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "line": 1,
+            "location": "02-hashing/01_md5.py"
+          },
+          {
+            "line": 2,
+            "location": "02-hashing/01_md5.py"
+          },
+          {
+            "line": 3,
+            "location": "02-hashing/01_md5.py"
+          }
+        ]
+      },
+      "name": "MD5",
+      "properties": [
+        {
+          "name": "ecdat:algorithm",
+          "value": "MD5"
+        },
+        {
+          "name": "ecdat:analysis_source",
+          "value": "regex"
+        },
+        {
+          "name": "ecdat:confidence",
+          "value": "high"
+        },
+        {
+          "name": "ecdat:evidence_nature",
+          "value": "observed"
+        },
+        {
+          "name": "ecdat:file",
+          "value": "02-hashing/01_md5.py"
+        },
+        {
+          "name": "ecdat:key_size",
+          "value": "unknown"
+        },
+        {
+          "name": "ecdat:quantumClassification",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "ecdat:scanner",
+          "value": "static_scanner"
+        },
+        {
+          "name": "ecdat:scanner_version",
+          "value": "1.0.0"
+        },
+        {
+          "name": "ecdat:source",
+          "value": "regex"
+        },
+        {
+          "name": "ecdat:timestamp",
+          "value": "2026-09-23T15:08:06.613741+00:00"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "code:01-symmetric/14_rc4.py:RC4",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "nistQuantumSecurityLevel": 0
+        },
+        "assetType": "algorithm"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "line": 2,
+            "location": "01-symmetric/14_rc4.py"
+          },
+          {
+            "line": 3,
+            "location": "01-symmetric/14_rc4.py"
+          },
+          {
+            "line": 4,
+            "location": "01-symmetric/14_rc4.py"
+          }
+        ]
+      },
+      "name": "RC4",
+      "properties": [
+        {
+          "name": "ecdat:algorithm",
+          "value": "RC4"
+        },
+        {
+          "name": "ecdat:analysis_source",
+          "value": "regex"
+        },
+        {
+          "name": "ecdat:confidence",
+          "value": "high"
+        },
+        {
+          "name": "ecdat:evidence_nature",
+          "value": "observed"
+        },
+        {
+          "name": "ecdat:file",
+          "value": "01-symmetric/14_rc4.py"
+        },
+        {
+          "name": "ecdat:key_size",
+          "value": "unknown"
+        },
+        {
+          "name": "ecdat:quantumClassification",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "ecdat:scanner",
+          "value": "static_scanner"
+        },
+        {
+          "name": "ecdat:scanner_version",
+          "value": "1.0.0"
+        },
+        {
+          "name": "ecdat:source",
+          "value": "regex"
+        },
+        {
+          "name": "ecdat:timestamp",
+          "value": "2026-09-23T15:08:06.609408+00:00"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "code:03-mac-kdf/01_hmac_sha1.py:SHA-1",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "nistQuantumSecurityLevel": 0
+        },
+        "assetType": "algorithm"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "line": 2,
+            "location": "03-mac-kdf/01_hmac_sha1.py"
+          }
+        ]
+      },
+      "name": "SHA-1",
+      "properties": [
+        {
+          "name": "ecdat:algorithm",
+          "value": "SHA-1"
+        },
+        {
+          "name": "ecdat:analysis_source",
+          "value": "regex"
+        },
+        {
+          "name": "ecdat:confidence",
+          "value": "high"
+        },
+        {
+          "name": "ecdat:evidence_nature",
+          "value": "observed"
+        },
+        {
+          "name": "ecdat:file",
+          "value": "03-mac-kdf/01_hmac_sha1.py"
+        },
+        {
+          "name": "ecdat:key_size",
+          "value": "unknown"
+        },
+        {
+          "name": "ecdat:quantumClassification",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "ecdat:scanner",
+          "value": "static_scanner"
+        },
+        {
+          "name": "ecdat:scanner_version",
+          "value": "1.0.0"
+        },
+        {
+          "name": "ecdat:source",
+          "value": "regex"
+        },
+        {
+          "name": "ecdat:timestamp",
+          "value": "2026-09-23T15:08:06.614596+00:00"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "code:file@01-symmetric/06_des.py",
+      "evidence": {
+        "occurrences": [
+          {
+            "line": 2,
+            "location": "01-symmetric/06_des.py"
+          },
+          {
+            "line": 3,
+            "location": "01-symmetric/06_des.py"
+          },
+          {
+            "line": 4,
+            "location": "01-symmetric/06_des.py"
+          }
+        ]
+      },
+      "name": "01-symmetric/06_des.py",
+      "properties": [
+        {
+          "name": "ecdat:file",
+          "value": "01-symmetric/06_des.py"
+        },
+        {
+          "name": "ecdat:scanner",
+          "value": "static_scanner"
+        }
+      ],
+      "type": "file"
+    },
+    {
+      "bom-ref": "code:file@01-symmetric/14_rc4.py",
+      "evidence": {
+        "occurrences": [
+          {
+            "line": 2,
+            "location": "01-symmetric/14_rc4.py"
+          },
+          {
+            "line": 3,
+            "location": "01-symmetric/14_rc4.py"
+          },
+          {
+            "line": 4,
+            "location": "01-symmetric/14_rc4.py"
+          }
+        ]
+      },
+      "name": "01-symmetric/14_rc4.py",
+      "properties": [
+        {
+          "name": "ecdat:file",
+          "value": "01-symmetric/14_rc4.py"
+        },
+        {
+          "name": "ecdat:scanner",
+          "value": "static_scanner"
+        }
+      ],
+      "type": "file"
+    },
+    {
+      "bom-ref": "code:file@02-hashing/01_md5.py",
+      "evidence": {
+        "occurrences": [
+          {
+            "line": 1,
+            "location": "02-hashing/01_md5.py"
+          },
+          {
+            "line": 2,
+            "location": "02-hashing/01_md5.py"
+          },
+          {
+            "line": 3,
+            "location": "02-hashing/01_md5.py"
+          }
+        ]
+      },
+      "name": "02-hashing/01_md5.py",
+      "properties": [
+        {
+          "name": "ecdat:file",
+          "value": "02-hashing/01_md5.py"
+        },
+        {
+          "name": "ecdat:scanner",
+          "value": "static_scanner"
+        }
+      ],
+      "type": "file"
+    },
+    {
+      "bom-ref": "code:file@03-mac-kdf/01_hmac_sha1.py",
+      "evidence": {
+        "occurrences": [
+          {
+            "line": 2,
+            "location": "03-mac-kdf/01_hmac_sha1.py"
+          }
+        ]
+      },
+      "name": "03-mac-kdf/01_hmac_sha1.py",
+      "properties": [
+        {
+          "name": "ecdat:file",
+          "value": "03-mac-kdf/01_hmac_sha1.py"
+        },
+        {
+          "name": "ecdat:scanner",
+          "value": "static_scanner"
+        }
+      ],
+      "type": "file"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "code:01-symmetric/06_des.py:DES"
+    },
+    {
+      "ref": "code:01-symmetric/14_rc4.py:RC4"
+    },
+    {
+      "ref": "code:02-hashing/01_md5.py:MD5"
+    },
+    {
+      "ref": "code:03-mac-kdf/01_hmac_sha1.py:SHA-1"
+    },
+    {
+      "dependsOn": [
+        "code:01-symmetric/06_des.py:DES"
+      ],
+      "ref": "code:file@01-symmetric/06_des.py"
+    },
+    {
+      "dependsOn": [
+        "code:01-symmetric/14_rc4.py:RC4"
+      ],
+      "ref": "code:file@01-symmetric/14_rc4.py"
+    },
+    {
+      "dependsOn": [
+        "code:02-hashing/01_md5.py:MD5"
+      ],
+      "ref": "code:file@02-hashing/01_md5.py"
+    },
+    {
+      "dependsOn": [
+        "code:03-mac-kdf/01_hmac_sha1.py:SHA-1"
+      ],
+      "ref": "code:file@03-mac-kdf/01_hmac_sha1.py"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-09-23T15:08:06.614971+00:00",
+    "tools": {
+      "components": [
+        {
+          "name": "ECDAT Cryptographic Discovery and Analysis Tool",
+          "type": "application",
+          "version": "1.0.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:fbfca1a7-e70c-448f-8539-06bf7dafb9a4",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6"
+}

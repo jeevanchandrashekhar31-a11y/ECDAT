@@ -206,7 +206,28 @@ function checkForbiddenIpv6(rawIpv6) {
 
   // NAT64 prefix 64:ff9b::/96
   if (clean.startsWith("64:ff9b::")) {
-    return { forbidden: true, reason: "IPv6 NAT64 prefix (64:ff9b::/96)" };
+    const natMatchHex = clean.match(/^64:ff9b::([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+    if (natMatchHex) {
+      const high = parseInt(natMatchHex[1], 16);
+      const low = parseInt(natMatchHex[2], 16);
+      const dottedIpv4 = `${(high >> 8) & 255}.${high & 255}.${(low >> 8) & 255}.${low & 255}`;
+      const ipv4Check = checkForbiddenIp(dottedIpv4);
+      if (ipv4Check.forbidden) {
+        return { forbidden: true, reason: `IPv6 NAT64 restricted address (${dottedIpv4}): ${ipv4Check.reason}` };
+      }
+      return { forbidden: false };
+    }
+
+    const natMatchDotted = clean.match(/^64:ff9b::(\d+\.\d+\.\d+\.\d+)$/i);
+    if (natMatchDotted) {
+      const ipv4Check = checkForbiddenIp(natMatchDotted[1]);
+      if (ipv4Check.forbidden) {
+        return { forbidden: true, reason: `IPv6 NAT64 restricted address: ${ipv4Check.reason}` };
+      }
+      return { forbidden: false };
+    }
+
+    return { forbidden: true, reason: "IPv6 NAT64 prefix with unparseable embedded IPv4" };
   }
 
   return { forbidden: false };

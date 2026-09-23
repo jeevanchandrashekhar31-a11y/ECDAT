@@ -1,0 +1,5 @@
+# ECDAT PQC benchmark fixture
+# ASSET_ID: pqc-05-ml_dsa_65
+ALGORITHM=ML-DSA-65
+TYPE=SIGNATURE
+NOTE=Known-answer benchmark identifier; this fixture does not claim to execute the algorithm.

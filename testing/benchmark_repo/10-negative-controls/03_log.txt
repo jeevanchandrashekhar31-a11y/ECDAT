@@ -1,0 +1,1 @@
+INFO: scanned host; recommendation=ML-KEM-768; observed_text=RSA-2048

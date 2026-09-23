@@ -339,8 +339,19 @@ router.get("/integrity/status", async (req, res, next) => {
  */
 router.get("/cbom/:scanId", async (req, res, next) => {
   try {
-    const scanId = req.params.scanId;
+    let scanId = req.params.scanId;
     const type = req.query.type === "raw" ? "raw_json" : "annotated_json";
+
+    if (scanId === "latest") {
+      const latestScan = getLatestScan(req.tenantContext);
+      if (!latestScan) {
+        return res.status(404).json({
+          error: "NotFound",
+          message: "No scan data available.",
+        });
+      }
+      scanId = latestScan.id;
+    }
 
     const connected = await isDbConnected();
     if (connected) {
@@ -392,7 +403,8 @@ router.get("/cbom/:scanId", async (req, res, next) => {
       details: { scanId, type },
     }).catch(() => {});
 
-    res.status(200).json(scan.annotated_bom || scan.raw_cbom || {});
+    const responseData = type === "raw_json" ? (scan.raw_cbom || {}) : (scan.annotated_bom || {});
+    res.status(200).json(responseData);
   } catch (err) {
     next(err);
   }

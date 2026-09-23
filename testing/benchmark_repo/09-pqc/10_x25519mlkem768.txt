@@ -1,0 +1,5 @@
+# ECDAT PQC benchmark fixture
+# ASSET_ID: pqc-10-x25519mlkem768
+ALGORITHM=X25519MLKEM768
+TYPE=KEM
+NOTE=Known-answer benchmark identifier; this fixture does not claim to execute the algorithm.

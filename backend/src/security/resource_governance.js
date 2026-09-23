@@ -244,11 +244,11 @@ function resetAllRateLimiters() {
 // ============================================================================
 
 const RESOURCE_QUOTAS = {
-  // Request size limit (default 10MB)
-  REQUEST_SIZE_LIMIT_BYTES: 10 * 1024 * 1024,
+  // Request size limit (default 150MB)
+  REQUEST_SIZE_LIMIT_BYTES: 150 * 1024 * 1024,
 
-  // Upload size limit (default 10MB)
-  UPLOAD_SIZE_LIMIT_BYTES: config.MAX_UPLOAD_BYTES || 10 * 1024 * 1024,
+  // Upload size limit (default 150MB)
+  UPLOAD_SIZE_LIMIT_BYTES: config.MAX_UPLOAD_BYTES || 150 * 1024 * 1024,
 
   // Scan execution timeout (default 300 seconds / 5 minutes)
   SCAN_TIMEOUT_MS: 300_000,

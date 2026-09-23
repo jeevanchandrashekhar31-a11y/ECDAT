@@ -279,7 +279,10 @@ test("Phase 19.12 — Pagination Bounds", () => {
 test("Phase 19.13 — Live Routes Enforce Server-Side Validation (Never Trust Frontend)", async () => {
   await withServer(app, async (baseUrl) => {
     // 1. Assets pagination out of bounds (negative page)
-    const resAssets = await fetch(`${baseUrl}/api/v1/assets?page=-1`);
+    const config = require("../../src/config");
+    const resAssets = await fetch(`${baseUrl}/api/v1/assets?page=-1`, {
+      headers: { "x-api-key": config.ECDAT_API_KEY },
+    });
     assert.strictEqual(resAssets.status, 400);
     const bodyAssets = await resAssets.json();
     assert.strictEqual(bodyAssets.code, "PAGINATION_OUT_OF_BOUNDS");

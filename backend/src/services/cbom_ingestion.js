@@ -86,6 +86,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
         scan_id: scanRecord.id,
         id: aid,
         primary_identifier: aid,
+        tenant_id: scanRecord.tenantId || "default-tenant",
         asset_type: String(asset.asset_type || "network_session").slice(0, 50),
         data_sensitivity: String(asset.data_sensitivity || "internal").slice(0, 50),
         business_criticality: String(asset.business_criticality || "medium").slice(0, 50),
@@ -94,8 +95,21 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
           asset.mosca_status === "AT_RISK" ||
           asset.mosca_status === "CRITICAL_URGENT",
         cicd_pass: asset.cicd_pass !== false,
+        // Phase 1 Rich Asset Properties
+        algorithm: asset.algorithm ? String(asset.algorithm).slice(0, 100) : null,
+        primitive: asset.primitive ? String(asset.primitive).slice(0, 50) : null,
+        key_size: parseInt(asset.key_size, 10) || null,
+        usage: asset.usage ? String(asset.usage).slice(0, 100) : null,
+        location: asset.location ? String(asset.location).slice(0, 255) : null,
+        owner: asset.owner ? String(asset.owner).slice(0, 100) : null,
+        service: asset.service ? String(asset.service).slice(0, 100) : null,
+        protocol: asset.protocol ? String(asset.protocol).slice(0, 100) : null,
+        certificate: asset.certificate ? JSON.stringify(asset.certificate) : null,
+        source: asset.source ? String(asset.source).slice(0, 100) : null,
+        confidence: typeof asset.confidence === 'number' ? asset.confidence : 1.0,
+        is_synthetic: Boolean(asset.is_synthetic),
         metadata: JSON.stringify(asset),
-      });
+      }).onConflict(['scan_id', 'id']).merge();
     }
 
     // 5. Insert Findings & Risk Assessments
@@ -106,26 +120,35 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       const compId = String(f.bom_ref || `comp_${scanRecord.id}_${i}`).slice(0, 255);
       const assetId = String(f.asset_id || f.bom_ref || "global").slice(0, 255);
 
-      // Ensure asset row exists
-      const assetRow = await trx("assets")
-        .where({ scan_id: scanRecord.id, id: assetId })
-        .first();
-      if (!assetRow) {
-        await trx("assets").insert({
-          scan_id: scanRecord.id,
-          id: assetId,
-          primary_identifier: assetId,
-          asset_type: String(f.asset_type || "network_session").slice(0, 50),
-          data_sensitivity: String(f.data_sensitivity || "internal").slice(0, 50),
-          business_criticality: String(f.business_criticality || "medium").slice(0, 50),
-          highest_severity: String(f.severity || "Informational").slice(0, 50),
-          at_quantum_risk:
-            f.mosca?.status === "AT_RISK" ||
-            f.mosca?.status === "CRITICAL_URGENT",
-          cicd_pass: f.cicd_pass !== false,
-          metadata: JSON.stringify({ asset_id: assetId }),
-        });
-      }
+      // Upsert asset row
+      await trx("assets").insert({
+        scan_id: scanRecord.id,
+        id: assetId,
+        primary_identifier: assetId,
+        tenant_id: scanRecord.tenantId || "default-tenant",
+        asset_type: String(f.asset_type || "network_session").slice(0, 50),
+        data_sensitivity: String(f.data_sensitivity || "internal").slice(0, 50),
+        business_criticality: String(f.business_criticality || "medium").slice(0, 50),
+        highest_severity: String(f.severity || "Informational").slice(0, 50),
+        at_quantum_risk:
+          f.mosca?.status === "AT_RISK" ||
+          f.mosca?.status === "CRITICAL_URGENT",
+        cicd_pass: f.cicd_pass !== false,
+        // Phase 1 Rich Asset Properties
+        algorithm: f.algorithm ? String(f.algorithm).slice(0, 100) : null,
+        primitive: f.primitive ? String(f.primitive).slice(0, 50) : null,
+        key_size: parseInt(f.key_size, 10) || null,
+        usage: f.usage ? String(f.usage).slice(0, 100) : null,
+        location: f.location ? String(f.location).slice(0, 255) : null,
+        owner: f.owner ? String(f.owner).slice(0, 100) : null,
+        service: f.service ? String(f.service).slice(0, 100) : null,
+        protocol: f.protocol ? String(f.protocol).slice(0, 100) : null,
+        certificate: f.certificate ? JSON.stringify(f.certificate) : null,
+        source: f.source ? String(f.source).slice(0, 100) : null,
+        confidence: typeof f.confidence === 'number' ? f.confidence : 1.0,
+        is_synthetic: Boolean(f.is_synthetic),
+        metadata: JSON.stringify({ asset_id: assetId }),
+      }).onConflict(['scan_id', 'id']).merge();
 
       // Ensure component row exists
       const compRow = await trx("components")
@@ -155,7 +178,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
         key_size: f.key_size || null,
         category: f.category ? String(f.category).slice(0, 50) : null,
         finding_type: f.asset_type ? String(f.asset_type).slice(0, 50) : null,
-        location: f.file_path || f.location || null,
+        location: f.file_path || f.location ? String(f.file_path || f.location).slice(0, 512) : null,
         line_number: f.line_number ? parseInt(f.line_number, 10) : null,
         evidence_context: f.raw_evidence
           ? JSON.stringify(f.raw_evidence)
@@ -322,6 +345,7 @@ async function ingestCbom(rawInputData, options = {}) {
     metrics: summary.metrics,
     summary: summary,
     annotated_bom: annotatedBOM,
+    raw_cbom: sanitizedCbom,
     classified_findings: classifiedResults,
     top_risky_assets: summary.top_risky_assets,
     html_report: htmlReport,

@@ -125,6 +125,7 @@ function classifyFinding(input) {
           appliedRuleIds.push(
             `${matchedRule.id}_cond_${cond.operator}_${cond.key_size_threshold_bits}`,
           );
+          normalizedAlgo.matchedConditionNote = cond.note;
           break;
         }
       }
@@ -321,9 +322,12 @@ function classifyFinding(input) {
     evidenceUsed,
     assumptions,
     moscaResult,
-    policyProfileName: profileName,
     policyViolations,
     recommendation,
+    threatContext: matchedRule?.deprecation_notes,
+    quantumRelevance,
+    matchedConditionNote: normalizedAlgo.matchedConditionNote,
+    references: matchedRule?.references || [],
   });
 
   // 10. Multi-Factor Risk Assessment (Phase 9.1)

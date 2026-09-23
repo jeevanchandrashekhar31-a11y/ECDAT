@@ -101,8 +101,14 @@ router.get("/summary", async (req, res, next) => {
             requestedScenario || scanRow.scenario || "baseline";
 
           // 1. Top Risky Assets
-          const assetRows = await db("assets")
-            .where("scan_id", currentScanId)
+          let assetQuery = db("assets")
+            .where("scan_id", currentScanId);
+            
+          if (currentScanId !== "demo-synthetic-scan") {
+            assetQuery = assetQuery.where("is_synthetic", false);
+          }
+
+          const assetRows = await assetQuery
             .orderByRaw(
               `
               CASE LOWER(highest_severity)
@@ -121,9 +127,8 @@ router.get("/summary", async (req, res, next) => {
               typeof a.metadata === "string"
                 ? JSON.parse(a.metadata)
                 : a.metadata || {};
-            let mStatus =
-              meta.mosca_status || (a.at_quantum_risk ? "AT_RISK" : "SAFE");
-            let mMargin = meta.mosca_margin_years ?? 0;
+            let mStatus = meta.mosca_status || (a.at_quantum_risk ? "AT_RISK" : "SAFE");
+            let mMargin = meta.mosca_margin_years ?? (mStatus === "AT_RISK" ? 1.0 : 0.0);
 
             // Recalculate Mosca if scenario overridden
             if (requestedScenario && requestedScenario !== scanRow.scenario) {

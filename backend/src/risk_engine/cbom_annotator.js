@@ -194,6 +194,21 @@ function annotateCbom(cbomData, options = {}) {
     classification.isInternetExposed = details.isInternetExposed;
     classification.application = details.application || (comp["bom-ref"] && comp["bom-ref"].includes(":") ? comp["bom-ref"].split(":")[0] : comp.name);
     classification.dependency_blast_radius = details.dependencyBlastRadius;
+    
+    // Phase 1 Explicit Asset Fields
+    classification.algorithm = details.algorithm;
+    classification.primitive = details.category;
+    classification.key_size = details.keySize;
+    classification.usage = details.evidenceType || details.category;
+    classification.location = findingContext;
+    classification.owner = details.businessUnit;
+    classification.service = classification.application;
+    classification.protocol = details.protocolProperties?.version || (details.assetType === 'network_session' ? details.algorithm : null);
+    classification.certificate = details.certificateProperties;
+    classification.confidence = details.evidenceConfidence === "high" ? 1.0 : details.evidenceConfidence === "medium" ? 0.7 : 0.5;
+    classification.is_synthetic = Boolean(comp.properties?.find(p => p.name === 'ecdat:is_synthetic')?.value === 'true');
+    classification.source = "scanner";
+
     classifiedResults.push(classification);
 
     // Attach to component.properties without overwriting scanner properties

@@ -1,0 +1,1 @@
+RSA was historically used in many systems. AES-256-GCM is a recommended AEAD. ML-KEM-768 is a post-quantum KEM.

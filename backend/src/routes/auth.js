@@ -936,6 +936,7 @@ async function seedDemoDataset() {
   }
 
   return await cbomIngestionService.ingestCbom(rawCbom, {
+    scanId: "demo-synthetic-scan",
     scanName: "Demo Environment — synthetic dataset",
     scannerType: "static",
     projectName: "Demo Cryptographic Discovery",
@@ -967,51 +968,39 @@ async function handleDemoLogin(req, res) {
     });
   }
 
-  const requestedPersona = String(req.body?.persona || req.query?.persona || "developer").toLowerCase();
+  const requestedPersona = String(req.body?.persona || req.query?.persona || "analyst").toLowerCase();
 
-  const DEMO_PERSONAS = {
-    developer: {
-      userId: "demo-developer",
-      username: "demo-developer",
-      name: "Demo Developer (Proposer)",
-      roles: ["developer"],
+  const EVALUATION_PERSONAS = {
+    analyst: {
+      userId: "evaluation-analyst",
+      username: "evaluation-analyst",
+      name: "Security Analyst",
+      roles: ["analyst"],
     },
-    reviewer: {
-      userId: "demo-reviewer",
-      username: "demo-reviewer",
-      name: "Demo Peer Reviewer",
-      roles: ["reviewer", "viewer"],
+    approver: {
+      userId: "evaluation-approver",
+      username: "evaluation-approver",
+      name: "Security Approver",
+      roles: ["admin"],
     },
-    security_lead: {
-      userId: "demo-security-lead",
-      username: "demo-security-lead",
-      name: "Demo Security Lead (Approver)",
-      roles: ["security_lead", "secops", "verifier"],
-    },
-    secops: {
-      userId: "demo-security-lead",
-      username: "demo-security-lead",
-      name: "Demo Security Lead (Approver)",
-      roles: ["security_lead", "secops", "verifier"],
-    },
-    admin: {
-      userId: "demo-security-lead",
-      username: "demo-security-lead",
-      name: "Demo Security Lead (Approver)",
-      roles: ["security_lead", "secops", "verifier"],
-    },
+    executive: {
+      userId: "evaluation-executive",
+      username: "evaluation-executive",
+      name: "Executive Viewer",
+      roles: ["viewer"],
+    }
   };
 
-  const persona = DEMO_PERSONAS[requestedPersona] || DEMO_PERSONAS.developer;
+  const persona = EVALUATION_PERSONAS[requestedPersona] || EVALUATION_PERSONAS.analyst;
 
   const tokens = defaultTokenService.issueTokenPair({
     userId: persona.userId,
-    email: `${persona.username}@demo.ecdat.local`,
+    email: `${persona.username}@evaluation.ecdat.local`,
     name: persona.name,
     roles: persona.roles,
-    provider: "demo_auth",
+    provider: "evaluation_auth",
     customClaims: {
-      tenantId: "demo-tenant",
+      tenantId: "evaluation-tenant",
       isPlatformAdmin: false,
     },
   });
@@ -1023,18 +1012,23 @@ async function handleDemoLogin(req, res) {
     csrfToken,
   });
 
-  // Auto-seed synthetic data if demo tenant is empty and caller didn't explicitly request empty
+  // Auto-seed synthetic data if evaluation tenant is empty and caller didn't explicitly request empty
   const shouldSeed = req.body?.seed !== false && req.query?.seed !== "false" && req.query?.empty !== "true";
   let seededScan = null;
   if (shouldSeed) {
     const existingScans = Array.from(inMemoryScansStore.values()).filter(
-      (s) => s.tenantId === "demo-tenant"
+      (s) => s.tenantId === "evaluation-tenant"
     );
     if (existingScans.length === 0) {
       try {
-        seededScan = await seedDemoDataset();
+        seededScan = await seedDemoDataset(); // using existing function to seed synthetic dataset
+        // Ensure seeded scan uses the correct tenant
+        if (seededScan) {
+          seededScan.tenantId = "evaluation-tenant";
+          inMemoryScansStore.set(seededScan.id, seededScan);
+        }
       } catch (seedErr) {
-        console.warn("Demo dataset auto-seed notice:", seedErr.message);
+        console.warn("Evaluation dataset auto-seed notice:", seedErr.message);
       }
     }
   }
@@ -1048,60 +1042,67 @@ async function handleDemoLogin(req, res) {
       role: persona.roles[0],
       ipAddress: req.ip || req.socket?.remoteAddress || "127.0.0.1",
     },
-    tenantId: "demo-tenant",
+    tenantId: "evaluation-tenant",
     status: AUDIT_STATUSES.SUCCESS,
-    details: { method: "demo_auth", persona: requestedPersona, seeded: Boolean(seededScan) },
+    details: { method: "evaluation_auth", persona: requestedPersona, seeded: Boolean(seededScan) },
   }).catch(() => {});
 
   return res.json({
     ...tokens,
     csrfToken,
-    demoMode: true,
+    demoMode: true, // Legacy flag mapping to evaluate
+    evaluationMode: true,
     user: {
       userId: persona.userId,
       username: persona.username,
       displayName: persona.name,
-      email: `${persona.username}@demo.ecdat.local`,
+      email: `${persona.username}@evaluation.ecdat.local`,
       roles: persona.roles,
-      tenantId: "demo-tenant",
+      tenantId: "evaluation-tenant",
       isPlatformAdmin: false,
-      isDemo: true,
+      isDemo: true, // Legacy flag
+      isEvaluation: true,
     },
   });
 }
 
-router.post("/demo/login", RATE_LIMITS.login.middleware(), handleDemoLogin);
+router.post("/evaluation/enter", RATE_LIMITS.login.middleware(), handleDemoLogin);
+router.post("/evaluation/persona", RATE_LIMITS.login.middleware(), handleDemoLogin);
 
-// POST /demo/reset: Reset demo tenant for testing empty state
-router.post("/demo/reset", async (req, res) => {
+// POST /evaluation/reset: Reset evaluation tenant for testing empty state
+router.post("/evaluation/reset", async (req, res) => {
   const authMode = config.AUTH_MODE || "production";
-  if (authMode !== "demo") {
-    return res.status(403).json({ error: "Forbidden", message: "Demo mode is disabled." });
+  if (authMode !== "demo" && authMode !== "evaluation") {
+    return res.status(403).json({ error: "Forbidden", message: "Evaluation mode is disabled." });
   }
 
-  // Clear scans for demo-tenant
-  await clearScans({ tenantId: "demo-tenant", isPlatformAdmin: false });
+  // Clear scans for evaluation-tenant
+  await clearScans({ tenantId: "evaluation-tenant", isPlatformAdmin: false });
 
-  // Clear remediation approvals for demo-tenant
+  // Clear remediation approvals for evaluation-tenant
   const engine = getDefaultApprovalEngine();
-  const list = await engine.listApprovals({ tenantId: "demo-tenant" });
+  const list = await engine.listApprovals({ tenantId: "evaluation-tenant" });
   for (const r of list) {
     await engine.deleteApproval(r.approval_id);
   }
 
-  return res.json({ success: true, message: "Demo tenant reset to empty state." });
+  return res.json({ success: true, message: "Evaluation tenant reset to empty state." });
 });
 
-// POST /demo/seed: Explicitly seed synthetic data
-router.post("/demo/seed", async (req, res, next) => {
+// POST /evaluation/seed: Explicitly seed synthetic data
+router.post("/evaluation/seed", async (req, res, next) => {
   const authMode = config.AUTH_MODE || "production";
-  if (authMode !== "demo") {
-    return res.status(403).json({ error: "Forbidden", message: "Demo mode is disabled." });
+  if (authMode !== "demo" && authMode !== "evaluation") {
+    return res.status(403).json({ error: "Forbidden", message: "Evaluation mode is disabled." });
   }
 
   try {
     const record = await seedDemoDataset();
-    return res.json({ success: true, scan_id: record.id, message: "Synthetic dataset seeded for demo tenant." });
+    if (record) {
+      record.tenantId = "evaluation-tenant";
+      inMemoryScansStore.set(record.id, record);
+    }
+    return res.json({ success: true, scan_id: record.id, message: "Synthetic dataset seeded for evaluation tenant." });
   } catch (err) {
     return next(err);
   }

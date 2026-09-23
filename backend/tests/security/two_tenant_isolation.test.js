@@ -93,7 +93,7 @@ async function seedTwoTenantsData() {
     tenantId: "tenant-alpha",
     project_id: "project-alpha-001",
     scanner_type: "combined",
-    policy_profile: "regulated_bfsi",
+    policy_profile: "internal_enterprise",
     scenario: "baseline",
     created_at: new Date().toISOString(),
     metrics: {
@@ -178,7 +178,7 @@ async function seedTwoTenantsData() {
     tenantId: "tenant-beta",
     project_id: "project-beta-001",
     scanner_type: "combined",
-    policy_profile: "regulated_bfsi",
+    policy_profile: "internal_enterprise",
     scenario: "baseline",
     created_at: new Date().toISOString(),
     metrics: {

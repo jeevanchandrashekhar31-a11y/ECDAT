@@ -1,0 +1,101 @@
+asset_id,category,algorithm,primitive,usage,file,expected_detection,notes
+sym-01-aes128,symmetric,AES-128,AES,encryption,01-symmetric/01_aes128.py,True,
+sym-02-aes256,symmetric,AES-256,AES,encryption,01-symmetric/02_aes256.py,True,
+sym-03-aes128gcm,symmetric,AES-128-GCM,AES-GCM,AEAD,01-symmetric/03_aes128gcm.py,True,
+sym-04-aes256gcm,symmetric,AES-256-GCM,AES-GCM,AEAD,01-symmetric/04_aes256gcm.py,True,
+sym-05-aes192,symmetric,AES-192,AES,encryption,01-symmetric/05_aes192.py,True,
+sym-06-des,symmetric,DES,DES,encryption,01-symmetric/06_des.py,True,
+sym-07-3des,symmetric,3DES,3DES,encryption,01-symmetric/07_3des.py,True,
+sym-08-chacha20,symmetric,ChaCha20,ChaCha20,encryption,01-symmetric/08_chacha20.py,True,
+sym-09-chacha20poly1305,symmetric,ChaCha20-Poly1305,AEAD,encryption,01-symmetric/09_chacha20poly1305.py,True,
+sym-10-camellia256,symmetric,Camellia-256,Camellia,encryption,01-symmetric/10_camellia256.py,True,
+sym-11-blowfish,symmetric,Blowfish,Blowfish,encryption,01-symmetric/11_blowfish.py,True,
+sym-12-twofish,symmetric,Twofish,Twofish,encryption,01-symmetric/12_twofish.py,True,
+sym-13-idea,symmetric,IDEA,IDEA,encryption,01-symmetric/13_idea.py,True,
+sym-14-rc4,symmetric,RC4,RC4,stream cipher,01-symmetric/14_rc4.py,True,
+sym-15-cast5,symmetric,CAST5,CAST5,encryption,01-symmetric/15_cast5.py,True,
+hash-01-md5,hashing,MD5,hash,digest,02-hashing/01_md5.py,True,
+hash-02-sha_1,hashing,SHA-1,hash,digest,02-hashing/02_sha_1.py,True,
+hash-03-sha_224,hashing,SHA-224,hash,digest,02-hashing/03_sha_224.py,True,
+hash-04-sha_256,hashing,SHA-256,hash,digest,02-hashing/04_sha_256.py,True,
+hash-05-sha_384,hashing,SHA-384,hash,digest,02-hashing/05_sha_384.py,True,
+hash-06-sha_512,hashing,SHA-512,hash,digest,02-hashing/06_sha_512.py,True,
+hash-07-sha_512_256,hashing,SHA-512/256,hash,digest,02-hashing/07_sha_512_256.py,True,
+hash-08-sha3_256,hashing,SHA3-256,hash,digest,02-hashing/08_sha3_256.py,True,
+hash-09-sha3_512,hashing,SHA3-512,hash,digest,02-hashing/09_sha3_512.py,True,
+hash-10-blake2b_512,hashing,BLAKE2b-512,hash,digest,02-hashing/10_blake2b_512.py,True,
+mac-01-hmac_sha1,mac-kdf,HMAC-SHA1,HMAC,MAC,03-mac-kdf/01_hmac_sha1.py,True,
+mac-02-hmac_sha256,mac-kdf,HMAC-SHA256,HMAC,MAC,03-mac-kdf/02_hmac_sha256.py,True,
+mac-03-hmac_sha512,mac-kdf,HMAC-SHA512,HMAC,MAC,03-mac-kdf/03_hmac_sha512.py,True,
+mac-04-cmac_aes,mac-kdf,CMAC-AES,CMAC,MAC,03-mac-kdf/04_cmac_aes.py,True,
+mac-05-gmac_aes,mac-kdf,GMAC-AES,GMAC,MAC,03-mac-kdf/05_gmac_aes.py,True,
+mac-06-hkdf_sha256,mac-kdf,HKDF-SHA256,HKDF,KDF,03-mac-kdf/06_hkdf_sha256.py,True,
+mac-07-hkdf_sha512,mac-kdf,HKDF-SHA512,HKDF,KDF,03-mac-kdf/07_hkdf_sha512.py,True,
+mac-08-pbkdf2_hmac_sha256,mac-kdf,PBKDF2-HMAC-SHA256,PBKDF2,KDF,03-mac-kdf/08_pbkdf2_hmac_sha256.py,True,
+mac-09-scrypt,mac-kdf,scrypt,scrypt,KDF,03-mac-kdf/09_scrypt.py,True,
+mac-10-argon2id,mac-kdf,Argon2id,Argon2,KDF,03-mac-kdf/10_argon2id.py,True,
+rsa-01-1024,rsa,RSA-1024,RSA,asymmetric,04-rsa/01_rsa1024-01.py,True,
+rsa-02-1536,rsa,RSA-1536,RSA,asymmetric,04-rsa/02_rsa1536-02.py,True,
+rsa-03-2048,rsa,RSA-2048,RSA,asymmetric,04-rsa/03_rsa2048-03.py,True,
+rsa-04-3072,rsa,RSA-3072,RSA,asymmetric,04-rsa/04_rsa3072-04.py,True,
+rsa-05-4096,rsa,RSA-4096,RSA,asymmetric,04-rsa/05_rsa4096-05.py,True,
+rsa-06-1024,rsa,RSA-1024,RSA,asymmetric,04-rsa/06_rsa1024-06.py,True,
+rsa-07-1536,rsa,RSA-1536,RSA,asymmetric,04-rsa/07_rsa1536-07.py,True,
+rsa-08-2048,rsa,RSA-2048,RSA,asymmetric,04-rsa/08_rsa2048-08.py,True,
+rsa-09-3072,rsa,RSA-3072,RSA,asymmetric,04-rsa/09_rsa3072-09.py,True,
+rsa-10-4096,rsa,RSA-4096,RSA,asymmetric,04-rsa/10_rsa4096-10.py,True,
+ecc-01-ecdsa_p256,ecc,ECDSA-P256,ECC/EdDSA,signature/key agreement,05-ecc/01_ecdsa_p256.py,True,
+ecc-02-ecdsa_p384,ecc,ECDSA-P384,ECC/EdDSA,signature/key agreement,05-ecc/02_ecdsa_p384.py,True,
+ecc-03-ecdsa_p521,ecc,ECDSA-P521,ECC/EdDSA,signature/key agreement,05-ecc/03_ecdsa_p521.py,True,
+ecc-04-ecdh_p256,ecc,ECDH-P256,ECC/EdDSA,signature/key agreement,05-ecc/04_ecdh_p256.py,True,
+ecc-05-ecdh_p384,ecc,ECDH-P384,ECC/EdDSA,signature/key agreement,05-ecc/05_ecdh_p384.py,True,
+ecc-06-ed25519,ecc,Ed25519,ECC/EdDSA,signature/key agreement,05-ecc/06_ed25519.py,True,
+ecc-07-ed448,ecc,Ed448,ECC/EdDSA,signature/key agreement,05-ecc/07_ed448.py,True,
+ecc-08-secp256k1,ecc,secp256k1,ECC/EdDSA,signature/key agreement,05-ecc/08_secp256k1.py,True,
+ecc-09-x25519_key,ecc,X25519-key,ECC/EdDSA,signature/key agreement,05-ecc/09_x25519_key.py,True,
+ecc-10-x448_key,ecc,X448-key,ECC/EdDSA,signature/key agreement,05-ecc/10_x448_key.py,True,
+kex-01-dh_2048,key-exchange,DH-2048,KEX,key establishment,06-key-exchange/01_dh_2048.conf,True,
+kex-02-dh_3072,key-exchange,DH-3072,KEX,key establishment,06-key-exchange/02_dh_3072.conf,True,
+kex-03-dh_4096,key-exchange,DH-4096,KEX,key establishment,06-key-exchange/03_dh_4096.conf,True,
+kex-04-ecdh_p256,key-exchange,ECDH-P256,KEX,key establishment,06-key-exchange/04_ecdh_p256.conf,True,
+kex-05-ecdh_p384,key-exchange,ECDH-P384,KEX,key establishment,06-key-exchange/05_ecdh_p384.conf,True,
+kex-06-x25519,key-exchange,X25519,KEX,key establishment,06-key-exchange/06_x25519.conf,True,
+kex-07-x448,key-exchange,X448,KEX,key establishment,06-key-exchange/07_x448.conf,True,
+kex-08-ffdhe2048,key-exchange,FFDHE2048,KEX,key establishment,06-key-exchange/08_ffdhe2048.conf,True,
+kex-09-ffdhe3072,key-exchange,FFDHE3072,KEX,key establishment,06-key-exchange/09_ffdhe3072.conf,True,
+kex-10-ffdhe4096,key-exchange,FFDHE4096,KEX,key establishment,06-key-exchange/10_ffdhe4096.conf,True,
+tls-01-1,tls,TLSv1.0,TLS,transport,07-tls-protocols/01_tlsv1.0.conf,True,
+tls-02-2,tls,TLSv1.1,TLS,transport,07-tls-protocols/02_tlsv1.1.conf,True,
+tls-03-3,tls,TLSv1.2,TLS,transport,07-tls-protocols/03_tlsv1.2.conf,True,
+tls-04-4,tls,TLSv1.3,TLS,transport,07-tls-protocols/04_tlsv1.3.conf,True,
+tls-05-5,tls,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS,transport,07-tls-protocols/05_tls_ecdhe_rsa_with_aes_128_gcm_sha256.conf,True,
+tls-06-6,tls,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS,transport,07-tls-protocols/06_tls_ecdhe_rsa_with_aes_256_gcm_sha384.conf,True,
+tls-07-7,tls,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS,transport,07-tls-protocols/07_tls_ecdhe_ecdsa_with_aes_128_gcm_sha256.conf,True,
+tls-08-8,tls,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS,transport,07-tls-protocols/08_tls_ecdhe_ecdsa_with_aes_256_gcm_sha384.conf,True,
+tls-09-9,tls,TLS_CHACHA20_POLY1305_SHA256,TLS,transport,07-tls-protocols/09_tls_chacha20_poly1305_sha256.conf,True,
+tls-10-10,tls,TLS_AES_256_GCM_SHA384,TLS,transport,07-tls-protocols/10_tls_aes_256_gcm_sha384.conf,True,
+cert-01-rsa2048,certificates-keys,RSA-2048,certificate,X.509 certificate,08-certificates-keys/01_rsa2048.cert.pem,True,
+cert-02-rsa3072,certificates-keys,RSA-3072,certificate,X.509 certificate,08-certificates-keys/02_rsa3072.cert.pem,True,
+cert-03-rsa4096,certificates-keys,RSA-4096,certificate,X.509 certificate,08-certificates-keys/03_rsa4096.cert.pem,True,
+cert-04-ecp256,certificates-keys,EC-prime256v1,certificate,X.509 certificate,08-certificates-keys/04_ecp256.cert.pem,True,
+cert-05-ecp384,certificates-keys,EC-secp384r1,certificate,X.509 certificate,08-certificates-keys/05_ecp384.cert.pem,True,
+pqc-01-ml_kem_512,pqc,ML-KEM-512,PQC,KEM/signature,09-pqc/01_ml_kem_512.txt,True,Identifier fixture; not an implementation
+pqc-02-ml_kem_768,pqc,ML-KEM-768,PQC,KEM/signature,09-pqc/02_ml_kem_768.txt,True,Identifier fixture; not an implementation
+pqc-03-ml_kem_1024,pqc,ML-KEM-1024,PQC,KEM/signature,09-pqc/03_ml_kem_1024.txt,True,Identifier fixture; not an implementation
+pqc-04-ml_dsa_44,pqc,ML-DSA-44,PQC,KEM/signature,09-pqc/04_ml_dsa_44.txt,True,Identifier fixture; not an implementation
+pqc-05-ml_dsa_65,pqc,ML-DSA-65,PQC,KEM/signature,09-pqc/05_ml_dsa_65.txt,True,Identifier fixture; not an implementation
+pqc-06-ml_dsa_87,pqc,ML-DSA-87,PQC,KEM/signature,09-pqc/06_ml_dsa_87.txt,True,Identifier fixture; not an implementation
+pqc-07-slh_dsa_sha2_128s,pqc,SLH-DSA-SHA2-128s,PQC,KEM/signature,09-pqc/07_slh_dsa_sha2_128s.txt,True,Identifier fixture; not an implementation
+pqc-08-slh_dsa_sha2_192s,pqc,SLH-DSA-SHA2-192s,PQC,KEM/signature,09-pqc/08_slh_dsa_sha2_192s.txt,True,Identifier fixture; not an implementation
+pqc-09-slh_dsa_sha2_256s,pqc,SLH-DSA-SHA2-256s,PQC,KEM/signature,09-pqc/09_slh_dsa_sha2_256s.txt,True,Identifier fixture; not an implementation
+pqc-10-x25519mlkem768,pqc,X25519MLKEM768,PQC,KEM/signature,09-pqc/10_x25519mlkem768.txt,True,Identifier fixture; not an implementation
+neg-01-prose,negative-control,MULTIPLE,N/A,prose/metadata,10-negative-controls/01_prose.txt,False,Must not be counted as active cryptographic usage
+neg-02-comment,negative-control,MULTIPLE,N/A,prose/metadata,10-negative-controls/02_comment.txt,False,Must not be counted as active cryptographic usage
+neg-03-log,negative-control,MULTIPLE,N/A,prose/metadata,10-negative-controls/03_log.txt,False,Must not be counted as active cryptographic usage
+neg-04-documentation,negative-control,MULTIPLE,N/A,prose/metadata,10-negative-controls/04_documentation.txt,False,Must not be counted as active cryptographic usage
+neg-05-fixture_metadata,negative-control,MULTIPLE,N/A,prose/metadata,10-negative-controls/05_fixture_metadata.txt,False,Must not be counted as active cryptographic usage
+key-01-rsa-1024,certificates-keys,RSA-1024,RSA,key metadata,08-certificates-keys/06_rsa_key_1024_1.pem,True,Benchmark metadata fixture; not private key material
+key-02-rsa-2048,certificates-keys,RSA-2048,RSA,key metadata,08-certificates-keys/07_rsa_key_2048_2.pem,True,Benchmark metadata fixture; not private key material
+key-03-rsa-3072,certificates-keys,RSA-3072,RSA,key metadata,08-certificates-keys/08_rsa_key_3072_3.pem,True,Benchmark metadata fixture; not private key material
+key-04-rsa-4096,certificates-keys,RSA-4096,RSA,key metadata,08-certificates-keys/09_rsa_key_4096_4.pem,True,Benchmark metadata fixture; not private key material
+key-05-rsa-2048,certificates-keys,RSA-2048,RSA,key metadata,08-certificates-keys/10_rsa_key_2048_5.pem,True,Benchmark metadata fixture; not private key material

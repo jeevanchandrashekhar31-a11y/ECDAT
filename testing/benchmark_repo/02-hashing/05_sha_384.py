@@ -1,0 +1,3 @@
+# ASSET_ID: hash-05-sha_384
+ALGORITHM = "SHA-384"
+HASH_CALL = "SHA-384"

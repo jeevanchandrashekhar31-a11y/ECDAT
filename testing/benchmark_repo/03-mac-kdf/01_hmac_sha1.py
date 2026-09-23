@@ -1,0 +1,4 @@
+# ASSET_ID: mac-01-hmac_sha1
+ALGORITHM = "HMAC-SHA1"
+PRIMITIVE = "HMAC"
+USAGE = "MAC"

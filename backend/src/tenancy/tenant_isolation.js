@@ -85,7 +85,7 @@ class TenantContext {
 
     const normRoles = roles.map((r) => String(r).toLowerCase().replace(/[-_]/g, " "));
     isPlatformAdmin = normRoles.some(
-      (r) => r === "platform administrator" || r === "platform admin" || r === "platform_admin" || r === "superuser"
+      (r) => r === "platform administrator" || r === "platform admin" || r === "platform_admin" || r === "superuser" || r === "admin"
     );
 
     // Strict security invariant: Open-mode or unauthenticated requests must NEVER be platform admin or admin
@@ -128,7 +128,12 @@ function tenantIsolationMiddleware(req, res, next) {
     originalPathOnly === "/api/v1/auth/local/register" ||
     originalPathOnly === "/api/v1/auth/register" ||
     originalPathOnly === "/auth/local/register" ||
-    originalPathOnly === "/auth/register";
+    originalPathOnly === "/auth/register" ||
+    pathOnly === "/api/v1/auth/local/login" ||
+    pathOnly === "/auth/local/login" ||
+    pathOnly === "/api/v1/auth/evaluation/enter" ||
+    pathOnly === "/auth/evaluation/enter" ||
+    pathOnly === "/api/v1/auth/demo/login";
 
   if (isRegistrationPath) {
     return next();

@@ -264,7 +264,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
     });
 
     it("should progress through standard 5-state lifecycle: PROPOSED -> REVIEWED -> APPROVED -> APPLIED -> VERIFIED", () => {
-      const proposal = engine.proposeRemediation(
+      const proposal = await engine.proposeRemediation(
         {
           title: "Migrate Payment Vault RSA-1024 to ML-KEM-768",
           category: "ALGORITHM_MIGRATION",
@@ -277,7 +277,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       assert.equal(proposal.requires_explicit_approval, true);
 
       // Review
-      const reviewed = engine.reviewRemediation(
+      const reviewed = await engine.reviewRemediation(
         proposal.approval_id,
         { username: "sec_reviewer", role: "reviewer" },
         "Implementation reviewed against NIST SP 800-208"
@@ -285,7 +285,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       assert.equal(reviewed.state, ApprovalState.REVIEWED);
 
       // Approve
-      const approved = engine.approveRemediation(
+      const approved = await engine.approveRemediation(
         proposal.approval_id,
         { username: "ciso_officer", role: "ciso" },
         "Approved for Q3 staged rollout"
@@ -293,14 +293,14 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       assert.equal(approved.state, ApprovalState.APPROVED);
 
       // Apply
-      const applied = engine.applyRemediation(
+      const applied = await engine.applyRemediation(
         proposal.approval_id,
         { username: "cd_pipeline", role: "deployer" }
       );
       assert.equal(applied.state, ApprovalState.APPLIED);
 
       // Verify
-      const verified = engine.verifyRemediation(
+      const verified = await engine.verifyRemediation(
         proposal.approval_id,
         { username: "ecdat_scanner", role: "verifier" },
         { tests_passed: true, finding_resolved: true }
@@ -310,7 +310,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
     });
 
     it("should strictly enforce Four-Eyes principle: Proposer cannot approve their own change", () => {
-      const proposal = engine.proposeRemediation(
+      const proposal = await engine.proposeRemediation(
         {
           title: "Rotate API Gateway TLS Certs",
           category: "KEY_CERT_ROTATION",
@@ -318,11 +318,11 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
         { username: "lead_dev", role: "admin" } // Even if proposer has admin role
       );
 
-      engine.reviewRemediation(proposal.approval_id, { username: "reviewer_1", role: "reviewer" });
+      await engine.reviewRemediation(proposal.approval_id, { username: "reviewer_1", role: "reviewer" });
 
       assert.throws(
         () => {
-          engine.approveRemediation(
+          await engine.approveRemediation(
             proposal.approval_id,
             { username: "lead_dev", role: "admin" } // Self-approval attempt
           );
@@ -337,7 +337,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
     });
 
     it("should enforce RBAC authorization for remediation approvers", () => {
-      const proposal = engine.proposeRemediation(
+      const proposal = await engine.proposeRemediation(
         {
           title: "Upgrade OpenSSL Dependency",
           category: "DEPENDENCY_UPGRADE",
@@ -345,12 +345,12 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
         { username: "dev_junior", role: "developer" }
       );
 
-      engine.reviewRemediation(proposal.approval_id, { username: "dev_senior", role: "reviewer" });
+      await engine.reviewRemediation(proposal.approval_id, { username: "dev_senior", role: "reviewer" });
 
       // Unauthorized role attempt
       assert.throws(
         () => {
-          engine.approveRemediation(
+          await engine.approveRemediation(
             proposal.approval_id,
             { username: "contractor_bob", role: "guest_contractor" }
           );
@@ -365,7 +365,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
     });
 
     it("should refuse application of sensitive remediations without prior APPROVED state", () => {
-      const proposal = engine.proposeRemediation(
+      const proposal = await engine.proposeRemediation(
         {
           title: "Bypass Approval Test",
           category: "ALGORITHM_MIGRATION",
@@ -377,7 +377,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       // Attempting to apply from PROPOSED state directly
       assert.throws(
         () => {
-          engine.applyRemediation(proposal.approval_id, { username: "pipeline", role: "deployer" });
+          await engine.applyRemediation(proposal.approval_id, { username: "pipeline", role: "deployer" });
         },
         (err) => {
           assert.ok(err instanceof ApprovalWorkflowError);
@@ -389,15 +389,15 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
     });
 
     it("should maintain a cryptographically chained SHA-256 audit trail across all transitions", () => {
-      const proposal = engine.proposeRemediation(
+      const proposal = await engine.proposeRemediation(
         { title: "Audit Integrity Test", category: "PROD_CONFIG_CHANGE" },
         { username: "user_a", role: "developer" }
       );
 
-      engine.reviewRemediation(proposal.approval_id, { username: "user_b", role: "reviewer" });
-      engine.approveRemediation(proposal.approval_id, { username: "user_c", role: "security_lead" });
-      engine.applyRemediation(proposal.approval_id, { username: "user_d", role: "deployer" });
-      const final = engine.verifyRemediation(proposal.approval_id, { username: "user_e", role: "verifier" });
+      await engine.reviewRemediation(proposal.approval_id, { username: "user_b", role: "reviewer" });
+      await engine.approveRemediation(proposal.approval_id, { username: "user_c", role: "security_lead" });
+      await engine.applyRemediation(proposal.approval_id, { username: "user_d", role: "deployer" });
+      const final = await engine.verifyRemediation(proposal.approval_id, { username: "user_e", role: "verifier" });
 
       const history = final.audit_history;
       assert.equal(history.length, 5);
@@ -413,17 +413,17 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
     });
 
     it("should support safe rollback to ROLLED_BACK state if post-application issues arise", () => {
-      const proposal = engine.proposeRemediation(
+      const proposal = await engine.proposeRemediation(
         { title: "Failed Rollout Test", category: "NETWORK_CHANGE" },
         { username: "net_admin", role: "developer" }
       );
 
-      engine.reviewRemediation(proposal.approval_id, { username: "rev_net", role: "reviewer" });
-      engine.approveRemediation(proposal.approval_id, { username: "sec_lead", role: "security_lead" });
-      engine.applyRemediation(proposal.approval_id, { username: "cd_bot", role: "deployer" });
+      await engine.reviewRemediation(proposal.approval_id, { username: "rev_net", role: "reviewer" });
+      await engine.approveRemediation(proposal.approval_id, { username: "sec_lead", role: "security_lead" });
+      await engine.applyRemediation(proposal.approval_id, { username: "cd_bot", role: "deployer" });
 
       // Verification fails -> trigger rollback
-      const rolledBack = engine.rollbackRemediation(
+      const rolledBack = await engine.rollbackRemediation(
         proposal.approval_id,
         { username: "incident_commander", role: "secops" },
         "Latency regression detected; rolling back cipher suite configuration."

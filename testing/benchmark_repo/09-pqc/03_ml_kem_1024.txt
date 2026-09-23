@@ -1,0 +1,5 @@
+# ECDAT PQC benchmark fixture
+# ASSET_ID: pqc-03-ml_kem_1024
+ALGORITHM=ML-KEM-1024
+TYPE=KEM
+NOTE=Known-answer benchmark identifier; this fixture does not claim to execute the algorithm.

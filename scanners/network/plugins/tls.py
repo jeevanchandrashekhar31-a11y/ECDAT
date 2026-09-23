@@ -149,6 +149,32 @@ class TlsScanner:
                     partial = True
 
             finding.scan_status = "partial" if partial else "success"
+            
+            # --- MANUALLY PROBE FOR LEGACY CIPHERS (RC4/3DES fallback) ---
+            if loc.ip_address:
+                legacy_cipher, legacy_cert_der = self._probe_legacy_ciphers(loc.ip_address, loc.port, loc.hostname)
+                if legacy_cipher:
+                    if legacy_cipher not in finding.cipher_suites:
+                        finding.cipher_suites.append(legacy_cipher)
+                    if "TLSv1.2" not in finding.tls_versions:
+                        finding.tls_versions.append("TLSv1.2")
+                    
+                    if legacy_cert_der and not finding.cert_chain:
+                        try:
+                            from cryptography.hazmat.backends import default_backend
+                            from cryptography import x509
+                            from scanners.network.cert_parser import parse_cert
+                            cert_obj = x509.load_der_x509_certificate(legacy_cert_der, default_backend())
+                            cert_dict = parse_cert(cert_obj)
+                            finding.cert_chain.append(cert_dict)
+                            family = cert_dict.get("algo_family")
+                            size = cert_dict.get("key_size")
+                            if family and size:
+                                finding.key_sizes[family] = size
+                        except Exception as e:
+                            import logging
+                            logging.warning(f"Failed to parse legacy cert for {loc.hostname}: {e}")
+
             enrich_finding_intelligence(finding)
             findings.append(finding)
 

@@ -1,0 +1,4 @@
+# ASSET_ID: mac-05-gmac_aes
+ALGORITHM = "GMAC-AES"
+PRIMITIVE = "GMAC"
+USAGE = "MAC"

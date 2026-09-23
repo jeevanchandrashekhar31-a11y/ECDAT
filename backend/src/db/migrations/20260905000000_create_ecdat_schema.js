@@ -41,20 +41,36 @@ exports.up = async function (knex) {
 
   // Seed default policy profile row as part of migration so fresh knex migrate:latest
   // always leaves at least one valid policy_profile_id for scans to reference.
-  await knex("policy_profiles").insert({
-    id: "internal_enterprise",
-    name: "Internal Enterprise Network",
-    description: "Internal microservices, intranet applications, and backend service-to-service communication.",
-    min_rsa_bits: 2048,
-    min_ecc_bits: 256,
-    allow_self_signed: false,
-    cicd_fail_threshold: "high",
-    config: JSON.stringify({
-      default_data_sensitivity: "internal",
-      default_business_criticality: "medium",
-      key_size_policy: { min_rsa_bits: 2048, min_ecc_bits: 256 },
-    }),
-  });
+  await knex("policy_profiles").insert([
+    {
+      id: "internal_enterprise",
+      name: "Internal Enterprise Network",
+      description: "Internal microservices, intranet applications, and backend service-to-service communication.",
+      min_rsa_bits: 2048,
+      min_ecc_bits: 256,
+      allow_self_signed: false,
+      cicd_fail_threshold: "high",
+      config: JSON.stringify({
+        default_data_sensitivity: "internal",
+        default_business_criticality: "medium",
+        key_size_policy: { min_rsa_bits: 2048, min_ecc_bits: 256 },
+      }),
+    },
+    {
+      id: "regulated_bfsi",
+      name: "Regulated BFSI (Strict)",
+      description: "Strict policy for banking, financial services, and insurance.",
+      min_rsa_bits: 3072,
+      min_ecc_bits: 384,
+      allow_self_signed: false,
+      cicd_fail_threshold: "medium",
+      config: JSON.stringify({
+        default_data_sensitivity: "confidential",
+        default_business_criticality: "high",
+        key_size_policy: { min_rsa_bits: 3072, min_ecc_bits: 384 },
+      }),
+    }
+  ]);
 
   // 3. scans
   const hasTenantsTable = await knex.schema.hasTable("tenants");

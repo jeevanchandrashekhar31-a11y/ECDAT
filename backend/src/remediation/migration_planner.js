@@ -197,16 +197,6 @@ function identifyReplacementCandidates(asset) {
       rationale: "Full 256-bit symmetric encryption providing 128 bits of post-quantum security under Grover's algorithm.",
       trade_offs: "Hardware accelerated on modern CPUs (AES-NI).",
     });
-  } else {
-    // Generic fallback
-    candidates.push({
-      role: "PRIMARY_PQC_HYBRID",
-      algorithm: "X25519MLKEM768",
-      standard: "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
-      security_level: 3,
-      rationale: "Modern post-quantum hybrid protection.",
-      trade_offs: "Requires TLS 1.3.",
-    });
   }
 
   return candidates;

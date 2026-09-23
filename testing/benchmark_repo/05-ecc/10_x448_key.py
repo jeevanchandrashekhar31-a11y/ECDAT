@@ -1,0 +1,3 @@
+# ASSET_ID: ecc-10-x448_key
+ALGORITHM = "X448-key"
+CURVE_OR_SCHEME = "X448-key"

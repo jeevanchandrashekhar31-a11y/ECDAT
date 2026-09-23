@@ -1,0 +1,17 @@
+{
+  "total": 100,
+  "positive": 95,
+  "negative_controls": 5,
+  "by_category": {
+    "symmetric": 15,
+    "hashing": 10,
+    "mac-kdf": 10,
+    "rsa": 10,
+    "ecc": 10,
+    "key-exchange": 10,
+    "tls": 10,
+    "certificates-keys": 10,
+    "pqc": 10,
+    "negative-control": 5
+  }
+}

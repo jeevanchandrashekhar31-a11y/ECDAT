@@ -1,0 +1,4 @@
+# ASSET_ID: mac-04-cmac_aes
+ALGORITHM = "CMAC-AES"
+PRIMITIVE = "CMAC"
+USAGE = "MAC"

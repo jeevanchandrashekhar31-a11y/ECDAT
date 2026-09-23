@@ -1,0 +1,3 @@
+# ASSET_ID: ecc-09-x25519_key
+ALGORITHM = "X25519-key"
+CURVE_OR_SCHEME = "X25519-key"

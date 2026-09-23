@@ -776,14 +776,37 @@ def runtime_event_to_cbom(event: Any) -> Bom:
 
 def merge_cboms(cboms: List[Bom]) -> Bom:
     merged = Bom()
-    seen_refs = set()
+    comp_map = {}
 
     for bom in cboms:
         for comp in bom.components:
-            if comp.bom_ref.value not in seen_refs:
+            ref = comp.bom_ref.value
+            if ref not in comp_map:
+                comp_map[ref] = comp
                 merged.components.add(comp)
-                seen_refs.add(comp.bom_ref.value)
+            else:
+                # Merge occurrences
+                existing = comp_map[ref]
+                if comp.evidence and comp.evidence.occurrences:
+                    if not existing.evidence:
+                        existing.evidence = ComponentEvidence(occurrences=[])
+                    if not existing.evidence.occurrences:
+                        existing.evidence.occurrences = []
+                    
+                    # Add new occurrences, avoiding exact duplicates
+                    existing_locs = {(o.location, getattr(o, "line", None)) for o in existing.evidence.occurrences}
+                    for new_occ in comp.evidence.occurrences:
+                        loc_key = (new_occ.location, getattr(new_occ, "line", None))
+                        if loc_key not in existing_locs:
+                            if hasattr(existing.evidence.occurrences, "add"):
+                                existing.evidence.occurrences.add(new_occ)
+                            else:
+                                existing.evidence.occurrences.append(new_occ)
+                            existing_locs.add(loc_key)
+
         for dep in bom.dependencies:
+            # Note: dependency merging logic assumes dependencies with identical ref are inherently identical sets.
+            # A full deep merge of dependency arrays would require cross-referencing by ref.
             merged.dependencies.add(dep)
 
     return merged
