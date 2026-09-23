@@ -21,7 +21,7 @@ exports.up = async function(knex) {
     table.string("id", 100).primary();
     table.string("state", 50).notNullable();
     table.string("title", 255);
-    table.string("finding_id", 100).notNullable().references("id").inTable("findings").onDelete("CASCADE");
+    table.string("finding_id", 100).references("id").inTable("findings").onDelete("CASCADE");
     table.string("proposer", 100);
     table.string("approver", 100);
     table.string("tenant_id", 100);
@@ -38,7 +38,7 @@ exports.down = async function(knex) {
   await knex.schema.dropTableIfExists("remediations");
   
   await knex.schema.alterTable("findings", (table) => {
-    table.dropForeign("asset_id");
+    table.dropForeign(["scan_id", "asset_id"]);
     table.dropColumn("status");
   });
 };

@@ -48,6 +48,7 @@ const assert = require("node:assert/strict");
 const app = require("../../src/app");
 const { defaultTokenService } = require("../../src/identity");
 const { inMemoryScansStore, persistScanToPostgres } = require("../../src/services/cbom_ingestion");
+const { db } = require("../../src/db");
 const { defaultObjectStateRegistry } = require("../../src/security/object_authorization");
 const { globalCertInventory } = require("../../src/domain/certificate_inventory");
 const { getDefaultApprovalEngine } = require("../../src/remediation/approval_workflow");
@@ -83,7 +84,7 @@ async function seedTwoTenantsData() {
   inMemoryScansStore.clear();
   defaultObjectStateRegistry.clear();
   globalCertInventory.inventory.clear();
-  defaultApprovalWorkflow.approvals.clear();
+  await db("remediations").del();
 
   // Provision Tenant A (tenant-alpha)
   const scanAlpha = {
@@ -159,16 +160,15 @@ async function seedTwoTenantsData() {
     { tenantId: "tenant-alpha", environment: "production" }
   );
 
-  defaultApprovalWorkflow.approvals.set("appr-alpha-001", {
-    approval_id: "appr-alpha-001",
-    finding_id: "finding-alpha-001",
-    project_id: "project-alpha-001",
-    tenantId: "tenant-alpha",
-    status: "PENDING_REVIEW",
-    action_type: "REPLACE_ALGORITHM",
-    policy_snapshot: {},
-    audit_trail: [],
-    created_at: new Date().toISOString(),
+  await db("remediations").insert({
+    id: "appr-alpha-001",
+    state: "PROPOSED",
+    finding_id: null,
+    tenant_id: "tenant-alpha",
+    proposer: "admin-alpha",
+    title: "Update CipherSuite",
+    audit_history: '[]',
+    metadata: '{}'
   });
 
   // Provision Tenant B (tenant-beta)
@@ -245,16 +245,15 @@ async function seedTwoTenantsData() {
     { tenantId: "tenant-beta", environment: "production" }
   );
 
-  defaultApprovalWorkflow.approvals.set("appr-beta-001", {
-    approval_id: "appr-beta-001",
-    finding_id: "finding-beta-001",
-    project_id: "project-beta-001",
-    tenantId: "tenant-beta",
-    status: "PENDING_REVIEW",
-    action_type: "REPLACE_ALGORITHM",
-    policy_snapshot: {},
-    audit_trail: [],
-    created_at: new Date().toISOString(),
+  await db("remediations").insert({
+    id: "appr-beta-001",
+    state: "PROPOSED",
+    finding_id: null,
+    tenant_id: "tenant-beta",
+    proposer: "admin-beta",
+    title: "Upgrade RSA",
+    audit_history: '[]',
+    metadata: '{}'
   });
 }
 

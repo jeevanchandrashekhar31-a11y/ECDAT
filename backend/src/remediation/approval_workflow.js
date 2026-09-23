@@ -145,7 +145,7 @@ class ApprovalWorkflowEngine {
     const record = await this.getApproval(approvalId);
     if (record.state !== ApprovalState.REVIEWED) throw new ApprovalWorkflowError(`Cannot approve remediation in state ${record.state}. Expected ${ApprovalState.REVIEWED}.`);
     
-    if (record.proposer.toLowerCase() === approver.username.toLowerCase()) throw new ApprovalWorkflowError("Four-Eyes Governance Violation", 403);
+    if (record.proposer.username.toLowerCase() === approver.username.toLowerCase()) throw new ApprovalWorkflowError("Four-Eyes Governance Violation", 403);
     
     const allowedRoles = ["admin", "security_lead", "ciso", "secops", "platform administrator", "platform admin", "security administrator", "security admin"];
     if (!allowedRoles.includes(String(approver.role || "").toLowerCase().replace(/[-_]/g, " "))) throw new ApprovalWorkflowError("Unauthorized", 403);
