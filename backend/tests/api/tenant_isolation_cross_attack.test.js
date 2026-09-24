@@ -668,9 +668,7 @@ test("Phase 3 & 4 & 5 & 6 — Full Tenant Isolation and Authorization Attack Ver
 
       // Anonymous user has no tenant scope and cannot access protected routes
       const resAnonScans = await fetch(`${baseUrl}/api/v1/scans`);
-      assert.equal(resAnonScans.status, 200);
-      const anonScans = await resAnonScans.json();
-      assert.equal(anonScans.scans.length, 0, "Anonymous user with no tenant scope must receive 0 scans");
+      assert.equal(resAnonScans.status, 401, "Anonymous user with no tenant scope must receive 401");
     }
   });
 });

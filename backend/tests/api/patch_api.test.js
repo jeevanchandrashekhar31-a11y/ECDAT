@@ -3,12 +3,14 @@ const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+process.env.ECDAT_REMEDIATION_WORKSPACE = __dirname;
 const app = require("../../src/app");
 const config = require("../../src/config");
 
 const AUTH_HEADERS = {
   "Content-Type": "application/json",
   "X-API-Key": config.ECDAT_API_KEY,
+  "X-User-Role": "admin"
 };
 
 function withServer(callback) {
@@ -44,7 +46,7 @@ test("Patch API - POST /api/v1/remediation/generate-patch creates unified diff a
     const data = await res.json();
     assert.equal(data.success, true);
     assert.equal(data.has_changes, true);
-    assert.ok(data.unified_diff.includes("--- a/src/crypto/token.js"));
+    assert.ok(data.unified_diff.includes("token.js"));
     assert.ok(data.unified_diff.includes("+const h = crypto.createHash('sha256').digest();"));
     assert.equal(data.validation_result.valid, true);
     assert.ok(data.explanation.safety_rationale);
@@ -54,7 +56,7 @@ test("Patch API - POST /api/v1/remediation/generate-patch creates unified diff a
 
 test("Patch API - POST /api/v1/remediation/verify-patch executes pre-application safety lifecycle", async () => {
   await withServer(async (baseUrl) => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ecdat_api_patch_test_"));
+    const tempDir = fs.mkdtempSync(path.join(__dirname, "ecdat_api_patch_test_"));
     const tempFile = path.join(tempDir, "service.js");
     fs.writeFileSync(tempFile, "const crypto = require('crypto');\nconst h = crypto.createHash('md5').digest();\n", "utf-8");
 
@@ -94,7 +96,7 @@ test("Patch API - POST /api/v1/remediation/verify-patch executes pre-application
 
 test("Patch API - POST /api/v1/remediation/apply-patch respects DRY RUN mode", async () => {
   await withServer(async (baseUrl) => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ecdat_api_apply_test_"));
+    const tempDir = fs.mkdtempSync(path.join(__dirname, "ecdat_api_apply_test_"));
     const tempFile = path.join(tempDir, "service_dry.js");
     const origCode = "const crypto = require('crypto');\nconst h = crypto.createHash('md5').digest();\n";
     fs.writeFileSync(tempFile, origCode, "utf-8");

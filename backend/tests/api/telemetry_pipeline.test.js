@@ -8,6 +8,7 @@ describe("Phase 7: eBPF Telemetry Ingestion Pipeline (P1-05, P1-06, P1-07)", () 
   let server;
   let baseUrl;
   const testApiKey = "ecdat-test-telemetry-key-2026";
+  const AUTH_HEADERS = { "X-API-Key": testApiKey, "X-User-Role": "admin" };
 
   before(async () => {
     config.ECDAT_API_KEY = testApiKey;
@@ -105,7 +106,7 @@ describe("Phase 7: eBPF Telemetry Ingestion Pipeline (P1-05, P1-06, P1-07)", () 
   });
 
   test("P1-05/P1-07: GET /api/v1/telemetry/status declares truthful least-privilege boundary", async () => {
-    const res = await fetch(`${baseUrl}/api/v1/telemetry/status`);
+    const res = await fetch(`${baseUrl}/api/v1/telemetry/status`, { headers: AUTH_HEADERS });
     assert.equal(res.status, 200);
     const data = await res.json();
     assert.equal(data.is_live_ebpf_verified, false);

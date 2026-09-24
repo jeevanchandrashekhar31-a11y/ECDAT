@@ -385,14 +385,15 @@ test("Auth Hardening API - Demo login with existing/stale cookies succeeds witho
           Cookie: "ecdat_access_token=stale_or_expired_cookie_value; other_cookie=xyz",
           Origin: "http://localhost:5173",
         },
-        body: JSON.stringify({ persona: "developer", seed: false }),
+        body: JSON.stringify({ persona: "analyst", seed: false }),
       });
 
       const demoData = await resDemo.json();
+      console.log("DEMO DATA:", demoData);
       assert.equal(resDemo.status, 200, "Demo login must not be blocked by CSRF middleware when cookies are present");
       assert.ok(demoData.accessToken);
       assert.ok(demoData.csrfToken, "Demo login must issue a fresh CSRF token");
-      assert.equal(demoData.user.username, "demo-developer");
+      assert.equal(demoData.user.username, "evaluation-analyst");
       assert.equal(demoData.demoMode, true);
     } finally {
       config.AUTH_MODE = prevMode;

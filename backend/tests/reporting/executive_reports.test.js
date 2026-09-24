@@ -15,9 +15,26 @@ if (!config.ECDAT_API_KEY) {
   config.ECDAT_API_KEY = "test-exec-reports-key-32-chars-long-entropy!!";
 }
 
+const { inMemoryScansStore } = require("../../src/services/cbom_ingestion");
+inMemoryScansStore.set("scan-exec-1", {
+  id: "scan-exec-1",
+  name: "Exec Scan",
+  created_at: new Date().toISOString(),
+  tenantId: "default-tenant",
+  classified_findings: [
+    { id: "f1", algorithm: "SHA-1", category: "hash", severity: "High", mosca_margin_years: -2, mosca_status: "CRITICAL_URGENT" },
+    { id: "f2", algorithm: "MD5", category: "hash", severity: "Critical", mosca_margin_years: -5, mosca_status: "CRITICAL_URGENT" },
+    { id: "f3", algorithm: "RSA", key_size: 1024, category: "encryption", severity: "High", mosca_status: "AT_RISK" },
+    { id: "f4", algorithm: "ML-KEM", category: "pqc", severity: "Low", mosca_status: "SAFE" },
+    { id: "f5", algorithm: "ML-DSA", category: "pqc", severity: "Low", mosca_status: "SAFE" },
+    { id: "f6", algorithm: "kyber+rsa", category: "hybrid", severity: "Low", mosca_status: "SAFE" },
+    { id: "f7", algorithm: "RSA", category: "certificate", severity: "High", mosca_status: "AT_RISK", metadata: { fingerprint: "a".repeat(64), issuer_dn: "Test", subject_dn: "Test" } },
+  ]
+});
+
 describe("Enterprise Executive Reporting Engine (Phase 26.1)", () => {
   test("Generates comprehensive executive report covering all 9 domains", async () => {
-    const report = await generateExecutiveReport({
+    const report = await generateExecutiveReport({ scanId: "scan-exec-1", tenantContext: { isPlatformAdmin: true },
       policyProfile: "regulated_bfsi",
       scenario: "baseline",
     });
@@ -79,7 +96,7 @@ describe("Enterprise Executive Reporting Engine (Phase 26.1)", () => {
   });
 
   test("Validates 100% evidence traceability across all metrics", async () => {
-    const report = await generateExecutiveReport();
+    const report = await generateExecutiveReport({ scanId: "scan-exec-1", tenantContext: { isPlatformAdmin: true } });
     const verdict = validateReportTraceability(report);
 
     assert.equal(verdict.passed, true, `Violations: ${verdict.violations.join(", ")}`);
@@ -87,7 +104,7 @@ describe("Enterprise Executive Reporting Engine (Phase 26.1)", () => {
   });
 
   test("Detects metric and evidence discrepancies when artificially injected", async () => {
-    const report = await generateExecutiveReport();
+    const report = await generateExecutiveReport({ scanId: "scan-exec-1", tenantContext: { isPlatformAdmin: true } });
     // Artificially modify count without updating evidence
     report.total_crypto_assets.total_count = 9999;
 
@@ -97,7 +114,7 @@ describe("Enterprise Executive Reporting Engine (Phase 26.1)", () => {
   });
 
   test("Generates standalone HTML executive report with dark mode & KPIs", async () => {
-    const report = await generateExecutiveReport();
+    const report = await generateExecutiveReport({ scanId: "scan-exec-1", tenantContext: { isPlatformAdmin: true } });
     const html = generateExecutiveHtmlReport(report);
 
     assert.ok(typeof html === "string");

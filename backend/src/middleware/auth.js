@@ -106,6 +106,16 @@ const PUBLIC_AUTH_PATHS = Object.freeze([
   "/auth/password-reset/confirm",
   "/auth/forgot-password",
   "/auth/reset-password",
+  "/api/v1/auth/demo/login",
+  "/auth/demo/login",
+  "/api/v1/auth/demo/reset",
+  "/auth/demo/reset",
+  "/api/v1/auth/demo/seed",
+  "/auth/demo/seed",
+  "/api/v1/auth/evaluation/reset",
+  "/auth/evaluation/reset",
+  "/api/v1/auth/evaluation/seed",
+  "/auth/evaluation/seed"
 ]);
 
 /**
@@ -424,8 +434,7 @@ function requireRole(allowedRoles = []) {
     const userRoles = rawRoles.map((r) => String(r).toLowerCase().replace(/[-_]/g, " "));
     const isPlatformAdmin =
       Boolean(req.tenantContext?.isPlatformAdmin) ||
-      userRoles.includes("platform administrator") ||
-      userRoles.includes("admin");
+      userRoles.includes("platform administrator");
     const hasRole = isPlatformAdmin || userRoles.some((r) => required.includes(r));
     if (!hasRole) {
       return res.status(403).json({

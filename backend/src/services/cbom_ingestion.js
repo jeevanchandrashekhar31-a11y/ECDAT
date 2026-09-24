@@ -112,50 +112,50 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       }).onConflict(['scan_id', 'id']).merge();
     }
 
-    // 5. Insert Findings & Risk Assessments
+    // 5. Insert Findings & Risk Assessments (Batched for Performance)
     const findings = scanRecord.classified_findings || [];
-    for (let i = 0; i < findings.length; i++) {
-      const f = findings[i];
-      const findingId = f.id || `fnd_${scanRecord.id}_${i}`;
-      const compId = String(f.bom_ref || `comp_${scanRecord.id}_${i}`).slice(0, 255);
-      const assetId = String(f.asset_id || f.bom_ref || "global").slice(0, 255);
+    if (findings.length > 0) {
+      const assetsData = [];
+      const componentsData = [];
+      const findingsData = [];
+      const riskAssessmentsData = [];
+      const recommendationsData = [];
 
-      // Upsert asset row
-      await trx("assets").insert({
-        scan_id: scanRecord.id,
-        id: assetId,
-        primary_identifier: assetId,
-        tenant_id: scanRecord.tenantId || "default-tenant",
-        asset_type: String(f.asset_type || "network_session").slice(0, 50),
-        data_sensitivity: String(f.data_sensitivity || "internal").slice(0, 50),
-        business_criticality: String(f.business_criticality || "medium").slice(0, 50),
-        highest_severity: String(f.severity || "Informational").slice(0, 50),
-        at_quantum_risk:
-          f.mosca?.status === "AT_RISK" ||
-          f.mosca?.status === "CRITICAL_URGENT",
-        cicd_pass: f.cicd_pass !== false,
-        // Phase 1 Rich Asset Properties
-        algorithm: f.algorithm ? String(f.algorithm).slice(0, 100) : null,
-        primitive: f.primitive ? String(f.primitive).slice(0, 50) : null,
-        key_size: parseInt(f.key_size, 10) || null,
-        usage: f.usage ? String(f.usage).slice(0, 100) : null,
-        location: f.location ? String(f.location).slice(0, 255) : null,
-        owner: f.owner ? String(f.owner).slice(0, 100) : null,
-        service: f.service ? String(f.service).slice(0, 100) : null,
-        protocol: f.protocol ? String(f.protocol).slice(0, 100) : null,
-        certificate: f.certificate ? JSON.stringify(f.certificate) : null,
-        source: f.source ? String(f.source).slice(0, 100) : null,
-        confidence: typeof f.confidence === 'number' ? f.confidence : 1.0,
-        is_synthetic: Boolean(f.is_synthetic),
-        metadata: JSON.stringify({ asset_id: assetId }),
-      }).onConflict(['scan_id', 'id']).merge();
+      for (let i = 0; i < findings.length; i++) {
+        const f = findings[i];
+        const findingId = f.id || `fnd_${scanRecord.id}_${i}`;
+        const compId = String(f.bom_ref || `comp_${scanRecord.id}_${i}`).slice(0, 255);
+        const assetId = String(f.asset_id || f.bom_ref || "global").slice(0, 255);
 
-      // Ensure component row exists
-      const compRow = await trx("components")
-        .where({ scan_id: scanRecord.id, id: compId })
-        .first();
-      if (!compRow) {
-        await trx("components").insert({
+        assetsData.push({
+          scan_id: scanRecord.id,
+          id: assetId,
+          primary_identifier: assetId,
+          tenant_id: scanRecord.tenantId || "default-tenant",
+          asset_type: String(f.asset_type || "network_session").slice(0, 50),
+          data_sensitivity: String(f.data_sensitivity || "internal").slice(0, 50),
+          business_criticality: String(f.business_criticality || "medium").slice(0, 50),
+          highest_severity: String(f.severity || "Informational").slice(0, 50),
+          at_quantum_risk:
+            f.mosca?.status === "AT_RISK" ||
+            f.mosca?.status === "CRITICAL_URGENT",
+          cicd_pass: f.cicd_pass !== false,
+          algorithm: f.algorithm ? String(f.algorithm).slice(0, 100) : null,
+          primitive: f.primitive ? String(f.primitive).slice(0, 50) : null,
+          key_size: parseInt(f.key_size, 10) || null,
+          usage: f.usage ? String(f.usage).slice(0, 100) : null,
+          location: f.location ? String(f.location).slice(0, 255) : null,
+          owner: f.owner ? String(f.owner).slice(0, 100) : null,
+          service: f.service ? String(f.service).slice(0, 100) : null,
+          protocol: f.protocol ? String(f.protocol).slice(0, 100) : null,
+          certificate: f.certificate ? JSON.stringify(f.certificate) : null,
+          source: f.source ? String(f.source).slice(0, 100) : null,
+          confidence: typeof f.confidence === 'number' ? f.confidence : 1.0,
+          is_synthetic: Boolean(f.is_synthetic),
+          metadata: JSON.stringify({ asset_id: assetId }),
+        });
+
+        componentsData.push({
           scan_id: scanRecord.id,
           id: compId,
           asset_id: assetId,
@@ -166,72 +166,76 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
               : "cryptographic-asset",
           version: f.version ? String(f.version).slice(0, 100) : null,
         });
+
+        findingsData.push({
+          id: findingId,
+          scan_id: scanRecord.id,
+          component_id: compId,
+          asset_id: assetId,
+          algorithm: String(f.algorithm || "crypto-asset").slice(0, 100),
+          key_size: f.key_size || null,
+          category: f.category ? String(f.category).slice(0, 50) : null,
+          finding_type: f.asset_type ? String(f.asset_type).slice(0, 50) : null,
+          location: f.file_path || f.location ? String(f.file_path || f.location).slice(0, 512) : null,
+          line_number: f.line_number ? parseInt(f.line_number, 10) : null,
+          evidence_context: f.raw_evidence ? JSON.stringify(f.raw_evidence) : null,
+          confidence: String(f.confidence || "high").slice(0, 50),
+          detection_method: f.detection_method ? String(f.detection_method).slice(0, 50) : "deterministic",
+          status: f.needs_human_review ? "LLM_FLAGGED_UNVERIFIED" : "CONFIRMED",
+        });
+
+        riskAssessmentsData.push({
+          id: `ra_${findingId}`,
+          finding_id: findingId,
+          scan_id: scanRecord.id,
+          severity: String(f.severity || "Informational").slice(0, 50),
+          classical_risk: String(f.classical_risk || "NONE").slice(0, 50),
+          quantum_relevance: String(f.quantum_relevance || "NONE").slice(0, 50),
+          mosca_status: String(f.mosca?.status || "SAFE").slice(0, 50),
+          mosca_x_years: f.mosca?.final_values?.X_shelf_life_years || 0,
+          mosca_y_years: f.mosca?.final_values?.Y_migration_years || 0,
+          mosca_z_years: f.mosca?.final_values?.Z_quantum_threat_years || 9,
+          mosca_margin_years: f.mosca?.mosca_margin_years || 0,
+          cicd_pass: f.cicd_pass,
+          applied_rules: JSON.stringify(f.applied_rule_ids || []),
+          policy_violations: JSON.stringify(f.policy_violations || []),
+          explanation: f.explanation || "N/A",
+        });
+
+        if (f.recommendation) {
+          recommendationsData.push({
+            id: `rec_${findingId}`,
+            scan_id: scanRecord.id,
+            finding_id: findingId,
+            priority: String(f.recommendation.priority || "medium").slice(0, 50),
+            current_state: f.recommendation.current_state || "",
+            recommended_target: f.recommendation.recommended_target || "",
+            classical_remediation: f.recommendation.classical_remediation,
+            pqc_migration: f.recommendation.pqc_migration,
+            hybrid_transition_recommended: Boolean(f.recommendation.hybrid_transition_recommended),
+            migration_complexity: f.recommendation.migration_complexity ? String(f.recommendation.migration_complexity).slice(0, 50) : null,
+            latency_impact: f.recommendation.latency_impact,
+            bandwidth_impact: f.recommendation.bandwidth_impact,
+            cost_category: f.recommendation.cost_category,
+            rationale: f.recommendation.rationale,
+            references: JSON.stringify(f.recommendation.references || []),
+            assumptions: JSON.stringify(f.recommendation.assumptions || []),
+            benchmark_available: false,
+          });
+        }
       }
 
-      // Insert Finding
-      await trx("findings").insert({
-        id: findingId,
-        scan_id: scanRecord.id,
-        component_id: compId,
-        asset_id: assetId,
-        algorithm: String(f.algorithm || "crypto-asset").slice(0, 100),
-        key_size: f.key_size || null,
-        category: f.category ? String(f.category).slice(0, 50) : null,
-        finding_type: f.asset_type ? String(f.asset_type).slice(0, 50) : null,
-        location: f.file_path || f.location ? String(f.file_path || f.location).slice(0, 512) : null,
-        line_number: f.line_number ? parseInt(f.line_number, 10) : null,
-        evidence_context: f.raw_evidence
-          ? JSON.stringify(f.raw_evidence)
-          : null,
-        confidence: String(f.confidence || "high").slice(0, 50),
-        detection_method: f.detection_method ? String(f.detection_method).slice(0, 50) : "deterministic",
-        status: f.needs_human_review ? "LLM_FLAGGED_UNVERIFIED" : "CONFIRMED",
-      });
-
-      // Insert Risk Assessment
-      await trx("risk_assessments").insert({
-        id: `ra_${findingId}`,
-        finding_id: findingId,
-        scan_id: scanRecord.id,
-        severity: String(f.severity || "Informational").slice(0, 50),
-        classical_risk: String(f.classical_risk || "NONE").slice(0, 50),
-        quantum_relevance: String(f.quantum_relevance || "NONE").slice(0, 50),
-        mosca_status: String(f.mosca?.status || "SAFE").slice(0, 50),
-        mosca_x_years: f.mosca?.final_values?.X_shelf_life_years || 0,
-        mosca_y_years: f.mosca?.final_values?.Y_migration_years || 0,
-        mosca_z_years: f.mosca?.final_values?.Z_quantum_threat_years || 9,
-        mosca_margin_years: f.mosca?.mosca_margin_years || 0,
-        cicd_pass: f.cicd_pass,
-        applied_rules: JSON.stringify(f.applied_rule_ids || []),
-        policy_violations: JSON.stringify(f.policy_violations || []),
-        explanation: f.explanation || "N/A",
-      });
-
-      // Insert Recommendation
-      if (f.recommendation) {
-        await trx("recommendations").insert({
-          id: `rec_${findingId}`,
-          scan_id: scanRecord.id,
-          finding_id: findingId,
-          priority: String(f.recommendation.priority || "medium").slice(0, 50),
-          current_state: f.recommendation.current_state || "",
-          recommended_target: f.recommendation.recommended_target || "",
-          classical_remediation: f.recommendation.classical_remediation,
-          pqc_migration: f.recommendation.pqc_migration,
-          hybrid_transition_recommended: Boolean(
-            f.recommendation.hybrid_transition_recommended,
-          ),
-          migration_complexity: f.recommendation.migration_complexity
-            ? String(f.recommendation.migration_complexity).slice(0, 50)
-            : null,
-          latency_impact: f.recommendation.latency_impact,
-          bandwidth_impact: f.recommendation.bandwidth_impact,
-          cost_category: f.recommendation.cost_category,
-          rationale: f.recommendation.rationale,
-          references: JSON.stringify(f.recommendation.references || []),
-          assumptions: JSON.stringify(f.recommendation.assumptions || []),
-          benchmark_available: false,
-        });
+      // Batch Insert with Chunking
+      const chunkSize = 150;
+      for (let i = 0; i < findings.length; i += chunkSize) {
+        await trx("assets").insert(assetsData.slice(i, i + chunkSize)).onConflict(['scan_id', 'id']).merge();
+        await trx("components").insert(componentsData.slice(i, i + chunkSize)).onConflict(['scan_id', 'id']).ignore();
+        await trx("findings").insert(findingsData.slice(i, i + chunkSize));
+        await trx("risk_assessments").insert(riskAssessmentsData.slice(i, i + chunkSize));
+        const recsChunk = recommendationsData.slice(i, i + chunkSize);
+        if (recsChunk.length > 0) {
+          await trx("recommendations").insert(recsChunk);
+        }
       }
     }
 

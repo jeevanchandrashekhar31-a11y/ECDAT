@@ -61,7 +61,7 @@ router.get("/", async (req, res, next) => {
         }
 
         let query = db("findings")
-          .join(
+          .leftJoin(
             "risk_assessments",
             "findings.id",
             "risk_assessments.finding_id",

@@ -10,6 +10,7 @@ const {
 const AUTH_HEADERS = {
   "Content-Type": "application/json",
   "X-API-Key": config.ECDAT_API_KEY,
+  "X-User-Role": "admin",
 };
 
 function withServer(callback) {
@@ -83,7 +84,7 @@ test("Policy API - POST /api/v1/policy/validate validates policy document agains
 
 test("Policy API - GET /api/v1/policy/rules returns active policy metadata and rules list", async () => {
   await withServer(async (baseUrl) => {
-    const res = await fetch(`${baseUrl}/api/v1/policy/rules`);
+    const res = await fetch(`${baseUrl}/api/v1/policy/rules`, { headers: AUTH_HEADERS });
     assert.equal(res.status, 200);
     const data = await res.json();
     assert.equal(data.success, true);
@@ -167,7 +168,7 @@ test("Policy API - Governance lifecycle: draft, four-eyes approval, activation, 
     assert.equal(activateRes.status, 200);
 
     // 6. Check Audit Log & Hash Chain Integrity
-    const auditRes = await fetch(`${baseUrl}/api/v1/policy/audit-log`);
+    const auditRes = await fetch(`${baseUrl}/api/v1/policy/audit-log`, { headers: AUTH_HEADERS });
     assert.equal(auditRes.status, 200);
     const auditData = await auditRes.json();
     assert.equal(auditData.integrity_verified, true);

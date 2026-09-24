@@ -12,6 +12,7 @@ const {
 const AUTH_HEADERS = {
   "Content-Type": "application/json",
   "X-API-Key": config.ECDAT_API_KEY,
+  "X-User-Role": "admin"
 };
 
 function withServer(callback) {
@@ -78,7 +79,7 @@ test("Phase 22.1 — Subsystem 7: Comprehensive API Contracts & Security Hardeni
   await t.test("3. Standardized Error Envelopes & Zero Stack Trace Disclosure", async () => {
     await withServer(async (baseUrl) => {
       // 404 Route
-      const res404 = await fetch(`${baseUrl}/api/v1/non-existent-route`);
+      const res404 = await fetch(`${baseUrl}/api/v1/non-existent-route`, { headers: AUTH_HEADERS });
       assert.equal(res404.status, 404);
       const data404 = await res404.json();
       assert.ok(data404.error);

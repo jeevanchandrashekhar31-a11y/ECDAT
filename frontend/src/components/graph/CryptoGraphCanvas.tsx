@@ -252,7 +252,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
   const { positionedNodes, nodeMap, canvasHeight, tierBounds, totalGraphWidth } = useMemo(() => {
     const nodeWidth = 230;
     const nodeHeight = 84;
-    const colSpacing = 280;
+    // const colSpacing = 280; // unused
     const rowSpacing = 110;
     const startX = 60;
     const startY = 80;
@@ -366,7 +366,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
     if (e.ctrlKey || e.metaKey) {
       // Zoom with Ctrl/Cmd + Scroll
       e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      const zoomFactor = e.deltaY < 0 ? 1.03 : 0.97;
       setZoom((prev) => Math.min(2.2, Math.max(0.02, prev * zoomFactor)));
     } else {
       // Pan with normal Scroll
@@ -451,14 +451,14 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
         <span className="text-slate-400 font-mono">Zoom: {Math.round(zoom * 100)}%</span>
         <div className="h-3 w-px bg-slate-700" />
         <button
-          onClick={() => setZoom((z) => Math.min(2.2, z * 1.15))}
+          onClick={() => setZoom((z) => Math.min(2.2, z * 1.05))}
           className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
           title="Zoom In"
         >
           <ZoomIn className="w-3.5 h-3.5" />
         </button>
         <button
-          onClick={() => setZoom((z) => Math.max(0.02, z * 0.85))}
+          onClick={() => setZoom((z) => Math.max(0.02, z * 0.95))}
           className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
           title="Zoom Out"
         >
@@ -619,19 +619,19 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
       {/* Selected Node Details Drawer */}
       {selectedNode && (
         <div className="absolute right-0 top-0 bottom-0 w-96 bg-slate-900/95 backdrop-blur-xl border-l border-slate-800 p-6 overflow-y-auto shadow-2xl z-30 animate-in slide-in-from-right-4 duration-200">
-          <div className="flex items-start justify-between mb-4">
-            <div>
+          <div className="flex items-start justify-between mb-4 gap-4">
+            <div className="min-w-0 flex-1">
               <span className="text-[10px] uppercase tracking-wider font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 font-semibold">
                 {selectedNode.tier} Tier
               </span>
-              <h3 className="text-lg font-bold text-slate-100 mt-1">
+              <h3 className="text-lg font-bold text-slate-100 mt-1 break-words">
                 {selectedNode.label}
               </h3>
-              <span className="text-xs text-slate-500 font-mono">{selectedNode.id}</span>
+              <span className="text-xs text-slate-500 font-mono break-all">{selectedNode.id}</span>
             </div>
             <button
               onClick={() => setSelectedNodeId(null)}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors shrink-0"
             >
               <X className="w-5 h-5" />
             </button>

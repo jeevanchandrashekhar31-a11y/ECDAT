@@ -2,6 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert");
 const app = require("../../src/app");
 const config = require("../../src/config");
+
+const AUTH_HEADERS = { "X-API-Key": config.ECDAT_API_KEY, "X-User-Role": "admin" };
 const { db } = require("../../src/db/connection");
 const { ingestCbom } = require("../../src/services/cbom_ingestion");
 
@@ -98,6 +100,7 @@ test("Dashboard API - GET /api/v1/dashboard/summary returns executive metrics an
   await withServer(async (baseUrl) => {
     const res = await fetch(
       `${baseUrl}/api/v1/dashboard/summary?scanId=${testScanId}`,
+      { headers: AUTH_HEADERS }
     );
     assert.strictEqual(res.status, 200);
 
@@ -120,6 +123,7 @@ test("Assets API - GET /api/v1/assets supports safe pagination, filtering, and s
     // 1. Pagination check
     const pagedRes = await fetch(
       `${baseUrl}/api/v1/assets?scanId=${testScanId}&page=1&pageSize=2`,
+      { headers: AUTH_HEADERS }
     );
     assert.strictEqual(pagedRes.status, 200);
     const pagedData = await pagedRes.json();
@@ -131,6 +135,7 @@ test("Assets API - GET /api/v1/assets supports safe pagination, filtering, and s
     // 2. Filter by severity
     const sevRes = await fetch(
       `${baseUrl}/api/v1/assets?scanId=${testScanId}&severity=Critical`,
+      { headers: AUTH_HEADERS }
     );
     assert.strictEqual(sevRes.status, 200);
     const sevData = await sevRes.json();
@@ -143,6 +148,7 @@ test("Assets API - GET /api/v1/assets supports safe pagination, filtering, and s
     // 3. Filter by assetType
     const typeRes = await fetch(
       `${baseUrl}/api/v1/assets?scanId=${testScanId}&assetType=network`,
+      { headers: AUTH_HEADERS }
     );
     assert.strictEqual(typeRes.status, 200);
     const typeData = await typeRes.json();
@@ -156,6 +162,7 @@ test("Assets API - GET /api/v1/assets supports safe pagination, filtering, and s
     // 4. SQL injection safety check: single quotes and comments should safely bind
     const sqliRes = await fetch(
       `${baseUrl}/api/v1/assets?scanId=${testScanId}&severity=' OR '1'='1`,
+      { headers: AUTH_HEADERS }
     );
     assert.strictEqual(sqliRes.status, 200);
     const sqliData = await sqliRes.json();
@@ -170,6 +177,7 @@ test("Assets API - GET /api/v1/assets/:assetId returns evidence, risks, Mosca in
     );
     const res = await fetch(
       `${baseUrl}/api/v1/assets/${encodedAssetId}?scanId=${testScanId}`,
+      { headers: AUTH_HEADERS }
     );
     assert.strictEqual(res.status, 200);
 
@@ -207,6 +215,7 @@ test("Findings API - GET /api/v1/findings supports parameterized filtering and p
     // 1. Filter by algorithm
     const algRes = await fetch(
       `${baseUrl}/api/v1/findings?scanId=${testScanId}&algorithm=MD5`,
+      { headers: AUTH_HEADERS }
     );
     assert.strictEqual(algRes.status, 200);
     const algData = await algRes.json();
@@ -216,6 +225,7 @@ test("Findings API - GET /api/v1/findings supports parameterized filtering and p
     // 2. Filter by source / scanner_type
     const srcRes = await fetch(
       `${baseUrl}/api/v1/findings?scanId=${testScanId}&source=combined`,
+      { headers: AUTH_HEADERS }
     );
     assert.strictEqual(srcRes.status, 200);
     const srcData = await srcRes.json();
@@ -223,7 +233,7 @@ test("Findings API - GET /api/v1/findings supports parameterized filtering and p
 
     // 3. Fetch single finding details via GET /api/v1/findings/:findingId
     const findingId = algData.findings[0].id;
-    const detailRes = await fetch(`${baseUrl}/api/v1/findings/${findingId}`);
+    const detailRes = await fetch(`${baseUrl}/api/v1/findings/${findingId}`, { headers: AUTH_HEADERS });
     assert.strictEqual(detailRes.status, 200);
     const detailData = await detailRes.json();
     assert.strictEqual(detailData.finding_id, findingId);

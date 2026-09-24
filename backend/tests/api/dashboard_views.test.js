@@ -1,7 +1,10 @@
 const test = require("node:test");
 const assert = require("node:assert");
 const app = require("../../src/app");
+const config = require("../../src/config");
 const { ingestCbom } = require("../../src/services/cbom_ingestion");
+
+const AUTH_HEADERS = { "X-API-Key": config.ECDAT_API_KEY, "X-User-Role": "admin" };
 
 function withServer(callback) {
   return new Promise((resolve, reject) => {
@@ -73,7 +76,7 @@ test("Phase 17.1 — Enterprise Security Dashboard Views API", async (t) => {
 
   await t.test("GET /api/v1/dashboard/views returns all 13 specialized views with evidence links", async () => {
     await withServer(async (baseUrl) => {
-      const res = await fetch(`${baseUrl}/api/v1/dashboard/views?scanId=${testScanId}`);
+      const res = await fetch(`${baseUrl}/api/v1/dashboard/views?scanId=${testScanId}`, { headers: AUTH_HEADERS });
       assert.strictEqual(res.status, 200);
       const data = await res.json();
 

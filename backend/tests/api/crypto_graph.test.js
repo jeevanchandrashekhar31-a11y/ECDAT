@@ -2,7 +2,10 @@ process.env.NODE_ENV = "test";
 const test = require("node:test");
 const assert = require("node:assert");
 const app = require("../../src/app");
+const config = require("../../src/config");
 const { sanitizeGraphLabel } = require("../../src/services/crypto_graph_service");
+
+const AUTH_HEADERS = { "X-API-Key": config.ECDAT_API_KEY, "X-User-Role": "admin" };
 
 function withServer(callback) {
   return new Promise((resolve, reject) => {
@@ -40,7 +43,7 @@ test("Phase 17.2 — Crypto Graph Relationship Visualization API", async (t) => 
 
   await t.test("GET /api/v1/graph returns correlated 6-tier graph structure", async () => {
     await withServer(async (baseUrl) => {
-      const res = await fetch(`${baseUrl}/api/v1/graph`);
+      const res = await fetch(`${baseUrl}/api/v1/graph`, { headers: AUTH_HEADERS });
       assert.strictEqual(res.status, 200);
       const data = await res.json();
 
@@ -51,7 +54,7 @@ test("Phase 17.2 — Crypto Graph Relationship Visualization API", async (t) => 
       assert.ok(data.graph.edges.length > 0, "edges must not be empty");
 
       // Verify all 6 tiers exist in graph
-      const tiers = new Set(data.graph.nodes.map((n) => n.tier));
+      const tiers = new Set(data.graph.nodes.map((n) => n.tier)); console.log('TIERS:', Array.from(tiers));
       assert.ok(tiers.has("Application"), "Graph must have Application nodes");
       assert.ok(tiers.has("Service"), "Graph must have Service nodes");
       assert.ok(tiers.has("Certificate"), "Graph must have Certificate nodes");
@@ -84,7 +87,7 @@ test("Phase 17.2 — Crypto Graph Relationship Visualization API", async (t) => 
   await t.test("GET /api/v1/graph filters by severity, owner, algorithm, and pqcReadiness", async () => {
     await withServer(async (baseUrl) => {
       // 1. Severity filter
-      const resSev = await fetch(`${baseUrl}/api/v1/graph?severity=Critical`);
+      const resSev = await fetch(`${baseUrl}/api/v1/graph?severity=Critical`, { headers: AUTH_HEADERS });
       assert.strictEqual(resSev.status, 200);
       const dataSev = await resSev.json();
       for (const node of dataSev.graph.nodes) {
@@ -92,7 +95,7 @@ test("Phase 17.2 — Crypto Graph Relationship Visualization API", async (t) => 
       }
 
       // 2. Owner filter
-      const resOwner = await fetch(`${baseUrl}/api/v1/graph?owner=Fintech%20Core%20Team`);
+      const resOwner = await fetch(`${baseUrl}/api/v1/graph?owner=Fintech%20Core%20Team`, { headers: AUTH_HEADERS });
       assert.strictEqual(resOwner.status, 200);
       const dataOwner = await resOwner.json();
       for (const node of dataOwner.graph.nodes) {
@@ -100,7 +103,7 @@ test("Phase 17.2 — Crypto Graph Relationship Visualization API", async (t) => 
       }
 
       // 3. Algorithm filter
-      const resAlgo = await fetch(`${baseUrl}/api/v1/graph?algorithm=RSA`);
+      const resAlgo = await fetch(`${baseUrl}/api/v1/graph?algorithm=RSA`, { headers: AUTH_HEADERS });
       assert.strictEqual(resAlgo.status, 200);
       const dataAlgo = await resAlgo.json();
       for (const node of dataAlgo.graph.nodes) {
@@ -108,7 +111,7 @@ test("Phase 17.2 — Crypto Graph Relationship Visualization API", async (t) => 
       }
 
       // 4. PQC Readiness filter
-      const resPqc = await fetch(`${baseUrl}/api/v1/graph?pqcReadiness=SAFE`);
+      const resPqc = await fetch(`${baseUrl}/api/v1/graph?pqcReadiness=SAFE`, { headers: AUTH_HEADERS });
       assert.strictEqual(resPqc.status, 200);
       const dataPqc = await resPqc.json();
       for (const node of dataPqc.graph.nodes) {
@@ -116,7 +119,7 @@ test("Phase 17.2 — Crypto Graph Relationship Visualization API", async (t) => 
       }
 
       // 5. Exposure filter
-      const resExp = await fetch(`${baseUrl}/api/v1/graph?exposure=external`);
+      const resExp = await fetch(`${baseUrl}/api/v1/graph?exposure=external`, { headers: AUTH_HEADERS });
       assert.strictEqual(resExp.status, 200);
       const dataExp = await resExp.json();
       for (const node of dataExp.graph.nodes) {

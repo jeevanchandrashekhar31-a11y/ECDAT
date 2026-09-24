@@ -147,8 +147,8 @@ class ApprovalWorkflowEngine {
     
     if (record.proposer.username.toLowerCase() === approver.username.toLowerCase()) throw new ApprovalWorkflowError("Four-Eyes Governance Violation", 403);
     
-    const allowedRoles = ["admin", "security_lead", "ciso", "secops", "platform administrator", "platform admin", "security administrator", "security admin"];
-    if (!allowedRoles.includes(String(approver.role || "").toLowerCase().replace(/[-_]/g, " "))) throw new ApprovalWorkflowError("Unauthorized", 403);
+    const allowedRoles = ["admin", "security lead", "ciso", "secops", "platform administrator", "platform admin", "security administrator", "security admin"];
+    if (!allowedRoles.includes(String(approver.role || "").toLowerCase().replace(/[-_]/g, " "))) throw new ApprovalWorkflowError("User is not authorized to approve remediations.", 403);
 
     const nowTs = new Date().toISOString();
     const newHash = this._computeTransitionHash(record.metadata.current_state_hash, {
@@ -208,6 +208,7 @@ class ApprovalWorkflowEngine {
     const record = await this.getApproval(approvalId);
     if (record.state !== ApprovalState.APPLIED) throw new ApprovalWorkflowError(`Cannot verify remediation in state ${record.state}. Expected ${ApprovalState.APPLIED}.`);
     
+    if (!verificationResults) throw new ApprovalWorkflowError("Missing verificationResults", 400);
     if (!verificationResults.tests_passed || !verificationResults.finding_resolved) return this.failRemediation(approvalId, verifier, "Verification failed");
 
     const nowTs = new Date().toISOString();
@@ -297,7 +298,10 @@ class ApprovalWorkflowEngine {
     record.environment = record.metadata.environment;
     record.requires_explicit_approval = record.metadata.requires_explicit_approval;
     record.proposer = { username: record.proposer, role: record.audit_history[0]?.role || "developer" };
-    record.approver = record.approver ? { username: record.approver } : null;
+    record.approver = record.approver ? { username: record.approver, role: record.metadata?.approver?.role || "admin" } : null;
+    if (record.metadata?.reviewer) record.reviewer = record.metadata.reviewer;
+    if (record.metadata?.deployer) record.deployer = record.metadata.deployer;
+    if (record.metadata?.verifier) record.verifier = record.metadata.verifier;
     return record;
   }
 

@@ -171,6 +171,14 @@ test("Database Persistence - Failed ingestion rolls back incomplete normalized r
         status: "processing",
       });
 
+      // 1.5. Insert one asset to satisfy foreign key
+      await trx("assets").insert({
+        id: "asset_0",
+        primary_identifier: "asset_0",
+        scan_id: failedScanId,
+        asset_type: "network",
+      });
+
       // 2. Insert one finding
       await trx("findings").insert({
         id: `fnd_${failedScanId}_0`,

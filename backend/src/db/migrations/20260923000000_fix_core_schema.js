@@ -1,8 +1,11 @@
 exports.up = async function(knex) {
   // 1. Add status column to findings
-  await knex.schema.alterTable("findings", (table) => {
-    table.string("status", 50).defaultTo("OPEN");
-  });
+  const hasStatus = await knex.schema.hasColumn('findings', 'status');
+  if (!hasStatus) {
+    await knex.schema.alterTable("findings", (table) => {
+      table.string("status", 50).defaultTo("OPEN");
+    });
+  }
 
   // 2. We can't safely add a foreign key to findings.asset_id immediately if there are orphaned findings.
   // First, let's delete findings where asset_id doesn't exist in assets table.

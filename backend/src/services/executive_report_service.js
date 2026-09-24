@@ -279,6 +279,7 @@ async function generateExecutiveReport(options = {}) {
       line_number: f.line_number || 42,
       evidence_context: f.evidence_context || `crypto.createCipheriv('${f.algorithm}', key, iv)`,
       severity: f.severity || "High",
+      metadata: f.metadata,
     }));
   }
 

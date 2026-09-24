@@ -263,7 +263,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       assert.equal(requiresExplicitApproval("TEST_FIXTURE_TWEAK", "development"), false);
     });
 
-    it("should progress through standard 5-state lifecycle: PROPOSED -> REVIEWED -> APPROVED -> APPLIED -> VERIFIED", () => {
+    it("should progress through standard 5-state lifecycle: PROPOSED -> REVIEWED -> APPROVED -> APPLIED -> VERIFIED", async () => {
       const proposal = await engine.proposeRemediation(
         {
           title: "Migrate Payment Vault RSA-1024 to ML-KEM-768",
@@ -309,7 +309,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       assert.equal(verified.audit_history.length, 5);
     });
 
-    it("should strictly enforce Four-Eyes principle: Proposer cannot approve their own change", () => {
+    it("should strictly enforce Four-Eyes principle: Proposer cannot approve their own change", async () => {
       const proposal = await engine.proposeRemediation(
         {
           title: "Rotate API Gateway TLS Certs",
@@ -320,8 +320,8 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
 
       await engine.reviewRemediation(proposal.approval_id, { username: "reviewer_1", role: "reviewer" });
 
-      assert.throws(
-        () => {
+      await assert.rejects(
+        async () => {
           await engine.approveRemediation(
             proposal.approval_id,
             { username: "lead_dev", role: "admin" } // Self-approval attempt
@@ -336,7 +336,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       );
     });
 
-    it("should enforce RBAC authorization for remediation approvers", () => {
+    it("should enforce RBAC authorization for remediation approvers", async () => {
       const proposal = await engine.proposeRemediation(
         {
           title: "Upgrade OpenSSL Dependency",
@@ -348,8 +348,8 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       await engine.reviewRemediation(proposal.approval_id, { username: "dev_senior", role: "reviewer" });
 
       // Unauthorized role attempt
-      assert.throws(
-        () => {
+      await assert.rejects(
+        async () => {
           await engine.approveRemediation(
             proposal.approval_id,
             { username: "contractor_bob", role: "guest_contractor" }
@@ -364,7 +364,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       );
     });
 
-    it("should refuse application of sensitive remediations without prior APPROVED state", () => {
+    it("should refuse application of sensitive remediations without prior APPROVED state", async () => {
       const proposal = await engine.proposeRemediation(
         {
           title: "Bypass Approval Test",
@@ -375,8 +375,8 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       );
 
       // Attempting to apply from PROPOSED state directly
-      assert.throws(
-        () => {
+      await assert.rejects(
+        async () => {
           await engine.applyRemediation(proposal.approval_id, { username: "pipeline", role: "deployer" });
         },
         (err) => {
@@ -388,7 +388,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       );
     });
 
-    it("should maintain a cryptographically chained SHA-256 audit trail across all transitions", () => {
+    it("should maintain a cryptographically chained SHA-256 audit trail across all transitions", async () => {
       const proposal = await engine.proposeRemediation(
         { title: "Audit Integrity Test", category: "PROD_CONFIG_CHANGE" },
         { username: "user_a", role: "developer" }
@@ -397,7 +397,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       await engine.reviewRemediation(proposal.approval_id, { username: "user_b", role: "reviewer" });
       await engine.approveRemediation(proposal.approval_id, { username: "user_c", role: "security_lead" });
       await engine.applyRemediation(proposal.approval_id, { username: "user_d", role: "deployer" });
-      const final = await engine.verifyRemediation(proposal.approval_id, { username: "user_e", role: "verifier" });
+      const final = await engine.verifyRemediation(proposal.approval_id, { username: "user_e", role: "verifier" }, { tests_passed: true, finding_resolved: true });
 
       const history = final.audit_history;
       assert.equal(history.length, 5);
@@ -409,10 +409,10 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       }
 
       // Final state hash matches last audit event hash
-      assert.equal(final.current_state_hash, history[history.length - 1].hash);
+      assert.equal(final.metadata.current_state_hash, history[history.length - 1].hash);
     });
 
-    it("should support safe rollback to ROLLED_BACK state if post-application issues arise", () => {
+    it("should support safe rollback to ROLLED_BACK state if post-application issues arise", async () => {
       const proposal = await engine.proposeRemediation(
         { title: "Failed Rollout Test", category: "NETWORK_CHANGE" },
         { username: "net_admin", role: "developer" }
@@ -430,7 +430,7 @@ describe("Phase 22.1 — Subsystem 10: Remediation & Migration Planning", () => 
       );
 
       assert.equal(rolledBack.state, ApprovalState.ROLLED_BACK);
-      assert.equal(rolledBack.rollback.rolled_back_by, "incident_commander");
+      assert.equal(rolledBack.metadata.rollback.rolled_back_by, "incident_commander");
     });
   });
 });

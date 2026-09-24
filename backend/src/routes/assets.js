@@ -114,11 +114,6 @@ router.get("/", async (req, res, next) => {
 
         if (targetScanId) {
           query = query.where("assets.scan_id", targetScanId);
-          if (targetScanId !== "demo-synthetic-scan") {
-            query = query.where("assets.is_synthetic", false);
-          }
-        } else {
-          query = query.where("assets.is_synthetic", false);
         }
 
         // Phase 1 Explicit Filtering

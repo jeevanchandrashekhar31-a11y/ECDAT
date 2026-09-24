@@ -26,6 +26,46 @@ def strip_comments(text: str) -> str:
 
 RULES = [
     {
+        "id": "R_CLOUD_KMS_AWS",
+        "pattern": re.compile(r"\b(KMSClient|aws-kms|kms\.amazonaws\.com|AWSKMS)\b", re.IGNORECASE),
+        "algorithm": "AWS KMS",
+        "confidence": "high",
+        "finding_type": "cloud_service",
+        "severity": "Informational",
+    },
+    {
+        "id": "R_CLOUD_KMS_AZURE",
+        "pattern": re.compile(r"\b(KeyVaultClient|azure-keyvault|vault\.azure\.net)\b", re.IGNORECASE),
+        "algorithm": "Azure Key Vault",
+        "confidence": "high",
+        "finding_type": "cloud_service",
+        "severity": "Informational",
+    },
+    {
+        "id": "R_CLOUD_KMS_GCP",
+        "pattern": re.compile(r"\b(KeyManagementServiceClient|cloudkms|cloudkms\.googleapis\.com)\b", re.IGNORECASE),
+        "algorithm": "GCP KMS",
+        "confidence": "high",
+        "finding_type": "cloud_service",
+        "severity": "Informational",
+    },
+    {
+        "id": "R_HSM_PKCS11",
+        "pattern": re.compile(r"\b(PKCS11|Cryptoki|C_Initialize|C_GetSlotList|libpkcs11)\b", re.IGNORECASE),
+        "algorithm": "PKCS#11 HSM",
+        "confidence": "high",
+        "finding_type": "hardware_module",
+        "severity": "Informational",
+    },
+    {
+        "id": "R_HSM_SGX",
+        "pattern": re.compile(r"\b(sgx_enclave|intel_sgx|Intel SGX)\b", re.IGNORECASE),
+        "algorithm": "Intel SGX Enclave",
+        "confidence": "medium",
+        "finding_type": "hardware_module",
+        "severity": "Informational",
+    },
+    {
         "id": "R_MD5",
         "pattern": re.compile(r"\b(md5|MD5|EVP_md5)\b"),
         "algorithm": "MD5",

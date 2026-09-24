@@ -85,7 +85,7 @@ class TenantContext {
 
     const normRoles = roles.map((r) => String(r).toLowerCase().replace(/[-_]/g, " "));
     isPlatformAdmin = normRoles.some(
-      (r) => r === "platform administrator" || r === "platform admin" || r === "platform_admin" || r === "superuser" || r === "admin"
+      (r) => r === "platform administrator" || r === "platform admin" || r === "platform_admin" || r === "superuser"
     );
 
     // Strict security invariant: Open-mode or unauthenticated requests must NEVER be platform admin or admin

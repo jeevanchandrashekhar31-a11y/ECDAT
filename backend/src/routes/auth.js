@@ -1026,6 +1026,11 @@ async function handleDemoLogin(req, res) {
         if (seededScan) {
           seededScan.tenantId = "evaluation-tenant";
           inMemoryScansStore.set(seededScan.id, seededScan);
+          const { db, isDbConnected } = require("../db/connection");
+          const connected = await isDbConnected();
+          if (connected) {
+            await db("scans").where("id", seededScan.id).update({ tenant_id: "evaluation-tenant" }).catch(() => {});
+          }
         }
       } catch (seedErr) {
         console.warn("Evaluation dataset auto-seed notice:", seedErr.message);
@@ -1068,9 +1073,10 @@ async function handleDemoLogin(req, res) {
 
 router.post("/evaluation/enter", RATE_LIMITS.login.middleware(), handleDemoLogin);
 router.post("/evaluation/persona", RATE_LIMITS.login.middleware(), handleDemoLogin);
+router.post("/demo/login", RATE_LIMITS.login.middleware(), handleDemoLogin);
 
 // POST /evaluation/reset: Reset evaluation tenant for testing empty state
-router.post("/evaluation/reset", async (req, res) => {
+const handleDemoReset = async (req, res) => {
   const authMode = config.AUTH_MODE || "production";
   if (authMode !== "demo" && authMode !== "evaluation") {
     return res.status(403).json({ error: "Forbidden", message: "Evaluation mode is disabled." });
@@ -1087,10 +1093,13 @@ router.post("/evaluation/reset", async (req, res) => {
   }
 
   return res.json({ success: true, message: "Evaluation tenant reset to empty state." });
-});
+};
+
+router.post("/evaluation/reset", handleDemoReset);
+router.post("/demo/reset", handleDemoReset);
 
 // POST /evaluation/seed: Explicitly seed synthetic data
-router.post("/evaluation/seed", async (req, res, next) => {
+const handleDemoSeed = async (req, res, next) => {
   const authMode = config.AUTH_MODE || "production";
   if (authMode !== "demo" && authMode !== "evaluation") {
     return res.status(403).json({ error: "Forbidden", message: "Evaluation mode is disabled." });
@@ -1101,12 +1110,20 @@ router.post("/evaluation/seed", async (req, res, next) => {
     if (record) {
       record.tenantId = "evaluation-tenant";
       inMemoryScansStore.set(record.id, record);
+      const { db, isDbConnected } = require("../db/connection");
+      const connected = await isDbConnected();
+      if (connected) {
+        await db("scans").where("id", record.id).update({ tenant_id: "evaluation-tenant" }).catch(() => {});
+      }
     }
     return res.json({ success: true, scan_id: record.id, message: "Synthetic dataset seeded for evaluation tenant." });
   } catch (err) {
     return next(err);
   }
-});
+};
+
+router.post("/evaluation/seed", handleDemoSeed);
+router.post("/demo/seed", handleDemoSeed);
 
 /**
  * POST /api/v1/auth/local/login

@@ -216,7 +216,7 @@ test("Git Clone Security - Rejects private, loopback, and metadata destinations"
 test("Git Clone Security - Automatically redacts and strips credentials", async () => {
   // 1. Embedded credentials in URL are automatically stripped from clone destination
   const urlWithCreds = "https://alice:SuperSecretPassword123@github.com/owner/repo.git";
-  const res = await validateGitCloneUrl(urlWithCreds);
+  const res = await validateGitCloneUrl(urlWithCreds, { allowCredentials: true });
   assert.equal(res.safe, true);
   assert.equal(res.normalizedUrl, "https://github.com/owner/repo.git");
   assert.ok(!res.normalizedUrl.includes("SuperSecretPassword123"));

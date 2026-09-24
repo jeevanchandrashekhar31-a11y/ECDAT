@@ -38,7 +38,7 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     const prodRejectRes = await fetch(`${baseUrl}/api/v1/auth/demo/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ persona: "developer" }),
+      body: JSON.stringify({ persona: "analyst" }),
     });
     assert.equal(prodRejectRes.status, 403, "Production auth mode must reject demo login with 403 Forbidden");
     const prodRejectData = await prodRejectRes.json();
@@ -50,20 +50,20 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     // ------------------------------------------------------------------------
     // Step 1: 1-Click Demo Login as Developer (Proposer Persona)
     // ------------------------------------------------------------------------
-    // Login with seed: false to start with an authentically empty demo-tenant
+    // Login with seed: false to start with an authentically empty evaluation-tenant
     const demoLoginRes = await fetch(`${baseUrl}/api/v1/auth/demo/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ persona: "developer", seed: false }),
+      body: JSON.stringify({ persona: "analyst", seed: false }),
     });
     assert.equal(demoLoginRes.status, 200, "Demo login must succeed with 200 OK");
     const devAuth = await demoLoginRes.json();
     assert.ok(devAuth.accessToken, "Must issue valid access token");
     assert.equal(devAuth.demoMode, true, "Must flag demoMode: true");
-    assert.equal(devAuth.user.tenantId, "demo-tenant", "Must be strictly scoped to demo-tenant");
+    assert.equal(devAuth.user.tenantId, "evaluation-tenant", "Must be strictly scoped to evaluation-tenant");
     assert.equal(devAuth.user.isPlatformAdmin, false, "Must never self-elevate to platform admin");
-    assert.equal(devAuth.user.username, "demo-developer");
-    assert.deepEqual(devAuth.user.roles, ["developer"]);
+    assert.equal(devAuth.user.username, "evaluation-analyst");
+    assert.deepEqual(devAuth.user.roles, ["analyst"]);
 
     const devHeaders = {
       "Content-Type": "application/json",
@@ -113,7 +113,7 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     // Either 403 Forbidden due to tenant spoofing or 200 with 0 findings (isolated)
     assert.ok(
       idorRes.status === 403 || (idorRes.status === 200 && (await idorRes.json()).total === 0),
-      "Demo user must be confined to demo-tenant"
+      "Demo user must be confined to evaluation-tenant"
     );
 
     // ------------------------------------------------------------------------
@@ -195,7 +195,7 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     assert.equal(proposeRes.status, 201, "Remediation proposal must be created with 201");
     const proposal = await proposeRes.json();
     assert.equal(proposal.state, "PROPOSED");
-    assert.equal(proposal.proposer.username, "demo-developer");
+    assert.equal(proposal.proposer.username, "evaluation-analyst");
     const approvalId = proposal.approval_id;
 
     // ------------------------------------------------------------------------
@@ -221,15 +221,15 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     assert.equal(reviewRes.status, 200, "Review must succeed with 200 OK");
     const reviewedData = await reviewRes.json();
     assert.equal(reviewedData.state, "REVIEWED");
-    assert.equal(reviewedData.approval.reviewer.username, "demo-reviewer");
+    assert.equal(reviewedData.approval.metadata.reviewer.username, "evaluation-analyst");
 
     // ------------------------------------------------------------------------
     // Step 8: Four-Eyes Principle Enforcement Check
-    // (Proposer 'demo-developer' MUST BE REJECTED if attempting to approve)
+    // (Proposer 'evaluation-analyst' MUST BE REJECTED if attempting to approve)
     // ------------------------------------------------------------------------
     const selfApproveRes = await fetch(`${baseUrl}/api/v1/remediation/approvals/${approvalId}/approve`, {
       method: "POST",
-      headers: devHeaders, // Caller is demo-developer (proposer)
+      headers: devHeaders, // Caller is evaluation-analyst (proposer)
       body: JSON.stringify({ comments: "Attempting self-approval" }),
     });
     assert.equal(
@@ -249,7 +249,7 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     const secLeadLoginRes = await fetch(`${baseUrl}/api/v1/auth/demo/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ persona: "security_lead" }),
+      body: JSON.stringify({ persona: "approver" }),
     });
     assert.equal(secLeadLoginRes.status, 200);
     const secLeadAuth = await secLeadLoginRes.json();
@@ -266,7 +266,7 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     assert.equal(approveRes.status, 200, "Security Lead approval must succeed with 200 OK");
     const approvedData = await approveRes.json();
     assert.equal(approvedData.state, "APPROVED");
-    assert.equal(approvedData.approval.approver.username, "demo-security-lead");
+    assert.equal(approvedData.approval.metadata.approver.username, "evaluation-approver");
 
     // ------------------------------------------------------------------------
     // Step 10: Apply Remediation Patch (APPROVED ➔ APPLIED)
@@ -278,7 +278,7 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     assert.equal(applyRes.status, 200, "Apply must succeed with 200 OK");
     const appliedData = await applyRes.json();
     assert.equal(appliedData.state, "APPLIED");
-    assert.equal(appliedData.approval.deployer.username, "demo-security-lead");
+    assert.equal(appliedData.approval.metadata.deployer.username, "evaluation-approver");
 
     // ------------------------------------------------------------------------
     // Step 11: Cryptographic Verification (APPLIED ➔ VERIFIED)
@@ -322,8 +322,8 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     const finalData = await finalRecordRes.json();
 
     assert.equal(finalData.approval.state, "VERIFIED");
-    assert.equal(finalData.approval.verifier.username, "demo-security-lead");
-    assert.equal(finalData.approval.verifier.verification_results.tests_passed, true);
+    assert.equal(finalData.approval.metadata.verifier.username, "evaluation-approver");
+    assert.equal(finalData.approval.metadata.verifier.verification_results.tests_passed, true);
     assert.equal(finalData.chain_verification.valid, true, "Cryptographic hash chain must be valid");
     assert.equal(finalData.chain_verification.total_events, 5, "Must record all 5 lifecycle transitions");
     assert.equal(finalData.approval.audit_history.length, 5);

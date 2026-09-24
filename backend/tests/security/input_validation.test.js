@@ -288,10 +288,10 @@ test("Phase 19.13 — Live Routes Enforce Server-Side Validation (Never Trust Fr
     assert.strictEqual(bodyAssets.code, "PAGINATION_OUT_OF_BOUNDS");
 
     // 2. Audit events pagination out of bounds (pageSize=999999)
-    const config = require("../../src/config");
+    const configModule = require("../../src/config");
     const resAudit = await fetch(`${baseUrl}/api/v1/audit/events?pageSize=999999`, {
       headers: {
-        "x-api-key": config.ECDAT_API_KEY,
+        "x-api-key": configModule.ECDAT_API_KEY,
         "x-user-role": "admin",
       },
     });
