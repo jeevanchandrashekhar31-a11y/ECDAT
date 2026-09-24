@@ -217,6 +217,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                   <Link
                     to={`/findings?search=${item.id}`}
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300"
                     title="Open full finding details in separate tab"
                   >

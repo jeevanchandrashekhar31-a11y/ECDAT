@@ -107,15 +107,7 @@ const PUBLIC_AUTH_PATHS = Object.freeze([
   "/auth/forgot-password",
   "/auth/reset-password",
   "/api/v1/auth/demo/login",
-  "/auth/demo/login",
-  "/api/v1/auth/demo/reset",
-  "/auth/demo/reset",
-  "/api/v1/auth/demo/seed",
-  "/auth/demo/seed",
-  "/api/v1/auth/evaluation/reset",
-  "/auth/evaluation/reset",
-  "/api/v1/auth/evaluation/seed",
-  "/auth/evaluation/seed"
+  "/auth/demo/login"
 ]);
 
 /**
@@ -340,14 +332,17 @@ function apiKeyAuthMiddleware(req, res, next) {
 
   // 5. All protected routes strictly require authentication
   const method = req.method.toUpperCase();
+  const isReadMethod = ["GET", "HEAD", "OPTIONS"].includes(method);
   const isPublicMetrics =
     (pathOnly === "/metrics" ||
       originalPathOnly === "/metrics" ||
       pathOnly === "/api/v1/metrics" ||
       originalPathOnly === "/api/v1/metrics") &&
-    ["GET", "HEAD"].includes(method);
+    isReadMethod;
 
-  if (!isPublicMetrics) {
+  const isAllowedUnauthenticatedRead = !config.REQUIRE_AUTH_FOR_READS && isReadMethod;
+
+  if (!isPublicMetrics && !isAllowedUnauthenticatedRead) {
     try {
       const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
       defaultAuditService

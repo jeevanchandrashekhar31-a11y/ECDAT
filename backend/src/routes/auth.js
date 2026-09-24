@@ -1053,7 +1053,6 @@ async function handleDemoLogin(req, res) {
   }).catch(() => {});
 
   return res.json({
-    ...tokens,
     csrfToken,
     demoMode: true, // Legacy flag mapping to evaluate
     evaluationMode: true,
@@ -1180,7 +1179,6 @@ router.post("/local/login", RATE_LIMITS.login.middleware(), (req, res) => {
     }).catch(() => {});
 
     return res.json({
-      ...tokens,
       csrfToken,
       user: authResult.user,
     });
