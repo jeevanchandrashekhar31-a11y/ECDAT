@@ -8,31 +8,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#040B16',
-        surface: '#0A1428',
-        surfaceHover: '#112240',
-        primary: '#38BDF8',
-        secondary: '#818CF8',
-        accent: '#2DD4BF',
-        danger: '#F43F5E',
-        warning: '#FBBF24',
-        border: 'rgba(56, 189, 248, 0.15)',
-        glow: 'rgba(56, 189, 248, 0.4)'
+        background: 'var(--color-bg-0)',
+        'bg-1': 'var(--color-bg-1)',
+        surface: 'var(--color-surface-1)',
+        'surface-2': 'var(--color-surface-2)',
+        'surface-3': 'var(--color-surface-3)',
+        border: 'var(--color-border)',
+        'border-soft': 'var(--color-border-soft)',
+        'text-primary': 'var(--color-text-primary)',
+        'text-secondary': 'var(--color-text-secondary)',
+        'text-muted': 'var(--color-text-muted)',
+        brand: 'var(--color-brand)',
+        'brand-light': 'var(--color-brand-light)',
+        'brand-soft': 'var(--color-brand-soft)',
+        crypto: 'var(--color-crypto)',
+        pqc: 'var(--color-pqc)',
+        specialized: 'var(--color-specialized)',
+        critical: 'var(--color-critical)',
+        high: 'var(--color-high)',
+        medium: 'var(--color-medium)',
+        success: 'var(--color-success)',
+        info: 'var(--color-info)',
+        unknown: 'var(--color-unknown)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['Outfit', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
-      },
-      animation: {
-        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'float': 'float 6s ease-in-out infinite',
-      },
-      keyframes: {
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-10px)' },
-        }
+        sans: ['var(--font-ui)'],
+        mono: ['var(--font-mono)']
       }
     },
   },

@@ -2,70 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+
 @layer base {
+  :root {
+    /* Background */
+    --color-bg-0: #080F1C;
+    --color-bg-1: #0B1220;
+
+    /* Surfaces */
+    --color-surface-1: #111A2E;
+    --color-surface-2: #16233D;
+    --color-surface-3: #1B2A46;
+
+    /* Borders */
+    --color-border: #263653;
+    --color-border-soft: #1E2B43;
+
+    /* Text */
+    --color-text-primary: #F4F7FB;
+    --color-text-secondary: #A9B7CC;
+    --color-text-muted: #71819A;
+
+    /* Brand */
+    --color-brand: #0F62FE;
+    --color-brand-light: #4589FF;
+    --color-brand-soft: #78A9FF;
+
+    /* Cryptographic / technical */
+    --color-crypto: #33B1FF;
+    --color-pqc: #08BDBA;
+    --color-specialized: #A56EFF;
+
+    /* Security semantics */
+    --color-critical: #FA4D56;
+    --color-high: #FF832B;
+    --color-medium: #F1C21B;
+    --color-success: #42BE65;
+    --color-info: #4589FF;
+    --color-unknown: #8D9AAF;
+
+    /* Data visualization */
+    --color-chart-1: #4589FF;
+    --color-chart-2: #33B1FF;
+    --color-chart-3: #08BDBA;
+    --color-chart-4: #A56EFF;
+    --color-chart-5: #EE5396;
+    --color-chart-6: #FF832B;
+    --color-chart-7: #42BE65;
+    --color-chart-8: #FA4D56;
+
+    /* Typography */
+    --font-ui: "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+
   body {
-    @apply bg-background text-slate-100 font-sans antialiased;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-    background-image: 
-      radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.04), transparent 25%),
-      radial-gradient(circle at 85% 30%, rgba(129, 140, 248, 0.04), transparent 25%);
-    background-attachment: fixed;
+    background-color: var(--color-bg-0);
+    color: var(--color-text-primary);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight text-white;
+    font-family: var(--font-ui);
+    color: var(--color-text-primary);
+    line-height: 1.2;
   }
 
   code,
   pre {
-    @apply font-mono;
+    font-family: var(--font-mono);
+    line-height: 1.5;
   }
 }
 
 @layer utilities {
-  /* Nordic Glassmorphism */
-  .glass-panel {
-    @apply bg-surface/60 backdrop-blur-xl border border-border shadow-lg rounded-2xl transition-all duration-300;
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 
-  .glass-panel-hover {
-    @apply hover:bg-surfaceHover/80 hover:border-primary/30 hover:shadow-primary/20 hover:-translate-y-1;
-  }
-
-  .glass-card {
-    @apply bg-surface/40 backdrop-blur-lg border border-border rounded-xl transition-all duration-300;
-  }
-
-  .glass-card-hover {
-    @apply hover:bg-surface/80 hover:border-primary/40 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-primary/10;
-  }
-
-  /* Cyber Glow Accents */
-  .glow-cyan {
-    box-shadow: 0 0 20px -5px rgba(56, 189, 248, 0.4);
-  }
-
-  .glow-violet {
-    box-shadow: 0 0 20px -5px rgba(129, 140, 248, 0.4);
-  }
-
-  .glow-rose {
-    box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.4);
-  }
-
-  /* Custom scrollbars */
+  /* Custom scrollbars - restrained for enterprise */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-background;
+    background-color: var(--color-bg-0);
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-surfaceHover rounded-full;
+    background-color: var(--color-surface-3);
+    border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary/50;
+    background-color: var(--color-text-muted);
   }
 }
 

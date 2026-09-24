@@ -5,15 +5,15 @@ import { afterEach } from 'vitest';
 afterEach(() => cleanup());
 
 class TestResizeObserver {
-  observe() {}
+ observe() {}
 
-  unobserve() {}
+ unobserve() {}
 
-  disconnect() {}
+ disconnect() {}
 }
 
 Object.defineProperty(globalThis, 'ResizeObserver', {
-  configurable: true,
-  writable: true,
-  value: TestResizeObserver,
+ configurable: true,
+ writable: true,
+ value: TestResizeObserver,
 });
