@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
   stepPhase: {
     fontSize: 8,
-    color: '#475569',
+    color: '#0f172a',
     backgroundColor: '#f1f5f9',
     paddingVertical: 3,
     paddingHorizontal: 6,
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   stepDescription: {
     fontSize: 9,
-    color: '#475569',
+    color: '#0f172a',
     lineHeight: 1.4,
   },
   recCard: {
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   badgeStep: {
     fontSize: 7,
     backgroundColor: '#f1f5f9',
-    color: '#475569',
+    color: '#0f172a',
     paddingVertical: 3,
     paddingHorizontal: 6,
     borderRadius: 3,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   recGridTitle: {
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
-    color: '#64748b',
+    color: '#0f172a',
     textTransform: 'uppercase',
     marginBottom: 4,
   },
@@ -205,9 +205,9 @@ const styles = StyleSheet.create({
   },
   techMetricTitle: {
     fontSize: 6,
-    color: '#64748b',
+    fontFamily: 'Helvetica-Bold',
+    color: '#0f172a',
     textTransform: 'uppercase',
-    fontFamily: 'Courier',
   },
   techMetricValue: {
     fontSize: 8,
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   },
   rationaleText: {
     fontSize: 8,
-    color: '#334155',
+    color: '#0f172a',
     lineHeight: 1.4,
   },
   footer: {
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 8,
-    color: '#94a3b8',
+    color: '#475569',
   }
 });
 
