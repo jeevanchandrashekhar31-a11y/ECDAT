@@ -249,7 +249,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
   const handleHoverStart = useCallback((id: string) => setHoveredNodeId(id), []);
   const handleHoverEnd = useCallback(() => setHoveredNodeId(null), []);
 
-  const { positionedNodes, nodeMap, canvasHeight } = useMemo(() => {
+  const { positionedNodes, nodeMap, canvasHeight, tierBounds, totalGraphWidth } = useMemo(() => {
     const nodeWidth = 230;
     const nodeHeight = 84;
     const colSpacing = 280;
@@ -281,6 +281,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
     const maxNodesPerSubColumn = 12; // Wrap after 12 nodes vertically
     const subColSpacing = 30; // Gap between sub-columns within the same tier
     const tierSpacing = 160; // Gap between different tiers
+    const bounds: Record<string, { x: number; width: number }> = {};
 
     TIER_ORDER.forEach((tier) => {
       const group = tierGroups[tier];
@@ -288,6 +289,8 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
       
       const rowsInThisTier = Math.min(group.length, maxNodesPerSubColumn);
       if (rowsInThisTier > maxRows) maxRows = rowsInThisTier;
+
+      const tierStartX = currentX;
 
       group.forEach((node, index) => {
         const subCol = Math.floor(index / maxNodesPerSubColumn);
@@ -309,6 +312,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
 
       // Advance X to the end of this tier, then add tierSpacing
       const thisTierWidth = numSubColumns * nodeWidth + (numSubColumns > 1 ? (numSubColumns - 1) * subColSpacing : 0);
+      bounds[tier] = { x: tierStartX, width: thisTierWidth };
       currentX += thisTierWidth + tierSpacing;
     });
 
@@ -318,6 +322,8 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
       positionedNodes: posList,
       nodeMap: map,
       canvasHeight: cHeight,
+      tierBounds: bounds,
+      totalGraphWidth: currentX,
     };
   }, [nodes]);
 
@@ -409,7 +415,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
   const resetView = useCallback(() => {
     if (containerRef.current) {
       const { width, height } = containerRef.current.getBoundingClientRect();
-      const graphWidth = TIER_ORDER.length * 280 + 100;
+      const graphWidth = totalGraphWidth || (TIER_ORDER.length * 280 + 100);
       const graphHeight = canvasHeight;
       const scaleX = width / graphWidth;
       const scaleY = height / graphHeight;
@@ -541,14 +547,16 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
           {/* Transform group for Pan and Zoom */}
           <g ref={transformGroupRef} transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
             {/* Column Background Dividers */}
-            {TIER_ORDER.map((tier, idx) => {
-              const colX = 60 + idx * 280;
+            {TIER_ORDER.map((tier) => {
+              const bounds = tierBounds[tier];
+              if (!bounds) return null;
+              
               return (
                 <g key={`col-${tier}`}>
                   <rect
-                    x={colX - 20}
+                    x={bounds.x - 20}
                     y={20}
-                    width={270}
+                    width={bounds.width + 40}
                     height={canvasHeight - 40}
                     rx="16"
                     fill="rgba(15, 23, 42, 0.4)"
@@ -556,7 +564,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
                     strokeDasharray="4 4"
                   />
                   <text
-                    x={colX + 115}
+                    x={bounds.x + bounds.width / 2}
                     y={50}
                     textAnchor="middle"
                     className="text-xs font-mono font-bold tracking-wider uppercase fill-slate-400"
