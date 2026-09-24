@@ -59,6 +59,9 @@ function extractComponentCryptoDetails(component) {
   let isInternetExposed = null;
   let application = null;
   let dependencyBlastRadius = null;
+  let detectionMethod = "deterministic";
+  let needsHumanReview = false;
+  let explanation = null;
 
   if (component["bom-ref"]?.startsWith("net:") || algorithm.startsWith("TLS") || algorithm.startsWith("SSL") || algorithm.startsWith("SSH")) {
     assetType = "network_session";
@@ -104,6 +107,15 @@ function extractComponentCryptoDetails(component) {
       const size = parseInt(prop.value, 10);
       if (!isNaN(size)) keySize = size;
     }
+    if (prop.name === "ecdat:detection_method") {
+      detectionMethod = prop.value;
+    }
+    if (prop.name === "ecdat:needs_human_review") {
+      needsHumanReview = prop.value === "true";
+    }
+    if (prop.name === "ecdat:reason") {
+      explanation = prop.value;
+    }
   }
 
   return {
@@ -118,6 +130,9 @@ function extractComponentCryptoDetails(component) {
     isInternetExposed,
     application,
     dependencyBlastRadius,
+    detectionMethod,
+    needsHumanReview,
+    explanation,
     certificateProperties,
     protocolProperties,
   };
@@ -198,6 +213,9 @@ function annotateCbom(cbomData, options = {}) {
     // Phase 1 Explicit Asset Fields
     classification.algorithm = details.algorithm;
     classification.primitive = details.category;
+    classification.detection_method = details.detectionMethod;
+    classification.needs_human_review = details.needsHumanReview;
+    classification.explanation = details.explanation || classification.confidence_rationale;
     classification.key_size = details.keySize;
     classification.usage = details.evidenceType || details.category;
     classification.location = findingContext;

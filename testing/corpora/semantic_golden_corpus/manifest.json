@@ -1,0 +1,76 @@
+{
+    "files": {
+        "01_true_positives/01_xor_stream.py": {
+            "expected": "LIKELY_CUSTOM_CRYPTO",
+            "category": "True Positive"
+        },
+        "01_true_positives/02_caesar.c": {
+            "expected": "LIKELY_CUSTOM_CRYPTO",
+            "category": "True Positive"
+        },
+        "01_true_positives/03_vigenere.js": {
+            "expected": "LIKELY_CUSTOM_CRYPTO",
+            "category": "True Positive"
+        },
+        "01_true_positives/04_custom_hash.py": {
+            "expected": "LIKELY_CUSTOM_CRYPTO",
+            "category": "True Positive"
+        },
+        "01_true_positives/05_bit_rotation.go": {
+            "expected": "LIKELY_CUSTOM_CRYPTO",
+            "category": "True Positive"
+        },
+        "01_true_positives/06_custom_kdf.java": {
+            "expected": "LIKELY_CUSTOM_CRYPTO",
+            "category": "True Positive"
+        },
+        "01_true_positives/07_modular_exponentiation.py": {
+            "expected": "LIKELY_CUSTOM_CRYPTO",
+            "category": "True Positive"
+        },
+        "01_true_positives/08_feistel_network.c": {
+            "expected": "LIKELY_CUSTOM_CRYPTO",
+            "category": "True Positive"
+        },
+        "02_true_negatives/01_crc32.c": {
+            "expected": "LIKELY_NON_CRYPTO_BITWISE_LOGIC",
+            "category": "True Negative"
+        },
+        "02_true_negatives/02_hash_table.py": {
+            "expected": "LIKELY_NON_CRYPTO_BITWISE_LOGIC",
+            "category": "True Negative"
+        },
+        "02_true_negatives/03_rle_compress.js": {
+            "expected": "LIKELY_NON_CRYPTO_BITWISE_LOGIC",
+            "category": "True Negative"
+        },
+        "02_true_negatives/04_rgb_invert.py": {
+            "expected": "LIKELY_NON_CRYPTO_BITWISE_LOGIC",
+            "category": "True Negative"
+        },
+        "02_true_negatives/05_random_lfsr.go": {
+            "expected": "LIKELY_NON_CRYPTO_BITWISE_LOGIC",
+            "category": "True Negative"
+        },
+        "02_true_negatives/06_base64_encode.c": {
+            "expected": "LIKELY_NON_CRYPTO_BITWISE_LOGIC",
+            "category": "True Negative"
+        },
+        "02_true_negatives/07_murmur_hash.java": {
+            "expected": "LIKELY_NON_CRYPTO_BITWISE_LOGIC",
+            "category": "True Negative"
+        },
+        "02_true_negatives/08_bit_flags.py": {
+            "expected": "LIKELY_NON_CRYPTO_BITWISE_LOGIC",
+            "category": "True Negative"
+        },
+        "03_edge_cases/01_mixed_crypto.py": {
+            "expected": "LIKELY_CUSTOM_CRYPTO",
+            "category": "Edge Case"
+        },
+        "03_edge_cases/02_short_snippet.c": {
+            "expected": "INSUFFICIENT_CONTEXT",
+            "category": "Edge Case"
+        }
+    }
+}

@@ -160,6 +160,20 @@
         },
         "oid": "1.2.840.113549.1.1.1"
       },
+      "properties": [
+        {
+          "name": "ecdat:detection_method",
+          "value": "semantic_llm"
+        },
+        {
+          "name": "ecdat:needs_human_review",
+          "value": "true"
+        },
+        {
+          "name": "ecdat:reason",
+          "value": "AI Analysis identified the variable `key` as an RSA key generation call which may indicate a weak or non-compliant implementation. Review needed."
+        }
+      ],
       "evidence": {
         "occurrences": [
           {

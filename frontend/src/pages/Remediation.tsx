@@ -15,10 +15,11 @@ import {
   Play,
   History,
   Code2,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { authManager } from '../security/auth';
-import { RemediationApprovalRecord, ApprovalState } from '../types';
+import { RemediationApprovalRecord, ApprovalState, FindingItem } from '../types';
 
 export const Remediation: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -39,6 +40,20 @@ export const Remediation: React.FC = () => {
 
   // Selected approval for detailed inspector
   const [selectedApprovalId, setSelectedApprovalId] = useState<string | null>(null);
+  const selectedApproval = approvals.find((a) => a.approval_id === selectedApprovalId);
+
+  // Original finding (fetched on demand if linked)
+  const [originalFinding, setOriginalFinding] = useState<FindingItem | null>(null);
+
+  useEffect(() => {
+    if (selectedApproval?.finding_id) {
+      api.getFindingById(selectedApproval.finding_id)
+        .then((f) => setOriginalFinding(f))
+        .catch(() => setOriginalFinding(null));
+    } else {
+      setOriginalFinding(null);
+    }
+  }, [selectedApproval?.finding_id]);
 
   // Global persona switching is now handled via the Layout Header using switchEvaluationPersona
   const activePersona = authManager.getSession().role || 'Viewer';
@@ -224,7 +239,6 @@ export const Remediation: React.FC = () => {
     }
   };
 
-  const selectedApproval = approvals.find((a) => a.approval_id === selectedApprovalId) || null;
 
   const getStateBadgeClass = (state: ApprovalState) => {
     switch (state) {
@@ -458,6 +472,22 @@ export const Remediation: React.FC = () => {
                     {selectedApproval.target_standard || 'NIST FIPS 203'}
                   </span>
                 </div>
+
+                {/* ORIGINAL AI FINDING CONTEXT */}
+                {originalFinding?.detection_method === 'semantic_llm' && (
+                  <div className="p-4 rounded-xl bg-violet-950/20 border border-violet-500/30 space-y-2 mt-4">
+                    <div className="flex items-center gap-2 text-violet-300 font-bold text-xs">
+                      <Sparkles size={14} />
+                      <span>Original AI Security Assessment</span>
+                      <span className="ml-auto px-1.5 py-0.5 rounded bg-violet-900/50 text-violet-300 border border-violet-500/30 text-[9px] uppercase font-bold">
+                        Tier 2 Finding
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 italic border-l-2 border-violet-500/50 pl-3 leading-relaxed">
+                      "{originalFinding.explanation}"
+                    </p>
+                  </div>
+                )}
 
                 {/* 5-STEP LIFECYCLE PROGRESSION */}
                 <div>

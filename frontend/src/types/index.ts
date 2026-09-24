@@ -218,6 +218,10 @@ export interface FindingItem {
   asset_type?: string;
   data_sensitivity?: string;
   business_criticality?: string;
+  detection_method?: string;
+  status?: string;
+  dismissal_reason?: string;
+  cached?: boolean;
 }
 
 export interface FindingsResponse {

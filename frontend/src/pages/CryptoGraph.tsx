@@ -32,6 +32,12 @@ export const CryptoGraph: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Blast Radius Simulator state
+  const currentYear = new Date().getFullYear();
+  const [quantumArrivalYear, setQuantumArrivalYear] = useState<number>(currentYear + 5);
+  const [blastRadiusProjections, setBlastRadiusProjections] = useState<Array<{id: string, status: string, margin?: number}> | null>(null);
+  const [isSimulating, setIsSimulating] = useState<boolean>(false);
+
   // Evidence Drawer state
   const [evidenceDrawer, setEvidenceDrawer] = useState<{
     isOpen: boolean;
@@ -78,6 +84,22 @@ export const CryptoGraph: React.FC = () => {
     setPqcReadiness('ALL');
     setExposure('ALL');
     setSearchTerm('');
+    setBlastRadiusProjections(null);
+  };
+
+  const simulateBlastRadius = async () => {
+    setIsSimulating(true);
+    try {
+      const res = await api.getBlastRadius({
+        scanId: selectedScanId && selectedScanId !== 'all' ? selectedScanId : undefined,
+        quantumArrivalYear,
+      });
+      setBlastRadiusProjections(res.projection);
+    } catch (err: unknown) {
+      console.error(err);
+    } finally {
+      setIsSimulating(false);
+    }
   };
 
   const handleOpenEvidence = (title: string, subtitle: string, evidenceIds: string[]) => {
@@ -279,6 +301,41 @@ export const CryptoGraph: React.FC = () => {
           </div>
         )}
 
+        {/* Blast Radius Simulator Control */}
+        <div className="flex items-center gap-4 bg-slate-900/50 p-3 rounded-lg border border-slate-800">
+          <div className="flex-1 max-w-sm">
+            <label htmlFor="blast-radius-slider" className="text-xs font-semibold text-rose-400 flex justify-between mb-2">
+              <span>Simulated Quantum Arrival Year</span>
+              <span className="font-mono bg-rose-500/20 px-2 rounded">{quantumArrivalYear}</span>
+            </label>
+            <input
+              id="blast-radius-slider"
+              type="range"
+              min={currentYear}
+              max={currentYear + 20}
+              value={quantumArrivalYear}
+              onChange={(e) => setQuantumArrivalYear(parseInt(e.target.value, 10))}
+              className="w-full accent-rose-500"
+            />
+          </div>
+          <button
+            onClick={simulateBlastRadius}
+            disabled={isSimulating}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-sm font-bold rounded-lg shadow border border-rose-500 transition-colors flex items-center gap-2"
+          >
+            {isSimulating ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+            Simulate Blast Radius
+          </button>
+          {blastRadiusProjections && (
+            <button
+              onClick={() => setBlastRadiusProjections(null)}
+              className="px-3 py-2 text-slate-400 hover:text-slate-200 text-xs font-semibold"
+            >
+              Clear Simulation
+            </button>
+          )}
+        </div>
+
         {/* Search row */}
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
@@ -321,6 +378,7 @@ export const CryptoGraph: React.FC = () => {
           nodes={graphData.graph.nodes}
           edges={graphData.graph.edges}
           evidenceLookup={graphData.evidence_lookup}
+          blastRadiusProjections={blastRadiusProjections}
           onOpenEvidence={handleOpenEvidence}
         />
       ) : null}

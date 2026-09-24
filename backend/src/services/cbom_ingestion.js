@@ -184,6 +184,8 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
           ? JSON.stringify(f.raw_evidence)
           : null,
         confidence: String(f.confidence || "high").slice(0, 50),
+        detection_method: f.detection_method ? String(f.detection_method).slice(0, 50) : "deterministic",
+        status: f.needs_human_review ? "LLM_FLAGGED_UNVERIFIED" : "CONFIRMED",
       });
 
       // Insert Risk Assessment

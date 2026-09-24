@@ -86,9 +86,10 @@ The working judge demonstration follows this path:
 3. **Start Scan**: Navigate to `/scans`, select the repository target, choose policy profile `regulated_bfsi`, and trigger the scan.
 4. **Findings**: Navigate to `/findings` to inspect identified cryptographic findings, rule identifiers, code locations, and redacted evidence.
 5. **CBOM View**: Navigate to `/cbom` to browse the generated CycloneDX 1.6/1.7 Cryptographic Bill of Materials hierarchy.
-6. **PQC Assessment**: Navigate to `/pqc` to view Mosca's Theorem calculation, algorithm quantum status, and NIST migration priority.
-7. **Remediation**: Navigate to `/remediation` to review automated migration diffs and observe role separation (Analyst proposes; Administrator approves).
-8. **Verification**: Verify that the applied remediation resolves the finding and clears the policy gate.
+6. **PQC & Blast Radius Assessment**: Navigate to `/graph` (Crypto Graph) to simulate the Post-Quantum Blast Radius impact (using Mosca's Theorem). Click "Simulate Blast Radius" in the side panel.
+7. **Semantic LLM Discovery (Live Re-run)**: Go back to `/findings`. Look for a finding with the **AI Unverified** tag and click "Details". Notice the "Result from cached analysis" label. Click **"Re-run live"** to demonstrate the live LLM semantic discovery engine bypassing the cache in real-time.
+8. **Remediation**: Navigate to `/remediation` to review automated migration diffs and observe role separation (Analyst proposes; Administrator approves).
+9. **Verification**: Verify that the applied remediation resolves the finding and clears the policy gate.
 
 For step-by-step instructions, see [docs/DEMO_GUIDE.md](file:///c:/Users/Jeevan%20c/Documents/ECDAT/docs/DEMO_GUIDE.md).
 
@@ -124,8 +125,8 @@ ECDAT maintains an explicit, transparent record of what is **not** implemented:
    - Enterprise identity protocols (OIDC, SAML, LDAP) are not implemented. Authentication uses local bcrypt passwords, signed JWTs, and Demo Mode. Backend TOTP primitives exist, but no user-facing MFA setup UI is available.
 3. **Network and binary scanner accuracy have been spot-checked, not measured with the same rigor as the static scanner's golden corpus**:
    - Formal statistical precision and recall benchmarks exist only for the static source code scanner.
-4. **LLM Verification is optional and disabled in CI**:
-   - LLM false-positive analysis requires external API keys and is disabled by default to maintain deterministic testing.
+4. **LLM Semantic Scanning**:
+   - LLM analysis is actively cached for demo purposes to avoid network/API rate-limit issues. Live re-runs can be triggered directly from the UI.
 5. **Database migrations are script-based**:
    - Schema creation uses `prepare_db.js` rather than versioned migration tooling.
 

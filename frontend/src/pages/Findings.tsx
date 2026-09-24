@@ -53,6 +53,12 @@ export const Findings: React.FC = () => {
   const [triggeringScan, setTriggeringScan] = useState<boolean>(false);
   const [scanMessage, setScanMessage] = useState<string | null>(null);
 
+  // Review finding state
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [showDismissModal, setShowDismissModal] = useState(false);
+  const [dismissReason, setDismissReason] = useState('');
+  const [isRerunning, setIsRerunning] = useState(false);
+
   const fetchFindings = useCallback(async () => {
     setLoading(true);
     setErrorDetails(null);
@@ -96,6 +102,49 @@ export const Findings: React.FC = () => {
       setScanMessage(`Failed to trigger scan: ${e.message}`);
     } finally {
       setTriggeringScan(false);
+    }
+  };
+
+  const handleReview = async (action: 'CONFIRM' | 'DISMISS') => {
+    if (!selectedFinding) return;
+    if (action === 'DISMISS' && !dismissReason.trim()) {
+      alert('Please provide a reason for dismissing.');
+      return;
+    }
+    setIsReviewing(true);
+    try {
+      await api.reviewFinding(selectedFinding.id, action, dismissReason);
+      setScanMessage(`Finding ${selectedFinding.id} successfully ${action === 'CONFIRM' ? 'confirmed' : 'dismissed'}.`);
+      setShowDismissModal(false);
+      setDismissReason('');
+      setSelectedFinding(null);
+      await fetchFindings();
+    } catch (err: unknown) {
+      const e = err as Error;
+      alert(`Failed to review finding: ${e.message}`);
+    } finally {
+      setIsReviewing(false);
+    }
+  };
+
+  const handleRerunLive = async () => {
+    if (!selectedFinding) return;
+    setIsRerunning(true);
+    setScanMessage(`Re-running live analysis for ${selectedFinding.id}...`);
+    try {
+      await api.rerunLiveAnalysis(selectedFinding.id);
+      setScanMessage(`Live analysis complete. Finding updated.`);
+      
+      // Update selectedFinding local state and refetch
+      const updatedFinding = { ...selectedFinding, cached: false };
+      setSelectedFinding(updatedFinding);
+      await fetchFindings();
+    } catch (err: unknown) {
+      const e = err as Error;
+      alert(`Failed to re-run analysis: ${e.message}`);
+      setScanMessage(null);
+    } finally {
+      setIsRerunning(false);
     }
   };
 
@@ -341,9 +390,21 @@ export const Findings: React.FC = () => {
                       {finding.policy_profile || 'Default CNSA'}
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-2xs font-mono font-bold border ${getMoscaBadgeClass(finding.mosca_status)}`}>
-                        {finding.mosca_status || 'SAFE'}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`inline-flex px-2 py-0.5 rounded text-2xs font-mono font-bold border w-max ${getMoscaBadgeClass(finding.mosca_status)}`}>
+                          {finding.mosca_status || 'SAFE'}
+                        </span>
+                        {finding.status === 'LLM_FLAGGED_UNVERIFIED' && (
+                          <span className="inline-flex px-1.5 py-0.5 rounded bg-violet-950/80 text-violet-300 border border-violet-500/40 text-[9px] uppercase font-bold w-max" title="AI-flagged, pending human review">
+                            AI Unverified
+                          </span>
+                        )}
+                        {finding.status === 'CONFIRMED' && finding.detection_method === 'semantic_llm' && (
+                          <span className="inline-flex px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-[9px] uppercase font-bold w-max" title="AI-flagged, Confirmed">
+                            AI Confirmed
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-right">
                       <button
@@ -384,7 +445,26 @@ export const Findings: React.FC = () => {
                   <Cpu size={18} className="text-cyan-400" />
                   <span>{selectedFinding.algorithm}</span>
                 </h2>
-                <p className="text-xs text-slate-400">Finding ID: <code className="text-cyan-300 font-mono">{selectedFinding.id}</code></p>
+                <p className="text-xs text-slate-400 mb-1">Finding ID: <code className="text-cyan-300 font-mono">{selectedFinding.id}</code></p>
+                {selectedFinding.cached && (
+                  <div className="flex items-center gap-2 mt-2 bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs py-1.5 px-3 rounded-lg w-max">
+                    <span className="font-semibold text-[11px]">Result from cached analysis</span>
+                    <button 
+                      onClick={handleRerunLive}
+                      disabled={isRerunning}
+                      className="ml-2 px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/40 font-bold transition-colors flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {isRerunning ? (
+                        <>
+                          <Loader2 size={12} className="animate-spin" />
+                          <span>Running...</span>
+                        </>
+                      ) : (
+                        <span>Re-run live</span>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
 
               <button
@@ -476,6 +556,18 @@ export const Findings: React.FC = () => {
                     </span>
                     <p className="text-slate-300">
                       Migrate to <strong className="text-cyan-300 font-mono">{selectedFinding.recommendation_target}</strong> {selectedFinding.pqc_migration && selectedFinding.pqc_migration !== selectedFinding.recommendation_target ? `(${selectedFinding.pqc_migration})` : ''}.
+                    </p>
+                  </div>
+                )}
+                
+                {selectedFinding.status === 'DISMISSED_FALSE_POSITIVE' && (
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-1.5">
+                    <span className="text-slate-400 font-bold flex items-center gap-1.5 text-xs">
+                      <XCircle size={14} />
+                      <span>Dismissed as False Positive</span>
+                    </span>
+                    <p className="text-slate-300 text-xs italic">
+                      "{selectedFinding.dismissal_reason}"
                     </p>
                   </div>
                 )}
@@ -572,14 +664,68 @@ export const Findings: React.FC = () => {
                 Close Drawer
               </button>
 
+              <div className="flex gap-2">
+                {selectedFinding.status === 'LLM_FLAGGED_UNVERIFIED' && (
+                  <>
+                    <button
+                      onClick={() => setShowDismissModal(true)}
+                      disabled={isReviewing}
+                      className="px-4 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 font-bold text-xs border border-rose-500/30"
+                    >
+                      Dismiss (FP)
+                    </button>
+                    <button
+                      onClick={() => handleReview('CONFIRM')}
+                      disabled={isReviewing}
+                      className="px-4 py-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 font-bold text-xs border border-emerald-500/30"
+                    >
+                      {isReviewing ? 'Saving...' : 'Confirm Finding'}
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    navigate(`/remediation?findingId=${encodeURIComponent(selectedFinding.id)}&algorithm=${encodeURIComponent(selectedFinding.algorithm)}&asset=${encodeURIComponent(selectedFinding.location || selectedFinding.asset_id)}`);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 flex items-center gap-1.5"
+                >
+                  <Wrench size={14} />
+                  <span>Propose Remediation Plan</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dismissal Reason Modal */}
+      {showDismissModal && (
+        <div className="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-2">Dismiss Finding</h3>
+            <p className="text-xs text-slate-400 mb-4">Please provide a reason for dismissing this AI-flagged finding.</p>
+            <textarea
+              value={dismissReason}
+              onChange={(e) => setDismissReason(e.target.value)}
+              placeholder="e.g. This is a false positive because..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 min-h-[100px] mb-4"
+            />
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => {
-                  navigate(`/remediation?findingId=${encodeURIComponent(selectedFinding.id)}&algorithm=${encodeURIComponent(selectedFinding.algorithm)}&asset=${encodeURIComponent(selectedFinding.location || selectedFinding.asset_id)}`);
+                  setShowDismissModal(false);
+                  setDismissReason('');
                 }}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs"
               >
-                <Wrench size={14} />
-                <span>Propose Remediation Plan</span>
+                Cancel
+              </button>
+              <button
+                onClick={() => handleReview('DISMISS')}
+                disabled={isReviewing || !dismissReason.trim()}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs disabled:opacity-50"
+              >
+                {isReviewing ? 'Saving...' : 'Submit Dismissal'}
               </button>
             </div>
           </div>

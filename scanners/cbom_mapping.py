@@ -362,8 +362,8 @@ def code_finding_to_cbom(finding: CodeCryptoFinding) -> Bom:
     comp.properties.add(Property(name="ecdat:confidence", value=finding.confidence))
     if finding.library:
         comp.properties.add(Property(name="ecdat:library", value=finding.library))
-    if getattr(finding, "analysis_source", None):
-        comp.properties.add(Property(name="ecdat:analysis_source", value=finding.analysis_source))
+    if getattr(finding, "detection_method", None):
+        comp.properties.add(Property(name="ecdat:detection_method", value=finding.detection_method))
     if getattr(finding, "needs_human_review", None):
         comp.properties.add(Property(name="ecdat:needs_human_review", value=str(finding.needs_human_review).lower()))
     if getattr(finding, "reason", None):
@@ -378,7 +378,7 @@ def code_finding_to_cbom(finding: CodeCryptoFinding) -> Bom:
     clf_code_res = CryptoClassifier.classify(algo_name, key_size=finding.key_size)
     comp.properties.add(Property(name="ecdat:quantumClassification", value=clf_code_res.classification))
     comp.properties.add(Property(name="ecdat:timestamp", value=datetime.now(timezone.utc).isoformat()))
-    comp.properties.add(Property(name="ecdat:source", value=getattr(finding, "analysis_source", "source_code")))
+    comp.properties.add(Property(name="ecdat:source", value=getattr(finding, "detection_method", "source_code")))
     comp.properties.add(Property(name="ecdat:evidence_nature", value="observed"))
 
     bom.components.add(comp)

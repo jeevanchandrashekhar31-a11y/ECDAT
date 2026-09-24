@@ -1,6 +1,8 @@
 const express = require("express");
 const { getScanById, getLatestScan } = require("../services/cbom_ingestion");
 const { db, isDbConnected } = require("../db/connection");
+const { exec } = require("child_process");
+const path = require("path");
 
 const router = express.Router();
 
@@ -88,7 +90,11 @@ router.get("/", async (req, res, next) => {
             "findings.finding_type",
             "findings.location",
             "findings.line_number",
+            "findings.evidence_context",
             "findings.confidence",
+            "findings.detection_method",
+            "findings.status",
+            "findings.dismissal_reason",
             "risk_assessments.severity",
             "risk_assessments.classical_risk",
             "risk_assessments.quantum_relevance",
@@ -251,6 +257,8 @@ router.get("/", async (req, res, next) => {
             asset_type: r.asset_type,
             data_sensitivity: r.data_sensitivity,
             business_criticality: r.business_criticality,
+            status: r.status,
+            cached: r.evidence_context ? (() => { try { return JSON.parse(r.evidence_context).cached || false; } catch (e) { return false; } })() : false,
           })),
         });
       } catch (dbErr) {
@@ -578,6 +586,48 @@ router.post("/:id/suppress", async (req, res, next) => {
   }
 });
 
+router.post("/:id/review", async (req, res, next) => {
+  try {
+    const findingId = req.params.id;
+    const { action, reason } = req.body;
+
+    if (!["CONFIRM", "DISMISS"].includes(action)) {
+      return res.status(400).json({ error: "Invalid action. Use CONFIRM or DISMISS." });
+    }
+    if (action === "DISMISS" && !reason) {
+      return res.status(400).json({ error: "Reason is required when dismissing." });
+    }
+
+    const connected = await isDbConnected();
+    if (!connected) return res.status(503).json({ error: "Database unavailable" });
+
+    // Ensure finding exists and user has access (tenant isolation)
+    let query = db("findings").where("id", findingId);
+    if (!req.tenantContext?.isPlatformAdmin && req.tenantContext?.tenantId) {
+       query = query.whereIn("scan_id", function() {
+         this.select("id").from("scans").where("tenant_id", req.tenantContext.tenantId);
+       });
+    }
+    const finding = await query.first();
+
+    if (!finding) {
+      return res.status(404).json({ error: "Finding not found" });
+    }
+
+    const status = action === "CONFIRM" ? "CONFIRMED" : "DISMISSED_FALSE_POSITIVE";
+    const updateData = { status };
+    if (action === "DISMISS") {
+      updateData.dismissal_reason = reason;
+    }
+
+    await db("findings").where("id", findingId).update(updateData);
+
+    return res.json({ success: true, message: `Finding ${findingId} marked as ${status}` });
+  } catch (error) {
+    next(error);
+  }
+});
+
 /**
  * DELETE /api/v1/findings/:id
  * Deletes a finding verifying caller's tenant boundary.
@@ -640,6 +690,55 @@ router.delete("/:id", async (req, res, next) => {
     }
 
     return res.json({ success: true, message: `Finding '${findingId}' deleted successfully.` });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:findingId/rerun", async (req, res, next) => {
+  try {
+    const findingId = req.params.findingId;
+    const connected = await isDbConnected();
+    
+    // We only support this when DB is connected or from mockData if we wanted, but let's assume DB
+    if (!connected) {
+       return res.json({ success: true, message: "Rerun requested in mock mode." });
+    }
+
+    const finding = await db("findings").where("id", findingId).first();
+    if (!finding) return res.status(404).json({ error: "NotFound" });
+
+    // location contains the file path
+    const targetFile = finding.location;
+    if (!targetFile) {
+       return res.status(400).json({ error: "No location attached to this finding." });
+    }
+
+    // Call python script
+    const pyScript = path.resolve(__dirname, "../../../scanners/semantic/run_single.py");
+    exec(`python "${pyScript}" "${targetFile}"`, async (err, stdout, stderr) => {
+       if (err) {
+         console.error("Rerun error:", err);
+         return res.status(500).json({ error: "Failed to run semantic scanner." });
+       }
+       try {
+         const result = JSON.parse(stdout);
+         if (result.error) return res.status(500).json({ error: result.error });
+
+         // If we get findings, we just want to update the DB finding context to say cached=false
+         let ctx = {};
+         try { ctx = JSON.parse(finding.evidence_context || "{}"); } catch(e){}
+         ctx.cached = false;
+         await db("findings").where("id", findingId).update({
+           evidence_context: JSON.stringify(ctx)
+         });
+
+         return res.json({ success: true, message: "Live rerun complete!" });
+       } catch (e) {
+         return res.status(500).json({ error: "Failed to parse runner output" });
+       }
+    });
+
   } catch (err) {
     next(err);
   }

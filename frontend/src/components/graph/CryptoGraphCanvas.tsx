@@ -20,6 +20,7 @@ interface CryptoGraphCanvasProps {
   nodes: GraphNode[];
   edges: GraphEdge[];
   evidenceLookup: Record<string, EvidenceFinding>;
+  blastRadiusProjections?: Array<{id: string, status: string, margin?: number}> | null;
   onOpenEvidence: (title: string, subtitle: string, evidenceIds: string[]) => void;
 }
 
@@ -131,7 +132,7 @@ const MemoizedEdge = React.memo(({ srcNode, tgtNode, isEdgeHighlighted, isDimmed
   );
 });
 
-const MemoizedNode = React.memo(({ node, isSelected, isHovered, isDimmed, onSelect, onHoverStart, onHoverEnd }: any) => {
+const MemoizedNode = React.memo(({ node, isSelected, isHovered, isDimmed, onSelect, onHoverStart, onHoverEnd, blastStatus }: any) => {
   const tierMeta = getTierMeta(node.tier);
   const Icon = tierMeta.icon;
   return (
@@ -151,18 +152,22 @@ const MemoizedNode = React.memo(({ node, isSelected, isHovered, isDimmed, onSele
         width={node.width}
         height={node.height}
         rx="14"
-        fill={isSelected ? '#09152e' : '#0a101f'}
+        fill={isSelected ? '#09152e' : blastStatus === 'AFFECTED' ? '#4c0519' : blastStatus === 'SAFE' ? '#022c22' : '#0a101f'}
         stroke={
           isSelected
             ? '#06b6d4'
             : isHovered
             ? '#38bdf8'
+            : blastStatus === 'AFFECTED'
+            ? '#f43f5e'
+            : blastStatus === 'SAFE'
+            ? '#10b981'
             : node.severity === 'Critical'
             ? '#f43f5e'
             : '#1e293b'
         }
-        strokeWidth={isSelected ? 2.5 : isHovered ? 2 : 1}
-        className="transition-all duration-150"
+        strokeWidth={isSelected ? 2.5 : isHovered ? 2 : blastStatus === 'AFFECTED' ? 2 : 1}
+        className={`transition-all duration-150 ${blastStatus === 'AFFECTED' ? 'animate-pulse' : ''}`}
       />
       <rect x="10" y="10" width="32" height="32" rx="8" fill="#1e293b" className="opacity-70" />
       <g transform="translate(16, 16)">
@@ -209,6 +214,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
   nodes,
   edges,
   evidenceLookup,
+  blastRadiusProjections,
   onOpenEvidence,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -561,6 +567,12 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
               const isConnected = connectedIds ? connectedIds.has(node.id) : true;
               const isDimmed = connectedIds && !isConnected;
 
+              let blastStatus = null;
+              if (blastRadiusProjections) {
+                 const p = blastRadiusProjections.find(proj => proj.id === node.id);
+                 if (p) blastStatus = p.status;
+              }
+
               return (
                 <MemoizedNode 
                   key={node.id} 
@@ -568,6 +580,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
                   isSelected={isSelected} 
                   isHovered={isHovered} 
                   isDimmed={isDimmed} 
+                  blastStatus={blastStatus}
                   onSelect={handleSelect} 
                   onHoverStart={handleHoverStart} 
                   onHoverEnd={handleHoverEnd} 

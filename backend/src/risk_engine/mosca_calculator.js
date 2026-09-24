@@ -17,6 +17,7 @@ const { MoscaStatus, QuantumRelevance } = require("./types");
  * @param {boolean} [params.isIntegrityOnly=false] - True if asset only performs signing/integrity
  * @param {number} [params.customX=null] - Optional asset-level override for X
  * @param {number} [params.customY=null] - Optional asset-level override for Y
+ * @param {number} [params.customZ=null] - Optional override for Z (threat horizon)
  * @param {Object} [params.policyProfile=null] - Environmental policy profile
  */
 function calculateMosca({
@@ -28,6 +29,7 @@ function calculateMosca({
   isIntegrityOnly = false,
   customX = null,
   customY = null,
+  customZ = null,
   policyProfile = null,
 }) {
   const rules = getRules();
@@ -87,7 +89,9 @@ function calculateMosca({
   }
 
   // 3. Determine Z (Time until CRQC)
-  const finalZ = scenarioConfig.Z_quantum_threat_years;
+  const finalZ = (customZ !== null && customZ !== undefined) 
+      ? Number(customZ) 
+      : scenarioConfig.Z_quantum_threat_years;
 
   // 4. Calculate Total & Margin
   // Round to 1 decimal place for clean explainability

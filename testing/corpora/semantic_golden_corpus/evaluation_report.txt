@@ -1,0 +1,22 @@
+
+=========================================================
+      SEMATIC DISCOVERY ENGINE - GOLDEN CORPUS EVAL
+=========================================================
+Total Files Evaluated: 18
+
+[ True Positives (TP) ]: 8  (Real crypto correctly flagged)
+[ True Negatives (TN) ]: 8  (Non-crypto correctly ignored)
+[ False Positives (FP) ]: 1  (Non-crypto mistakenly flagged)
+[ False Negatives (FN) ]: 1  (Real crypto missed)
+
+-- METRICS --
+Precision : 0.89
+Recall    : 0.89
+F1 Score  : 0.89
+
+-- FALSE POSITIVE DETAILS (CRITICAL RISK FOR SEMANTIC ENGINES) --
+ - 02_true_negatives/05_random_lfsr.go
+
+-- FALSE NEGATIVE DETAILS --
+ - 01_true_positives/08_feistel_network.c
+=========================================================

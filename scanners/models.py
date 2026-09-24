@@ -81,7 +81,7 @@ class CodeCryptoFinding(BaseModel):
     confidence: str = "high"
     data_sensitivity: str = "internal"
     business_criticality: str = "medium"
-    analysis_source: str = "regex"
+    detection_method: str = "deterministic"
     needs_human_review: bool = False
     reason: Optional[str] = None
     fingerprint: Optional[str] = None

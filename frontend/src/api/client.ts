@@ -225,6 +225,13 @@ export const api = {
     return request<FindingItem>(`/api/v1/findings/${encodeURIComponent(findingId)}`);
   },
 
+  reviewFinding: async (findingId: string, action: 'CONFIRM' | 'DISMISS', reason?: string): Promise<{ success: boolean; message: string }> => {
+    return request<{ success: boolean; message: string }>(`/api/v1/findings/${encodeURIComponent(findingId)}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ action, reason }),
+    });
+  },
+
   // Scans
   getScans: async (): Promise<{ total: number; scans: ScanItem[] }> => {
     return request<{ total: number; scans: ScanItem[] }>('/api/v1/scans');
@@ -775,4 +782,18 @@ export const api = {
       body: JSON.stringify({ dry_run: true }),
     });
   },
+
+  getBlastRadius: async (params: { scanId?: string; quantumArrivalYear: number }): Promise<{ projection: Array<{id: string, status: string, margin?: number}> }> => {
+    const searchParams = new URLSearchParams();
+    if (params.scanId) searchParams.set('scanId', params.scanId);
+    searchParams.set('quantum_arrival_year', params.quantumArrivalYear.toString());
+    return request(`/api/v1/blast-radius?${searchParams.toString()}`);
+  },
+
+  rerunLiveAnalysis: async (findingId: string): Promise<{ success: boolean; message: string }> => {
+    return request(`/api/v1/findings/${encodeURIComponent(findingId)}/rerun`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 };
