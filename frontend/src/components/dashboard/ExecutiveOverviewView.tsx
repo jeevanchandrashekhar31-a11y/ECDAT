@@ -213,7 +213,10 @@ export const ExecutiveOverviewView: React.FC<Props> = ({
                     if (kpi.id === 'kpi_critical_findings') return f.severity === 'Critical';
                     if (kpi.id === 'kpi_quantum_threat')
                       return f.mosca_status === 'AT_RISK' || f.mosca_status === 'CRITICAL_URGENT';
-                    if (kpi.id === 'kpi_pqc_readiness') return f.mosca_status === 'SAFE';
+                    if (kpi.id === 'kpi_pqc_readiness') {
+                      const algo = (f.algorithm || '').toLowerCase();
+                      return f.mosca_status === 'SAFE' || algo.includes('kyber') || algo.includes('ml-kem') || algo.includes('ml-dsa') || algo.includes('slh-dsa');
+                    }
                     return true;
                   })
                   .map((f) => f.id);
