@@ -12,9 +12,11 @@ As the threat of Cryptographically Relevant Quantum Computers (CRQC) approaches 
 ## 💎 Core Innovations
 
 1. **Hybrid Discovery Engine (Static + AI Semantic)**
-   - **Static Analysis:** High-speed, deterministic AST parsing and regex heuristics to instantly identify standard cryptographic libraries across 9 programming languages.
+   - **Static Analysis:** High-speed, deterministic AST parsing and regex heuristics to instantly identify standard cryptographic libraries, **Cloud KMS Services (AWS/Azure/GCP)**, and **Hardware Security Modules (PKCS#11/Intel SGX)** across 9 programming languages.
    - **Semantic LLM Fallback:** When the scanner encounters highly obfuscated or "home-rolled" custom cryptography, it leverages a deeply integrated LLM to analyze the code context. (Includes a transparent caching layer for live-demo reliability).
-2. **PQC Blast Radius Simulation (Mosca's Theorem)**
+2. **Hyperscale Ingestion Pipeline**
+   - Built to handle enterprise-scale codebases, the backend employs atomic Knex transactions with dynamic 150-row chunking, capable of ingesting massive Cryptographic Bill of Materials (CBOMs) in milliseconds without locking the database.
+3. **PQC Blast Radius Simulation (Mosca's Theorem)**
    - Calculates the dynamic risk formula: `D (Data Shelf-Life) + T (Migration Time) > Q (Quantum Arrival)`.
    - Features an interactive **Crypto Graph** that visually simulates the cascading collateral damage across your architecture if a quantum computer arrives in a specific year.
 3. **Four-Eyes Cryptographic Governance**

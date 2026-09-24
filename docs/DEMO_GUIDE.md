@@ -89,18 +89,15 @@ This guide documents the exact, working demonstration path implemented in ECDAT.
 
 ---
 
-## Step 6: Post-Quantum Cryptography (PQC) Assessment (5:30 – 6:30)
+## Step 6: Crypto Graph & Blast Radius Simulation (5:30 – 6:30)
 
-- **Target Route**: `/pqc`
+- **Target Route**: `/graph`
 - **What to Show**:
-  - **Quantum Risk Gap**: Visual timeline calculating Mosca's Theorem ($X + Y > Z$):
-    - $X$ = Shelf life / data retention requirement.
-    - $Y$ = Migration and deployment timeline.
-    - $Z$ = Estimated time to Cryptographically Relevant Quantum Computer (CRQC).
-  - **Algorithm Classification**:
-    - **Quantum-Vulnerable**: RSA, ECC (ECDSA/ECDH), DSA, classical Diffie-Hellman.
-    - **Quantum-Resistant / NIST Standardized**: ML-KEM (FIPS 203), ML-DSA (FIPS 204), SLH-DSA (FIPS 205).
-    - **Symmetric Key Strength**: AES-128 (reduced security margin under Grover's algorithm) vs AES-256 (quantum-safe).
+  - **Topology Mapping**: The interactive React Flow diagram deterministically maps out the 6-tier cryptographic lineage (Applications -> Services -> Certificates -> Protocols -> Algorithms -> Data).
+  - **Blast Radius Simulation**: Open the filter panel and drag the **Quantum Arrival Year** slider.
+    - Demonstrates Mosca's Theorem ($X + Y > Z$) dynamically in the UI.
+    - Watch as nodes visually explode into red "AFFECTED" warning states if their data shelf-life outlasts the quantum arrival time.
+  - **Inspect Nodes**: Click on any node to open the right-side details panel, which safely wraps long file paths and provides evidence attribution.
 
 ---
 
