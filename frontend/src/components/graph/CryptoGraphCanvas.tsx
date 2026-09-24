@@ -277,12 +277,25 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
     const posList: PositionedNode[] = [];
     const map = new Map<string, PositionedNode>();
 
-    TIER_ORDER.forEach((tier, colIdx) => {
+    let currentX = startX;
+    const maxNodesPerSubColumn = 12; // Wrap after 12 nodes vertically
+    const subColSpacing = 30; // Gap between sub-columns within the same tier
+    const tierSpacing = 160; // Gap between different tiers
+
+    TIER_ORDER.forEach((tier) => {
       const group = tierGroups[tier];
-      if (group.length > maxRows) maxRows = group.length;
-      group.forEach((node, rowIdx) => {
-        const x = startX + colIdx * colSpacing;
-        const y = startY + rowIdx * rowSpacing;
+      const numSubColumns = Math.max(1, Math.ceil(group.length / maxNodesPerSubColumn));
+      
+      const rowsInThisTier = Math.min(group.length, maxNodesPerSubColumn);
+      if (rowsInThisTier > maxRows) maxRows = rowsInThisTier;
+
+      group.forEach((node, index) => {
+        const subCol = Math.floor(index / maxNodesPerSubColumn);
+        const row = index % maxNodesPerSubColumn;
+        
+        const x = currentX + subCol * (nodeWidth + subColSpacing);
+        const y = startY + row * rowSpacing;
+        
         const pNode: PositionedNode = {
           ...node,
           x,
@@ -293,6 +306,10 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
         posList.push(pNode);
         map.set(node.id, pNode);
       });
+
+      // Advance X to the end of this tier, then add tierSpacing
+      const thisTierWidth = numSubColumns * nodeWidth + (numSubColumns > 1 ? (numSubColumns - 1) * subColSpacing : 0);
+      currentX += thisTierWidth + tierSpacing;
     });
 
     const cHeight = Math.max(700, startY + maxRows * rowSpacing + 120);
