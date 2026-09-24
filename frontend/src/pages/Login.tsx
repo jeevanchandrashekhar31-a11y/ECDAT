@@ -97,9 +97,7 @@ export const Login: React.FC = () => {
     setSuccessMsg(null);
     try {
       const res = await api.enterEvaluation('analyst');
-      if (res.accessToken) {
-        memoryTokenStore.setToken('access_token', res.accessToken);
-      }
+      // HTTP-Only cookies are used for access tokens
       if (res.csrfToken) {
         setCsrfToken(res.csrfToken);
       }
@@ -149,9 +147,7 @@ export const Login: React.FC = () => {
         setStep('mfa_challenge');
         setSuccessMsg('Primary authentication successful. Please enter your 6-digit MFA code.');
       } else {
-        if (res.accessToken) {
-          memoryTokenStore.setToken('access_token', res.accessToken);
-        }
+        // HTTP-Only cookies are used for access tokens
         if (res.csrfToken) {
           setCsrfToken(res.csrfToken);
         }
@@ -200,9 +196,7 @@ export const Login: React.FC = () => {
     try {
       const res = await api.mfaVerify(mfaToken, mfaCode.trim(), isBackupCode);
 
-      if (res.accessToken) {
-        memoryTokenStore.setToken('access_token', res.accessToken);
-      }
+      // HTTP-Only cookies are used for access tokens
       if (res.csrfToken) {
         setCsrfToken(res.csrfToken);
       }

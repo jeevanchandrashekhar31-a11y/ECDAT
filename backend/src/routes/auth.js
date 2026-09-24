@@ -1076,6 +1076,10 @@ router.post("/demo/login", RATE_LIMITS.login.middleware(), handleDemoLogin);
 
 // POST /evaluation/reset: Reset evaluation tenant for testing empty state
 const handleDemoReset = async (req, res) => {
+  if (!req.auth?.authenticated) {
+    return res.status(401).json({ error: "Unauthorized", message: "Authentication required for evaluation resets." });
+  }
+
   const authMode = config.AUTH_MODE || "production";
   if (authMode !== "demo" && authMode !== "evaluation") {
     return res.status(403).json({ error: "Forbidden", message: "Evaluation mode is disabled." });
@@ -1099,6 +1103,10 @@ router.post("/demo/reset", handleDemoReset);
 
 // POST /evaluation/seed: Explicitly seed synthetic data
 const handleDemoSeed = async (req, res, next) => {
+  if (!req.auth?.authenticated) {
+    return res.status(401).json({ error: "Unauthorized", message: "Authentication required for evaluation seeds." });
+  }
+
   const authMode = config.AUTH_MODE || "production";
   if (authMode !== "demo" && authMode !== "evaluation") {
     return res.status(403).json({ error: "Forbidden", message: "Evaluation mode is disabled." });
@@ -1723,7 +1731,6 @@ router.post("/mfa/verify", RATE_LIMITS.mfa.middleware(), (req, res) => {
     });
 
     return res.json({
-      ...tokens,
       csrfToken,
       user: {
         userId: challengeUser.userId,
