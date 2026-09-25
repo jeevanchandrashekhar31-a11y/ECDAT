@@ -624,6 +624,14 @@ export const AssetDetail: React.FC = () => {
                   </div>
                 ))}
               </div>
+            ) : asset.at_quantum_risk || asset.highest_severity === 'Critical' || asset.highest_severity === 'High' ? (
+              <div className="p-6 rounded-xl bg-slate-950/40 text-center space-y-2 border border-rose-900/50">
+                <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto" />
+                <p className="text-sm font-medium text-white">Remediation Plan Unavailable</p>
+                <p className="text-xs text-slate-400">
+                  This asset is flagged as at-risk, but specific remediation steps are currently unavailable or being calculated. Action is required.
+                </p>
+              </div>
             ) : (
               <div className="p-6 rounded-xl bg-slate-950/40 text-center space-y-2">
                 <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
