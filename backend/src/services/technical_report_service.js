@@ -334,9 +334,33 @@ async function generateTechnicalDrillDownReport(options = {}) {
 
   if (connected && scanRow) {
     try {
-      let fQuery = db("findings").where("scan_id", scanRow.id);
-      if (requestedFindingId) fQuery = fQuery.where("id", requestedFindingId);
-      rawFindings = await fQuery;
+      let fQuery = db("findings")
+        .leftJoin("risk_assessments", "findings.id", "risk_assessments.finding_id")
+        .where("findings.scan_id", scanRow.id)
+        .select(
+          "findings.*",
+          "risk_assessments.severity as ra_severity",
+          "risk_assessments.mosca_status as ra_mosca_status",
+          "risk_assessments.mosca_margin_years as ra_mosca_margin_years",
+          "risk_assessments.mosca_x_years as ra_mosca_x_years",
+          "risk_assessments.mosca_y_years as ra_mosca_y_years",
+          "risk_assessments.mosca_z_years as ra_mosca_z_years",
+          "risk_assessments.policy_violations as ra_policy_violations"
+        );
+      if (requestedFindingId) fQuery = fQuery.where("findings.id", requestedFindingId);
+      
+      const rows = await fQuery;
+      
+      rawFindings = rows.map((f) => ({
+        ...f,
+        severity: f.ra_severity || f.severity || "High",
+        mosca_status: f.ra_mosca_status || f.mosca_status || "SAFE",
+        mosca_margin_years: f.ra_mosca_margin_years || f.mosca_margin_years,
+        mosca_x_years: f.ra_mosca_x_years || f.mosca_x_years,
+        mosca_y_years: f.ra_mosca_y_years || f.mosca_y_years,
+        mosca_z_years: f.ra_mosca_z_years || f.mosca_z_years,
+        policy_violations: typeof f.ra_policy_violations === 'string' ? JSON.parse(f.ra_policy_violations) : (f.ra_policy_violations || []),
+      }));
     } catch (_err) {
       // Fallback
     }

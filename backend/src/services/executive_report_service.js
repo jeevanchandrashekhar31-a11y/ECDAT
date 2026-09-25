@@ -230,7 +230,19 @@ async function generateExecutiveReport(options = {}) {
 
   if (connected && scanRow) {
     try {
-      const fRows = await db("findings").where("scan_id", scanRow.id);
+      const fRows = await db("findings")
+        .leftJoin("risk_assessments", "findings.id", "risk_assessments.finding_id")
+        .where("findings.scan_id", scanRow.id)
+        .select(
+          "findings.*",
+          "risk_assessments.severity as ra_severity",
+          "risk_assessments.mosca_status as ra_mosca_status",
+          "risk_assessments.mosca_margin_years as ra_mosca_margin_years",
+          "risk_assessments.mosca_x_years as ra_mosca_x_years",
+          "risk_assessments.mosca_y_years as ra_mosca_y_years",
+          "risk_assessments.mosca_z_years as ra_mosca_z_years",
+          "risk_assessments.policy_violations as ra_policy_violations"
+        );
       const aRows = await db("assets").where("scan_id", scanRow.id);
       findings = fRows.map((f) => ({
         id: f.id,
@@ -244,12 +256,13 @@ async function generateExecutiveReport(options = {}) {
         location: f.location,
         line_number: f.line_number,
         evidence_context: f.evidence_context,
-        severity: f.severity || "High",
-        mosca_status: f.mosca_status || "SAFE",
-        mosca_margin_years: f.mosca_margin_years,
-        mosca_x_years: f.mosca_x_years,
-        mosca_y_years: f.mosca_y_years,
-        mosca_z_years: f.mosca_z_years,
+        severity: f.ra_severity || f.severity || "High",
+        mosca_status: f.ra_mosca_status || f.mosca_status || "SAFE",
+        mosca_margin_years: f.ra_mosca_margin_years || f.mosca_margin_years,
+        mosca_x_years: f.ra_mosca_x_years || f.mosca_x_years,
+        mosca_y_years: f.ra_mosca_y_years || f.mosca_y_years,
+        mosca_z_years: f.ra_mosca_z_years || f.mosca_z_years,
+        policy_violations: typeof f.ra_policy_violations === 'string' ? JSON.parse(f.ra_policy_violations) : (f.ra_policy_violations || []),
       }));
       assets = aRows.map((a) => ({
         id: a.id,
@@ -279,6 +292,12 @@ async function generateExecutiveReport(options = {}) {
       line_number: f.line_number || 42,
       evidence_context: f.evidence_context || `crypto.createCipheriv('${f.algorithm}', key, iv)`,
       severity: f.severity || "High",
+      mosca_status: f.mosca_status || f.mosca?.status || "SAFE",
+      mosca_margin_years: f.mosca_margin_years || f.mosca?.mosca_margin_years || 0,
+      mosca_x_years: f.mosca_x_years || f.mosca?.final_values?.X_shelf_life_years || 0,
+      mosca_y_years: f.mosca_y_years || f.mosca?.final_values?.Y_migration_years || 0,
+      mosca_z_years: f.mosca_z_years || f.mosca?.final_values?.Z_quantum_threat_years || 0,
+      policy_violations: f.policy_violations || [],
       metadata: f.metadata,
     }));
   }
@@ -592,30 +611,26 @@ async function generateExecutiveReport(options = {}) {
 
   findings.forEach((f) => {
     const ref = createEvidenceReference(f);
-    const algo = (f.algorithm || "").toLowerCase();
 
-    if (algo.includes("md5") || algo.includes("des") || (algo.includes("rsa") && f.key_size < 2048)) {
-      policyFrameworks.nist_sp800_131a.push({
-        rule: "NIST SP 800-131A Rev 2 Disallowed Primitive",
-        evidence: ref,
-      });
-      policyFrameworks.pci_dss_v4.push({
-        rule: "PCI-DSS v4.0 Requirement 12.3.3 Weak Cryptography",
-        evidence: ref,
-      });
-      policyFrameworks.fips_140_3.push({
-        rule: "FIPS 140-3 Non-Approved Mode",
-        evidence: ref,
-      });
-    }
-    if (algo.includes("sha-1") || algo.includes("3des") || algo.includes("p256")) {
-      policyFrameworks.bsi_tr02102.push({
-        rule: "BSI TR-02102-1 Legacy Recommendation",
-        evidence: ref,
-      });
-      policyFrameworks.cnsa_2_0.push({
-        rule: "CNSA 2.0 Quantum Vulnerability Horizon",
-        evidence: ref,
+    if (Array.isArray(f.policy_violations)) {
+      f.policy_violations.forEach(pv => {
+        const title = pv.title || pv;
+        const entry = { rule: title, evidence: ref };
+
+        if (title.includes("NIST") || title.includes("SP 800-131A")) {
+          policyFrameworks.nist_sp800_131a.push(entry);
+        } else if (title.includes("PCI") || title.includes("PCI-DSS")) {
+          policyFrameworks.pci_dss_v4.push(entry);
+        } else if (title.includes("FIPS")) {
+          policyFrameworks.fips_140_3.push(entry);
+        } else if (title.includes("BSI") || title.includes("TR-02102")) {
+          policyFrameworks.bsi_tr02102.push(entry);
+        } else if (title.includes("CNSA")) {
+          policyFrameworks.cnsa_2_0.push(entry);
+        } else {
+          // Default to NIST if unable to classify exactly but it was a violation
+          policyFrameworks.nist_sp800_131a.push(entry);
+        }
       });
     }
   });
