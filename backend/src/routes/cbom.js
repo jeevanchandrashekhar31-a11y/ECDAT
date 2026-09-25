@@ -26,8 +26,8 @@ const upload = multer({
   },
 });
 // const uploadRateLimit = createRateLimitMiddleware({
-  max: config.UPLOAD_RATE_LIMIT,
-});
+//   max: config.UPLOAD_RATE_LIMIT,
+// });
 
 /**
  * Shared ingestion handler for JSON payloads and multipart file uploads.
