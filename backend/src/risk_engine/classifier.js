@@ -259,6 +259,15 @@ function classifyFinding(input) {
     severity = Severities.INFORMATIONAL;
   }
 
+  // Downgrade severity based on usage confidence
+  const usageStatus = input.usageStatus || "UNKNOWN";
+  if (usageStatus === "TEST_FIXTURE" || usageStatus === "DOCUMENTATION_ONLY" || usageStatus === "DETECTOR_RULE") {
+    if (severity === Severities.CRITICAL || severity === Severities.HIGH) {
+      severity = Severities.MEDIUM;
+      assumptions.push(`Severity downgraded from original assessment because usage context is ${usageStatus}, not confirmed production usage.`);
+    }
+  }
+
   // Discount / caveat for package inventory
   if (isPackageInventory) {
     assumptions.push(

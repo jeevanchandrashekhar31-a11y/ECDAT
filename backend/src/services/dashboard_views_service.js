@@ -311,6 +311,7 @@ async function getEnterpriseDashboardViews(options = {}) {
           business_criticality: a.business_criticality,
           highest_severity: a.highest_severity,
           at_quantum_risk: a.at_quantum_risk,
+          certificate: typeof a.certificate === "string" ? JSON.parse(a.certificate) : a.certificate,
           metadata: meta,
         };
       });
@@ -337,6 +338,8 @@ async function getEnterpriseDashboardViews(options = {}) {
       classical_risk: f.classical_risk || "Medium",
       quantum_relevance: f.quantum_relevance || "Shor",
       mosca_margin_years: f.mosca_margin_years ?? 0,
+      metadata: f.metadata || f.properties || {},
+      certificate: f.certificate || {},
     }));
   }
 
@@ -627,29 +630,51 @@ async function getEnterpriseDashboardViews(options = {}) {
   }
 
   if (certItems.length === 0) {
-    const certFindings = findings.filter(
-      (f) =>
-        f.category === "x509-certificate" ||
-        f.category === "certificate" ||
-        f.finding_type === "certificate" ||
-        (f.algorithm || "").toUpperCase().includes("CERT")
+    const certAssets = assets.filter(
+      (a) =>
+        a.asset_type === "certificate" ||
+        (a.certificate && Object.keys(a.certificate).length > 0)
     );
-    certItems = certFindings.map((cf) => {
-      const meta = cf.metadata || {};
-      const keySize = cf.key_size || (meta.key_size ?? null);
+    certItems = certAssets.map((ca) => {
+      const meta = ca.metadata || {};
+      const cert = ca.certificate || {};
+      const keySize = ca.key_size || meta.key_size || cert.key_size || null;
       const isWeak = keySize && keySize < 2048;
+
+      const subjectDn = cert.subjectName || cert.subject_dn || meta.subject_dn || ca.primary_identifier || `Certificate [${ca.id}]`;
+      const issuerDn = cert.issuerName || cert.issuer_dn || meta.issuer_dn || "UNKNOWN";
+      const validStart = cert.notValidBefore || cert.valid_from || meta.validity_start || null;
+      const validEnd = cert.notValidAfter || cert.valid_to || meta.validity_end || null;
+
+      let daysRemaining = cert.days_remaining ?? meta.days_remaining ?? null;
+      if (daysRemaining === null && validEnd) {
+        try {
+          const diffMs = new Date(validEnd).getTime() - Date.now();
+          daysRemaining = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        } catch (e) {}
+      }
+
+      let renewalState = meta.renewal_state;
+      if (!renewalState) {
+        if (daysRemaining !== null && daysRemaining < 0) renewalState = "EXPIRED";
+        else if (daysRemaining !== null && daysRemaining <= 30) renewalState = "CRITICAL_EXPIRING";
+        else if (daysRemaining !== null && daysRemaining <= 90) renewalState = "EXPIRING_SOON";
+        else if (isWeak) renewalState = "WEAK_KEY";
+        else renewalState = "HEALTHY";
+      }
+
       return {
-        fingerprint_sha256: meta.fingerprint || cf.id,
-        subject_dn: meta.subject_dn || cf.location || `Certificate [${cf.algorithm}]`,
-        issuer_dn: meta.issuer_dn || "UNKNOWN",
-        validity_start: meta.validity_start || null,
-        validity_end: meta.validity_end || null,
-        days_remaining: meta.days_remaining ?? null,
-        algorithm: cf.algorithm || "RSA",
+        fingerprint_sha256: cert.fingerprint_sha256 || meta.fingerprint || ca.id,
+        subject_dn: subjectDn,
+        issuer_dn: issuerDn,
+        validity_start: validStart,
+        validity_end: validEnd,
+        days_remaining: daysRemaining,
+        algorithm: ca.algorithm || "RSA",
         key_size: keySize,
-        renewal_state: meta.renewal_state || (isWeak ? "WEAK_KEY" : "UNTRACKED"),
-        detected_anomalies: meta.anomalies || (isWeak ? [`weak_key:${(cf.algorithm || "").toLowerCase()}_${keySize}`] : []),
-        evidence_link: cf.location || cf.id,
+        renewal_state: renewalState,
+        detected_anomalies: meta.anomalies || (isWeak ? [`weak_key:${(ca.algorithm || "").toLowerCase()}_${keySize}`] : []),
+        evidence_link: ca.id,
       };
     });
   }

@@ -22,11 +22,13 @@ const inMemoryScansStore = new Map();
  */
 async function persistScanToPostgres(scanRecord, rawCbom) {
   const connected = await isDbConnected();
+  console.log('persistScanToPostgres: connected=', connected);
   if (!connected) {
     return false;
   }
 
   const hasScansTable = await db.schema.hasTable("scans").catch(() => false);
+  console.log('persistScanToPostgres: hasScansTable=', hasScansTable);
   if (!hasScansTable) {
     return false;
   }
@@ -125,12 +127,17 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
         const f = findings[i];
         const findingId = f.id || `fnd_${scanRecord.id}_${i}`;
         const compId = String(f.bom_ref || `comp_${scanRecord.id}_${i}`).slice(0, 255);
-        const assetId = String(f.asset_id || f.bom_ref || "global").slice(0, 255);
+        
+        // Deduplicate assets by logical cryptographic identity (algorithm + asset_type)
+        const logicalIdentity = f.algorithm || "unknown_crypto";
+        const assetTypeStr = f.asset_type || "network_session";
+        const normalizedIdentity = String(logicalIdentity + "_" + assetTypeStr).toLowerCase().replace(/[^a-z0-9]/g, "-");
+        const assetId = String(f.asset_id || `asset_${scanRecord.id}_${normalizedIdentity}`).slice(0, 255);
 
         assetsData.push({
           scan_id: scanRecord.id,
           id: assetId,
-          primary_identifier: assetId,
+          primary_identifier: f.algorithm || "Unknown Crypto Asset",
           tenant_id: scanRecord.tenantId || "default-tenant",
           asset_type: String(f.asset_type || "network_session").slice(0, 50),
           data_sensitivity: String(f.data_sensitivity || "internal").slice(0, 50),
@@ -181,7 +188,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
           evidence_context: f.raw_evidence ? JSON.stringify(f.raw_evidence) : null,
           confidence: String(f.confidence || "high").slice(0, 50),
           detection_method: f.detection_method ? String(f.detection_method).slice(0, 50) : "deterministic",
-          status: f.needs_human_review ? "LLM_FLAGGED_UNVERIFIED" : "CONFIRMED",
+          status: f.usage_status || (f.needs_human_review ? "LLM_FLAGGED_UNVERIFIED" : "CONFIRMED_USAGE"),
         });
 
         riskAssessmentsData.push({
@@ -226,8 +233,33 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       }
 
       // Deduplicate assets and components by scan_id + id to prevent ON CONFLICT batch errors
-      const uniqueAssets = Array.from(new Map(assetsData.map(a => [`${a.scan_id}_${a.id}`, a])).values());
-      const uniqueComponents = Array.from(new Map(componentsData.map(c => [`${c.scan_id}_${c.id}`, c])).values());
+      const uniqueAssetsMap = new Map();
+      const uniqueComponentsMap = new Map();
+
+      for (const a of assetsData) {
+        const key = `${a.scan_id}_${a.id}`;
+        if (uniqueAssetsMap.has(key)) {
+          uniqueAssetsMap.get(key).findings_count = (uniqueAssetsMap.get(key).findings_count || 1) + 1;
+        } else {
+          a.findings_count = 1;
+          uniqueAssetsMap.set(key, a);
+        }
+      }
+
+      for (const c of componentsData) {
+        const key = `${c.scan_id}_${c.id}`;
+        uniqueComponentsMap.set(key, c);
+      }
+
+      const uniqueAssets = Array.from(uniqueAssetsMap.values()).map((a) => {
+        let meta;
+        try { meta = JSON.parse(a.metadata); } catch (e) { meta = {}; }
+        meta.findings_count = a.findings_count;
+        a.metadata = JSON.stringify(meta);
+        delete a.findings_count;
+        return a;
+      });
+      const uniqueComponents = Array.from(uniqueComponentsMap.values());
 
       const chunkSize = 150;
       

@@ -87,11 +87,15 @@ function generateSummary(cbomData, options = {}) {
     }
 
     // 3. Asset grouping
-    const assetId = item.bom_ref || item.algorithm;
+    const logicalIdentity = item.algorithm || "unknown_crypto";
+    const normalizedIdentity = String(logicalIdentity).toLowerCase().replace(/[^a-z0-9]/g, "-");
+    const assetId = `asset_${normalizedIdentity}`;
+    
     if (!assetMap.has(assetId)) {
       assetMap.set(assetId, {
         asset_id: assetId,
         algorithm: item.algorithm,
+        primary_identifier: item.algorithm,
         key_size: item.key_size,
         asset_type: item.asset_type,
         severity: item.severity,
@@ -106,7 +110,21 @@ function generateSummary(cbomData, options = {}) {
         cicd_pass: item.cicd_pass,
         explanation: item.explanation,
         recommendation: item.recommendation,
+        occurrences: 1,
+        evidence_types: new Set([item.usage || "STATIC_SOURCE"]),
+        usage_types: new Set([item.usage_status || "UNKNOWN"]),
+        exposures: new Set([item.is_internet_facing ? "Public" : "Internal"]),
       });
+    } else {
+      const existing = assetMap.get(assetId);
+      existing.occurrences += 1;
+      existing.evidence_types.add(item.usage || "STATIC_SOURCE");
+      existing.usage_types.add(item.usage_status || "UNKNOWN");
+      existing.exposures.add(item.is_internet_facing ? "Public" : "Internal");
+      if (severityCounts[item.severity] > severityCounts[existing.severity]) {
+          existing.severity = item.severity;
+          existing.mosca_status = mStatus;
+      }
     }
 
     // 4. Mosca table row
@@ -163,7 +181,12 @@ function generateSummary(cbomData, options = {}) {
     [Severities.INFORMATIONAL]: 0,
   };
 
-  const allAssets = Array.from(assetMap.values());
+  const allAssets = Array.from(assetMap.values()).map(a => ({
+    ...a,
+    evidence_types: Array.from(a.evidence_types),
+    usage_types: Array.from(a.usage_types),
+    exposures: Array.from(a.exposures),
+  }));
   allAssets.sort((a, b) => {
     const scoreA = severityScore[a.severity] || 0;
     const scoreB = severityScore[b.severity] || 0;

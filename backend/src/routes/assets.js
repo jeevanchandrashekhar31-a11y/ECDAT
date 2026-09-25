@@ -210,6 +210,18 @@ router.get("/", async (req, res, next) => {
           .limit(pageSize)
           .offset(offset);
 
+        const assetIds = rows.map(r => r.asset_id);
+        const findingsRows = assetIds.length > 0 ? await db("findings")
+          .select("asset_id", "status", "finding_type")
+          .whereIn("asset_id", assetIds) : [];
+
+        const assetFindingsMap = {};
+        for (const f of findingsRows) {
+          if (!assetFindingsMap[f.asset_id]) assetFindingsMap[f.asset_id] = { usage_types: new Set(), evidence_types: new Set() };
+          assetFindingsMap[f.asset_id].usage_types.add(f.status || "UNKNOWN");
+          assetFindingsMap[f.asset_id].evidence_types.add(f.finding_type || "STATIC_SOURCE");
+        }
+
         const assets = rows.map((r) => {
           const meta =
             typeof r.metadata === "string"
@@ -235,6 +247,8 @@ router.get("/", async (req, res, next) => {
               r.scan_created_at ||
               meta.created_at ||
               new Date().toISOString(),
+            usage_types: Array.from(assetFindingsMap[r.asset_id]?.usage_types || []),
+            evidence_types: Array.from(assetFindingsMap[r.asset_id]?.evidence_types || []),
           };
         });
 

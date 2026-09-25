@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import {
   Shield,
@@ -97,7 +97,10 @@ export const Dashboard: React.FC = () => {
   const [runningAction, setRunningAction] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
+  const activeRequestId = useRef(0);
+
   const fetchDashboardData = useCallback(async (overrideScanId?: string) => {
+    const requestId = ++activeRequestId.current;
     setLoading(true);
     setError(null);
     try {
@@ -107,6 +110,9 @@ export const Dashboard: React.FC = () => {
         selectedPolicy || undefined,
         selectedScenario || undefined
       );
+      
+      if (requestId !== activeRequestId.current) return;
+
       setViewsData(res);
       if (res.policy_profile && !selectedPolicy) {
         setSelectedPolicy(res.policy_profile);
@@ -115,9 +121,12 @@ export const Dashboard: React.FC = () => {
         setSelectedScenario(res.scenario);
       }
     } catch (err: unknown) {
+      if (requestId !== activeRequestId.current) return;
       setError((err as Error).message || 'Failed to fetch enterprise dashboard views.');
     } finally {
-      setLoading(false);
+      if (requestId === activeRequestId.current) {
+        setLoading(false);
+      }
     }
   }, [selectedScanId, selectedPolicy, selectedScenario]);
 

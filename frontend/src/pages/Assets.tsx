@@ -267,7 +267,7 @@ export const Assets: React.FC = () => {
       </div>
 
       {/* 2. Quick Metric Pill Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="glass-card p-3 flex items-center justify-between">
           <div>
             <p className="text-[11px] font-medium text-slate-400">Total Scanned Assets</p>
@@ -290,16 +290,6 @@ export const Assets: React.FC = () => {
             <p className="text-lg font-bold text-rose-400 font-mono">{criticalCount}</p>
           </div>
           <Zap size={20} className="text-rose-400/80" />
-        </div>
-
-        <div className="glass-card p-3 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-medium text-slate-400">Zero Secret Literals</p>
-            <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1 mt-1 font-mono">
-              <CheckCircle2 size={13} /> Verified Enforced
-            </p>
-          </div>
-          <Lock size={20} className="text-emerald-400/80" />
         </div>
       </div>
 
@@ -470,11 +460,11 @@ export const Assets: React.FC = () => {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-900/90 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-800 font-mono">
                     <tr>
-                      <th className="py-3.5 px-4">Name / Identifier</th>
-                      <th className="py-3.5 px-3">Highest Severity</th>
-                      <th className="py-3.5 px-3">Quantum Status</th>
-                      <th className="py-3.5 px-3 text-center">Crypto Primitives</th>
-                      <th className="py-3.5 px-4 text-right">View Details</th>
+                      <th className="py-3.5 px-4">Logical Asset</th>
+                      <th className="py-3.5 px-3">Risk & Exposure</th>
+                      <th className="py-3.5 px-3">Mosca Status</th>
+                      <th className="py-3.5 px-3">Occurrences & Usage</th>
+                      <th className="py-3.5 px-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-200 font-sans">
@@ -501,9 +491,12 @@ export const Assets: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Highest Severity */}
+                        {/* Highest Severity & Exposure */}
                         <td className="py-3.5 px-3">
                           <SeverityBadge severity={asset.highest_severity} size="sm" />
+                          <div className="text-[10px] text-slate-500 mt-1 capitalize">
+                            Source: {(asset.source || "Unknown").replace(/_/g, ' ')}
+                          </div>
                         </td>
 
                         {/* Mosca Status */}
@@ -511,11 +504,20 @@ export const Assets: React.FC = () => {
                           <MoscaStatusBadge status={asset.mosca_status} />
                         </td>
 
-                        {/* Crypto Count */}
-                        <td className="py-3.5 px-3 text-center">
-                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-800 text-cyan-300 border border-slate-700">
-                            {asset.findings_count || 1}
-                          </span>
+                        {/* Occurrences & Usage */}
+                        <td className="py-3.5 px-3">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                            <Layers className="w-3.5 h-3.5 text-slate-500" />
+                            <span className="font-mono font-bold text-cyan-300">{asset.findings_count || 1}</span> Occurrence{(asset.findings_count || 1) !== 1 && 's'}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1.5 max-w-[200px]">
+                            {(asset.usage_types || []).slice(0, 2).map((u, i) => (
+                              <span key={`u-${i}`} className="text-[9px] uppercase px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">{u.replace(/_/g, ' ')}</span>
+                            ))}
+                            {(asset.evidence_types || []).slice(0, 2).map((e, i) => (
+                              <span key={`e-${i}`} className="text-[9px] uppercase px-1.5 py-0.5 bg-slate-900 rounded border border-slate-800 text-slate-400">{e.replace(/_/g, ' ')}</span>
+                            ))}
+                          </div>
                         </td>
 
                         {/* Inspect Details */}

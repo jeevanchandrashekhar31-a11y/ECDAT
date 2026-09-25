@@ -675,13 +675,12 @@ export const Roadmap: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px] print:border-slate-300 print:text-slate-700">
                 <tr>
-                  <th className="pb-3 pr-3">Asset Identifier</th>
-                  <th className="pb-3 pr-3">Type</th>
-                  <th className="pb-3 pr-3">Algorithm</th>
-                  <th className="pb-3 pr-3">Severity</th>
+                  <th className="pb-3 pr-3">Logical Asset</th>
+                  <th className="pb-3 pr-3">Risk & Exposure</th>
+                  <th className="pb-3 pr-3">Occurrences</th>
+                  <th className="pb-3 pr-3">Usage Types</th>
                   <th className="pb-3 pr-3">Mosca Status</th>
-                  <th className="pb-3 pr-3">Margin (X+Y-Z)</th>
-                  <th className="pb-3 text-right print:hidden">Action</th>
+                  <th className="pb-3 pr-3">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-sans print:divide-slate-300">
@@ -691,43 +690,48 @@ export const Roadmap: React.FC = () => {
                     className="hover:bg-slate-800/30 transition-colors print:hover:bg-transparent"
                   >
                     <td className="py-3.5 pr-3 font-mono font-bold text-white print:text-slate-900">
-                      <div className="truncate max-w-[220px]" title={asset.primary_identifier || asset.asset_id}>
-                        {asset.primary_identifier || asset.asset_id}
+                      <div className="text-sm truncate max-w-[220px]" title={asset.primary_identifier || asset.algorithm}>
+                        {asset.primary_identifier || asset.algorithm}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-sans mt-0.5">{asset.asset_type.replace(/_/g, ' ')}</div>
+                    </td>
+                    <td className="py-3.5 pr-3">
+                      <div className="flex flex-col gap-1 items-start">
+                        <span
+                          className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
+                            asset.severity === 'Critical' || asset.severity === 'CRITICAL'
+                              ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
+                              : asset.severity === 'High' || asset.severity === 'HIGH'
+                              ? 'bg-amber-950/70 text-amber-300 border border-amber-800/60'
+                              : 'bg-slate-800 text-slate-300 border border-slate-700'
+                          }`}
+                        >
+                          {asset.severity}
+                        </span>
+                        <span className="text-[10px] text-slate-400 capitalize">
+                          {(asset.exposures || []).join(', ')}
+                        </span>
                       </div>
                     </td>
-                    <td className="py-3.5 pr-3 text-slate-300 capitalize print:text-slate-700">
-                      {asset.asset_type.replace(/_/g, ' ')}
+                    <td className="py-3.5 pr-3 text-slate-300">
+                      {asset.occurrences || 1}
                     </td>
-                    <td className="py-3.5 pr-3 font-mono text-cyan-300 print:text-cyan-800">{asset.severity}</td>
-                    <td className="py-3.5 pr-3">
-                      <span
-                        className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
-                          asset.severity === 'Critical'
-                            ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60 print:bg-rose-100 print:text-rose-800 print:border-rose-300'
-                            : 'bg-amber-950/70 text-amber-300 border border-amber-800/60 print:bg-amber-100 print:text-amber-800 print:border-amber-300'
-                        }`}
-                      >
-                        {asset.severity}
-                      </span>
+                    <td className="py-3.5 pr-3 text-slate-300 text-xs">
+                      <div className="flex flex-wrap gap-1">
+                        {(asset.usage_types || []).map((u: string) => (
+                          <span key={u} className="text-[9px] uppercase px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">{u.replace(/_/g, ' ')}</span>
+                        ))}
+                      </div>
                     </td>
                     <td className="py-3.5 pr-3">
                       <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700">
                         {asset.mosca_status}
                       </span>
                     </td>
-                    <td className="py-3.5 pr-3 font-mono font-bold">
-                      {asset.mosca_margin_years > 0 ? (
-                        <span className="text-rose-400 print:text-rose-700">+{asset.mosca_margin_years}y Deficit</span>
-                      ) : (
-                        <span className="text-emerald-400 print:text-emerald-700">
-                          {asset.mosca_margin_years}y Safe
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 text-right print:hidden">
+                    <td className="py-3.5 text-left print:hidden">
                       <Link
                         to={`/assets/${encodeURIComponent(asset.asset_id)}${scanId ? `?scanId=${scanId}` : ''}`}
-                        className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline text-xs"
+                        className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline text-xs bg-slate-950/50 px-2 py-1 rounded border border-cyan-900/50"
                       >
                         <span>Inspect</span>
                         <ExternalLink className="w-3 h-3" />

@@ -59,6 +59,7 @@ export interface FindingsBySource {
 
 export interface TopRiskyAsset {
   asset_id: string;
+  algorithm: string;
   primary_identifier: string;
   asset_type: string;
   data_sensitivity?: string;
@@ -69,6 +70,9 @@ export interface TopRiskyAsset {
   mosca_status: MoscaStatus;
   mosca_margin_years: number;
   findings_count?: number;
+  occurrences?: number;
+  usage_types?: string[];
+  exposures?: string[];
 }
 
 export interface MoscaTableRow {
@@ -133,6 +137,8 @@ export interface AssetSummaryItem {
   mosca_status: MoscaStatus;
   findings_count?: number;
   created_at?: string;
+  usage_types?: string[];
+  evidence_types?: string[];
 }
 
 export interface AssetsResponse {

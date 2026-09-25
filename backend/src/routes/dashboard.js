@@ -125,6 +125,18 @@ router.get("/summary", async (req, res, next) => {
             )
             .limit(10);
 
+          const assetIds = assetRows.map(r => r.id);
+          const findingsRows = assetIds.length > 0 ? await db("findings")
+            .select("asset_id", "status", "finding_type")
+            .whereIn("asset_id", assetIds) : [];
+
+          const assetFindingsMap = {};
+          for (const f of findingsRows) {
+            if (!assetFindingsMap[f.asset_id]) assetFindingsMap[f.asset_id] = { usage_types: new Set(), evidence_types: new Set() };
+            assetFindingsMap[f.asset_id].usage_types.add(f.status || "UNKNOWN");
+            assetFindingsMap[f.asset_id].evidence_types.add(f.finding_type || "STATIC_SOURCE");
+          }
+
           const topRiskyAssets = assetRows.map((a) => {
             const meta =
               typeof a.metadata === "string"
@@ -133,7 +145,6 @@ router.get("/summary", async (req, res, next) => {
             let mStatus = meta.mosca_status || (a.at_quantum_risk ? "AT_RISK" : "SAFE");
             let mMargin = meta.mosca_margin_years ?? (mStatus === "AT_RISK" ? 1.0 : 0.0);
 
-            // Recalculate Mosca if scenario overridden
             if (requestedScenario && requestedScenario !== scanRow.scenario) {
               const recalc = calculateMosca({
                 assetType: a.asset_type,
@@ -146,17 +157,20 @@ router.get("/summary", async (req, res, next) => {
             }
 
             return {
-              asset_id: a.id,
+              asset_id: a.asset_id || a.id,
               primary_identifier: a.primary_identifier,
+              algorithm: a.primary_identifier,
               asset_type: a.asset_type,
               data_sensitivity: a.data_sensitivity,
               business_criticality: a.business_criticality,
               severity: a.highest_severity,
-              at_quantum_risk:
-                mStatus === "AT_RISK" || mStatus === "CRITICAL_URGENT",
+              at_quantum_risk: mStatus === "AT_RISK" || mStatus === "CRITICAL_URGENT",
               cicd_pass: a.cicd_pass,
               mosca_status: mStatus,
               mosca_margin_years: mMargin,
+              occurrences: meta.findings_count || 1,
+              usage_types: Array.from(assetFindingsMap[a.id]?.usage_types || []),
+              evidence_types: Array.from(assetFindingsMap[a.id]?.evidence_types || []),
             };
           });
 

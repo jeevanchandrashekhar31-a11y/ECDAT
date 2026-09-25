@@ -13,9 +13,10 @@ function extractComponentCryptoDetails(component) {
   let certificateProperties = null;
   let protocolProperties = null;
 
+  let cpAssetType = null;
   const cryptoProps = component.cryptoProperties;
   if (cryptoProps) {
-    const cpAssetType = cryptoProps.assetType;
+    cpAssetType = cryptoProps.assetType;
     if (cpAssetType === "protocol") {
       assetType = "network_session";
       category = "protocol";
@@ -53,6 +54,7 @@ function extractComponentCryptoDetails(component) {
   }
 
   // Extract from properties if available
+  // Extract from properties if available
   let evidenceConfidence = null;
   let reachability = null;
   let businessUnit = null;
@@ -62,10 +64,36 @@ function extractComponentCryptoDetails(component) {
   let detectionMethod = "deterministic";
   let needsHumanReview = false;
   let explanation = null;
+  let usageStatus = "UNKNOWN";
 
-  if (component["bom-ref"]?.startsWith("net:") || algorithm.startsWith("TLS") || algorithm.startsWith("SSL") || algorithm.startsWith("SSH")) {
-    assetType = "network_session";
-    category = "protocol";
+  if (component["bom-ref"]?.startsWith("net:") || evidenceType === "NETWORK") {
+    if (assetType !== "certificate") {
+      assetType = "network_session";
+    }
+    evidenceType = "NETWORK";
+    usageStatus = "CONFIRMED_USAGE";
+  } else if (!evidenceType) {
+    if (component["bom-ref"]?.startsWith("pkg:")) evidenceType = "DEPENDENCY";
+    else if (cpAssetType === "certificate") evidenceType = "CERTIFICATE";
+    else if (cpAssetType === "related-crypto-material") evidenceType = "KEY_MATERIAL";
+    else if (component.name?.endsWith(".json") || component.name?.endsWith(".yaml")) evidenceType = "CONFIGURATION";
+    else evidenceType = "STATIC_SOURCE";
+  }
+
+  // Determine usage status from location/bom-ref
+  const locationContext = (component["bom-ref"] || "").toLowerCase();
+  if (usageStatus === "UNKNOWN") {
+    if (locationContext.includes("test") || locationContext.includes("spec") || locationContext.includes("mock")) {
+      usageStatus = "TEST_FIXTURE";
+    } else if (locationContext.includes("detector") || locationContext.includes("scanner") || locationContext.includes("rule")) {
+      usageStatus = "DETECTOR_RULE";
+    } else if (locationContext.includes("doc") || locationContext.includes("readme")) {
+      usageStatus = "DOCUMENTATION_ONLY";
+    } else if (evidenceType === "STATIC_SOURCE") {
+      usageStatus = "LIKELY_USAGE";
+    } else {
+      usageStatus = "UNKNOWN";
+    }
   }
 
   const properties = component.properties || [];
@@ -135,6 +163,7 @@ function extractComponentCryptoDetails(component) {
     explanation,
     certificateProperties,
     protocolProperties,
+    usageStatus,
   };
 }
 
@@ -201,6 +230,7 @@ function annotateCbom(cbomData, options = {}) {
       certificateProperties: details.certificateProperties,
       protocolProperties: details.protocolProperties,
       evidenceContext: findingContext,
+      usageStatus: details.usageStatus,
     });
 
     classification.bom_ref = comp["bom-ref"] || comp.name;
@@ -211,6 +241,7 @@ function annotateCbom(cbomData, options = {}) {
     classification.dependency_blast_radius = details.dependencyBlastRadius;
     
     // Phase 1 Explicit Asset Fields
+    classification.asset_type = details.assetType;
     classification.algorithm = details.algorithm;
     classification.primitive = details.category;
     classification.detection_method = details.detectionMethod;
@@ -220,12 +251,13 @@ function annotateCbom(cbomData, options = {}) {
     classification.usage = details.evidenceType || details.category;
     classification.location = findingContext;
     classification.owner = details.businessUnit;
+    classification.certificate = details.certificateProperties;
     classification.service = classification.application;
     classification.protocol = details.protocolProperties?.version || (details.assetType === 'network_session' ? details.algorithm : null);
-    classification.certificate = details.certificateProperties;
     classification.confidence = details.evidenceConfidence === "high" ? 1.0 : details.evidenceConfidence === "medium" ? 0.7 : 0.5;
     classification.is_synthetic = Boolean(comp.properties?.find(p => p.name === 'ecdat:is_synthetic')?.value === 'true');
     classification.source = "scanner";
+    classification.usage_status = details.usageStatus;
 
     classifiedResults.push(classification);
 
