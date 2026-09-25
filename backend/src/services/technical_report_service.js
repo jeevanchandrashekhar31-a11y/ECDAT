@@ -26,63 +26,7 @@ const {
   validateEvidenceIntegrity,
 } = require("./evidence_integrity_service");
 
-const CANONICAL_BASELINE_FINDINGS = [
-  {
-    id: "find_rsa_1024_auth",
-    asset_id: "svc_payment_gateway",
-    component_id: "comp_jwt_signer",
-    algorithm: "RSA-1024",
-    key_size: 1024,
-    location: "services/auth/token_signer.go",
-    line_number: 42,
-    evidence_context: "rsa.GenerateKey(rand.Reader, 1024)",
-    severity: "Critical",
-  },
-  {
-    id: "find_md5_cache",
-    asset_id: "svc_payment_gateway",
-    component_id: "comp_cache_hasher",
-    algorithm: "MD5",
-    key_size: 128,
-    location: "pkg/cache/etag.go",
-    line_number: 19,
-    evidence_context: "md5.New().Sum([]byte(data))",
-    severity: "Critical",
-  },
-  {
-    id: "find_sha1_git_signer",
-    asset_id: "svc_core_ledger",
-    component_id: "comp_commit_signer",
-    algorithm: "SHA-1",
-    key_size: 160,
-    location: "ledger/crypto/hasher.rs",
-    line_number: 88,
-    evidence_context: "Sha1::digest(payload.as_bytes())",
-    severity: "High",
-  },
-  {
-    id: "find_pqc_hybrid_x25519_mlkem",
-    asset_id: "svc_cloud_broker",
-    component_id: "comp_pqc_tunnel",
-    algorithm: "X25519+ML-KEM-768",
-    key_size: 256,
-    location: "tunnel/pqc_wireguard.go",
-    line_number: 31,
-    evidence_context: "hybrid.NewKeyExchange(x25519.Curve, mlkem768.KEM)",
-    severity: "Low",
-  },
-  {
-    id: "find_aes_256_gcm_vault",
-    asset_id: "svc_customer_vault",
-    component_id: "comp_field_cipher",
-    algorithm: "AES-256-GCM",
-    key_size: 256,
-    location: "vault/storage/aes.py",
-    line_number: 56,
-    evidence_context: "AESGCM(key).encrypt(nonce, data, aad)",
-    severity: "Low",
-  },
-];
+
 
 /**
  * Builds the canonical 12-dimension technical drill-down item.
@@ -402,10 +346,6 @@ async function generateTechnicalDrillDownReport(options = {}) {
     rawFindings = inMemoryScan.classified_findings;
   }
 
-  // Fallback to canonical mock data if completely empty
-  if (rawFindings.length === 0) {
-    rawFindings = CANONICAL_BASELINE_FINDINGS;
-  }
 
   if (requestedFindingId) {
     rawFindings = rawFindings.filter((f) => f.id === requestedFindingId);
