@@ -36,6 +36,7 @@ from scanners.common.crypto_classifier import (
     CryptoClassifier,
     CLASS_QUANTUM_VULNERABLE,
     CLASS_QUANTUM_RESISTANT,
+    CLASS_QUANTUM_SAFE_SYMMETRIC,
     CLASS_HYBRID,
     CLASS_UNKNOWN,
     PqcReadinessTier,
@@ -270,7 +271,7 @@ def test_algorithm_classification_all_required_families():
     assert aes128_res.threat_model == "Grover"
 
     aes256_res = CryptoClassifier.classify("AES-256", key_size=256)
-    assert aes256_res.classification == CLASS_QUANTUM_RESISTANT
+    assert aes256_res.classification == CLASS_QUANTUM_SAFE_SYMMETRIC
     assert aes256_res.threat_model == "Grover"
 
     aes_unknown_res = CryptoClassifier.classify("AES")
