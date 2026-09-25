@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useOutletContext } from 'react-router-dom';
 import {
   FileText,
   Download,
@@ -19,7 +19,8 @@ import { sanitizeUrl } from '../security';
 
 export const Reports: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeScanId = searchParams.get('scanId') || 'latest';
+  const outlet = useOutletContext<{ selectedScanId?: string }>() || {};
+  const activeScanId = searchParams.get('scanId') || outlet.selectedScanId || 'latest';
 
   const [scans, setScans] = useState<ScanItem[]>([]);
   const [loading, setLoading] = useState(true);

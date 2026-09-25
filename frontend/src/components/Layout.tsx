@@ -153,15 +153,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
   }, [location.pathname]);
 
-  // Synchronize state when URL changes
+  // Synchronize state when URL changes (only apply if URL explicitly overrides it)
   useEffect(() => {
     const urlScanId = new URLSearchParams(location.search).get('scanId');
-    if (urlScanId) {
-      if (urlScanId !== selectedScanId) {
-        setSelectedScanId(urlScanId);
-      }
-    } else if (selectedScanId !== 'all') {
-      setSelectedScanId('all');
+    if (urlScanId && urlScanId !== selectedScanId) {
+      setSelectedScanId(urlScanId);
     }
   }, [location.search, selectedScanId]);
 

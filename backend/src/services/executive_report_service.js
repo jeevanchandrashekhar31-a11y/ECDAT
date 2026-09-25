@@ -52,7 +52,7 @@ function createEvidenceReference(item = {}) {
   };
 }
 
-function getZeroExecutiveReport(policyProfile = "regulated_bfsi", scenario = "baseline") {
+function getZeroExecutiveReport(policyProfile = "ecdat_enterprise_baseline", deploymentContext = "internet_facing", threatHorizon = "baseline_2033") {
   const timestamp = new Date().toISOString();
   const report = {
     report_metadata: {
@@ -61,7 +61,8 @@ function getZeroExecutiveReport(policyProfile = "regulated_bfsi", scenario = "ba
       scan_name: "No Active Scan",
       generated_at: timestamp,
       policy_profile: policyProfile,
-      scenario,
+      deployment_context: deploymentContext,
+      threat_horizon: threatHorizon,
       scope: "enterprise",
       status: "UNASSESSED",
     },
@@ -169,15 +170,16 @@ function getZeroExecutiveReport(policyProfile = "regulated_bfsi", scenario = "ba
  *
  * @param {object} [options]
  * @param {string} [options.scanId]
- * @param {string} [options.policyProfile="regulated_bfsi"]
- * @param {string} [options.scenario="baseline"]
+ * @param {string} [options.deploymentContext="internet_facing"]
+ * @param {string} [options.threatHorizon="baseline_2033"]
  * @param {string} [options.scope="enterprise"]
  * @returns {Promise<object>} Complete executive report with 100% evidence traceability
  */
 async function generateExecutiveReport(options = {}) {
   const requestedScanId = options.scanId && options.scanId !== "all" ? options.scanId : null;
-  const policyProfile = options.policyProfile || "regulated_bfsi";
-  const scenario = options.scenario || "baseline";
+  const policyProfile = options.policyProfile || "ecdat_enterprise_baseline";
+  const threatHorizon = options.threatHorizon || "baseline_2033";
+  const deploymentContext = options.deploymentContext || "internet_facing";
   const scope = options.scope || "enterprise";
   const generatedAt = new Date().toISOString();
 
@@ -218,7 +220,7 @@ async function generateExecutiveReport(options = {}) {
       notFoundErr.name = "NotFoundError";
       throw notFoundErr;
     }
-    return getZeroExecutiveReport(policyProfile, scenario);
+    return getZeroExecutiveReport(policyProfile, deploymentContext, threatHorizon);
   }
 
   const scanId = scanRow?.id || inMemoryScan?.id;
@@ -304,7 +306,7 @@ async function generateExecutiveReport(options = {}) {
 
   // If clean state with zero findings, return pure authentic zero report
   if (findings.length === 0) {
-    return getZeroExecutiveReport(policyProfile, scenario);
+    return getZeroExecutiveReport(policyProfile, deploymentContext, threatHorizon);
   }
 
   // Master evidence lookup index
@@ -767,7 +769,8 @@ async function generateExecutiveReport(options = {}) {
       scan_name: scanName,
       generated_at: generatedAt,
       policy_profile: policyProfile,
-      scenario,
+      deployment_context: deploymentContext,
+      threat_horizon: threatHorizon,
       scope,
       schema_version: "1.0.0",
       classification: "CONFIDENTIAL // INTERNAL USE ONLY",
@@ -789,7 +792,8 @@ async function generateExecutiveReport(options = {}) {
     scanRow,
     scanTimestamp: scanRow?.created_at || generatedAt,
     policyProfile,
-    scenario,
+    deploymentContext,
+    threatHorizon,
     cbomData: rawCbom,
     evidenceList: Object.values(evidenceIndex),
     reportContent: {

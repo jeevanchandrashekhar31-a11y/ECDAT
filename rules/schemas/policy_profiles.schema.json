@@ -3,7 +3,11 @@
   "title": "PolicyProfilesSchema",
   "description": "Schema for environmental and compliance policy profiles in ECDAT.",
   "type": "object",
-  "required": ["version", "description", "profiles"],
+  "required": [
+    "version",
+    "description",
+    "profiles"
+  ],
   "additionalProperties": false,
   "properties": {
     "version": {
@@ -18,105 +22,99 @@
     "profiles": {
       "type": "object",
       "required": [
-        "public_internet",
-        "internal_enterprise",
-        "regulated_bfsi",
-        "government_high_value",
-        "iot_ot"
+        "ecdat_enterprise_baseline",
+        "nist_crypto_transition",
+        "pci_dss_v4_0_1",
+        "india_financial_services_composite",
+        "us_federal_cloud_fedramp",
+        "cnsa_2_0_nss",
+        "ot_ics_high_assurance"
       ],
-      "additionalProperties": false,
+      "additionalProperties": true,
       "patternProperties": {
         "^[a-z_]+$": {
           "type": "object",
           "required": [
+            "id",
             "name",
-            "description",
-            "default_data_sensitivity",
-            "default_business_criticality",
-            "tls_policy",
-            "key_size_policy",
-            "certificate_policy",
-            "pqc_policy",
-            "cicd_fail_threshold",
-            "severity_score_thresholds"
+            "type",
+            "jurisdiction",
+            "scope",
+            "source_documents",
+            "version",
+            "effective_date",
+            "status",
+            "algorithm_rules",
+            "key_length_rules",
+            "pqc_rules",
+            "certificate_rules",
+            "protocol_rules",
+            "notes",
+            "is_custom"
           ],
-          "additionalProperties": false,
+          "additionalProperties": true,
           "properties": {
-            "name": { "type": "string" },
-            "description": { "type": "string" },
-            "default_data_sensitivity": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "type": {
               "type": "string",
-              "enum": ["public", "internal", "confidential", "restricted"]
+              "enum": [
+                "official_standard",
+                "composite",
+                "ecdat_custom"
+              ]
             },
-            "default_business_criticality": {
-              "type": "string",
-              "enum": ["low", "medium", "high", "critical"]
+            "jurisdiction": {
+              "type": "string"
             },
-            "tls_policy": {
-              "type": "object",
-              "required": ["minimum_version", "allowed_versions", "prohibited_versions"],
-              "additionalProperties": false,
-              "properties": {
-                "minimum_version": { "type": "string" },
-                "allowed_versions": { "type": "array", "items": { "type": "string" } },
-                "prohibited_versions": { "type": "array", "items": { "type": "string" } }
+            "scope": {
+              "type": "string"
+            },
+            "source_documents": {
+              "type": "array",
+              "items": {
+                "type": "string"
               }
             },
-            "key_size_policy": {
-              "type": "object",
-              "required": ["min_rsa_bits", "min_ecc_bits", "allowed_ecc_curves", "min_dh_bits"],
-              "additionalProperties": false,
-              "properties": {
-                "min_rsa_bits": { "type": "integer", "minimum": 1024 },
-                "min_ecc_bits": { "type": "integer", "minimum": 160 },
-                "allowed_ecc_curves": { "type": "array", "items": { "type": "string" } },
-                "min_dh_bits": { "type": "integer", "minimum": 1024 }
-              }
+            "version": {
+              "type": "string"
             },
-            "certificate_policy": {
-              "type": "object",
-              "required": [
-                "allow_self_signed",
-                "allow_self_signed_with_exception",
-                "max_validity_days"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "allow_self_signed": { "type": "boolean" },
-                "allow_self_signed_with_exception": { "type": "boolean" },
-                "max_validity_days": { "type": "integer", "minimum": 1 },
-                "require_ct_logs": { "type": "boolean" }
-              }
+            "effective_date": {
+              "type": "string"
             },
-            "pqc_policy": {
-              "type": "object",
-              "required": [
-                "mandatory_migration_deadline_year",
-                "urgency_mosca_delta_threshold_years",
-                "prefer_hybrid"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "mandatory_migration_deadline_year": { "type": "integer", "minimum": 2025 },
-                "urgency_mosca_delta_threshold_years": { "type": "number" },
-                "prefer_hybrid": { "type": "boolean" },
-                "target_pqc_standards": { "type": "array", "items": { "type": "string" } }
-              }
+            "status": {
+              "type": "string"
+            },
+            "algorithm_rules": {
+              "type": "object"
+            },
+            "key_length_rules": {
+              "type": "object"
+            },
+            "pqc_rules": {
+              "type": "object"
+            },
+            "certificate_rules": {
+              "type": "object"
+            },
+            "protocol_rules": {
+              "type": "object"
+            },
+            "notes": {
+              "type": "string"
+            },
+            "is_custom": {
+              "type": "boolean"
             },
             "cicd_fail_threshold": {
-              "type": "string",
-              "enum": ["critical", "high", "medium", "low", "none"]
+              "type": "string"
             },
             "severity_score_thresholds": {
-              "type": "object",
-              "required": ["critical", "high", "medium", "low"],
-              "additionalProperties": false,
-              "properties": {
-                "critical": { "type": "number", "minimum": 0, "maximum": 100 },
-                "high": { "type": "number", "minimum": 0, "maximum": 100 },
-                "medium": { "type": "number", "minimum": 0, "maximum": 100 },
-                "low": { "type": "number", "minimum": 0, "maximum": 100 }
-              }
+              "type": "object"
             }
           }
         }

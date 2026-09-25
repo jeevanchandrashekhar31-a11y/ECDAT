@@ -177,7 +177,7 @@ const DATA_CATALOG = Object.freeze({
     atRestEncryption: "OPTIONAL",
     storageAllowed: true,
   },
-  "scans.scenario": {
+  "scans.threat_horizon": {
     tier: CLASSIFICATION_TIERS.INTERNAL,
     domain: "scan_metadata",
     description: "Evaluation scenario (baseline, pqc_migration, regulated_bfsi)",

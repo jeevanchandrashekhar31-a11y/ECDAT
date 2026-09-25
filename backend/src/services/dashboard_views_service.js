@@ -27,7 +27,7 @@ const { getDbAuditLogs } = require("../db/audit_logger");
 const { evaluatePolicyProfile } = require("../policy/policy_engine");
 const { defaultAuditService } = require("../audit");
 
-function getZeroViews(policyProfile = "regulated_bfsi", scenario = "baseline") {
+function getZeroViews(policyProfile = "ecdat_enterprise_baseline", deploymentContext = "internet_facing", threatHorizon = "baseline_2033") {
   const impactLevels = ["Critical", "High", "Medium", "Low"];
   const likelihoodLevels = ["Urgent", "High", "Medium", "Low"];
   const heatmapMatrix = [];
@@ -96,7 +96,8 @@ function getZeroViews(policyProfile = "regulated_bfsi", scenario = "baseline") {
     scan_id: null,
     scan_name: "No Active Scan",
     policy_profile: policyProfile,
-    scenario,
+    deployment_context: deploymentContext,
+    threat_horizon: threatHorizon,
     created_at: new Date().toISOString(),
     views: {
       executive_overview: {
@@ -205,14 +206,16 @@ function getZeroViews(policyProfile = "regulated_bfsi", scenario = "baseline") {
  *
  * @param {object} options
  * @param {string} [options.scanId]
- * @param {string} [options.policyProfile="regulated_bfsi"]
- * @param {string} [options.scenario="baseline"]
+ * @param {string} [options.policyProfile="ecdat_enterprise_baseline"]
+ * @param {string} [options.deploymentContext="internet_facing"]
+ * @param {string} [options.threatHorizon="baseline_2033"]
  * @returns {Promise<object>} All 13 views with evidence links
  */
 async function getEnterpriseDashboardViews(options = {}) {
   const requestedScanId = options.scanId && options.scanId !== "all" ? options.scanId : null;
-  const policyProfile = options.policyProfile || "regulated_bfsi";
-  const scenario = options.scenario || "baseline";
+  const policyProfile = options.policyProfile || "ecdat_enterprise_baseline";
+  const threatHorizon = options.threatHorizon || "baseline_2033";
+  const deploymentContext = options.deploymentContext || "internet_facing";
 //   const rules = getRules();
 
   const connected = await isDbConnected();
@@ -256,7 +259,7 @@ async function getEnterpriseDashboardViews(options = {}) {
 
   // Pure clean state with zero scans: return zero views immediately
   if (!scanRow && !inMemoryScan) {
-    return getZeroViews(policyProfile, scenario);
+    return getZeroViews(policyProfile, deploymentContext, threatHorizon);
   }
 
   // Active scan ID and metadata
@@ -345,7 +348,7 @@ async function getEnterpriseDashboardViews(options = {}) {
 
   // If clean state with zero scans / zero findings, return pure authentic zero payload
   if (findings.length === 0) {
-    return getZeroViews(policyProfile, scenario);
+    return getZeroViews(policyProfile, deploymentContext, threatHorizon);
   }
 
   // ==========================================================================
@@ -390,7 +393,19 @@ async function getEnterpriseDashboardViews(options = {}) {
     info_findings: infoCount,
     quantum_risk_count: quantumAtRiskCount,
     overall_cicd_pass: criticalCount === 0,
-    quick_wins_count: findings.filter((f) => f.algorithm.includes("MD5") || f.algorithm.includes("SHA-1") || f.key_size === 1024).length,
+    quick_wins_count: findings.filter((f) => {
+      const algo = (f.algorithm || "").toUpperCase();
+      return (
+        algo.includes("MD5") ||
+        algo.includes("SHA1") ||
+        algo.includes("SHA-1") ||
+        algo.includes("DES") ||
+        algo.includes("RC4") ||
+        (algo.includes("RSA") && f.key_size > 0 && f.key_size < 2048) ||
+        algo.includes("TLS 1.0") ||
+        algo.includes("TLS 1.1")
+      );
+    }).length,
     kpis: [
       {
         id: "kpi_critical_findings",
@@ -1005,7 +1020,8 @@ async function getEnterpriseDashboardViews(options = {}) {
     scan_id: scanId,
     scan_name: scanName,
     policy_profile: policyProfile,
-    scenario,
+    deployment_context: deploymentContext,
+    threat_horizon: threatHorizon,
     created_at: createdAt,
     views: {
       executive_overview: executiveOverview,

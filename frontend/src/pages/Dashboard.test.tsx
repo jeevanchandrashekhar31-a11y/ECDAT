@@ -22,7 +22,7 @@ const mockViewsData: DashboardViewsResponse = {
   scan_id: 'scan-demo-17',
   scan_name: 'Enterprise Crypto Core & APIs',
   policy_profile: 'regulated_bfsi',
-  scenario: 'baseline',
+  threat_horizon: 'baseline',
   created_at: new Date().toISOString(),
   views: {
     executive_overview: {

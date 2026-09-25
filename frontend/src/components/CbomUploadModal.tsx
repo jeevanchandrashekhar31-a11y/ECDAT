@@ -38,8 +38,10 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
   }, [isOpen]);
 
   const [scanLabel, setScanLabel] = useState('');
-  const [policyProfile, setPolicyProfile] = useState('regulated_bfsi');
-  const [scenario, setScenario] = useState('baseline');
+  const [policyProfile, setPolicyProfile] = useState('ecdat_enterprise_baseline');
+  const [deploymentContext, setDeploymentContext] = useState('internet_facing');
+  const [threatHorizon, setThreatHorizon] = useState('baseline_2033');
+  const [businessCriticality, setBusinessCriticality] = useState('high');
   const [scannerType, setScannerType] = useState('combined');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,21 +130,27 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               github_url: scanGitUrl.trim(),
               scan_label: scanLabel.trim() || undefined,
               policy_profile: policyProfile,
-              scenario,
+              deployment_context: deploymentContext,
+              threat_horizon: threatHorizon,
+              business_criticality: businessCriticality,
             });
           } else if (staticSubMode === 'folder') {
             if (!folderFiles || folderFiles.length === 0) throw new Error('Please select a project folder containing source code.');
             scanRes = await api.triggerStaticScan(folderFiles, {
               scan_label: scanLabel.trim() || undefined,
               policy_profile: policyProfile,
-              scenario,
+              deployment_context: deploymentContext,
+              threat_horizon: threatHorizon,
+              business_criticality: businessCriticality,
             });
           } else {
             if (!scanUploadFile) throw new Error('Please select a project .ZIP archive or source file to scan.');
             scanRes = await api.triggerStaticScan(scanUploadFile || undefined, {
               scan_label: scanLabel.trim() || undefined,
               policy_profile: policyProfile,
-              scenario,
+              deployment_context: deploymentContext,
+              threat_horizon: threatHorizon,
+              business_criticality: businessCriticality,
             });
           }
         } else if (scanType === 'network') {
@@ -151,7 +159,9 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
           scanRes = await api.triggerNetworkScan(target, undefined, {
             scan_label: scanLabel.trim() || undefined,
             policy_profile: policyProfile,
-            scenario,
+            deployment_context: deploymentContext,
+            threat_horizon: threatHorizon,
+            business_criticality: businessCriticality,
             authorized_by: authorizedBy.trim() || 'demo-developer',
           });
         } else {
@@ -162,14 +172,18 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               image: img,
               scan_label: scanLabel.trim() || undefined,
               policy_profile: policyProfile,
-              scenario,
+              deployment_context: deploymentContext,
+              threat_horizon: threatHorizon,
+              business_criticality: businessCriticality,
             });
           } else {
             if (!scanUploadFile) throw new Error('Please select a binary file or archive to scan.');
             scanRes = await api.triggerBinaryScan(scanUploadFile, {
               scan_label: scanLabel.trim() || undefined,
               policy_profile: policyProfile,
-              scenario,
+              deployment_context: deploymentContext,
+              threat_horizon: threatHorizon,
+              business_criticality: businessCriticality,
             });
           }
         }
@@ -205,7 +219,9 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
         const res = await api.uploadCbom(uploadTarget, {
           scanLabel: scanLabel.trim() || undefined,
           policyProfile,
-          scenario,
+          deploymentContext,
+          threatHorizon,
+          businessCriticality,
           scannerType,
         });
 
@@ -629,32 +645,70 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               />
             </div>
 
-            <div>
-              <label className="block text-slate-400 mb-1">Policy Profile</label>
-              <select
-                value={policyProfile}
-                onChange={(e) => setPolicyProfile(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
-              >
-                <option value="regulated_bfsi">Regulated BFSI (Strict)</option>
-                <option value="public_internet">Public Internet</option>
-                <option value="internal_enterprise">Internal Enterprise</option>
-                <option value="government_high_value">Government High Value</option>
-                <option value="iot_ot">IoT / OT Device</option>
-              </select>
+            <div className="col-span-2 grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-400 mb-1">Policy Profile</label>
+                <select
+                  value={policyProfile}
+                  onChange={(e) => setPolicyProfile(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="ecdat_enterprise_baseline">ECDAT Enterprise Crypto Baseline</option>
+                  <option value="nist_crypto_transition">NIST Crypto Transition Baseline</option>
+                  <option value="pci_dss_v4_0_1">PCI DSS v4.0.1</option>
+                  <option value="india_financial_services_composite">India Financial Services — Composite</option>
+                  <option value="us_federal_cloud_fedramp">U.S. Federal Cloud — FedRAMP</option>
+                  <option value="cnsa_2_0_nss">CNSA 2.0 / NSS</option>
+                  <option value="ot_ics_high_assurance">OT/ICS High-Assurance</option>
+                  <option value="custom_policy">Custom Policy</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1">Deployment Context</label>
+                <select
+                  value={deploymentContext}
+                  onChange={(e) => setDeploymentContext(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="internet_facing">Internet-Facing</option>
+                  <option value="internal_enterprise">Internal Enterprise</option>
+                  <option value="cloud_saas">Cloud / SaaS</option>
+                  <option value="government_high_assurance">Government / High Assurance</option>
+                  <option value="ot_ics">OT / ICS</option>
+                  <option value="iot_embedded">IoT / Embedded</option>
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-slate-400 mb-1">Mosca Scenario</label>
-              <select
-                value={scenario}
-                onChange={(e) => setScenario(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
-              >
-                <option value="baseline">Baseline (9 yr horizon)</option>
-                <option value="conservative">Conservative (7 yr horizon)</option>
-                <option value="optimistic">Optimistic (12 yr horizon)</option>
-              </select>
+            <div className="col-span-2 grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-400 mb-1" title="Assessment scenario used by the risk engine. This is an assumption/horizon parameter, not a guaranteed prediction of when a cryptographically relevant quantum computer will exist.">Threat Horizon</label>
+                <select
+                  value={threatHorizon}
+                  onChange={(e) => setThreatHorizon(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="baseline_2033">Baseline — 2033</option>
+                  <option value="conservative_2030">Conservative — 2030</option>
+                  <option value="extended_2035">Extended — 2035</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1">Business Criticality</label>
+                <select
+                  value={businessCriticality}
+                  onChange={(e) => setBusinessCriticality(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
             </div>
 
             <div>

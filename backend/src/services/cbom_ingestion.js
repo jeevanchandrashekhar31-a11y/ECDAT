@@ -53,7 +53,9 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       target_name: scanRecord.name,
       scanner_type: scanRecord.scanner_type || "combined",
       policy_profile_id: scanRecord.policy_profile,
-      scenario: scanRecord.scenario,
+      deployment_context: scanRecord.deployment_context,
+      threat_horizon: scanRecord.threat_horizon,
+      business_criticality: scanRecord.business_criticality,
       status: "completed",
       cicd_pass: scanRecord.metrics.overall_cicd_pass,
       total_assets: scanRecord.metrics.total_assets,
@@ -344,8 +346,10 @@ async function ingestCbom(rawInputData, options = {}) {
   const policyProfile =
     options.policyProfile ||
     options.policy_profile ||
-    config.DEFAULT_POLICY_PROFILE;
-  const scenario = options.scenario || config.DEFAULT_SCENARIO;
+    "ecdat_enterprise_baseline";
+  const deploymentContext = options.deploymentContext || options.deployment_context || "internet_facing";
+  const threatHorizon = options.threatHorizon || options.threat_horizon || "baseline_2033";
+  const businessCriticality = options.businessCriticality || options.business_criticality || "high";
   const scanId = options.scanId || `scan_${crypto.randomUUID()}`;
   const scanName =
     options.scanName ||
@@ -361,15 +365,18 @@ async function ingestCbom(rawInputData, options = {}) {
     options.project_name ||
     "default_project";
 
-  // 3. Run Risk Engine Annotation and Executive Summary
   const summary = generateSummary(sanitizedCbom, {
     policyProfile,
-    scenario,
+    deploymentContext,
+    threatHorizon,
+    businessCriticality,
   });
 
   const { annotatedBOM, classifiedResults } = annotateCbom(sanitizedCbom, {
     policyProfile,
-    scenario,
+    deploymentContext,
+    threatHorizon,
+    businessCriticality,
   });
 
   // 4. Generate HTML fallback report
@@ -388,7 +395,9 @@ async function ingestCbom(rawInputData, options = {}) {
     scanner_type: scannerType,
     project_id: projectId,
     policy_profile: policyProfile,
-    scenario: scenario,
+    deployment_context: deploymentContext,
+    threat_horizon: threatHorizon,
+    business_criticality: businessCriticality,
     created_at: new Date().toISOString(),
     metrics: summary.metrics,
     summary: summary,
@@ -486,7 +495,8 @@ async function getAllScans(tenantContext = null) {
         name: s.target_name,
         scanner_type: s.scanner_type,
         policy_profile: s.policy_profile_id,
-        scenario: s.scenario,
+        threat_horizon: s.threat_horizon,
+        deployment_context: s.deployment_context,
         status: s.status,
         created_at: s.created_at,
         metrics: {
@@ -520,7 +530,9 @@ async function getAllScans(tenantContext = null) {
     name: s.name,
     scanner_type: s.scanner_type,
     policy_profile: s.policy_profile,
-    scenario: s.scenario,
+    deployment_context: s.deployment_context,
+    threat_horizon: s.threat_horizon,
+    business_criticality: s.business_criticality,
     status: "completed",
     created_at: s.created_at,
     metrics: s.metrics,
@@ -573,7 +585,9 @@ async function getScanById(scanId, tenantContext = null) {
           name: scanRow.target_name,
           scanner_type: scanRow.scanner_type,
           policy_profile: scanRow.policy_profile_id,
-          scenario: scanRow.scenario,
+          deployment_context: scanRow.deployment_context,
+          threat_horizon: scanRow.threat_horizon,
+          business_criticality: scanRow.business_criticality,
           status: scanRow.status,
           created_at: scanRow.created_at,
           completed_at: scanRow.completed_at,

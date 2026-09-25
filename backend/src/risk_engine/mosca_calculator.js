@@ -24,7 +24,7 @@ function calculateMosca({
   assetType = "network_session",
   dataSensitivity = "internal",
   businessCriticality = "medium",
-  scenario = "baseline",
+  scenario = "baseline_2033",
   quantumRelevance = QuantumRelevance.SHOR_VULNERABLE,
   isIntegrityOnly = false,
   customX = null,
@@ -36,7 +36,7 @@ function calculateMosca({
   const config = rules.mosca_config;
 
   const scenarioConfig =
-    config.scenarios[scenario] || config.scenarios.baseline;
+    config.scenarios[scenario] || config.scenarios.baseline_2033;
   const assetDefaults =
     config.asset_type_defaults[assetType] ||
     config.asset_type_defaults.network_session;
@@ -102,7 +102,7 @@ function calculateMosca({
 
   // 5. Determine Policy Urgency Threshold (Watch zone)
   const urgencyDeltaThreshold =
-    policyProfile?.pqc_policy?.urgency_mosca_delta_threshold_years ?? 0.0;
+    policyProfile?.pqc_rules?.urgency_mosca_delta_threshold_years ?? 0.0;
 
   // 6. Determine Mosca Status
   let status = MoscaStatus.SAFE;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useOutletContext } from 'react-router-dom';
 import {
   Milestone,
   Shield,
@@ -94,8 +94,9 @@ const SEQUENCE_STEPS: SequenceStep[] = [
 ];
 
 export const Roadmap: React.FC = () => {
+  const outlet = useOutletContext<{ selectedScanId?: string }>() || {};
   const [searchParams] = useSearchParams();
-  const scanId = searchParams.get('scanId') || undefined;
+  const scanId = searchParams.get('scanId') || outlet.selectedScanId || undefined;
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -195,7 +196,8 @@ export const Roadmap: React.FC = () => {
       const payload = {
         scan_id: summary?.scan_id || scanId || 'active_scan',
         policy_profile: summary?.policy_profile || 'standard',
-        scenario: summary?.scenario || 'baseline',
+        threat_horizon: summary?.threat_horizon || 'baseline_2033',
+        deployment_context: summary?.deployment_context || 'internet_facing',
         suggested_sequence: SEQUENCE_STEPS.map((s) => ({
           step: s.id,
           title: s.title,
@@ -699,9 +701,9 @@ export const Roadmap: React.FC = () => {
                       <div className="flex flex-col gap-1 items-start">
                         <span
                           className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
-                            asset.severity === 'Critical' || asset.severity === 'CRITICAL'
+                            String(asset.severity).toUpperCase() === 'CRITICAL'
                               ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
-                              : asset.severity === 'High' || asset.severity === 'HIGH'
+                              : String(asset.severity).toUpperCase() === 'HIGH'
                               ? 'bg-amber-950/70 text-amber-300 border border-amber-800/60'
                               : 'bg-slate-800 text-slate-300 border border-slate-700'
                           }`}

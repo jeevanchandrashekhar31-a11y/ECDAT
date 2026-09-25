@@ -174,12 +174,14 @@ function extractComponentCryptoDetails(component) {
  * @param {Object} cbomData - CycloneDX 1.6 JSON document or component array
  * @param {Object} [options]
  * @param {string} [options.policyProfile='internal_enterprise']
- * @param {string} [options.scenario='baseline']
+ * @param {string} [options.threatHorizon='baseline']
  * @returns {Object} Risk-annotated CycloneDX document
  */
 function annotateCbom(cbomData, options = {}) {
-  const policyProfile = options.policyProfile || "internal_enterprise";
-  const scenario = options.scenario || "baseline";
+  const policyProfile = options.policyProfile || options.policy_profile || "ecdat_enterprise_baseline";
+  const deploymentContext = options.deploymentContext || options.deployment_context || "internet_facing";
+  const threatHorizon = options.threatHorizon || options.threat_horizon || "baseline_2033";
+  const businessCriticality = options.businessCriticality || options.business_criticality || "high";
   const rules = getRules();
   const ruleVersion = rules.algorithm_risk?.version || "1.0.0";
 
@@ -226,7 +228,9 @@ function annotateCbom(cbomData, options = {}) {
       evidenceConfidence: details.evidenceConfidence,
       reachability: details.reachability,
       policyProfile,
-      scenario,
+      deploymentContext,
+      threatHorizon,
+      businessCriticality,
       certificateProperties: details.certificateProperties,
       protocolProperties: details.protocolProperties,
       evidenceContext: findingContext,
@@ -333,7 +337,9 @@ function annotateCbom(cbomData, options = {}) {
     annotatedBOM.metadata.properties.push(
       { name: "ecdat:risk:annotated_at", value: new Date().toISOString() },
       { name: "ecdat:risk:policy_profile", value: policyProfile },
-      { name: "ecdat:risk:scenario", value: scenario },
+      { name: "ecdat:risk:deployment_context", value: deploymentContext },
+      { name: "ecdat:risk:threat_horizon", value: threatHorizon },
+      { name: "ecdat:risk:business_criticality", value: businessCriticality },
       { name: "ecdat:risk:rule_version", value: ruleVersion },
     );
   }

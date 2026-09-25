@@ -23,10 +23,10 @@ async function seedDefaults() {
           id,
           name: prof.name,
           description: prof.description,
-          min_rsa_bits: prof.key_size_policy?.min_rsa_bits || 2048,
-          min_ecc_bits: prof.key_size_policy?.min_ecc_bits || 256,
+          min_rsa_bits: prof.key_length_rules?.min_rsa_bits || 2048,
+          min_ecc_bits: prof.key_length_rules?.min_ecc_bits || 256,
           allow_self_signed:
-            prof.certificate_policy?.allow_self_signed || false,
+            prof.certificate_rules?.allow_self_signed || false,
           cicd_fail_threshold: prof.cicd_fail_threshold || "high",
           config: JSON.stringify(prof),
         })

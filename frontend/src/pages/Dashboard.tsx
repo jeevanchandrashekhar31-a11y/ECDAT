@@ -71,8 +71,9 @@ export const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('executive_overview');
 
   // Governance settings
-  const [selectedPolicy, setSelectedPolicy] = useState<string>('regulated_bfsi');
-  const [selectedScenario, setSelectedScenario] = useState<string>('baseline');
+  const [selectedPolicy, setSelectedPolicy] = useState<string>('ecdat_enterprise_baseline');
+  const [selectedDeploymentContext, setSelectedDeploymentContext] = useState<string>('internet_facing');
+  const [selectedThreatHorizon, setSelectedThreatHorizon] = useState<string>('baseline_2033');
 
   // Dashboard dataset states
   const [viewsData, setViewsData] = useState<DashboardViewsResponse | null>(null);
@@ -108,7 +109,8 @@ export const Dashboard: React.FC = () => {
       const res = await api.getDashboardViews(
         activeId && activeId !== 'all' ? activeId : undefined,
         selectedPolicy || undefined,
-        selectedScenario || undefined
+        selectedDeploymentContext || undefined,
+        selectedThreatHorizon || undefined
       );
       
       if (requestId !== activeRequestId.current) return;
@@ -117,8 +119,11 @@ export const Dashboard: React.FC = () => {
       if (res.policy_profile && !selectedPolicy) {
         setSelectedPolicy(res.policy_profile);
       }
-      if (res.scenario && !selectedScenario) {
-        setSelectedScenario(res.scenario);
+      if (res.deployment_context && !selectedDeploymentContext) {
+        setSelectedDeploymentContext(res.deployment_context);
+      }
+      if (res.threat_horizon && !selectedThreatHorizon) {
+        setSelectedThreatHorizon(res.threat_horizon);
       }
     } catch (err: unknown) {
       if (requestId !== activeRequestId.current) return;
@@ -128,7 +133,7 @@ export const Dashboard: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [selectedScanId, selectedPolicy, selectedScenario]);
+  }, [selectedScanId, selectedPolicy, selectedDeploymentContext, selectedThreatHorizon]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -155,7 +160,8 @@ export const Dashboard: React.FC = () => {
     try {
       const res = await api.triggerNetworkScan(networkTarget, 443, {
         policy_profile: selectedPolicy,
-        scenario: selectedScenario,
+        deployment_context: selectedDeploymentContext,
+        threat_horizon: selectedThreatHorizon,
       });
       setActionFeedback({
         message: `Network scan completed successfully! Ingested scan ID ${res.scan_id}`,
@@ -273,41 +279,50 @@ export const Dashboard: React.FC = () => {
             <select
               value={selectedPolicy}
               onChange={(e) => setSelectedPolicy(e.target.value)}
-              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-medium"
+              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-medium max-w-[150px] truncate"
             >
-              <option value="regulated_bfsi" className="bg-slate-900 text-slate-200">
-                Regulated BFSI (Strict)
-              </option>
-              <option value="pci_dss_v4" className="bg-slate-900 text-slate-200">
-                PCI-DSS v4.0
-              </option>
-              <option value="nist_sp_800_56c" className="bg-slate-900 text-slate-200">
-                NIST SP 800-56C
-              </option>
-              <option value="general_saas" className="bg-slate-900 text-slate-200">
-                General SaaS Baseline
-              </option>
+              <option value="ecdat_enterprise_baseline" className="bg-slate-900 text-slate-200">ECDAT Enterprise Crypto Baseline</option>
+              <option value="nist_crypto_transition" className="bg-slate-900 text-slate-200">NIST Crypto Transition Baseline</option>
+              <option value="pci_dss_v4_0_1" className="bg-slate-900 text-slate-200">PCI DSS v4.0.1</option>
+              <option value="india_financial_services_composite" className="bg-slate-900 text-slate-200">India Financial Services — Composite</option>
+              <option value="us_federal_cloud_fedramp" className="bg-slate-900 text-slate-200">U.S. Federal Cloud — FedRAMP</option>
+              <option value="cnsa_2_0_nss" className="bg-slate-900 text-slate-200">CNSA 2.0 / NSS</option>
+              <option value="ot_ics_high_assurance" className="bg-slate-900 text-slate-200">OT/ICS High-Assurance</option>
+              <option value="custom_policy" className="bg-slate-900 text-slate-200">Custom Policy</option>
             </select>
           </div>
 
-          {/* Scenario Selector */}
+          {/* Deployment Context Selector */}
+          <div className="flex items-center gap-1.5 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+            <Layers className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-slate-400 hidden sm:inline">Context:</span>
+            <select
+              value={selectedDeploymentContext}
+              onChange={(e) => setSelectedDeploymentContext(e.target.value)}
+              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-medium max-w-[150px] truncate"
+            >
+              <option value="internet_facing" className="bg-slate-900 text-slate-200">Internet-Facing</option>
+              <option value="internal_enterprise" className="bg-slate-900 text-slate-200">Internal Enterprise</option>
+              <option value="cloud_saas" className="bg-slate-900 text-slate-200">Cloud / SaaS</option>
+              <option value="government_high_assurance" className="bg-slate-900 text-slate-200">Government / High Assurance</option>
+              <option value="ot_ics" className="bg-slate-900 text-slate-200">OT / ICS</option>
+              <option value="iot_embedded" className="bg-slate-900 text-slate-200">IoT / Embedded</option>
+            </select>
+          </div>
+
+          {/* Threat Horizon Selector */}
           <div className="flex items-center gap-1.5 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
             <Atom className="w-3.5 h-3.5 text-violet-400" />
-            <span className="text-slate-400 hidden sm:inline">CRQC:</span>
+            <span className="text-slate-400 hidden sm:inline">Horizon:</span>
             <select
-              value={selectedScenario}
-              onChange={(e) => setSelectedScenario(e.target.value)}
-              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-medium"
+              value={selectedThreatHorizon}
+              onChange={(e) => setSelectedThreatHorizon(e.target.value)}
+              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-medium max-w-[150px] truncate"
             >
-              <option value="baseline_2030" className="bg-slate-900 text-slate-200">
-                Baseline (2033)
-              </option>
-              <option value="aggressive_2026" className="bg-slate-900 text-slate-200">
-                Aggressive (2026)
-              </option>
-              <option value="store_now_decrypt_later" className="bg-slate-900 text-slate-200">
-                SNDL Immediate
-              </option>
+              <option value="baseline_2033" className="bg-slate-900 text-slate-200">Baseline (2033)</option>
+              <option value="conservative_2030" className="bg-slate-900 text-slate-200">Conservative (2030)</option>
+              <option value="extended_2035" className="bg-slate-900 text-slate-200">Extended (2035)</option>
+              <option value="custom" className="bg-slate-900 text-slate-200">Custom</option>
             </select>
           </div>
 

@@ -122,12 +122,14 @@ export const api = {
   getDashboardSummary: async (
     scanId?: string,
     policyProfile?: string,
-    scenario?: string
+    deploymentContext?: string,
+    threatHorizon?: string
   ): Promise<DashboardSummary> => {
     const params = new URLSearchParams();
     if (scanId) params.append('scanId', scanId);
     if (policyProfile) params.append('policyProfile', policyProfile);
-    if (scenario) params.append('scenario', scenario);
+    if (deploymentContext) params.append('deploymentContext', deploymentContext);
+    if (threatHorizon) params.append('threatHorizon', threatHorizon);
     const query = params.toString() ? `?${params.toString()}` : '';
     return request<DashboardSummary>(`/api/v1/dashboard/summary${query}`);
   },
@@ -135,12 +137,14 @@ export const api = {
   getDashboardViews: async (
     scanId?: string,
     policyProfile?: string,
-    scenario?: string
+    deploymentContext?: string,
+    threatHorizon?: string
   ): Promise<DashboardViewsResponse> => {
     const params = new URLSearchParams();
     if (scanId) params.append('scanId', scanId);
     if (policyProfile) params.append('policyProfile', policyProfile);
-    if (scenario) params.append('scenario', scenario);
+    if (deploymentContext) params.append('deploymentContext', deploymentContext);
+    if (threatHorizon) params.append('threatHorizon', threatHorizon);
     const query = params.toString() ? `?${params.toString()}` : '';
     return request<DashboardViewsResponse>(`/api/v1/dashboard/views${query}`);
   },
@@ -267,7 +271,9 @@ export const api = {
       scannerType?: string;
       projectName?: string;
       policyProfile?: string;
-      scenario?: string;
+      deploymentContext?: string;
+      threatHorizon?: string;
+      businessCriticality?: string;
     } = {}
   ): Promise<{ message: string; scan_id: string }> => {
     if (file instanceof File) {
@@ -277,7 +283,9 @@ export const api = {
       if (options.scannerType) formData.append('scanner_type', options.scannerType);
       if (options.projectName) formData.append('project_name', options.projectName);
       if (options.policyProfile) formData.append('policy_profile', options.policyProfile);
-      if (options.scenario) formData.append('scenario', options.scenario);
+      if (options.deploymentContext) formData.append('deployment_context', options.deploymentContext);
+      if (options.threatHorizon) formData.append('threat_horizon', options.threatHorizon);
+      if (options.businessCriticality) formData.append('business_criticality', options.businessCriticality);
 
       return request('/api/v1/cboms', {
         method: 'POST',
@@ -286,7 +294,9 @@ export const api = {
     } else {
       const params = new URLSearchParams();
       if (options.policyProfile) params.append('policy_profile', options.policyProfile);
-      if (options.scenario) params.append('scenario', options.scenario);
+      if (options.deploymentContext) params.append('deployment_context', options.deploymentContext);
+      if (options.threatHorizon) params.append('threat_horizon', options.threatHorizon);
+      if (options.businessCriticality) params.append('business_criticality', options.businessCriticality);
       const query = params.toString() ? `?${params.toString()}` : '';
 
       return request(`/api/v1/cboms${query}`, {
@@ -313,7 +323,9 @@ export const api = {
       github_url?: string;
       scan_label?: string;
       policy_profile?: string;
-      scenario?: string;
+      deployment_context?: string;
+      threat_horizon?: string;
+      business_criticality?: string;
     } = {}
   ): Promise<{
     success: boolean;
@@ -335,7 +347,9 @@ export const api = {
       }
       if (options.scan_label) formData.append('scan_label', options.scan_label);
       if (options.policy_profile) formData.append('policy_profile', options.policy_profile);
-      if (options.scenario) formData.append('scenario', options.scenario);
+      if (options.deployment_context) formData.append('deployment_context', options.deployment_context);
+      if (options.threat_horizon) formData.append('threat_horizon', options.threat_horizon);
+      if (options.business_criticality) formData.append('business_criticality', options.business_criticality);
 
       return request('/scan/static', {
         method: 'POST',
@@ -366,7 +380,7 @@ export const api = {
   triggerNetworkScan: async (
     targetOrHost?: string,
     port?: number,
-    options: { scan_label?: string; policy_profile?: string; scenario?: string; authorized_by?: string } = {}
+    options: { scan_label?: string; policy_profile?: string; deployment_context?: string; threat_horizon?: string; business_criticality?: string; authorized_by?: string } = {}
   ): Promise<{
     success: boolean;
     message: string;
@@ -394,7 +408,7 @@ export const api = {
 
   triggerBinaryScan: async (
     target?: string | File | File[],
-    options: { scan_label?: string; policy_profile?: string; scenario?: string; image?: string } = {}
+    options: { scan_label?: string; policy_profile?: string; deployment_context?: string; threat_horizon?: string; business_criticality?: string; image?: string } = {}
   ): Promise<{
     success: boolean;
     message: string;
@@ -414,7 +428,9 @@ export const api = {
       }
       if (options.scan_label) formData.append('scan_label', options.scan_label);
       if (options.policy_profile) formData.append('policy_profile', options.policy_profile);
-      if (options.scenario) formData.append('scenario', options.scenario);
+      if (options.deployment_context) formData.append('deployment_context', options.deployment_context);
+      if (options.threat_horizon) formData.append('threat_horizon', options.threat_horizon);
+      if (options.business_criticality) formData.append('business_criticality', options.business_criticality);
 
       return request('/scan/binary', {
         method: 'POST',

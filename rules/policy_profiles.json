@@ -3,34 +3,62 @@
   "description": "ECDAT Environmental and Compliance Policy Profiles",
   "last_updated": "2026-09-04",
   "profiles": {
-    "public_internet": {
-      "name": "Public Internet Facing Services",
-      "description": "Public web applications, APIs, and client-facing endpoints accessible from the open Internet.",
-      "default_data_sensitivity": "internal",
-      "default_business_criticality": "high",
-      "tls_policy": {
-        "minimum_version": "TLS 1.2",
-        "allowed_versions": ["TLS 1.2", "TLS 1.3"],
-        "prohibited_versions": ["SSLv2", "SSLv3", "TLS 1.0", "TLS 1.1"]
+    "ecdat_enterprise_baseline": {
+      "id": "ecdat_enterprise_baseline",
+      "name": "ECDAT Enterprise Crypto Baseline",
+      "type": "composite",
+      "jurisdiction": "Global",
+      "scope": "Enterprise-wide",
+      "source_documents": [],
+      "version": "1.0",
+      "effective_date": "2026-09-01",
+      "status": "active",
+      "algorithm_rules": {
+        "allow_md5": false,
+        "allow_sha1": false
       },
-      "key_size_policy": {
+      "key_length_rules": {
         "min_rsa_bits": 2048,
         "min_ecc_bits": 256,
-        "allowed_ecc_curves": ["prime256v1", "secp256r1", "secp384r1", "x25519", "ed25519"],
+        "allowed_ecc_curves": [
+          "prime256v1",
+          "secp256r1",
+          "secp384r1",
+          "x25519",
+          "ed25519"
+        ],
         "min_dh_bits": 2048
       },
-      "certificate_policy": {
+      "pqc_rules": {
+        "mandatory_migration_deadline_year": 2033,
+        "urgency_mosca_delta_threshold_years": 0.0,
+        "prefer_hybrid": true,
+        "target_pqc_standards": [
+          "ML-KEM-768",
+          "ML-DSA-65"
+        ]
+      },
+      "certificate_rules": {
         "allow_self_signed": false,
         "allow_self_signed_with_exception": false,
         "max_validity_days": 398,
         "require_ct_logs": true
       },
-      "pqc_policy": {
-        "mandatory_migration_deadline_year": 2033,
-        "urgency_mosca_delta_threshold_years": 0.0,
-        "prefer_hybrid": true,
-        "target_pqc_standards": ["ML-KEM-768", "ML-DSA-65"]
+      "protocol_rules": {
+        "minimum_version": "TLS 1.2",
+        "allowed_versions": [
+          "TLS 1.2",
+          "TLS 1.3"
+        ],
+        "prohibited_versions": [
+          "SSLv2",
+          "SSLv3",
+          "TLS 1.0",
+          "TLS 1.1"
+        ]
       },
+      "notes": "Default composite baseline for general enterprise workloads.",
+      "is_custom": false,
       "cicd_fail_threshold": "high",
       "severity_score_thresholds": {
         "critical": 80.0,
@@ -39,34 +67,68 @@
         "low": 20.0
       }
     },
-    "internal_enterprise": {
-      "name": "Internal Enterprise Network",
-      "description": "Internal microservices, intranet applications, and backend service-to-service communication.",
-      "default_data_sensitivity": "internal",
-      "default_business_criticality": "medium",
-      "tls_policy": {
-        "minimum_version": "TLS 1.2",
-        "allowed_versions": ["TLS 1.2", "TLS 1.3"],
-        "prohibited_versions": ["SSLv2", "SSLv3", "TLS 1.0", "TLS 1.1"]
+    "nist_crypto_transition": {
+      "id": "nist_crypto_transition",
+      "name": "NIST Crypto Transition Baseline",
+      "type": "official_standard",
+      "jurisdiction": "US",
+      "scope": "Federal & Commercial",
+      "source_documents": [
+        "NIST SP 800-131A Rev. 2",
+        "NIST SP 800-57 Part 1 Rev. 5",
+        "FIPS 203",
+        "FIPS 204",
+        "FIPS 205"
+      ],
+      "version": "1.0",
+      "effective_date": "2026-09-01",
+      "status": "active",
+      "algorithm_rules": {
+        "allow_md5": false,
+        "allow_sha1": false
       },
-      "key_size_policy": {
+      "key_length_rules": {
         "min_rsa_bits": 2048,
         "min_ecc_bits": 256,
-        "allowed_ecc_curves": ["prime256v1", "secp256r1", "secp384r1", "x25519", "ed25519"],
+        "allowed_ecc_curves": [
+          "prime256v1",
+          "secp256r1",
+          "secp384r1",
+          "x25519",
+          "ed25519"
+        ],
         "min_dh_bits": 2048
       },
-      "certificate_policy": {
+      "pqc_rules": {
+        "mandatory_migration_deadline_year": 2035,
+        "urgency_mosca_delta_threshold_years": 1.0,
+        "prefer_hybrid": true,
+        "target_pqc_standards": [
+          "ML-KEM-768",
+          "ML-DSA-65"
+        ]
+      },
+      "certificate_rules": {
         "allow_self_signed": false,
         "allow_self_signed_with_exception": true,
         "max_validity_days": 730,
         "require_ct_logs": false
       },
-      "pqc_policy": {
-        "mandatory_migration_deadline_year": 2035,
-        "urgency_mosca_delta_threshold_years": 1.0,
-        "prefer_hybrid": true,
-        "target_pqc_standards": ["ML-KEM-768", "ML-DSA-65"]
+      "protocol_rules": {
+        "minimum_version": "TLS 1.2",
+        "allowed_versions": [
+          "TLS 1.2",
+          "TLS 1.3"
+        ],
+        "prohibited_versions": [
+          "SSLv2",
+          "SSLv3",
+          "TLS 1.0",
+          "TLS 1.1"
+        ]
       },
+      "notes": "Standard NIST transitions including post-quantum standards.",
+      "is_custom": false,
       "cicd_fail_threshold": "critical",
       "severity_score_thresholds": {
         "critical": 85.0,
@@ -75,34 +137,63 @@
         "low": 25.0
       }
     },
-    "regulated_bfsi": {
-      "name": "Regulated Banking & Financial Services",
-      "description": "High-assurance banking, core payments, fintech gateways, and PCI-DSS / RBI / FINRA compliant workloads.",
-      "default_data_sensitivity": "restricted",
-      "default_business_criticality": "critical",
-      "tls_policy": {
-        "minimum_version": "TLS 1.2",
-        "allowed_versions": ["TLS 1.2", "TLS 1.3"],
-        "prohibited_versions": ["SSLv2", "SSLv3", "TLS 1.0", "TLS 1.1"]
+    "pci_dss_v4_0_1": {
+      "id": "pci_dss_v4_0_1",
+      "name": "PCI DSS v4.0.1",
+      "type": "official_standard",
+      "jurisdiction": "Global",
+      "scope": "Cardholder Data Environment",
+      "source_documents": [
+        "PCI DSS v4.0.1"
+      ],
+      "version": "4.0.1",
+      "effective_date": "2024-03-31",
+      "status": "active",
+      "algorithm_rules": {
+        "allow_md5": false,
+        "allow_sha1": false
       },
-      "key_size_policy": {
+      "key_length_rules": {
         "min_rsa_bits": 3072,
         "min_ecc_bits": 256,
-        "allowed_ecc_curves": ["secp256r1", "secp384r1", "x25519"],
+        "allowed_ecc_curves": [
+          "secp256r1",
+          "secp384r1",
+          "x25519"
+        ],
         "min_dh_bits": 3072
       },
-      "certificate_policy": {
+      "pqc_rules": {
+        "mandatory_migration_deadline_year": 2031,
+        "urgency_mosca_delta_threshold_years": -1.0,
+        "prefer_hybrid": true,
+        "target_pqc_standards": [
+          "ML-KEM-1024",
+          "ML-DSA-87",
+          "AES-256"
+        ]
+      },
+      "certificate_rules": {
         "allow_self_signed": false,
         "allow_self_signed_with_exception": false,
         "max_validity_days": 365,
         "require_ct_logs": true
       },
-      "pqc_policy": {
-        "mandatory_migration_deadline_year": 2031,
-        "urgency_mosca_delta_threshold_years": -1.0,
-        "prefer_hybrid": true,
-        "target_pqc_standards": ["ML-KEM-1024", "ML-DSA-87", "AES-256"]
+      "protocol_rules": {
+        "minimum_version": "TLS 1.2",
+        "allowed_versions": [
+          "TLS 1.2",
+          "TLS 1.3"
+        ],
+        "prohibited_versions": [
+          "SSLv2",
+          "SSLv3",
+          "TLS 1.0",
+          "TLS 1.1"
+        ]
       },
+      "notes": "Payment Card Industry standard focusing on strong cryptography and key management.",
+      "is_custom": false,
       "cicd_fail_threshold": "medium",
       "severity_score_thresholds": {
         "critical": 75.0,
@@ -111,34 +202,130 @@
         "low": 15.0
       }
     },
-    "government_high_value": {
-      "name": "Government & National High Value Assets",
-      "description": "National security systems, defense communications, critical infrastructure, and classified archives.",
-      "default_data_sensitivity": "restricted",
-      "default_business_criticality": "critical",
-      "tls_policy": {
-        "minimum_version": "TLS 1.3",
-        "allowed_versions": ["TLS 1.3"],
-        "prohibited_versions": ["SSLv2", "SSLv3", "TLS 1.0", "TLS 1.1", "TLS 1.2"]
+    "india_financial_services_composite": {
+      "id": "india_financial_services_composite",
+      "name": "India Financial Services \u2014 Composite",
+      "type": "composite",
+      "jurisdiction": "India",
+      "scope": "Financial Services",
+      "source_documents": [
+        "RBI",
+        "SEBI CSCRF",
+        "IRDAI Information & Cyber Security"
+      ],
+      "version": "1.0",
+      "effective_date": "2026-09-01",
+      "status": "active",
+      "algorithm_rules": {
+        "allow_md5": false,
+        "allow_sha1": false
       },
-      "key_size_policy": {
+      "key_length_rules": {
         "min_rsa_bits": 3072,
-        "min_ecc_bits": 384,
-        "allowed_ecc_curves": ["secp384r1"],
+        "min_ecc_bits": 256,
+        "allowed_ecc_curves": [
+          "secp256r1",
+          "secp384r1",
+          "x25519"
+        ],
         "min_dh_bits": 3072
       },
-      "certificate_policy": {
+      "pqc_rules": {
+        "mandatory_migration_deadline_year": 2031,
+        "urgency_mosca_delta_threshold_years": -1.0,
+        "prefer_hybrid": true,
+        "target_pqc_standards": [
+          "ML-KEM-1024",
+          "ML-DSA-87",
+          "AES-256"
+        ]
+      },
+      "certificate_rules": {
+        "allow_self_signed": false,
+        "allow_self_signed_with_exception": false,
+        "max_validity_days": 365,
+        "require_ct_logs": true
+      },
+      "protocol_rules": {
+        "minimum_version": "TLS 1.2",
+        "allowed_versions": [
+          "TLS 1.2",
+          "TLS 1.3"
+        ],
+        "prohibited_versions": [
+          "SSLv2",
+          "SSLv3",
+          "TLS 1.0",
+          "TLS 1.1"
+        ]
+      },
+      "notes": "Composite ECDAT profile; not a single regulator-issued standard.",
+      "is_custom": false,
+      "cicd_fail_threshold": "medium",
+      "severity_score_thresholds": {
+        "critical": 75.0,
+        "high": 50.0,
+        "medium": 30.0,
+        "low": 15.0
+      }
+    },
+    "us_federal_cloud_fedramp": {
+      "id": "us_federal_cloud_fedramp",
+      "name": "U.S. Federal Cloud \u2014 FedRAMP",
+      "type": "official_standard",
+      "jurisdiction": "US",
+      "scope": "Federal Cloud",
+      "source_documents": [
+        "NIST SP 800-53 Rev. 5.2.0",
+        "FIPS 140-3"
+      ],
+      "version": "1.0",
+      "effective_date": "2026-09-01",
+      "status": "active",
+      "algorithm_rules": {
+        "allow_md5": false,
+        "allow_sha1": false
+      },
+      "key_length_rules": {
+        "min_rsa_bits": 3072,
+        "min_ecc_bits": 384,
+        "allowed_ecc_curves": [
+          "secp384r1"
+        ],
+        "min_dh_bits": 3072
+      },
+      "pqc_rules": {
+        "mandatory_migration_deadline_year": 2030,
+        "urgency_mosca_delta_threshold_years": -2.0,
+        "prefer_hybrid": true,
+        "target_pqc_standards": [
+          "CNSA 2.0",
+          "ML-KEM-1024",
+          "ML-DSA-87",
+          "LMS/XMSS"
+        ]
+      },
+      "certificate_rules": {
         "allow_self_signed": false,
         "allow_self_signed_with_exception": false,
         "max_validity_days": 180,
         "require_ct_logs": true
       },
-      "pqc_policy": {
-        "mandatory_migration_deadline_year": 2030,
-        "urgency_mosca_delta_threshold_years": -2.0,
-        "prefer_hybrid": true,
-        "target_pqc_standards": ["CNSA 2.0", "ML-KEM-1024", "ML-DSA-87", "LMS/XMSS"]
+      "protocol_rules": {
+        "minimum_version": "TLS 1.3",
+        "allowed_versions": [
+          "TLS 1.3"
+        ],
+        "prohibited_versions": [
+          "SSLv2",
+          "SSLv3",
+          "TLS 1.0",
+          "TLS 1.1",
+          "TLS 1.2"
+        ]
       },
+      "notes": "FedRAMP cryptography baseline requirements.",
+      "is_custom": false,
       "cicd_fail_threshold": "medium",
       "severity_score_thresholds": {
         "critical": 70.0,
@@ -147,34 +334,193 @@
         "low": 10.0
       }
     },
-    "iot_ot": {
-      "name": "IoT & Operational Technology",
-      "description": "Resource-constrained embedded sensors, telemetry endpoints, and industrial control systems (ICS).",
-      "default_data_sensitivity": "internal",
-      "default_business_criticality": "high",
-      "tls_policy": {
-        "minimum_version": "TLS 1.2",
-        "allowed_versions": ["TLS 1.2", "TLS 1.3"],
-        "prohibited_versions": ["SSLv2", "SSLv3", "TLS 1.0", "TLS 1.1"]
+    "cnsa_2_0_nss": {
+      "id": "cnsa_2_0_nss",
+      "name": "CNSA 2.0 / NSS",
+      "type": "official_standard",
+      "jurisdiction": "US",
+      "scope": "National Security Systems",
+      "source_documents": [
+        "CNSA 2.0",
+        "CNSS Policy 15"
+      ],
+      "version": "2.0",
+      "effective_date": "2026-09-01",
+      "status": "active",
+      "algorithm_rules": {
+        "allow_md5": false,
+        "allow_sha1": false
       },
-      "key_size_policy": {
+      "key_length_rules": {
+        "min_rsa_bits": 3072,
+        "min_ecc_bits": 384,
+        "allowed_ecc_curves": [
+          "secp384r1"
+        ],
+        "min_dh_bits": 3072
+      },
+      "pqc_rules": {
+        "mandatory_migration_deadline_year": 2030,
+        "urgency_mosca_delta_threshold_years": -2.0,
+        "prefer_hybrid": true,
+        "target_pqc_standards": [
+          "CNSA 2.0",
+          "ML-KEM-1024",
+          "ML-DSA-87",
+          "LMS/XMSS"
+        ]
+      },
+      "certificate_rules": {
+        "allow_self_signed": false,
+        "allow_self_signed_with_exception": false,
+        "max_validity_days": 180,
+        "require_ct_logs": true
+      },
+      "protocol_rules": {
+        "minimum_version": "TLS 1.3",
+        "allowed_versions": [
+          "TLS 1.3"
+        ],
+        "prohibited_versions": [
+          "SSLv2",
+          "SSLv3",
+          "TLS 1.0",
+          "TLS 1.1",
+          "TLS 1.2"
+        ]
+      },
+      "notes": "Commercial National Security Algorithm Suite 2.0.",
+      "is_custom": false,
+      "cicd_fail_threshold": "medium",
+      "severity_score_thresholds": {
+        "critical": 70.0,
+        "high": 45.0,
+        "medium": 25.0,
+        "low": 10.0
+      }
+    },
+    "ot_ics_high_assurance": {
+      "id": "ot_ics_high_assurance",
+      "name": "OT/ICS High-Assurance",
+      "type": "official_standard",
+      "jurisdiction": "Global",
+      "scope": "OT/ICS",
+      "source_documents": [
+        "NIST SP 800-82 Rev. 3",
+        "IEC 62443"
+      ],
+      "version": "1.0",
+      "effective_date": "2026-09-01",
+      "status": "active",
+      "algorithm_rules": {
+        "allow_md5": false,
+        "allow_sha1": false
+      },
+      "key_length_rules": {
         "min_rsa_bits": 2048,
         "min_ecc_bits": 256,
-        "allowed_ecc_curves": ["secp256r1", "x25519", "ed25519"],
+        "allowed_ecc_curves": [
+          "secp256r1",
+          "x25519",
+          "ed25519"
+        ],
         "min_dh_bits": 2048
       },
-      "certificate_policy": {
+      "pqc_rules": {
+        "mandatory_migration_deadline_year": 2035,
+        "urgency_mosca_delta_threshold_years": 0.5,
+        "prefer_hybrid": false,
+        "target_pqc_standards": [
+          "ML-KEM-512",
+          "SLH-DSA-128s",
+          "LMS"
+        ]
+      },
+      "certificate_rules": {
         "allow_self_signed": false,
         "allow_self_signed_with_exception": true,
         "max_validity_days": 1825,
         "require_ct_logs": false
       },
-      "pqc_policy": {
-        "mandatory_migration_deadline_year": 2035,
-        "urgency_mosca_delta_threshold_years": 0.5,
-        "prefer_hybrid": false,
-        "target_pqc_standards": ["ML-KEM-512", "SLH-DSA-128s", "LMS"]
+      "protocol_rules": {
+        "minimum_version": "TLS 1.2",
+        "allowed_versions": [
+          "TLS 1.2",
+          "TLS 1.3"
+        ],
+        "prohibited_versions": [
+          "SSLv2",
+          "SSLv3",
+          "TLS 1.0",
+          "TLS 1.1"
+        ]
       },
+      "notes": "High assurance cryptography for OT/ICS environments.",
+      "is_custom": false,
+      "cicd_fail_threshold": "high",
+      "severity_score_thresholds": {
+        "critical": 80.0,
+        "high": 60.0,
+        "medium": 40.0,
+        "low": 20.0
+      }
+    },
+    "custom_policy": {
+      "id": "custom_policy",
+      "name": "Custom Policy",
+      "type": "ecdat_custom",
+      "jurisdiction": "Local",
+      "scope": "Custom",
+      "source_documents": [],
+      "version": "1.0",
+      "effective_date": "2026-09-01",
+      "status": "active",
+      "algorithm_rules": {
+        "allow_md5": false,
+        "allow_sha1": false
+      },
+      "key_length_rules": {
+        "min_rsa_bits": 2048,
+        "min_ecc_bits": 256,
+        "allowed_ecc_curves": [
+          "prime256v1",
+          "secp256r1",
+          "secp384r1",
+          "x25519",
+          "ed25519"
+        ],
+        "min_dh_bits": 2048
+      },
+      "pqc_rules": {
+        "mandatory_migration_deadline_year": 2033,
+        "urgency_mosca_delta_threshold_years": 0.0,
+        "prefer_hybrid": true,
+        "target_pqc_standards": [
+          "ML-KEM-768",
+          "ML-DSA-65"
+        ]
+      },
+      "certificate_rules": {
+        "allow_self_signed": false,
+        "allow_self_signed_with_exception": false,
+        "max_validity_days": 398,
+        "require_ct_logs": true
+      },
+      "protocol_rules": {
+        "minimum_version": "TLS 1.2",
+        "allowed_versions": [
+          "TLS 1.2",
+          "TLS 1.3"
+        ],
+        "prohibited_versions": [
+          "SSLv2",
+          "SSLv3",
+          "TLS 1.0",
+          "TLS 1.1"
+        ]
+      },
+      "notes": "User defined custom policy.",
+      "is_custom": true,
       "cicd_fail_threshold": "high",
       "severity_score_thresholds": {
         "critical": 80.0,

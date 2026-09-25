@@ -259,7 +259,7 @@ function normalizeAssetForPrioritization(item) {
  * @param {Array|Object} findingsOrCbom - Raw findings array, classified results, or CycloneDX CBOM
  * @param {Object} [options]
  * @param {string} [options.policyProfile='internal_enterprise']
- * @param {string} [options.scenario='baseline']
+ * @param {string} [options.threatHorizon='baseline']
  * @returns {Object} Complete enterprise prioritization insights
  */
 function prioritizeEnterpriseRisk(findingsOrCbom, options = {}) {
@@ -285,7 +285,7 @@ function prioritizeEnterpriseRisk(findingsOrCbom, options = {}) {
         keySize: item.key_size || item.keySize,
         assetType: item.asset_type || item.assetType,
         policyProfile: options.policyProfile || "internal_enterprise",
-        scenario: options.scenario || "baseline",
+        threatHorizon: options.threatHorizon || "baseline",
         evidenceConfidence: item.confidence,
         evidenceType: item.evidenceType,
         reachability: item.reachability,

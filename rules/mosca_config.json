@@ -8,20 +8,25 @@
     "Z_quantum_threat_years": 9
   },
   "scenarios": {
-    "optimistic": {
+    "extended_2035": {
       "Z_quantum_threat_years": 15,
       "Y_multiplier": 0.8,
       "description": "Optimistic quantum timeline: CRQC deployment delayed to ~2041; rapid standards and tooling maturity."
     },
-    "baseline": {
+    "baseline_2033": {
       "Z_quantum_threat_years": 9,
       "Y_multiplier": 1.0,
       "description": "Consensus baseline timeline: CRQC deployment ~2035 (consistent with CNSA 2.0 and BSI roadmaps)."
     },
-    "conservative": {
+    "conservative_2030": {
       "Z_quantum_threat_years": 5,
       "Y_multiplier": 1.4,
       "description": "Aggressive/Nation-state timeline: CRQC operational ~2031; slower migration velocity and legacy inertia."
+    },
+    "custom": {
+      "Z_quantum_threat_years": 5,
+      "Y_multiplier": 1.0,
+      "description": "Custom threat horizon timeline."
     }
   },
   "asset_type_defaults": {

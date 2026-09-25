@@ -11,7 +11,6 @@ import {
   Shield,
   Clock,
   Zap,
-  CheckCircle2,
   Network,
   FileCode,
   Lock,

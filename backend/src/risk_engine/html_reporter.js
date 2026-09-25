@@ -383,7 +383,7 @@ function generateHtmlReport(summary) {
         <div class="subtitle">Enterprise Cryptographic Discovery and Assessment Tool &bull; Explainable PQC Evaluation</div>
         <div class="meta-tags">
           <span class="meta-tag">Profile: <strong>${escapeHtml(meta.policy_profile || "regulated_bfsi")}</strong></span>
-          <span class="meta-tag">Timeline: <strong>${escapeHtml(meta.scenario || "baseline")}</strong></span>
+          <span class="meta-tag">Timeline: <strong>${escapeHtml(meta.threatHorizon || "baseline")}</strong></span>
           <span class="meta-tag">Rules: <strong>v${escapeHtml(meta.rule_version || "1.0.0")}</strong></span>
           <span class="meta-tag">Generated: <strong>${escapeHtml(meta.generated_at || new Date().toISOString())}</strong></span>
         </div>

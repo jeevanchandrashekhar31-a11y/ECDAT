@@ -941,7 +941,8 @@ async function seedDemoDataset() {
     scannerType: "static",
     projectName: "Demo Cryptographic Discovery",
     policyProfile: activePolicyProfile,
-    scenario: "baseline",
+    threat_horizon: "baseline_2033",
+    deployment_context: "internet_facing",
     tenantId: "demo-tenant",
     tenantContext: {
       tenantId: "demo-tenant",

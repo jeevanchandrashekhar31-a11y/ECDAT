@@ -228,9 +228,9 @@ function getRecommendationForFinding(finding) {
     assumptions.push(matchedRec.confidence_and_assumptions);
   }
   assumptions.push(`Data sensitivity classified as '${sensitivity}'`);
-  if (finding.mosca?.adjustments?.scenario) {
+  if (finding.mosca?.adjustments?.threatHorizon) {
     assumptions.push(
-      `Modeled under '${finding.mosca.adjustments.scenario}' quantum threat timeline`,
+      `Modeled under '${finding.mosca.adjustments.threatHorizon}' quantum threat timeline`,
     );
   }
 

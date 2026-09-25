@@ -9,19 +9,19 @@ const { prioritizeEnterpriseRisk } = require("./prioritizer");
  * @param {Object} cbomData - CycloneDX 1.6 document
  * @param {Object} [options]
  * @param {string} [options.policyProfile='internal_enterprise']
- * @param {string} [options.scenario='baseline']
+ * @param {string} [options.threatHorizon='baseline']
  * @returns {Object} Executive summary object
  */
 function generateSummary(cbomData, options = {}) {
   const policyProfile = options.policyProfile || "internal_enterprise";
-  const scenario = options.scenario || "baseline";
+  const threatHorizon = options.threatHorizon || "baseline";
   const rules = getRules();
   const ruleVersion = rules.algorithm_risk?.version || "1.0.0";
   const profileConfig = rules.policy_profiles?.profiles?.[policyProfile] || {};
 
   const { annotatedBOM, classifiedResults } = annotateCbom(cbomData, {
     policyProfile,
-    scenario,
+    threatHorizon,
   });
 
   const severityCounts = {
@@ -203,7 +203,7 @@ function generateSummary(cbomData, options = {}) {
       rule_version: ruleVersion,
       policy_profile: policyProfile,
       profile_description: profileConfig.description || "",
-      scenario: scenario,
+      threatHorizon: threatHorizon,
     },
     metrics: {
       total_assets: allAssets.length,
@@ -224,10 +224,10 @@ function generateSummary(cbomData, options = {}) {
     policy_violations: policyViolations,
     prioritization: prioritizeEnterpriseRisk(classifiedResults, {
       policyProfile,
-      scenario,
+      threatHorizon,
     }),
     assumptions: [
-      `Assumed quantum threat timeline '${scenario}' (Z = ${rules.mosca_config?.scenarios?.[scenario]?.Z_quantum_threat_years || 9} years).`,
+      `Assumed quantum threat timeline '${threatHorizon}' (Z = ${rules.mosca_config?.threatHorizons?.[threatHorizon]?.Z_quantum_threat_years || 9} years).`,
       `Evaluated under '${policyProfile}' policy environment constraints.`,
       `Qualitative performance impact bands applied; local hardware benchmarking disabled.`,
     ],

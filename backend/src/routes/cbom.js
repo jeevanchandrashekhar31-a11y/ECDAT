@@ -51,7 +51,9 @@ async function handleCbomUpload(req, res, next) {
       req.body?.policyProfile ||
       req.query?.policy_profile ||
       req.query?.policyProfile;
-    let scenario = req.body?.scenario || req.query?.scenario;
+    let deploymentContext = req.body?.deployment_context || req.body?.deploymentContext || req.query?.deployment_context || req.query?.deploymentContext;
+    let threatHorizon = req.body?.threat_horizon || req.body?.threatHorizon || req.query?.threat_horizon || req.query?.threatHorizon;
+    let businessCriticality = req.body?.business_criticality || req.body?.businessCriticality || req.query?.business_criticality || req.query?.businessCriticality;
     const rejectPrivateKey =
       req.body?.reject_private_keys === "true" ||
       req.query?.reject_private_keys === "true";
@@ -119,7 +121,9 @@ async function handleCbomUpload(req, res, next) {
     // 3. Process ingestion
     const scanRecord = await ingestCbom(actualCbom, {
       policyProfile,
-      scenario,
+      deploymentContext,
+      threatHorizon,
+      businessCriticality,
       scanName: scanLabel,
       scannerType,
       projectName,
@@ -134,7 +138,9 @@ async function handleCbomUpload(req, res, next) {
       scanner_type: scanRecord.scanner_type,
       project_id: scanRecord.project_id,
       policy_profile: scanRecord.policy_profile,
-      scenario: scanRecord.scenario,
+      deployment_context: scanRecord.deployment_context,
+      threat_horizon: scanRecord.threat_horizon,
+      business_criticality: scanRecord.business_criticality,
       metrics: scanRecord.metrics,
       warnings_count: scanRecord.errors?.length || 0,
       links: {

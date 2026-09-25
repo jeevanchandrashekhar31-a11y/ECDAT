@@ -503,7 +503,7 @@ function createEnterpriseMigrationPlan(inputData, options = {}) {
       keySize: item.key_size || item.keySize,
       assetType: item.asset_type || item.assetType,
       policyProfile: options.policyProfile || "internal_enterprise",
-      scenario: options.scenario || "baseline",
+      threatHorizon: options.scenario || "baseline",
       evidenceConfidence: item.confidence,
       reachability: item.reachability,
     });

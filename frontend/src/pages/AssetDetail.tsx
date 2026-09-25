@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useSearchParams, useOutletContext } from 'react-router-dom';
 import {
   ArrowLeft,
   Shield,
@@ -23,8 +23,9 @@ import { MoscaTimeline } from '../components/MoscaTimeline';
 
 export const AssetDetail: React.FC = () => {
   const { assetId } = useParams<{ assetId: string }>();
+  const outlet = useOutletContext<{ selectedScanId?: string }>() || {};
   const [searchParams] = useSearchParams();
-  const scanId = searchParams.get('scanId') || undefined;
+  const scanId = searchParams.get('scanId') || outlet.selectedScanId || undefined;
 
   const [asset, setAsset] = useState<IAssetDetail | null>(null);
   const [loading, setLoading] = useState(true);

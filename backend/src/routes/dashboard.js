@@ -14,11 +14,15 @@ router.get("/views", async (req, res, next) => {
   try {
     const scanId = req.query.scanId || req.query.scan_id;
     const policyProfile = req.query.policyProfile || req.query.policy_profile;
-    const scenario = req.query.scenario;
+    const threatHorizon = req.query.threatHorizon || req.query.threat_horizon;
+    const deploymentContext = req.query.deploymentContext || req.query.deployment_context;
+    const businessCriticality = req.query.businessCriticality || req.query.business_criticality;
     const data = await getEnterpriseDashboardViews({
       scanId,
       policyProfile,
-      scenario,
+      deploymentContext,
+      threatHorizon,
+      businessCriticality,
       tenantContext: req.tenantContext,
     });
     res.status(200).json(data);
@@ -63,8 +67,8 @@ router.get("/summary", async (req, res, next) => {
   try {
     const scanId = req.query.scanId || req.query.scan_id;
     const policyProfile = req.query.policyProfile || req.query.policy_profile;
-    const requestedScenario = req.query.scenario
-      ? String(req.query.scenario).toLowerCase()
+    const requestedThreatHorizon = req.query.threatHorizon || req.query.threat_horizon
+      ? String(req.query.threatHorizon || req.query.threat_horizon).toLowerCase()
       : null;
     const rules = getRules();
     const ruleVersion = rules?.algorithm_risk?.version || "2026.1";
@@ -100,8 +104,8 @@ router.get("/summary", async (req, res, next) => {
           const isConsolidated = !(scanId && scanId !== "all" && scanId !== "ALL");
           const targetScanIds = isConsolidated ? scanRows.map(s => s.id) : [scanRow.id];
 //           const currentScanId = scanRow.id;
-          const activeScenario =
-            requestedScenario || scanRow.scenario || "baseline";
+          const activeThreatHorizon =
+            requestedThreatHorizon || scanRow.threat_horizon || "baseline";
 
           // 1. Top Risky Assets
           let assetQuery = db("assets")
@@ -145,12 +149,12 @@ router.get("/summary", async (req, res, next) => {
             let mStatus = meta.mosca_status || (a.at_quantum_risk ? "AT_RISK" : "SAFE");
             let mMargin = meta.mosca_margin_years ?? (mStatus === "AT_RISK" ? 1.0 : 0.0);
 
-            if (requestedScenario && requestedScenario !== scanRow.scenario) {
+            if (requestedThreatHorizon && requestedThreatHorizon !== scanRow.threat_horizon) {
               const recalc = calculateMosca({
                 assetType: a.asset_type,
                 dataSensitivity: a.data_sensitivity,
                 businessCriticality: a.business_criticality,
-                scenario: requestedScenario,
+                threat_horizon: requestedThreatHorizon,
               });
               mStatus = recalc.status;
               mMargin = recalc.mosca_margin_years;
@@ -181,7 +185,7 @@ router.get("/summary", async (req, res, next) => {
             AT_RISK: 0,
             CRITICAL_URGENT: 0,
           };
-          if (requestedScenario && requestedScenario !== scanRow.scenario) {
+          if (requestedThreatHorizon && requestedThreatHorizon !== scanRow.threat_horizon) {
             // Recount based on evaluated assets
             for (const a of topRiskyAssets) {
               if (moscaCounts[a.mosca_status] !== undefined) {
@@ -248,9 +252,9 @@ router.get("/summary", async (req, res, next) => {
             let marginYears = Number(r.mosca_margin_years || 0);
             let status = r.mosca_status;
 
-            if (requestedScenario && requestedScenario !== scanRow.scenario) {
+            if (requestedThreatHorizon && requestedThreatHorizon !== scanRow.threat_horizon) {
               const scenarioZ =
-                rules?.mosca_config?.scenarios?.[requestedScenario]
+                rules?.mosca_config?.scenarios?.[requestedThreatHorizon]
                   ?.Z_quantum_threat_years;
               if (scenarioZ !== undefined) {
                 zYears = scenarioZ;
@@ -410,7 +414,7 @@ router.get("/summary", async (req, res, next) => {
             scan_id: isConsolidated ? null : scanRow.id,
             scan_name: isConsolidated ? "Consolidated Enterprise Portfolio" : scanRow.target_name,
             policy_profile: scanRow.policy_profile_id,
-            scenario: activeScenario,
+            threat_horizon: activeThreatHorizon,
             rule_version: ruleVersion,
             created_at: scanRow.created_at,
             status: scanRow.status,
@@ -453,7 +457,7 @@ router.get("/summary", async (req, res, next) => {
             })),
             mosca_analysis_table: moscaAnalysisTable,
             assumptions: [
-              `Classical cryptography break follows standardized Mosca Theorem parameters under '${activeScenario}' scenario.`,
+              `Classical cryptography break follows standardized Mosca Theorem parameters under '${activeThreatHorizon}' scenario.`,
               "Migration timeline reflects estimated re-engineering, testing, and deployment overhead.",
               "Quantum computing horizon aligns with NIST Post-Quantum Cryptography transition guidance.",
             ],
@@ -464,7 +468,7 @@ router.get("/summary", async (req, res, next) => {
             scan_id: null,
             message: "No scans available. Zero mock data loaded.",
             policy_profile: policyProfile || "internal_enterprise",
-            scenario: requestedScenario || "baseline",
+            threat_horizon: requestedThreatHorizon || "baseline",
             rule_version: ruleVersion,
             metrics: {
               total_assets: 0,
@@ -514,7 +518,7 @@ router.get("/summary", async (req, res, next) => {
         scan_id: null,
         message: "No scans available. Please upload or ingest a CBOM first.",
         policy_profile: policyProfile || "internal_enterprise",
-        scenario: requestedScenario || "baseline",
+        threat_horizon: requestedThreatHorizon || "baseline",
         rule_version: ruleVersion,
         metrics: {
           total_assets: 0,
@@ -549,7 +553,7 @@ router.get("/summary", async (req, res, next) => {
       });
     }
 
-    const activeScenario = requestedScenario || scan.scenario || "baseline";
+    const activeThreatHorizon = requestedThreatHorizon || scan.threat_horizon || "baseline";
     const rawFindings = scan.classified_findings || [];
     const findingsBySource = { network: 0, static: 0, "binary-container": 0 };
     const algoFreq = {};
@@ -624,7 +628,7 @@ router.get("/summary", async (req, res, next) => {
       scan_id: scan.id,
       scan_name: scan.name,
       policy_profile: scan.policy_profile,
-      scenario: activeScenario,
+      threat_horizon: activeThreatHorizon,
       rule_version: ruleVersion,
       created_at: scan.created_at,
       metrics: {

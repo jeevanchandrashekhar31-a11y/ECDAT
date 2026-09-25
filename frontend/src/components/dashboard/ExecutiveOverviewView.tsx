@@ -170,11 +170,19 @@ export const ExecutiveOverviewView: React.FC<Props> = ({
             onClick={() => {
               const qwIds = Object.values(evidenceLookup)
                 .filter(
-                  (f) =>
-                    f.algorithm.includes('MD5') ||
-                    f.algorithm.includes('SHA-1') ||
-                    f.key_size === 1024
-                )
+                  (f) => {
+                    const algo = (f.algorithm || '').toUpperCase();
+                    return (
+                      algo.includes('MD5') ||
+                      algo.includes('SHA1') ||
+                      algo.includes('SHA-1') ||
+                      algo.includes('DES') ||
+                      algo.includes('RC4') ||
+                      (algo.includes('RSA') && f.key_size && f.key_size < 2048) ||
+                      algo.includes('TLS 1.0') ||
+                      algo.includes('TLS 1.1')
+                    );
+                  })
                 .map((f) => f.id);
               onOpenEvidence(
                 'Remediation Quick Wins Evidence',

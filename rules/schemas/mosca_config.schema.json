@@ -26,7 +26,11 @@
     },
     "defaults": {
       "type": "object",
-      "required": ["X_shelf_life_years", "Y_migration_years", "Z_quantum_threat_years"],
+      "required": [
+        "X_shelf_life_years",
+        "Y_migration_years",
+        "Z_quantum_threat_years"
+      ],
       "additionalProperties": false,
       "properties": {
         "X_shelf_life_years": {
@@ -48,12 +52,22 @@
     },
     "scenarios": {
       "type": "object",
-      "required": ["optimistic", "baseline", "conservative"],
-      "additionalProperties": false,
+      "required": [
+        "baseline_2033",
+        "conservative_2030",
+        "extended_2035"
+      ],
+      "additionalProperties": true,
       "properties": {
-        "optimistic": { "$ref": "#/definitions/scenario_params" },
-        "baseline": { "$ref": "#/definitions/scenario_params" },
-        "conservative": { "$ref": "#/definitions/scenario_params" }
+        "optimistic": {
+          "$ref": "#/definitions/scenario_params"
+        },
+        "baseline": {
+          "$ref": "#/definitions/scenario_params"
+        },
+        "conservative": {
+          "$ref": "#/definitions/scenario_params"
+        }
       }
     },
     "asset_type_defaults": {
@@ -70,40 +84,86 @@
       "patternProperties": {
         "^[a-z_]+$": {
           "type": "object",
-          "required": ["X_shelf_life_years", "Y_migration_years", "notes"],
+          "required": [
+            "X_shelf_life_years",
+            "Y_migration_years",
+            "notes"
+          ],
           "additionalProperties": false,
           "properties": {
-            "X_shelf_life_years": { "type": "number", "minimum": 0, "maximum": 100 },
-            "Y_migration_years": { "type": "number", "minimum": 0, "maximum": 50 },
+            "X_shelf_life_years": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "Y_migration_years": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 50
+            },
             "harvest_now_decrypt_later_risk": {
               "type": "string",
-              "enum": ["critical", "high", "medium", "low", "none"]
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low",
+                "none"
+              ]
             },
-            "notes": { "type": "string" }
+            "notes": {
+              "type": "string"
+            }
           }
         }
       }
     },
     "sensitivity_adjustments": {
       "type": "object",
-      "required": ["public", "internal", "confidential", "restricted"],
+      "required": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted"
+      ],
       "additionalProperties": false,
       "properties": {
-        "public": { "$ref": "#/definitions/sensitivity_entry" },
-        "internal": { "$ref": "#/definitions/sensitivity_entry" },
-        "confidential": { "$ref": "#/definitions/sensitivity_entry" },
-        "restricted": { "$ref": "#/definitions/sensitivity_entry" }
+        "public": {
+          "$ref": "#/definitions/sensitivity_entry"
+        },
+        "internal": {
+          "$ref": "#/definitions/sensitivity_entry"
+        },
+        "confidential": {
+          "$ref": "#/definitions/sensitivity_entry"
+        },
+        "restricted": {
+          "$ref": "#/definitions/sensitivity_entry"
+        }
       }
     },
     "criticality_adjustments": {
       "type": "object",
-      "required": ["low", "medium", "high", "critical"],
+      "required": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
       "additionalProperties": false,
       "properties": {
-        "low": { "$ref": "#/definitions/criticality_entry" },
-        "medium": { "$ref": "#/definitions/criticality_entry" },
-        "high": { "$ref": "#/definitions/criticality_entry" },
-        "critical": { "$ref": "#/definitions/criticality_entry" }
+        "low": {
+          "$ref": "#/definitions/criticality_entry"
+        },
+        "medium": {
+          "$ref": "#/definitions/criticality_entry"
+        },
+        "high": {
+          "$ref": "#/definitions/criticality_entry"
+        },
+        "critical": {
+          "$ref": "#/definitions/criticality_entry"
+        }
       }
     },
     "validation_constraints": {
@@ -116,42 +176,95 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "min_years": { "type": "number", "minimum": 0 },
-        "max_X_years": { "type": "number", "minimum": 1 },
-        "max_Y_years": { "type": "number", "minimum": 1 },
-        "max_Z_years": { "type": "number", "minimum": 1 }
+        "min_years": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_X_years": {
+          "type": "number",
+          "minimum": 1
+        },
+        "max_Y_years": {
+          "type": "number",
+          "minimum": 1
+        },
+        "max_Z_years": {
+          "type": "number",
+          "minimum": 1
+        }
       }
     }
   },
   "definitions": {
     "scenario_params": {
       "type": "object",
-      "required": ["Z_quantum_threat_years", "description"],
+      "required": [
+        "Z_quantum_threat_years",
+        "description"
+      ],
       "additionalProperties": false,
       "properties": {
-        "Z_quantum_threat_years": { "type": "number", "minimum": 1, "maximum": 50 },
-        "Y_multiplier": { "type": "number", "minimum": 0.1, "maximum": 5.0 },
-        "description": { "type": "string" }
+        "Z_quantum_threat_years": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "Y_multiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5
+        },
+        "description": {
+          "type": "string"
+        }
       }
     },
     "sensitivity_entry": {
       "type": "object",
-      "required": ["shelf_life_multiplier", "base_X_years", "description"],
+      "required": [
+        "shelf_life_multiplier",
+        "base_X_years",
+        "description"
+      ],
       "additionalProperties": false,
       "properties": {
-        "shelf_life_multiplier": { "type": "number", "minimum": 0, "maximum": 10 },
-        "base_X_years": { "type": "number", "minimum": 0, "maximum": 100 },
-        "description": { "type": "string" }
+        "shelf_life_multiplier": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "base_X_years": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "description": {
+          "type": "string"
+        }
       }
     },
     "criticality_entry": {
       "type": "object",
-      "required": ["migration_urgency_multiplier", "risk_weight", "description"],
+      "required": [
+        "migration_urgency_multiplier",
+        "risk_weight",
+        "description"
+      ],
       "additionalProperties": false,
       "properties": {
-        "migration_urgency_multiplier": { "type": "number", "minimum": 0.1, "maximum": 5.0 },
-        "risk_weight": { "type": "number", "minimum": 0.1, "maximum": 5.0 },
-        "description": { "type": "string" }
+        "migration_urgency_multiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5
+        },
+        "risk_weight": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5
+        },
+        "description": {
+          "type": "string"
+        }
       }
     }
   }

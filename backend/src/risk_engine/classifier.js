@@ -45,7 +45,8 @@ function isSeverityGreaterOrEqual(actual, threshold) {
  * @param {string} [input.evidenceConfidence='high'] - 'high', 'medium', 'low'
  * @param {string} [input.evidenceType] - 'ast', 'regex', 'package_inventory', etc.
  * @param {string} [input.policyProfile='internal_enterprise'] - Environment policy profile
- * @param {string} [input.scenario='baseline'] - Mosca scenario
+ * @param {string} [input.deploymentContext='internet_facing'] - Deployment context
+ * @param {string} [input.threatHorizon='baseline_2033'] - Threat horizon scenario
  * @param {Object} [input.certificateProperties] - { isSelfSigned, isExpired, validityDays }
  * @param {Object} [input.protocolProperties] - { tlsVersion, cipherSuites }
  * @param {string} [input.evidenceContext] - Finding location / origin
@@ -55,8 +56,8 @@ function classifyFinding(input) {
   const profiles = rules.policy_profiles?.profiles || {};
 
   // 1. Resolve Policy Profile
-  const profileName = input.policyProfile || "internal_enterprise";
-  const profile = profiles[profileName] || profiles.internal_enterprise;
+  const profileName = input.policyProfile || "ecdat_enterprise_baseline";
+  const profile = profiles[profileName] || profiles.ecdat_enterprise_baseline || {};
 
   // 2. Normalize Inputs
   const normalizedAlgo = normalizeAlgorithm(input.algorithm, input.keySize);
@@ -137,26 +138,26 @@ function classifyFinding(input) {
   if (keySize) {
     if (
       normalizedAlgo.canonicalName === "RSA" &&
-      keySize < profile.key_size_policy.min_rsa_bits
+      keySize < profile.key_length_rules.min_rsa_bits
     ) {
       policyViolations.push(
-        `RSA key size ${keySize} bits is below profile requirement (${profile.key_size_policy.min_rsa_bits} bits)`,
+        `RSA key size ${keySize} bits is below profile requirement (${profile.key_length_rules.min_rsa_bits} bits)`,
       );
     }
     if (
       ["ECDSA", "ECDH"].includes(normalizedAlgo.canonicalName) &&
-      keySize < profile.key_size_policy.min_ecc_bits
+      keySize < profile.key_length_rules.min_ecc_bits
     ) {
       policyViolations.push(
-        `ECC key size ${keySize} bits is below profile requirement (${profile.key_size_policy.min_ecc_bits} bits)`,
+        `ECC key size ${keySize} bits is below profile requirement (${profile.key_length_rules.min_ecc_bits} bits)`,
       );
     }
     if (
       normalizedAlgo.canonicalName === "Diffie-Hellman" &&
-      keySize < profile.key_size_policy.min_dh_bits
+      keySize < profile.key_length_rules.min_dh_bits
     ) {
       policyViolations.push(
-        `DH group ${keySize} bits is below profile requirement (${profile.key_size_policy.min_dh_bits} bits)`,
+        `DH group ${keySize} bits is below profile requirement (${profile.key_length_rules.min_dh_bits} bits)`,
       );
     }
   }
@@ -168,7 +169,7 @@ function classifyFinding(input) {
       ? normalizedAlgo.canonicalName
       : null);
   if (protoVersion) {
-    if (profile.tls_policy.prohibited_versions.includes(protoVersion)) {
+    if (profile.protocol_rules.prohibited_versions.includes(protoVersion)) {
       policyViolations.push(
         `Protocol ${protoVersion} is prohibited under '${profileName}' policy`,
       );
@@ -179,8 +180,8 @@ function classifyFinding(input) {
   // Certificate policy
   const certProps = input.certificateProperties || {};
   if (certProps.isSelfSigned) {
-    if (!profile.certificate_policy.allow_self_signed) {
-      if (profile.certificate_policy.allow_self_signed_with_exception) {
+    if (!profile.certificate_rules.allow_self_signed) {
+      if (profile.certificate_rules.allow_self_signed_with_exception) {
         policyViolations.push(
           "Self-signed certificate in use (acceptable under documented internal exception)",
         );
@@ -208,7 +209,7 @@ function classifyFinding(input) {
     assetType,
     dataSensitivity,
     businessCriticality,
-    scenario: input.scenario || "baseline",
+    threatHorizon: input.threatHorizon || "baseline_2033",
     quantumRelevance,
     isIntegrityOnly,
     customX: input.customX,

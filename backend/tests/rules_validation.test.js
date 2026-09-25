@@ -82,9 +82,9 @@ test("ECDAT Rule Validation - mosca_config.json contains valid asset types, adju
   assert.strictEqual(typeof mosca.defaults.Z_quantum_threat_years, "number");
 
   // Scenarios
-  assert.ok(mosca.scenarios.optimistic);
-  assert.ok(mosca.scenarios.baseline);
-  assert.ok(mosca.scenarios.conservative);
+  assert.ok(mosca.scenarios.optimistic_2037);
+  assert.ok(mosca.scenarios.baseline_2033);
+  assert.ok(mosca.scenarios.conservative_2030);
 
   // Asset types
   const requiredAssetTypes = [
@@ -119,21 +119,19 @@ test("ECDAT Rule Validation - policy_profiles.json contains all 5 required profi
   const profiles = rules.policy_profiles.profiles;
 
   const requiredProfiles = [
-    "public_internet",
-    "internal_enterprise",
-    "regulated_bfsi",
-    "government_high_value",
-    "iot_ot",
+    "ecdat_enterprise_baseline",
+    "pci_dss_v4_0_1",
+    "india_financial_services_composite"
   ];
 
   for (const p of requiredProfiles) {
     assert.ok(profiles[p], `Policy profile '${p}' missing`);
-    assert.ok(profiles[p].tls_policy.minimum_version);
-    assert.ok(typeof profiles[p].key_size_policy.min_rsa_bits === "number");
+    assert.ok(profiles[p].protocol_rules.minimum_version);
+    assert.ok(typeof profiles[p].key_length_rules.min_rsa_bits === "number");
     assert.ok(
-      typeof profiles[p].certificate_policy.allow_self_signed === "boolean",
+      typeof profiles[p].certificate_rules.allow_self_signed === "boolean",
     );
-    assert.ok(profiles[p].pqc_policy.mandatory_migration_deadline_year >= 2025);
+    assert.ok(profiles[p].pqc_rules.mandatory_migration_deadline_year >= 2025);
   }
 });
 

@@ -348,8 +348,9 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     const scanRecord = await ingestCbom(cbomData, {
       scannerType: 'static',
       scanName: scanLabel,
-      policyProfile: req.body?.policy_profile || 'regulated_bfsi',
-      scenario: req.body?.scenario || 'baseline',
+      policyProfile: req.body?.policy_profile || 'ecdat_enterprise_baseline',
+      threatHorizon: req.body?.threatHorizon || req.body?.threat_horizon || 'baseline_2033',
+      deploymentContext: req.body?.deploymentContext || req.body?.deployment_context || 'internet_facing',
       tenantContext: req.tenantContext
     });
 
@@ -451,8 +452,9 @@ router.post('/scan/network', concurrencyQuotaMiddleware(), RATE_LIMITS.networkSc
     const scanRecord = await ingestCbom(cbomData, {
       scannerType: 'network',
       scanName: req.body?.scan_label || `Network Scan: ${host}:${port}`,
-      policyProfile: req.body?.policy_profile || 'regulated_bfsi',
-      scenario: req.body?.scenario || 'baseline',
+      policyProfile: req.body?.policy_profile || 'ecdat_enterprise_baseline',
+      threatHorizon: req.body?.threatHorizon || req.body?.threat_horizon || 'baseline_2033',
+      deploymentContext: req.body?.deploymentContext || req.body?.deployment_context || 'internet_facing',
       tenantContext: req.tenantContext
     });
 
@@ -631,8 +633,9 @@ router.post('/scan/binary', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     const scanRecord = await ingestCbom(cbomData, {
       scannerType: 'binary_container',
       scanName: scanLabel || 'Binary/Container Library Inventory',
-      policyProfile: req.body?.policy_profile || 'regulated_bfsi',
-      scenario: req.body?.scenario || 'baseline',
+      policyProfile: req.body?.policy_profile || 'ecdat_enterprise_baseline',
+      threatHorizon: req.body?.threatHorizon || req.body?.threat_horizon || 'baseline_2033',
+      deploymentContext: req.body?.deploymentContext || req.body?.deployment_context || 'internet_facing',
       tenantContext: req.tenantContext
     });
 
@@ -736,8 +739,9 @@ router.post('/cbom/merge', RATE_LIMITS.cbomGeneration.middleware(), async (req, 
     const scanRecord = await ingestCbom(mergedCbom, {
       scannerType: 'combined',
       scanName: req.body?.scan_name || 'Merged Multi-Vector CBOM',
-      policyProfile: req.body?.policy_profile || 'regulated_bfsi',
-      scenario: req.body?.scenario || 'baseline',
+      policyProfile: req.body?.policy_profile || 'ecdat_enterprise_baseline',
+      threatHorizon: req.body?.threatHorizon || req.body?.threat_horizon || 'baseline_2033',
+      deploymentContext: req.body?.deploymentContext || req.body?.deployment_context || 'internet_facing',
       tenantContext: req.tenantContext
     });
 
@@ -775,8 +779,9 @@ router.post('/cbom/quantum-risk', async (req, res, next) => {
     }
 
     const scanRecord = await ingestCbom(cbom, {
-      policyProfile: req.body?.policy_profile || 'regulated_bfsi',
-      scenario: req.body?.scenario || 'baseline',
+      policyProfile: req.body?.policy_profile || 'ecdat_enterprise_baseline',
+      threatHorizon: req.body?.threatHorizon || req.body?.threat_horizon || 'baseline_2033',
+      deploymentContext: req.body?.deploymentContext || req.body?.deployment_context || 'internet_facing',
       scanName: req.body?.scan_name || 'Quantum Risk Analysis',
       tenantContext: req.tenantContext
     });
@@ -785,12 +790,13 @@ router.post('/cbom/quantum-risk', async (req, res, next) => {
       success: true,
       scan_id: scanRecord.id,
       policy_profile: scanRecord.policy_profile,
-      scenario: scanRecord.scenario,
+      deployment_context: scanRecord.deployment_context,
+      threat_horizon: scanRecord.threat_horizon,
       mosca_status_counts: scanRecord.metrics.mosca_status_counts,
       metrics: scanRecord.metrics,
       top_risky_assets: scanRecord.top_risky_assets || [],
       findings: scanRecord.findings || [],
-      explanation: `Quantum readiness posture evaluated under ${scanRecord.scenario} scenario.`
+      explanation: `Quantum readiness posture evaluated under ${scanRecord.threat_horizon} scenario.`
     });
   } catch (err) {
     next(err);
@@ -853,7 +859,8 @@ router.get('/cbom/pqc-report', async (req, res, next) => {
     res.status(200).json({
       scan_id: latest.id,
       policy_profile: latest.policy_profile,
-      scenario: latest.scenario,
+      deployment_context: latest.deployment_context,
+      threat_horizon: latest.threat_horizon,
       recommendations: latest.recommendations || [],
       metrics: latest.metrics,
       html_report_url: `/api/v1/reports/${latest.id}/html`

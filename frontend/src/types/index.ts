@@ -106,7 +106,8 @@ export interface DashboardSummary {
   scan_id: string | null;
   scan_name?: string;
   policy_profile?: string;
-  scenario?: string;
+  threat_horizon?: string;
+  deployment_context?: string;
   rule_version?: string;
   created_at?: string;
   status?: string;
@@ -569,7 +570,8 @@ export interface DashboardViewsResponse {
   scan_id: string;
   scan_name: string;
   policy_profile: string;
-  scenario: string;
+  threat_horizon?: string;
+  deployment_context?: string;
   created_at: string;
   views: {
     executive_overview: ExecutiveOverviewView;

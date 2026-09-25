@@ -51,8 +51,9 @@ router.get("/summary", async (req, res, next) => {
     if (scan.annotated_bom) {
       try {
         const summary = generateSummary(scan.annotated_bom, {
-          policyProfile: scan.policy_profile || "regulated_bfsi",
-          scenario: scan.scenario || "baseline",
+          policyProfile: scan.policy_profile || "ecdat_enterprise_baseline",
+          deploymentContext: scan.deployment_context || "internet_facing",
+          threatHorizon: scan.threat_horizon || "baseline_2033",
         });
         scan.summary = summary;
         return res.status(200).json(summary);
@@ -66,7 +67,8 @@ router.get("/summary", async (req, res, next) => {
       scan_id: scan.id,
       scan_name: scan.name,
       policy_profile: scan.policy_profile,
-      scenario: scan.scenario,
+      deployment_context: scan.deployment_context,
+      threat_horizon: scan.threat_horizon,
       created_at: scan.created_at,
       metrics: scan.metrics,
     });
@@ -83,14 +85,16 @@ router.get("/summary", async (req, res, next) => {
 router.get("/executive", async (req, res, next) => {
   try {
     const scanId = req.query.scanId || req.query.scan_id;
-    const policyProfile = req.query.policyProfile || req.query.policy_profile || "regulated_bfsi";
-    const scenario = req.query.scenario || "baseline";
+    const policyProfile = req.query.policyProfile || req.query.policy_profile || "ecdat_enterprise_baseline";
+    const threatHorizon = req.query.threatHorizon || req.query.threat_horizon || "baseline_2033";
+    const deploymentContext = req.query.deploymentContext || req.query.deployment_context || "internet_facing";
     const scope = req.query.scope || "enterprise";
 
     const report = await generateExecutiveReport({
       scanId,
       policyProfile,
-      scenario,
+      deploymentContext,
+      threatHorizon,
       scope,
       tenantContext: req.tenantContext,
     });
@@ -126,13 +130,15 @@ router.get("/executive", async (req, res, next) => {
 router.get("/executive/html", async (req, res, next) => {
   try {
     const scanId = req.query.scanId || req.query.scan_id;
-    const policyProfile = req.query.policyProfile || req.query.policy_profile || "regulated_bfsi";
-    const scenario = req.query.scenario || "baseline";
+    const policyProfile = req.query.policyProfile || req.query.policy_profile || "ecdat_enterprise_baseline";
+    const threatHorizon = req.query.threatHorizon || req.query.threat_horizon || "baseline_2033";
+    const deploymentContext = req.query.deploymentContext || req.query.deployment_context || "internet_facing";
 
     const report = await generateExecutiveReport({
       scanId,
       policyProfile,
-      scenario,
+      deploymentContext,
+      threatHorizon,
       tenantContext: req.tenantContext,
     });
 
@@ -430,7 +436,7 @@ function renderFallbackHtml(scan) {
   const safeName = escapeHtml(scan.name || scan.id || "Cryptographic Scan Report");
   const safeId = escapeHtml(scan.id);
   const safeProfile = escapeHtml(scan.policy_profile || "regulated_bfsi");
-  const safeScenario = escapeHtml(scan.scenario || "baseline");
+  const safeScenario = escapeHtml(scan.threat_horizon || "baseline");
   const totalAssets = Number(scan.metrics?.total_assets) || 0;
   const assetsQuantum = Number(scan.metrics?.assets_at_quantum_risk) || 0;
   const critCount = Number(scan.metrics?.severity_counts?.critical) || 0;
@@ -476,8 +482,9 @@ router.get("/:id/html", async (req, res, next) => {
     if (!summary && scan.annotated_bom) {
       try {
         summary = generateSummary(scan.annotated_bom, {
-          policyProfile: scan.policy_profile || "regulated_bfsi",
-          scenario: scan.scenario || "baseline",
+          policyProfile: scan.policy_profile || "ecdat_enterprise_baseline",
+          deploymentContext: scan.deployment_context || "internet_facing",
+          threatHorizon: scan.threat_horizon || "baseline_2033",
         });
         scan.summary = summary;
       } catch (sumErr) {
@@ -543,8 +550,9 @@ router.get("/:id/summary", async (req, res, next) => {
 
     if (scan.annotated_bom) {
       const summary = generateSummary(scan.annotated_bom, {
-        policyProfile: scan.policy_profile || "regulated_bfsi",
-        scenario: scan.scenario || "baseline",
+        policyProfile: scan.policy_profile || "ecdat_enterprise_baseline",
+        deploymentContext: scan.deployment_context || "internet_facing",
+        threatHorizon: scan.threat_horizon || "baseline_2033",
       });
       scan.summary = summary;
       return res.status(200).json(summary);
@@ -554,7 +562,8 @@ router.get("/:id/summary", async (req, res, next) => {
       scan_id: scan.id,
       scan_name: scan.name,
       policy_profile: scan.policy_profile,
-      scenario: scan.scenario,
+      deployment_context: scan.deployment_context,
+      threat_horizon: scan.threat_horizon,
       created_at: scan.created_at,
       metrics: scan.metrics,
     });

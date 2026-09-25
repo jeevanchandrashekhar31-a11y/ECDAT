@@ -26,11 +26,13 @@ const {
  * @param {Array<Object>} rawFindings - Array of raw findings
  * @param {Object} [options]
  * @param {string} [options.policyProfile='internal_enterprise']
- * @param {string} [options.scenario='baseline']
+ * @param {string} [options.threatHorizon='baseline']
  */
 function assessFindings(rawFindings = [], options = {}) {
-  const policyProfile = options.policyProfile || "internal_enterprise";
-  const scenario = options.scenario || "baseline";
+  const policyProfile = options.policyProfile || options.policy_profile || "ecdat_enterprise_baseline";
+  const deploymentContext = options.deploymentContext || options.deployment_context || "internet_facing";
+  const threatHorizon = options.threatHorizon || options.threat_horizon || "baseline_2033";
+  const businessCriticality = options.businessCriticality || options.business_criticality || "high";
 
   const classifiedFindings = [];
   const assetMap = new Map();
@@ -39,7 +41,9 @@ function assessFindings(rawFindings = [], options = {}) {
     const classified = classifyFinding({
       ...raw,
       policyProfile,
-      scenario,
+      deploymentContext,
+      threatHorizon,
+      businessCriticality,
     });
 
     const assetId =
@@ -157,7 +161,9 @@ function assessFindings(rawFindings = [], options = {}) {
 
   return {
     policy_profile: policyProfile,
-    scenario,
+    deployment_context: deploymentContext,
+    threat_horizon: threatHorizon,
+    business_criticality: businessCriticality,
     metrics: {
       total_findings: classifiedFindings.length,
       total_assets: assetMap.size,

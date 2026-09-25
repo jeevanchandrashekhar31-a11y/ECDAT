@@ -39,8 +39,10 @@ function requireValue(args, index, option) {
 async function run() {
   const args = process.argv.slice(2);
   let filePath = null;
-  let policyProfile = "regulated_bfsi";
-  let scenario = "baseline";
+  let policyProfile = "ecdat_enterprise_baseline";
+  let deploymentContext = "internet_facing";
+  let threatHorizon = "baseline_2033";
+  let businessCriticality = "high";
   let scanLabel = null;
   let scannerType = "combined";
   let projectName = "default_project";
@@ -103,7 +105,8 @@ async function run() {
   console.log(`======================================================`);
   console.log(`File:     ${resolvedPath}`);
   console.log(`Policy:   ${policyProfile}`);
-  console.log(`Scenario: ${scenario}`);
+  console.log(`Context:  ${deploymentContext}`);
+  console.log(`Horizon:  ${threatHorizon}`);
   console.log(`------------------------------------------------------`);
 
   if (!fs.existsSync(resolvedPath)) {
@@ -127,7 +130,9 @@ async function run() {
     const label = scanLabel || `Imported CBOM: ${path.basename(resolvedPath)}`;
     const scanRecord = await ingestCbom(cbomData, {
       policyProfile,
-      scenario,
+      deploymentContext,
+      threatHorizon,
+      businessCriticality,
       scanName: label,
       scannerType,
       projectName,
