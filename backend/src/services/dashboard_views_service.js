@@ -674,7 +674,7 @@ async function getEnterpriseDashboardViews(options = {}) {
         key_size: keySize,
         renewal_state: renewalState,
         detected_anomalies: meta.anomalies || (isWeak ? [`weak_key:${(ca.algorithm || "").toLowerCase()}_${keySize}`] : []),
-        evidence_link: ca.id,
+        evidence_link: findings.find(f => f.asset_id === ca.id)?.id || ca.id,
       };
     });
   }
