@@ -213,7 +213,7 @@ async function getEnterpriseDashboardViews(options = {}) {
   const requestedScanId = options.scanId && options.scanId !== "all" ? options.scanId : null;
   const policyProfile = options.policyProfile || "regulated_bfsi";
   const scenario = options.scenario || "baseline";
-  const rules = getRules();
+//   const rules = getRules();
 
   const connected = await isDbConnected();
   let scanRow = null;
@@ -234,12 +234,14 @@ async function getEnterpriseDashboardViews(options = {}) {
           q = q.whereRaw("1 = 0");
         }
       }
-      scanRow = await q.orderBy("created_at", "desc").first();
-      if (scanRow) {
+      const scanRows = await q.orderBy("created_at", "desc");
+      if (scanRows.length > 0) {
+        scanRow = scanRows[0];
         const cbomRow = await db("cboms").where("scan_id", scanRow.id).first();
         if (cbomRow) {
           rawCbom = typeof cbomRow.annotated_json === "string" ? JSON.parse(cbomRow.annotated_json) : cbomRow.annotated_json;
         }
+        scanRow._allIds = scanRows.map(s => s.id);
       }
     } catch (_err) {
       // Fallback
@@ -258,8 +260,9 @@ async function getEnterpriseDashboardViews(options = {}) {
   }
 
   // Active scan ID and metadata
-  const scanId = scanRow?.id || inMemoryScan?.id || null;
-  const scanName = scanRow?.target_name || inMemoryScan?.name || "Scan Findings";
+  const isConsolidated = !requestedScanId && scanRow && scanRow._allIds && scanRow._allIds.length > 1;
+  const scanId = isConsolidated ? null : (scanRow?.id || inMemoryScan?.id || null);
+  const scanName = isConsolidated ? "Consolidated Enterprise Portfolio" : (scanRow?.target_name || inMemoryScan?.name || "Scan Findings");
   const createdAt = scanRow?.created_at || inMemoryScan?.created_at || new Date().toISOString();
 
   // Load findings from DB or in-memory
@@ -268,9 +271,10 @@ async function getEnterpriseDashboardViews(options = {}) {
 
   if (connected && scanRow) {
     try {
-      const fRows = await db("findings").where("scan_id", scanRow.id);
-      const aRows = await db("assets").where("scan_id", scanRow.id);
-      const raRows = await db("risk_assessments").where("scan_id", scanRow.id);
+      const targetScanIds = isConsolidated ? scanRow._allIds : [scanRow.id];
+      const fRows = await db("findings").whereIn("scan_id", targetScanIds);
+      const aRows = await db("assets").whereIn("scan_id", targetScanIds);
+      const raRows = await db("risk_assessments").whereIn("scan_id", targetScanIds);
 
       const raMap = new Map();
       raRows.forEach((ra) => raMap.set(ra.finding_id, ra));

@@ -558,7 +558,7 @@ function validateSchemaStrict(schema, { target = "body" } = {}) {
 /**
  * Express middleware enforcing numeric bounds on query pagination.
  */
-function paginationBoundsMiddleware(options = {}) {
+function paginationBoundsMiddleware(_options = {}) {
   return (req, res, next) => {
     const result = validatePagination(req.query);
     if (!result.valid) {

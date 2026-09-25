@@ -309,7 +309,7 @@ const FORBIDDEN_DNS_SUFFIXES = [
 ];
 
 // Well-known dynamic DNS services used to bypass string filters to reach loopback/private IPs
-const SUSPICIOUS_DYNAMIC_DNS_PATTERNS = [
+// const SUSPICIOUS_DYNAMIC_DNS_PATTERNS = [
   /\.nip\.io$/i,
   /\.sslip\.io$/i,
   /\.localtest\.me$/i,

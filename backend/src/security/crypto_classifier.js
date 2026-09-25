@@ -179,7 +179,7 @@ class CryptoClassifier {
     });
   }
 
-  static _evaluateHybrid(algoRaw, algoNorm, algoClean, hybridComponents, params) {
+  static _evaluateHybrid(algoRaw, algoNorm, algoClean, hybridComponents, _params) {
     if (hybridComponents && typeof hybridComponents === "object") {
       const classical = hybridComponents.classical_component || hybridComponents.classical;
       const pqc = hybridComponents.post_quantum_component || hybridComponents.pqc;
@@ -491,7 +491,7 @@ class CryptoClassifier {
     });
   }
 
-  static _evaluateHash(algoRaw, algoNorm, algoClean, keySize) {
+  static _evaluateHash(algoRaw, algoNorm, algoClean, _keySize) {
     if (BROKEN_HASHES.some((broken) => algoClean.includes(broken) || algoNorm.includes(broken))) {
       return new AlgorithmClassificationResult({
         algorithm: algoRaw,

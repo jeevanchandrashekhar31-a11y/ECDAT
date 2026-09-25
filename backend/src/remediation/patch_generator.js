@@ -20,7 +20,7 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const crypto = require("crypto");
+// const crypto = require("crypto");
 
 /**
  * Creates standard unified diff between two text strings.

@@ -290,7 +290,7 @@ class DeveloperFeedbackGenerator {
           const suppCheck = this.checkInlineSuppression(content, lineNum, ruleId, algo, findingType);
           isSuppressed = suppCheck.isSuppressed;
           suppressionReason = suppCheck.reason;
-        } catch (e) {
+        } catch (_e) {
           // Ignore read error
         }
       }

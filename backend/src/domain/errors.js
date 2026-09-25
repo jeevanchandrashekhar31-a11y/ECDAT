@@ -284,7 +284,7 @@ function evaluateScanStatus({
 /**
  * Guardrail asserting that a scanner failure is never marked as a successful empty result.
  */
-function assertValidScannerResult(status, findings = [], errors = []) {
+function assertValidScannerResult(status, _findings = [], errors = []) {
   if (errors.length > 0 && status === ScanStatus.SUCCESS) {
     throw new ScannerFailureError(
       "Invalid Scan State: Scan reported SUCCESS despite containing recorded scanner errors",

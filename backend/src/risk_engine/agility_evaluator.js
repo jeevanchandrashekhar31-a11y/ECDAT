@@ -35,7 +35,7 @@ const DEFAULT_WEIGHTS = Object.freeze({
 /**
  * Resolves agility rules from rules loader or falls back to built-in rules.
  */
-function resolveAgilityRules() {
+function _resolveAgilityRules() {
   try {
     const rules = getRules();
     if (rules && rules.crypto_agility_rules) {

@@ -58,7 +58,8 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     });
     assert.equal(demoLoginRes.status, 200, "Demo login must succeed with 200 OK");
     const devAuth = await demoLoginRes.json();
-    assert.ok(devAuth.accessToken, "Must issue valid access token");
+    const setCookie = demoLoginRes.headers.getSetCookie ? demoLoginRes.headers.getSetCookie().join('; ') : (demoLoginRes.headers.get('set-cookie') || '');
+    assert.ok(setCookie.includes('ecdat_access_token='), "Must issue valid access token cookie");
     assert.equal(devAuth.demoMode, true, "Must flag demoMode: true");
     assert.equal(devAuth.user.tenantId, "evaluation-tenant", "Must be strictly scoped to evaluation-tenant");
     assert.equal(devAuth.user.isPlatformAdmin, false, "Must never self-elevate to platform admin");
@@ -67,7 +68,8 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
 
     const devHeaders = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${devAuth.accessToken}`,
+      "Cookie": setCookie,
+      "x-csrf-token": devAuth.csrfToken,
     };
 
     // Ensure demo tenant starts genuinely empty
@@ -208,9 +210,11 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     });
     assert.equal(reviewerLoginRes.status, 200);
     const reviewerAuth = await reviewerLoginRes.json();
+    const reviewerCookie = reviewerLoginRes.headers.getSetCookie ? reviewerLoginRes.headers.getSetCookie().join('; ') : (reviewerLoginRes.headers.get('set-cookie') || '');
     const reviewerHeaders = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${reviewerAuth.accessToken}`,
+      "Cookie": reviewerCookie,
+      "x-csrf-token": reviewerAuth.csrfToken,
     };
 
     const reviewRes = await fetch(`${baseUrl}/api/v1/remediation/approvals/${approvalId}/review`, {
@@ -253,9 +257,11 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     });
     assert.equal(secLeadLoginRes.status, 200);
     const secLeadAuth = await secLeadLoginRes.json();
+    const secLeadCookie = secLeadLoginRes.headers.getSetCookie ? secLeadLoginRes.headers.getSetCookie().join('; ') : (secLeadLoginRes.headers.get('set-cookie') || '');
     const secLeadHeaders = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${secLeadAuth.accessToken}`,
+      "Cookie": secLeadCookie,
+      "x-csrf-token": secLeadAuth.csrfToken,
     };
 
     const approveRes = await fetch(`${baseUrl}/api/v1/remediation/approvals/${approvalId}/approve`, {

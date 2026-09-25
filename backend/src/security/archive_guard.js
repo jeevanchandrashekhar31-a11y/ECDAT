@@ -14,9 +14,9 @@
  */
 
 const path = require("path");
-const fs = require("fs");
+// const fs = require("fs");
 const os = require("os");
-const crypto = require("crypto");
+// const crypto = require("crypto");
 
 // Default bounded security thresholds
 const DEFAULT_MAX_TOTAL_BYTES = 500 * 1024 * 1024; // 500 MB total
@@ -189,7 +189,7 @@ function validateZipBufferSafety(buffer, options = {}) {
       throw new MalformedArchiveError(`Corrupt Central Directory signature at entry ${i}: 0x${signature.toString(16)}`);
     }
 
-    const compressedSize = buffer.readUInt32LE(currentOffset + 20);
+//     const compressedSize = buffer.readUInt32LE(currentOffset + 20);
     const uncompressedSize = buffer.readUInt32LE(currentOffset + 24);
     const fileNameLen = buffer.readUInt16LE(currentOffset + 28);
     const extraLen = buffer.readUInt16LE(currentOffset + 30);

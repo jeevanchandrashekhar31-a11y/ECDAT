@@ -15,8 +15,8 @@
  * Validates document schema, rule references, location validity, and zero-leakage invariant.
  */
 
-const fs = require("fs");
-const path = require("path");
+// const fs = require("fs");
+// const path = require("path");
 const crypto = require("crypto");
 const { DeveloperFeedbackGenerator } = require("./developer_feedback");
 

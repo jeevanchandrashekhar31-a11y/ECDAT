@@ -16,7 +16,7 @@
 
 const path = require("path");
 const Ajv = require("ajv");
-const net = require("net");
+// const net = require("net");
 
 const ajv = new Ajv({
   allErrors: true,
@@ -585,7 +585,7 @@ function objectLevelAuthMiddleware({ getResourceOwner, idParam = "id" } = {}) {
       }
 
       next();
-    } catch (err) {
+    } catch (_err) {
       return res.status(500).json({
         error: "InternalServerError",
         message: "Failed evaluating object-level authorization",

@@ -66,7 +66,7 @@ function isPayloadWithinByteLimit(payload) {
 /**
  * Validates incoming SBOM payloads for format specification, structural conformity, and bounds.
  */
-function validateSbomStructure(payload, options = {}) {
+function validateSbomStructure(payload, _options = {}) {
   const errors = [];
   const warnings = [];
 

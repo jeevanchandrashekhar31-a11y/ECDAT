@@ -160,7 +160,7 @@ class LdapClient {
     };
   }
 
-  async performLiveBind(username, password) {
+  async performLiveBind(username, _password) {
     // In production without external mock, simulated directory response or integration
     return {
       dn: `CN=${username},CN=Users,${this.baseDn}`,

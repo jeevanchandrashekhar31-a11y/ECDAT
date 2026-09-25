@@ -7,8 +7,8 @@
  * 3. Prohibit known development secrets, mock passwords, and debug bypasses in production.
  */
 
-const fs = require("fs");
-const path = require("path");
+// const fs = require("fs");
+// const path = require("path");
 
 class InsecureProductionConfigError extends Error {
   constructor(message, violations = []) {

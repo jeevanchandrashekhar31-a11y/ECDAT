@@ -247,6 +247,7 @@ const styles = StyleSheet.create({
 });
 
 // We define our props types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface RoadmapPDFProps {
   summary: any;
   sequenceSteps: any[];

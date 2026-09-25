@@ -586,7 +586,7 @@ router.get("/:assetId", async (req, res, next) => {
  */
 router.post("/", async (req, res, next) => {
   try {
-    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
+//     const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
     const callerTenant = req.tenantContext?.tenantId || "default-tenant";
     const { primary_identifier, asset_type = "cryptographic-key", data_sensitivity = "internal", business_criticality = "medium", metadata = {} } = req.body || {};
 

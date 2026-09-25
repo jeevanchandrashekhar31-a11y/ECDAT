@@ -93,18 +93,21 @@ router.get("/summary", async (req, res, next) => {
           }
         }
 
-        const scanRow = await scanQuery.orderBy("created_at", "desc").first();
+        const scanRows = await scanQuery.orderBy("created_at", "desc");
+        const scanRow = scanRows[0];
 
         if (scanRow) {
-          const currentScanId = scanRow.id;
+          const isConsolidated = !(scanId && scanId !== "all" && scanId !== "ALL");
+          const targetScanIds = isConsolidated ? scanRows.map(s => s.id) : [scanRow.id];
+//           const currentScanId = scanRow.id;
           const activeScenario =
             requestedScenario || scanRow.scenario || "baseline";
 
           // 1. Top Risky Assets
           let assetQuery = db("assets")
-            .where("scan_id", currentScanId);
+            .whereIn("scan_id", targetScanIds);
             
-          if (currentScanId !== "demo-synthetic-scan") {
+          if (!(targetScanIds.length === 1 && targetScanIds[0] === "demo-synthetic-scan")) {
             assetQuery = assetQuery.where("is_synthetic", false);
           }
 
@@ -173,7 +176,7 @@ router.get("/summary", async (req, res, next) => {
             }
           } else {
             const moscaRows = await db("risk_assessments")
-              .where("scan_id", currentScanId)
+              .whereIn("scan_id", targetScanIds)
               .select("mosca_status")
               .count("id as count")
               .groupBy("mosca_status");
@@ -188,7 +191,7 @@ router.get("/summary", async (req, res, next) => {
 
           // 3. Top Recommendations
           const allRecRows = await db("recommendations")
-            .where("scan_id", currentScanId)
+            .whereIn("scan_id", targetScanIds)
             .orderByRaw(
               `
               CASE LOWER(priority)
@@ -214,7 +217,7 @@ router.get("/summary", async (req, res, next) => {
           // 4. Mosca Analysis Table
           const raRows = await db("risk_assessments")
             .join("findings", "risk_assessments.finding_id", "findings.id")
-            .where("risk_assessments.scan_id", currentScanId)
+            .whereIn("risk_assessments.scan_id", targetScanIds)
             .select(
               "findings.asset_id",
               "findings.algorithm",
@@ -266,7 +269,7 @@ router.get("/summary", async (req, res, next) => {
 
           // 5. Findings by Source
           const sourceRows = await db("findings")
-            .where("scan_id", currentScanId)
+            .whereIn("scan_id", targetScanIds)
             .select("finding_type", "location");
 
           const findingsBySource = {
@@ -298,7 +301,7 @@ router.get("/summary", async (req, res, next) => {
 
           // 6. Most Common Risky Algorithms
           const algoRows = await db("findings")
-            .where("scan_id", currentScanId)
+            .whereIn("scan_id", targetScanIds)
             .select("algorithm")
             .count("id as count")
             .groupBy("algorithm")
@@ -312,7 +315,7 @@ router.get("/summary", async (req, res, next) => {
 
           // 7. Top Affected Services
           const serviceRows = await db("assets")
-            .where("scan_id", currentScanId)
+            .whereIn("scan_id", targetScanIds)
             .select("primary_identifier", "highest_severity", "asset_type")
             .orderByRaw(
               `
@@ -334,13 +337,13 @@ router.get("/summary", async (req, res, next) => {
           }));
 
           // 8. Percentage of Asset Inventory with Unknown / Unclassified Posture
-          const liveAssetsCountRow = await db("assets").where("scan_id", currentScanId).count("id as count").first();
+          const liveAssetsCountRow = await db("assets").whereIn("scan_id", targetScanIds).count("id as count").first();
           const totalAssets = parseInt(liveAssetsCountRow?.count || 0, 10);
           
-          const liveFindingsCountRow = await db("findings").where("scan_id", currentScanId).count("id as count").first();
+          const liveFindingsCountRow = await db("findings").whereIn("scan_id", targetScanIds).count("id as count").first();
           const totalFindings = parseInt(liveFindingsCountRow?.count || 0, 10);
           const unclassifiedRows = await db("assets")
-            .where("scan_id", currentScanId)
+            .whereIn("scan_id", targetScanIds)
             .andWhere(function () {
               this.whereRaw("LOWER(highest_severity) = ?", [
                 "informational",
@@ -390,8 +393,8 @@ router.get("/summary", async (req, res, next) => {
           }));
 
           return res.status(200).json({
-            scan_id: scanRow.id,
-            scan_name: scanRow.target_name,
+            scan_id: isConsolidated ? null : scanRow.id,
+            scan_name: isConsolidated ? "Consolidated Enterprise Portfolio" : scanRow.target_name,
             policy_profile: scanRow.policy_profile_id,
             scenario: activeScenario,
             rule_version: ruleVersion,

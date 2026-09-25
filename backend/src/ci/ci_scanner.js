@@ -132,7 +132,7 @@ class NodeCiScanner {
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean);
-    } catch (e) {
+    } catch (_e) {
       try {
         const output = execFileSync("git", ["diff", "--name-only", "--", cleanBase], {
           cwd: resolvedTarget,
@@ -555,7 +555,7 @@ class NodeCiScanner {
             });
           }
         }
-      } catch (e) {
+      } catch (_e) {
         // Skip malformed dependency manifest
       }
     }

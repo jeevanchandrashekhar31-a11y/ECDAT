@@ -13,7 +13,7 @@
 
 const SENSITIVE_PARAM_REGEX = /([?&](?:api_key|token|secret|password|key|auth)=)[^&]+/gi;
 const URL_CREDENTIALS_REGEX = /:\/\/[^:]+:[^@]+@/g;
-const GIT_PRIVATE_URL_REGEX = /git@[^:]+:([^/]+)\/([^.]+)\.git/gi;
+// const GIT_PRIVATE_URL_REGEX = /git@[^:]+:([^/]+)\/([^.]+)\.git/gi;
 
 /**
  * Sanitizes an HTTP route path into a generalized route pattern.

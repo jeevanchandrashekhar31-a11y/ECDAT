@@ -258,7 +258,7 @@ router.get("/", async (req, res, next) => {
             data_sensitivity: r.data_sensitivity,
             business_criticality: r.business_criticality,
             status: r.status,
-            cached: r.evidence_context ? (() => { try { return JSON.parse(r.evidence_context).cached || false; } catch (e) { return false; } })() : false,
+            cached: r.evidence_context ? (() => { try { return JSON.parse(r.evidence_context).cached || false; } catch (_e) { return false; } })() : false,
           })),
         });
       } catch (dbErr) {
@@ -716,7 +716,7 @@ router.post("/:findingId/rerun", async (req, res, next) => {
 
     // Call python script
     const pyScript = path.resolve(__dirname, "../../../scanners/semantic/run_single.py");
-    exec(`python "${pyScript}" "${targetFile}"`, async (err, stdout, stderr) => {
+    exec(`python "${pyScript}" "${targetFile}"`, async (err, stdout, _stderr) => {
        if (err) {
          console.error("Rerun error:", err);
          return res.status(500).json({ error: "Failed to run semantic scanner." });
@@ -727,14 +727,14 @@ router.post("/:findingId/rerun", async (req, res, next) => {
 
          // If we get findings, we just want to update the DB finding context to say cached=false
          let ctx = {};
-         try { ctx = JSON.parse(finding.evidence_context || "{}"); } catch(e){}
+         try { ctx = JSON.parse(finding.evidence_context || "{}"); } catch(_e){}
          ctx.cached = false;
          await db("findings").where("id", findingId).update({
            evidence_context: JSON.stringify(ctx)
          });
 
          return res.json({ success: true, message: "Live rerun complete!" });
-       } catch (e) {
+       } catch (_e) {
          return res.status(500).json({ error: "Failed to parse runner output" });
        }
     });

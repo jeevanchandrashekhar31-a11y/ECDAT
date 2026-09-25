@@ -43,7 +43,7 @@ function identifyWhyRisky(asset) {
   const keySize = parseInt(asset.key_size || asset.keySize, 10);
   const isInternet = Boolean(asset.is_internet_facing || asset.isInternetExposed);
   const mosca = asset.mosca || {};
-  const dataSensitivity = asset.data_sensitivity || "confidential";
+//   const dataSensitivity = asset.data_sensitivity || "confidential";
 
   const risks = {
     classical_weakness: null,
@@ -206,7 +206,7 @@ function identifyReplacementCandidates(asset) {
  * 3. Identifies cryptographic, protocol, and hardware dependencies.
  */
 function identifyDependencies(asset, selectedCandidate) {
-  const algo = (asset.algorithm || asset.name || "").toUpperCase();
+//   const algo = (asset.algorithm || asset.name || "").toUpperCase();
   const candAlgo = selectedCandidate?.algorithm || "";
 
   const dependencies = {
@@ -381,7 +381,7 @@ function proposeStagedRollout(asset, selectedCandidate) {
 /**
  * 8. Defines automated rollback pre-conditions and procedures.
  */
-function defineRollback(asset) {
+function defineRollback(_asset) {
   return {
     pre_condition_triggers: [
       "Handshake error rate spikes > 0.1% over a 5-minute rolling window.",

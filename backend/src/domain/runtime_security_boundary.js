@@ -11,7 +11,7 @@
  */
 
 const fs = require("fs");
-const path = require("path");
+// const path = require("path");
 const { assertMetadataOnly, SensitiveDataExposureError, RuntimeProbesCatalog } = require("./runtime_discovery");
 
 class SecurityBoundaryViolation extends Error {

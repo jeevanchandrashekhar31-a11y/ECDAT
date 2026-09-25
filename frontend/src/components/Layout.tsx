@@ -93,6 +93,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       if (res && res.user) {
         const primaryRole = (res.user.roles && res.user.roles[0]) || 'Viewer';
         const isDemo = res.user.tenantId === 'demo-tenant' || res.user.isDemo;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const u = res.user as any;
         const activeUserId = u.userId || u.sub || u.id || 'unknown-user';
         setCurrentUser({
@@ -486,7 +487,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     onClick={async () => {
                       if (window.confirm("Reset Evaluation Environment?\n\nThis will restore the evaluation environment to its clean starting state.\n\nProduction data is not affected.")) {
                         await api.resetEvaluationTenant();
-                        await api.seedEvaluationTenant();
                         window.location.reload();
                       }
                     }}

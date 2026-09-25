@@ -25,7 +25,7 @@ const upload = multer({
     fileSize: config.MAX_UPLOAD_BYTES,
   },
 });
-const uploadRateLimit = createRateLimitMiddleware({
+// const uploadRateLimit = createRateLimitMiddleware({
   max: config.UPLOAD_RATE_LIMIT,
 });
 

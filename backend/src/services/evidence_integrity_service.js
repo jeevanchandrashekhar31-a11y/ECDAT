@@ -17,8 +17,8 @@
  */
 
 const crypto = require("crypto");
-const fs = require("fs");
-const path = require("path");
+// const fs = require("fs");
+// const path = require("path");
 
 const ECDAT_VERSION = "1.0.0";
 

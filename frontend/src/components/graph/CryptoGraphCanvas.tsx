@@ -108,7 +108,7 @@ const getSeverityBadge = (sev: SeverityLevel) => {
   }
 };
 
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MemoizedEdge = React.memo(({ srcNode, tgtNode, isEdgeHighlighted, isDimmed }: any) => {
   if (!srcNode || !tgtNode) return null;
   const startX = srcNode.x + srcNode.width;
@@ -131,7 +131,7 @@ const MemoizedEdge = React.memo(({ srcNode, tgtNode, isEdgeHighlighted, isDimmed
     </g>
   );
 });
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MemoizedNode = React.memo(({ node, isSelected, isHovered, isDimmed, onSelect, onHoverStart, onHoverEnd, blastStatus }: any) => {
   const tierMeta = getTierMeta(node.tier);
   const Icon = tierMeta.icon;

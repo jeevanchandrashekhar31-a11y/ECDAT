@@ -100,7 +100,7 @@ function runPythonCommand(args, timeoutMs = 15000) {
 /**
  * Runs git clone asynchronously with timeout, quota controls, and strict argument security
  */
-async function runGitClone(repoUrl, targetDir, timeoutMs = 60000) {
+async function _runGitClone(repoUrl, targetDir, timeoutMs = 60000) {
   return executeHardenedGitClone(repoUrl, targetDir, { timeoutMs });
 }
 
@@ -122,7 +122,7 @@ async function extractZipArchive(zipFilePath, targetDir) {
 /**
  * Safely parses any URL or host string into a clean hostname and port
  */
-function parseNetworkTarget(inputTarget, defaultPort = 443) {
+function _parseNetworkTarget(inputTarget, defaultPort = 443) {
   if (!inputTarget || !String(inputTarget).trim()) {
     return null;
   }
@@ -158,7 +158,7 @@ const upload = multer({
 // --------------------------------------------------------------------------
 // 1. POST /scan/static
 // --------------------------------------------------------------------------
-router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmission.middleware(), upload.any(), async (req, res, next) => {
+router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmission.middleware(), upload.any(), async (req, res, _next) => {
   const uploadSessionId = `scan_${Date.now()}`;
   const uploadDir = path.resolve(ARTIFACTS_DIR, 'uploads', uploadSessionId);
   let targetDir = null;

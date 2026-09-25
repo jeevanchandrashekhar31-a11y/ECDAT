@@ -853,7 +853,7 @@ function generateExecutiveHtmlReport(report) {
   const weak = report.weak_deprecated_assets;
   const pqc = report.pqc_readiness;
   const apps = report.critical_applications;
-  const certs = report.certificates;
+//   const certs = report.certificates;
   const policy = report.policy_violations;
   const remediation = report.remediation_progress;
   const owners = report.business_ownership;

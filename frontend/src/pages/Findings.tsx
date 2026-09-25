@@ -14,7 +14,6 @@ import {
   Cpu,
   Clock,
   Sparkles,
-  Play,
   X,
 } from 'lucide-react';
 import { api } from '../api/client';
@@ -49,8 +48,6 @@ export const Findings: React.FC = () => {
   const [selectedFinding, setSelectedFinding] = useState<FindingItem | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'cbom' | 'pqc'>('overview');
 
-  // Triggering scan state
-  const [triggeringScan, setTriggeringScan] = useState<boolean>(false);
   const [scanMessage, setScanMessage] = useState<string | null>(null);
 
   // Review finding state
@@ -89,21 +86,7 @@ export const Findings: React.FC = () => {
     fetchFindings();
   }, [fetchFindings]);
 
-  // Handle start demo scan from empty state
-  const handleStartDemoScan = async () => {
-    setTriggeringScan(true);
-    setScanMessage(null);
-    try {
-      const seedRes = await api.seedEvaluationTenant();
-      setScanMessage(`Scan initiated successfully (${seedRes.scan_id}). Reloading findings...`);
-      await fetchFindings();
-    } catch (err: unknown) {
-      const e = err as Error;
-      setScanMessage(`Failed to trigger scan: ${e.message}`);
-    } finally {
-      setTriggeringScan(false);
-    }
-  };
+
 
   const handleReview = async (action: 'CONFIRM' | 'DISMISS') => {
     if (!selectedFinding) return;
@@ -221,14 +204,6 @@ export const Findings: React.FC = () => {
           >
             <RefreshCw size={15} className={loading ? 'animate-spin text-cyan-400' : ''} />
           </button>
-          <button
-            onClick={handleStartDemoScan}
-            disabled={triggeringScan}
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 flex items-center gap-2 transition-all disabled:opacity-50"
-          >
-            {triggeringScan ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            <span>{triggeringScan ? 'Running Scan...' : 'Start / Seed Scan'}</span>
-          </button>
         </div>
       </div>
 
@@ -329,18 +304,7 @@ export const Findings: React.FC = () => {
             <h3 className="text-base font-bold text-white mb-1">No Cryptographic Findings Detected</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
               This Evaluation Environment has not executed any cryptographic scans yet, or no findings match the selected filter.
-              Trigger a scan below to discover cryptographic primitives, identify quantum vulnerabilities, and populate findings.
             </p>
-          </div>
-          <div className="pt-2 flex justify-center gap-3">
-            <button
-              onClick={handleStartDemoScan}
-              disabled={triggeringScan}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-2"
-            >
-              {triggeringScan ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-              <span>{triggeringScan ? 'Triggering Scan...' : 'Start Evaluation Scan'}</span>
-            </button>
           </div>
         </div>
       )}

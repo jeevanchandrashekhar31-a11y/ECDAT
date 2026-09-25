@@ -264,7 +264,7 @@ function measureDirectorySizeAndCount(dirPath, maxSizeBytes = Infinity, maxFileC
 /**
  * Validates that an explicit local target_dir does not access arbitrary or sensitive system paths.
  */
-function validateSafeTargetDirectory(targetDir, baseWorkspaceDir) {
+function validateSafeTargetDirectory(targetDir, _baseWorkspaceDir) {
   if (!targetDir || typeof targetDir !== "string") {
     throw new GitSecurityError("Target directory must be a non-empty string");
   }
@@ -425,7 +425,7 @@ async function executeHardenedGitClone(repoUrl, targetDir, options = {}) {
     let processTimer = null;
     let terminated = false;
 
-    const killProcess = (reason) => {
+    const killProcess = (_reason) => {
       if (terminated) return;
       terminated = true;
       if (quotaTimer) clearInterval(quotaTimer);

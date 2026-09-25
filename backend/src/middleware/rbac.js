@@ -608,7 +608,7 @@ function requirePermission(permission, options = {}) {
 /**
  * Route authorization middleware accepting multiple permissions (OR/AND).
  */
-function requirePermissions(permissions = [], { matchAll = false, ...options } = {}) {
+function requirePermissions(permissions = [], { matchAll = false, ..._options } = {}) {
   const permList = Array.isArray(permissions) ? permissions : [permissions];
   return (req, res, next) => {
     if (!req.auth || !req.auth.authenticated) {

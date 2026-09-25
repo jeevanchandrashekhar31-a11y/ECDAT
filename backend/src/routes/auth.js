@@ -79,7 +79,7 @@ router.get("/oidc/login", (req, res) => {
  * POST /api/v1/auth/oidc/callback
  * Exchanges authorization code for short-lived token pair.
  */
-router.post("/oidc/callback", RATE_LIMITS.login.middleware(), async (req, res, next) => {
+router.post("/oidc/callback", RATE_LIMITS.login.middleware(), async (req, res, _next) => {
   try {
     const { code, state, error } = req.body || {};
     const ipAddress = req.ip || req.socket.remoteAddress || "127.0.0.1";
@@ -103,7 +103,7 @@ router.post("/oidc/callback", RATE_LIMITS.login.middleware(), async (req, res, n
  * POST /api/v1/auth/ldap/login
  * Authenticates user via ephemeral LDAP bind (zero password persistence).
  */
-router.post("/ldap/login", RATE_LIMITS.login.middleware(), async (req, res, next) => {
+router.post("/ldap/login", RATE_LIMITS.login.middleware(), async (req, res, _next) => {
   try {
     const { username, password } = req.body || {};
     if (!username || !password) {

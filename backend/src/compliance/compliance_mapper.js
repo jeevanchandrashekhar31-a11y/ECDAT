@@ -24,7 +24,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const Ajv = require("ajv");
+// const Ajv = require("ajv");
 const { getRules, DEFAULT_RULES_DIR } = require("../risk_engine/rules_loader");
 
 const DEFAULT_CATALOG_PATH = path.join(

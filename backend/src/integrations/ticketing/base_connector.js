@@ -42,7 +42,7 @@ class BaseTicketingConnector {
    * @param {TicketRequest} ticketRequest
    * @returns {Object} Vendor-specific payload
    */
-  formatPayload(ticketRequest) {
+  formatPayload(_ticketRequest) {
     throw new Error(`formatPayload() must be implemented by ${this.constructor.name}`);
   }
 
@@ -66,7 +66,7 @@ class BaseTicketingConnector {
    * @param {Object} payload
    * @returns {Promise<TicketResponse>}
    */
-  async sendCreateRequest(ticketRequest, payload) {
+  async sendCreateRequest(_ticketRequest, _payload) {
     throw new Error(`sendCreateRequest() must be implemented by ${this.constructor.name}`);
   }
 

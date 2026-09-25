@@ -140,7 +140,7 @@ function isScannerRoute(rawPath) {
 function classifyRoute(rawPath, method = "GET") {
   if (!rawPath || typeof rawPath !== "string") return ROUTE_CLASSIFICATIONS.ANONYMOUS;
   const p = rawPath.split("?")[0].toLowerCase().replace(/\/+$/, "") || "/";
-  const m = String(method).toUpperCase();
+//   const m = String(method).toUpperCase();
 
   // 1. Health
   if (p === "/health" || p === "/api/v1/health") {

@@ -71,7 +71,7 @@ class BaseKmsConnector {
    * @param {Object} [roleOrPermissions]
    * @returns {{ valid: boolean, violations: string[] }}
    */
-  validateLeastPrivilege(roleOrPermissions = {}) {
+  validateLeastPrivilege(_roleOrPermissions = {}) {
     return { valid: true, violations: [] };
   }
 
@@ -96,7 +96,7 @@ class BaseKmsConnector {
    * @param {string} keyId
    * @returns {Promise<KmsKeyMetadata>}
    */
-  async describeKey(keyId) {
+  async describeKey(_keyId) {
     throw new Error(`describeKey() must be implemented by ${this.constructor.name}`);
   }
 

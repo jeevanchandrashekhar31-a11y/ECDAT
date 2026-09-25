@@ -229,7 +229,7 @@ function deriveRecommendedRemediation(finding, asset = {}) {
  */
 function buildMigrationOptions(finding, asset = {}) {
   const algo = String(finding.algorithm || asset.algorithm || finding.name || "").toUpperCase();
-  const assetType = String(finding.asset_type || asset.asset_type || "algorithm").toLowerCase();
+//   const assetType = String(finding.asset_type || asset.asset_type || "algorithm").toLowerCase();
   const category = String(finding.category || asset.category || "").toLowerCase();
 
   const options = [];
@@ -472,7 +472,7 @@ function deriveDependencies(finding, asset = {}) {
  * Builds automated test gates and verification criteria.
  */
 function deriveTestingPlan(finding, asset = {}) {
-  const algo = String(finding.algorithm || asset.algorithm || "").toUpperCase();
+//   const algo = String(finding.algorithm || asset.algorithm || "").toUpperCase();
 
   return {
     stages: [
@@ -508,7 +508,7 @@ function deriveTestingPlan(finding, asset = {}) {
 /**
  * Builds rollback safety procedure and automated circuit-breaker triggers.
  */
-function deriveRollbackPlan(finding, asset = {}) {
+function deriveRollbackPlan(finding, _asset = {}) {
   return {
     mechanism: "Dynamic Feature Flag / Environment Variable Toggle",
     flag_name: "ENABLE_PQC_HYBRID_CRYPTO",
@@ -533,7 +533,7 @@ function deriveRollbackPlan(finding, asset = {}) {
 /**
  * Derives finding confidence level, score, and derivation evidence.
  */
-function deriveConfidence(finding, asset = {}, hint = {}) {
+function deriveConfidence(finding, _asset = {}, hint = {}) {
   let score = hint && typeof hint.score === "number" ? hint.score : 90;
   let level = "HIGH";
   let reasoning = "Direct source code AST analysis with verified cryptographic invocation and parameters.";

@@ -225,11 +225,21 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
         }
       }
 
-      // Batch Insert with Chunking
+      // Deduplicate assets and components by scan_id + id to prevent ON CONFLICT batch errors
+      const uniqueAssets = Array.from(new Map(assetsData.map(a => [`${a.scan_id}_${a.id}`, a])).values());
+      const uniqueComponents = Array.from(new Map(componentsData.map(c => [`${c.scan_id}_${c.id}`, c])).values());
+
       const chunkSize = 150;
-      for (let i = 0; i < findings.length; i += chunkSize) {
-        await trx("assets").insert(assetsData.slice(i, i + chunkSize)).onConflict(['scan_id', 'id']).merge();
-        await trx("components").insert(componentsData.slice(i, i + chunkSize)).onConflict(['scan_id', 'id']).ignore();
+      
+      for (let i = 0; i < uniqueAssets.length; i += chunkSize) {
+        await trx("assets").insert(uniqueAssets.slice(i, i + chunkSize)).onConflict(['scan_id', 'id']).merge();
+      }
+      
+      for (let i = 0; i < uniqueComponents.length; i += chunkSize) {
+        await trx("components").insert(uniqueComponents.slice(i, i + chunkSize)).onConflict(['scan_id', 'id']).ignore();
+      }
+
+      for (let i = 0; i < findingsData.length; i += chunkSize) {
         await trx("findings").insert(findingsData.slice(i, i + chunkSize));
         await trx("risk_assessments").insert(riskAssessmentsData.slice(i, i + chunkSize));
         const recsChunk = recommendationsData.slice(i, i + chunkSize);

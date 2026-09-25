@@ -60,7 +60,7 @@ const ROLE_DEFINITIONS = Object.freeze({
  */
 function generateLeastPrivilegeSql(options = {}) {
   const schema = options.schemaName || "public";
-  const dbName = options.databaseName || "ecdat";
+//   const dbName = options.databaseName || "ecdat";
 
   return `-- ============================================================================
 -- ECDAT PostgreSQL Least-Privilege Role Provisioning Script (Phase 16.2)
