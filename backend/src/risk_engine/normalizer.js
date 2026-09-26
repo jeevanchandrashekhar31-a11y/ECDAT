@@ -130,6 +130,39 @@ function normalizeAlgorithm(rawName, explicitKeySize = null) {
       keySize: null,
     };
   }
+  if (clean.includes("+") || clean.includes("hybrid")) {
+    return {
+      canonicalName: "Hybrid Post-Quantum",
+      matchedRule: {
+        id: "hybrid_pqc",
+        canonical_name: "Hybrid Post-Quantum",
+        category: "hybrid",
+        quantum_relevance: "hybrid_safe",
+      },
+      keySize: parsedKeySize,
+    };
+  }
+  if (clean.includes("kyber") || clean.includes("ml-kem")) {
+    return {
+      canonicalName: "ML-KEM",
+      matchedRule: algos.find((a) => a.id === "ml-kem") || { id: "ml-kem", canonical_name: "ML-KEM", quantum_relevance: "quantum_safe" },
+      keySize: parsedKeySize,
+    };
+  }
+  if (clean.includes("dilithium") || clean.includes("ml-dsa")) {
+    return {
+      canonicalName: "ML-DSA",
+      matchedRule: algos.find((a) => a.id === "ml-dsa") || { id: "ml-dsa", canonical_name: "ML-DSA", quantum_relevance: "quantum_safe" },
+      keySize: parsedKeySize,
+    };
+  }
+  if (clean.includes("sphincs") || clean.includes("slh-dsa")) {
+    return {
+      canonicalName: "SLH-DSA",
+      matchedRule: algos.find((a) => a.id === "slh-dsa") || { id: "slh-dsa", canonical_name: "SLH-DSA", quantum_relevance: "quantum_safe" },
+      keySize: parsedKeySize,
+    };
+  }
   if (clean.includes("rsa")) {
     return {
       canonicalName: "RSA",

@@ -22,6 +22,8 @@
 const { db, isDbConnected } = require("../db/connection");
 const { getScanById, getLatestScan } = require("./cbom_ingestion");
 const { getRules, calculateMosca } = require("../risk_engine");
+const { normalizeAlgorithm } = require("../risk_engine/normalizer");
+const { QuantumRelevance } = require("../risk_engine/types");
 const { globalCertInventory } = require("../domain/certificate_inventory");
 const { getDbAuditLogs } = require("../db/audit_logger");
 const { evaluatePolicyProfile } = require("../policy/policy_engine");
@@ -367,17 +369,16 @@ async function getEnterpriseDashboardViews(options = {}) {
   const penalty = criticalCount * 15 + highCount * 7 + mediumCount * 3 + quantumAtRiskCount * 5;
   const postureScore = Math.max(12, Math.min(100, Math.round(100 - penalty / Math.max(1, totalFindings))));
   const asymmetricFindings = findings.filter(f => {
-    const algoLower = (f.algorithm || "").toLowerCase();
-    return algoLower.includes("ml-kem") || algoLower.includes("ml-dsa") || algoLower.includes("slh-dsa") || 
-      algoLower.includes("hybrid") || algoLower.includes("+") || algoLower.includes("kyber") ||
-      algoLower.includes("rsa") || algoLower.includes("ecdsa") || algoLower.includes("ecdh") || 
-      algoLower.includes("dsa") || algoLower.includes("diffie-hellman") || algoLower.includes("x25519");
+    const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+    const category = matchedRule?.category || "";
+    return category === "asymmetric" || category === "hybrid" || category === "pqc";
   });
 
   const pqcReadinessPct = (asymmetricFindings.length === 0) ? null : Math.round(
-    (asymmetricFindings.filter((f) => f.mosca_status === "SAFE" || f.algorithm.toLowerCase().includes("kyber") || f.algorithm.toLowerCase().includes("ml-kem") || f.algorithm.toLowerCase().includes("ml-dsa") || f.algorithm.toLowerCase().includes("slh-dsa")).length /
-      Math.max(1, asymmetricFindings.length)) *
-      100
+    (asymmetricFindings.filter((f) => {
+      const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+      return matchedRule?.quantum_relevance === QuantumRelevance.QUANTUM_SAFE || matchedRule?.quantum_relevance === QuantumRelevance.HYBRID_SAFE;
+    }).length / Math.max(1, asymmetricFindings.length)) * 100
   );
 
   const executiveOverview = {
@@ -394,17 +395,11 @@ async function getEnterpriseDashboardViews(options = {}) {
     quantum_risk_count: quantumAtRiskCount,
     overall_cicd_pass: criticalCount === 0,
     quick_wins_count: findings.filter((f) => {
-      const algo = (f.algorithm || "").toUpperCase();
-      return (
-        algo.includes("MD5") ||
-        algo.includes("SHA1") ||
-        algo.includes("SHA-1") ||
-        algo.includes("DES") ||
-        algo.includes("RC4") ||
-        (algo.includes("RSA") && f.key_size > 0 && f.key_size < 2048) ||
-        algo.includes("TLS 1.0") ||
-        algo.includes("TLS 1.1")
-      );
+      const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+      if (!matchedRule) return false;
+      const isWeakRSA = matchedRule.id === "rsa" && f.key_size > 0 && f.key_size < 2048;
+      const isDeprecatedProto = matchedRule.id === "tls_1_0" || matchedRule.id === "tls_1_1";
+      return matchedRule.classical_risk_level === "critical" || isWeakRSA || isDeprecatedProto;
     }).length,
     kpis: [
       {
@@ -447,8 +442,14 @@ async function getEnterpriseDashboardViews(options = {}) {
         value: pqcReadinessPct !== null ? `${pqcReadinessPct}%` : null,
         change: pqcReadinessPct !== null ? "NIST FIPS 203/204/205 alignment" : "Not assessed",
         status: pqcReadinessPct !== null ? (pqcReadinessPct >= 75 ? "safe" : "warning") : "info",
-        evidenceCount: asymmetricFindings.filter((f) => f.mosca_status === "SAFE" || f.algorithm.toLowerCase().includes("kyber") || f.algorithm.toLowerCase().includes("ml-kem") || f.algorithm.toLowerCase().includes("ml-dsa") || f.algorithm.toLowerCase().includes("slh-dsa")).length,
-        evidence_items: asymmetricFindings.filter((f) => f.mosca_status === "SAFE" || f.algorithm.toLowerCase().includes("kyber") || f.algorithm.toLowerCase().includes("ml-kem") || f.algorithm.toLowerCase().includes("ml-dsa") || f.algorithm.toLowerCase().includes("slh-dsa")).map((f) => f.id),
+        evidenceCount: asymmetricFindings.filter((f) => {
+          const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+          return matchedRule?.quantum_relevance === QuantumRelevance.QUANTUM_SAFE || matchedRule?.quantum_relevance === QuantumRelevance.HYBRID_SAFE;
+        }).length,
+        evidence_items: asymmetricFindings.filter((f) => {
+          const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+          return matchedRule?.quantum_relevance === QuantumRelevance.QUANTUM_SAFE || matchedRule?.quantum_relevance === QuantumRelevance.HYBRID_SAFE;
+        }).map((f) => f.id),
         evidenceFilter: { mosca_status: "SAFE" },
       },
     ],
@@ -556,30 +557,29 @@ async function getEnterpriseDashboardViews(options = {}) {
   // VIEW 5: PQC READINESS
   // ==========================================================================
   const shorVulnerable = findings.filter((f) => {
-    const a = f.algorithm.toLowerCase();
-    return /\b(rsa|dsa|diffie|ec|ecc|ecdsa|ecdh|ed25519|ed448|curve25519|x25519)\b/.test(a) ||
-           a.startsWith("ec/");
+    const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+    return matchedRule?.quantum_relevance === QuantumRelevance.SHOR_VULNERABLE;
   });
   const groverVulnerable = findings.filter((f) => {
-    const a = f.algorithm.toLowerCase();
-    return (/\baes\b/.test(a) && f.key_size === 128) || /\b(3des|des)\b/.test(a);
+    const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+    return matchedRule?.quantum_relevance === QuantumRelevance.GROVER_VULNERABLE;
   });
   const pqcSafe = findings.filter((f) => {
-    const a = f.algorithm.toLowerCase();
-    return /\b(kyber|dilithium|sphincs)\b/.test(a) || (/\baes\b/.test(a) && f.key_size === 256);
+    const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+    return matchedRule?.quantum_relevance === QuantumRelevance.QUANTUM_SAFE;
   });
 
   const mlKemMatches = findings.filter((f) => {
-    const a = (f.algorithm || "").toLowerCase();
-    return a.includes("kyber") || a.includes("ml-kem");
+    const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+    return matchedRule?.id === "ml-kem" || matchedRule?.id === "kyber";
   });
   const mlDsaMatches = findings.filter((f) => {
-    const a = (f.algorithm || "").toLowerCase();
-    return a.includes("dilithium") || a.includes("ml-dsa");
+    const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+    return matchedRule?.id === "ml-dsa" || matchedRule?.id === "dilithium";
   });
   const slhDsaMatches = findings.filter((f) => {
-    const a = (f.algorithm || "").toLowerCase();
-    return a.includes("sphincs") || a.includes("slh-dsa");
+    const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+    return matchedRule?.id === "slh-dsa" || matchedRule?.id === "sphincs";
   });
 
   const pqcReadiness = {
@@ -590,7 +590,10 @@ async function getEnterpriseDashboardViews(options = {}) {
     grover_evidence: groverVulnerable.map((f) => f.id),
     pqc_safe_count: pqcSafe.length,
     pqc_evidence: pqcSafe.map((f) => f.id),
-    hybrid_adoption_count: findings.filter((f) => f.algorithm.toLowerCase().includes("hybrid") || f.algorithm.toLowerCase().includes("draft")).length,
+    hybrid_adoption_count: findings.filter((f) => {
+      const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+      return matchedRule?.quantum_relevance === QuantumRelevance.HYBRID_SAFE;
+    }).length,
     nist_standards_alignment: [
       {
         standard: "NIST FIPS 203 (ML-KEM)",
@@ -718,7 +721,12 @@ async function getEnterpriseDashboardViews(options = {}) {
         count: 0,
         classical_risk: f.classical_risk,
         quantum_relevance: f.quantum_relevance,
-        target_replacement: f.algorithm.includes("RSA") ? "ML-KEM-768 / Dilithium" : f.algorithm.includes("MD5") ? "SHA-256 / SHA-3" : "FIPS 203/204",
+        target_replacement: (() => {
+          const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+          if (matchedRule?.id === "rsa") return "ML-KEM-768 / Dilithium";
+          if (matchedRule?.id === "md5") return "SHA-256 / SHA-3";
+          return "FIPS 203/204";
+        })(),
         evidence_occurrences: [],
       });
     }
@@ -768,8 +776,14 @@ async function getEnterpriseDashboardViews(options = {}) {
         tls_version: nf.algorithm || "TLS 1.3",
         cipher_suites_count: nf.metadata?.cipher_suites_count || 1,
         weak_ciphers_detected: nf.severity === "Critical" || nf.severity === "High" ? 1 : 0,
-        pfs_supported: !nf.algorithm?.includes("1.0"),
-        hybrid_supported: nf.algorithm?.toLowerCase().includes("kyber") || false,
+        pfs_supported: (() => {
+          const { matchedRule } = normalizeAlgorithm(nf.algorithm);
+          return matchedRule?.id !== "tls_1_0";
+        })(),
+        hybrid_supported: (() => {
+          const { matchedRule } = normalizeAlgorithm(nf.algorithm);
+          return matchedRule?.quantum_relevance === QuantumRelevance.HYBRID_SAFE;
+        })(),
         cert_fingerprint: nf.metadata?.cert_fingerprint || `fp_${nf.id}`,
         evidence_finding_id: nf.id,
       };
@@ -808,8 +822,14 @@ async function getEnterpriseDashboardViews(options = {}) {
       description: "RSA key sizes below 2048 bits violate cryptographic security baselines and must be rejected.",
       severity: "Critical",
       threshold: "FAIL_CI_HIGH",
-      affected_count: findings.filter((f) => f.algorithm.includes("RSA") && f.key_size < 2048).length,
-      evidence_items: findings.filter((f) => f.algorithm.includes("RSA") && f.key_size < 2048).map((f) => f.id),
+      affected_count: findings.filter((f) => {
+        const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+        return matchedRule?.id === "rsa" && f.key_size < 2048;
+      }).length,
+      evidence_items: findings.filter((f) => {
+        const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+        return matchedRule?.id === "rsa" && f.key_size < 2048;
+      }).map((f) => f.id),
     },
     {
       rule_id: "RULE_DEPRECATED_HASH_MD5",
@@ -817,8 +837,8 @@ async function getEnterpriseDashboardViews(options = {}) {
       description: "MD5 is cryptographically broken due to practical collision attacks and must be replaced by SHA-256 or SHA-3.",
       severity: "Critical",
       threshold: "FAIL_CI_HIGH",
-      affected_count: findings.filter((f) => f.algorithm.toUpperCase().includes("MD5")).length,
-      evidence_items: findings.filter((f) => f.algorithm.toUpperCase().includes("MD5")).map((f) => f.id),
+      affected_count: findings.filter((f) => normalizeAlgorithm(f.algorithm, f.key_size).matchedRule?.id === "md5").length,
+      evidence_items: findings.filter((f) => normalizeAlgorithm(f.algorithm, f.key_size).matchedRule?.id === "md5").map((f) => f.id),
     },
     {
       rule_id: "RULE_TLS_MIN_1_2",
@@ -826,8 +846,14 @@ async function getEnterpriseDashboardViews(options = {}) {
       description: "TLS 1.0 and 1.1 are deprecated by RFC 8996 and prohibited in production environments.",
       severity: "Critical",
       threshold: "FAIL_CI_HIGH",
-      affected_count: findings.filter((f) => f.algorithm.includes("TLS 1.0") || f.algorithm.includes("TLS 1.1")).length,
-      evidence_items: findings.filter((f) => f.algorithm.includes("TLS 1.0") || f.algorithm.includes("TLS 1.1")).map((f) => f.id),
+      affected_count: findings.filter((f) => {
+        const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+        return matchedRule?.id === "tls_1_0" || matchedRule?.id === "tls_1_1";
+      }).length,
+      evidence_items: findings.filter((f) => {
+        const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+        return matchedRule?.id === "tls_1_0" || matchedRule?.id === "tls_1_1";
+      }).map((f) => f.id),
     },
     {
       rule_id: "RULE_PQC_HYBRID_TRANSITION",
@@ -854,30 +880,27 @@ async function getEnterpriseDashboardViews(options = {}) {
   // ==========================================================================
   const quickWins = findings
     .filter((f) => {
-      const algo = (f.algorithm || "").toUpperCase();
-      return (
-        algo.includes("MD5") ||
-        algo.includes("SHA1") ||
-        algo.includes("SHA-1") ||
-        algo.includes("DES") ||
-        algo.includes("RC4") ||
-        (algo.includes("RSA") && f.key_size > 0 && f.key_size < 2048) ||
-        algo.includes("TLS 1.0") ||
-        algo.includes("TLS 1.1")
-      );
+      const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+      if (!matchedRule) return false;
+      const isWeakRSA = matchedRule.id === "rsa" && f.key_size > 0 && f.key_size < 2048;
+      const isDeprecatedProto = matchedRule.id === "tls_1_0" || matchedRule.id === "tls_1_1";
+      return matchedRule.classical_risk_level === "critical" || isWeakRSA || isDeprecatedProto;
     })
     .slice(0, 10)
     .map((f, idx) => {
-      const algo = (f.algorithm || "").toUpperCase();
+      const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+      const isRSA = matchedRule?.id === "rsa";
+      const isTLS = matchedRule?.category === "protocol";
+      const isHash = matchedRule?.category === "hash";
       let target = "SHA-256";
       let rationale = `Deprecated ${f.algorithm} violates cryptographic hygiene standards and must be upgraded to neutralize known practical attacks.`;
-      if (algo.includes("RSA")) {
+      if (isRSA) {
         target = "RSA-3072 or ML-KEM-768";
         rationale = "Increasing RSA modulus to >= 3072 bits provides ~128 bits of classical entropy, halting IFP factoring via General Number Field Sieve (GNFS).";
-      } else if (algo.includes("TLS")) {
+      } else if (isTLS) {
         target = "TLS 1.3 / TLS 1.2";
         rationale = "Deprecates CBC-mode malleability and padding oracles. Enforces Ephemeral Elliptic Curve Diffie-Hellman (ECDHE) for Perfect Forward Secrecy (PFS) and authenticated encryption (AEAD).";
-      } else if (algo.includes("MD5") || algo.includes("SHA")) {
+      } else if (isHash) {
         target = "SHA-256 / SHA-3";
         rationale = "Neutralizes O(2^(n/2)) differential collision vulnerabilities. SHA-256 enforces 128-bit collision and 256-bit pre-image resistance bounds.";
       }
@@ -902,22 +925,22 @@ async function getEnterpriseDashboardViews(options = {}) {
       return (
         f.mosca_status === "CRITICAL_URGENT" ||
         f.mosca_status === "AT_RISK" ||
-        f.quantum_relevance?.includes("Shor") ||
-        (f.algorithm || "").toUpperCase().includes("ECDSA") ||
-        (f.algorithm || "").toUpperCase().includes("RSA")
+        (() => {
+          const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
+          return matchedRule?.quantum_relevance === QuantumRelevance.SHOR_VULNERABLE;
+        })()
       );
     })
     .filter((f) => !quickWins.some((qw) => qw.finding_id === f.id))
     .slice(0, 10)
     .map((f, idx) => {
-      const algo = (f.algorithm || "").toUpperCase();
+      const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
       let target = "NIST ML-KEM-768 (FIPS 203)";
       let pqcMigration = "Adopt NIST FIPS 203 ML-KEM hybrid key encapsulation.";
       if (
-        algo.includes("ECDSA") ||
-        algo.includes("SIGN") ||
-        algo.includes("ED25519") ||
-        algo.includes("RSA")
+        matchedRule?.id === "ecdsa" ||
+        matchedRule?.id === "ed25519" ||
+        matchedRule?.id === "rsa"
       ) {
         target = "ML-DSA-65 (FIPS 204) / Hybrid State";
         pqcMigration = "Phase 1: Dual-sign with classical and ML-DSA-65. Phase 2: Complete PQC cutover.";

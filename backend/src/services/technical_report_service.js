@@ -21,6 +21,8 @@
 const { db, isDbConnected } = require("../db/connection");
 const { getScanById, getLatestScan } = require("./cbom_ingestion");
 const { getRules } = require("../risk_engine");
+const { normalizeAlgorithm } = require("../risk_engine/normalizer");
+const { QuantumRelevance } = require("../risk_engine/types");
 const {
   buildEvidenceIntegrity,
   validateEvidenceIntegrity,
@@ -180,13 +182,16 @@ function buildTechnicalDrillDownItem(raw = {}, idx = 1) {
 
   // 11. Risk
   const isCrit = raw.severity === "Critical" || algoLower.includes("1024") || algoLower.includes("md5") || algoLower.includes("des");
-  const risk = {
-    severity: isCrit ? "CRITICAL" : raw.severity ? String(raw.severity).toUpperCase() : "HIGH",
-    risk_score: isCrit ? 92.5 : 74.0,
-    cwe_id: algoLower.includes("md5") ? "CWE-328" : "CWE-327",
-    cwe_name: algoLower.includes("md5") ? "Use of Weak Hash" : "Use of a Broken or Risky Cryptographic Algorithm",
-    quantum_vulnerable: algoLower.includes("rsa") || algoLower.includes("ecdsa") || algoLower.includes("dh"),
-    mosca_status: raw.mosca_status || "SAFE",
+    const { matchedRule } = normalizeAlgorithm(algoLower, keySize);
+    const quantum_vulnerable = matchedRule?.quantum_relevance === QuantumRelevance.SHOR_VULNERABLE || matchedRule?.quantum_relevance === QuantumRelevance.GROVER_VULNERABLE;
+
+    const risk = {
+      severity: isCrit ? "CRITICAL" : raw.severity ? String(raw.severity).toUpperCase() : "HIGH",
+      risk_score: isCrit ? 92.5 : 74.0,
+      cwe_id: algoLower.includes("md5") ? "CWE-328" : "CWE-327",
+      cwe_name: algoLower.includes("md5") ? "Use of Weak Hash" : "Use of a Broken or Risky Cryptographic Algorithm",
+      quantum_vulnerable: quantum_vulnerable,
+      mosca_status: raw.mosca_status || "SAFE",
     mosca_margin_years: raw.mosca_margin_years !== undefined && raw.mosca_margin_years !== null ? Number(raw.mosca_margin_years) : 0,
     regulatory_violations: [
       "NIST SP 800-131A Rev 2 Section 1.2 (Disallowed Key Size)",

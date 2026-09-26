@@ -22,6 +22,7 @@ const QuantumRelevance = Object.freeze({
   SHOR_VULNERABLE: "shor_vulnerable",
   GROVER_SENSITIVE: "grover_sensitive",
   QUANTUM_SAFE: "quantum_safe",
+  HYBRID_SAFE: "hybrid_safe",
   NOT_APPLICABLE: "not_applicable",
 });
 

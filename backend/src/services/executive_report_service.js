@@ -21,6 +21,8 @@ const crypto = require("crypto");
 const { db, isDbConnected } = require("../db/connection");
 const { getScanById, getLatestScan } = require("./cbom_ingestion");
 const { getRules, calculateMosca } = require("../risk_engine");
+const { normalizeAlgorithm } = require("../risk_engine/normalizer");
+const { QuantumRelevance } = require("../risk_engine/types");
 const { globalCertInventory } = require("../domain/certificate_inventory");
 const {
   buildEvidenceIntegrity,
@@ -413,22 +415,15 @@ async function generateExecutiveReport(options = {}) {
     const algoLower = (f.algorithm || "").toLowerCase();
     const ref = createEvidenceReference(f);
 
-    const isAsymmetric = 
-      algoLower.includes("ml-kem") || algoLower.includes("ml-dsa") || algoLower.includes("slh-dsa") || 
-      algoLower.includes("hybrid") || algoLower.includes("+") || algoLower.includes("kyber") ||
-      algoLower.includes("rsa") || algoLower.includes("ecdsa") || algoLower.includes("ecdh") || 
-      algoLower.includes("dsa") || algoLower.includes("diffie-hellman") || algoLower.includes("x25519");
+    const { matchedRule } = normalizeAlgorithm(algoLower, f.key_size);
+    const relevance = matchedRule?.quantum_relevance || QuantumRelevance.NOT_APPLICABLE;
 
-    if (isAsymmetric) {
-      if (algoLower.includes("ml-kem") || algoLower.includes("ml-dsa") || algoLower.includes("slh-dsa") || algoLower.includes("hybrid") || algoLower.includes("+") || algoLower.includes("kyber")) {
-        if (algoLower.includes("+") || algoLower.includes("hybrid")) {
-          hybridEvidence.push(ref);
-        } else {
-          qsEvidence.push(ref);
-        }
-      } else {
-        qvEvidence.push(ref);
-      }
+    if (relevance === QuantumRelevance.SHOR_VULNERABLE) {
+      qvEvidence.push(ref);
+    } else if (relevance === QuantumRelevance.QUANTUM_SAFE) {
+      qsEvidence.push(ref);
+    } else if (relevance === QuantumRelevance.HYBRID_SAFE) {
+      hybridEvidence.push(ref);
     }
   });
 

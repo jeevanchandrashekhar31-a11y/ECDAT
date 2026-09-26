@@ -206,7 +206,7 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     const reviewerLoginRes = await fetch(`${baseUrl}/api/v1/auth/demo/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ persona: "reviewer" }),
+      body: JSON.stringify({ persona: "reviewer", passcode: "ecdat-reviewer-2026" }),
     });
     assert.equal(reviewerLoginRes.status, 200);
     const reviewerAuth = await reviewerLoginRes.json();
@@ -253,7 +253,7 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     const secLeadLoginRes = await fetch(`${baseUrl}/api/v1/auth/demo/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ persona: "approver" }),
+      body: JSON.stringify({ persona: "approver", passcode: "ecdat-approver-2026" }),
     });
     assert.equal(secLeadLoginRes.status, 200);
     const secLeadAuth = await secLeadLoginRes.json();

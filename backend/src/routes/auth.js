@@ -840,6 +840,21 @@ async function handleDemoLogin(req, res) {
 
   const requestedPersona = String(req.body?.persona || req.query?.persona || "analyst").toLowerCase();
 
+  const EVALUATION_PASSCODES = {
+    analyst: null, // Open by default for initial entry
+    reviewer: "ecdat-reviewer-2026",
+    approver: "ecdat-approver-2026",
+    executive: "ecdat-executive-2026"
+  };
+
+  const passcode = req.body?.passcode || req.query?.passcode;
+  if (requestedPersona !== "analyst" && passcode !== EVALUATION_PASSCODES[requestedPersona]) {
+    return res.status(401).json({
+      error: "Unauthorized",
+      message: "Invalid or missing passcode for requested evaluation persona."
+    });
+  }
+
   const EVALUATION_PERSONAS = {
     analyst: {
       userId: "evaluation-analyst",

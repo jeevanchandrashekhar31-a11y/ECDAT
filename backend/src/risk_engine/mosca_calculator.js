@@ -127,6 +127,10 @@ function calculateMosca({
 
   return {
     status,
+    margin_years: moscaMargin,
+    x_years: finalX,
+    y_years: finalY,
+    z_years: finalZ,
     mosca_total_years: moscaTotal,
     mosca_margin_years: moscaMargin,
     base_values: {
