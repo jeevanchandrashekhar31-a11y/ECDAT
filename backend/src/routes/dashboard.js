@@ -74,8 +74,9 @@ router.get("/summary", async (req, res, next) => {
     const ruleVersion = rules?.algorithm_risk?.version || "2026.1";
 
     const connected = await isDbConnected();
-    if (connected) {
-      try {
+    if (!connected) return res.status(503).json({ error: "Database unavailable" });
+
+    try {
         let scanQuery = db("scans").select("*");
         if (scanId && scanId !== "all" && scanId !== "ALL") {
           scanQuery = scanQuery.where("id", scanId);
@@ -109,11 +110,8 @@ router.get("/summary", async (req, res, next) => {
 
           // 1. Top Risky Assets
           let assetQuery = db("assets")
-            .whereIn("scan_id", targetScanIds);
-            
-          if (!(targetScanIds.length === 1 && targetScanIds[0] === "demo-synthetic-scan")) {
-            assetQuery = assetQuery.where("is_synthetic", false);
-          }
+            .whereIn("scan_id", targetScanIds)
+            .where("is_synthetic", false);
 
           const assetRows = await assetQuery
             .orderByRaw(
@@ -503,150 +501,8 @@ router.get("/summary", async (req, res, next) => {
           });
         }
       } catch (dbErr) {
-        console.warn(
-          "Database query fallback to in-memory for dashboard:",
-          dbErr.message,
-        );
+        return next(dbErr);
       }
-    }
-
-    // In-memory fallback
-    const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
-
-    if (!scan) {
-      return res.status(200).json({
-        scan_id: null,
-        message: "No scans available. Please upload or ingest a CBOM first.",
-        policy_profile: policyProfile || "internal_enterprise",
-        threat_horizon: requestedThreatHorizon || "baseline",
-        rule_version: ruleVersion,
-        metrics: {
-          total_assets: 0,
-          total_findings: 0,
-          critical_findings: 0,
-          assets_at_quantum_risk: 0,
-          assets_at_risk: 0,
-          assets_critical_urgent: 0,
-          unknown_posture_percentage: 0,
-          severity_counts: {
-            critical: 0,
-            high: 0,
-            medium: 0,
-            low: 0,
-            informational: 0,
-          },
-          mosca_status_counts: {
-            SAFE: 0,
-            WATCH: 0,
-            AT_RISK: 0,
-            CRITICAL_URGENT: 0,
-          },
-          overall_cicd_pass: true,
-        },
-        findings_by_source: { network: 0, static: 0, "binary-container": 0 },
-        most_common_risky_algorithms: [],
-        top_affected_services: [],
-        risk_trend: [],
-        top_risky_assets: [],
-        recommendations: [],
-        mosca_analysis_table: [],
-      });
-    }
-
-    const activeThreatHorizon = requestedThreatHorizon || scan.threat_horizon || "baseline";
-    const rawFindings = scan.classified_findings || [];
-    const findingsBySource = { network: 0, static: 0, "binary-container": 0 };
-    const algoFreq = {};
-
-    for (const f of rawFindings) {
-      const src = String(f.source || "").toLowerCase();
-      if (
-        src.includes("network") ||
-        src.includes("tls") ||
-        src.includes("ssh")
-      ) {
-        findingsBySource.network++;
-      } else if (
-        src.includes("container") ||
-        src.includes("binary") ||
-        src.includes("syft")
-      ) {
-        findingsBySource["binary-container"]++;
-      } else {
-        findingsBySource.static++;
-      }
-
-      if (f.algorithm) {
-        algoFreq[f.algorithm] = (algoFreq[f.algorithm] || 0) + 1;
-      }
-    }
-
-    const mostCommonRiskyAlgorithms = Object.entries(algoFreq)
-      .map(([algo, count]) => ({ algorithm: algo, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-
-    const topAssets = scan.top_risky_assets || [];
-    const topAffectedServices = topAssets.slice(0, 5).map((a) => ({
-      name: a.primary_identifier || a.asset_id,
-      severity: a.severity || "Informational",
-      type: a.asset_type || "Unknown",
-    }));
-
-    const totalAssets = scan.metrics?.total_assets || topAssets.length || 0;
-    const unclassifiedCount = topAssets.filter(
-      (a) => String(a.severity).toLowerCase() === "informational",
-    ).length;
-    const unknownPosturePercentage =
-      totalAssets > 0
-        ? Number(((unclassifiedCount / totalAssets) * 100).toFixed(1))
-        : 0;
-
-    const riskTrend = [
-      {
-        scan_id: scan.id,
-        scan_name: scan.name || "Current Scan",
-        date: new Date(scan.created_at).toLocaleDateString([], {
-          month: "short",
-          day: "numeric",
-        }),
-        critical: scan.metrics?.severity_counts?.critical || 0,
-        high: scan.metrics?.severity_counts?.high || 0,
-        quantum_risk: scan.metrics?.assets_at_quantum_risk || 0,
-        total_findings: scan.metrics?.total_findings || 0,
-      },
-    ];
-
-    const moscaCounts = scan.metrics?.mosca_status_counts || {
-      SAFE: 0,
-      WATCH: 0,
-      AT_RISK: 0,
-      CRITICAL_URGENT: 0,
-    };
-
-    res.status(200).json({
-      scan_id: scan.id,
-      scan_name: scan.name,
-      policy_profile: scan.policy_profile,
-      threat_horizon: activeThreatHorizon,
-      rule_version: ruleVersion,
-      created_at: scan.created_at,
-      metrics: {
-        ...scan.metrics,
-        critical_findings: scan.metrics?.severity_counts?.critical || 0,
-        assets_at_risk: moscaCounts.AT_RISK || 0,
-        assets_critical_urgent: moscaCounts.CRITICAL_URGENT || 0,
-        unknown_posture_percentage: unknownPosturePercentage,
-      },
-      findings_by_source: findingsBySource,
-      most_common_risky_algorithms: mostCommonRiskyAlgorithms,
-      top_affected_services: topAffectedServices,
-      risk_trend: riskTrend,
-      top_risky_assets: scan.top_risky_assets || [],
-      recommendations: scan.summary?.recommendations || [],
-      mosca_analysis_table: scan.summary?.mosca_analysis_table || [],
-      assumptions: scan.summary?.assumptions || [],
-    });
   } catch (err) {
     next(err);
   }

@@ -84,7 +84,7 @@ async function seedTwoTenantsData() {
   inMemoryScansStore.clear();
   defaultObjectStateRegistry.clear();
   globalCertInventory.inventory.clear();
-  await db("remediations").del();
+  await db("remediations").whereIn("id", ["appr-alpha-001", "appr-beta-001"]).del();
 
   // Provision Tenant A (tenant-alpha)
   const scanAlpha = {
@@ -138,7 +138,7 @@ async function seedTwoTenantsData() {
     },
   };
   inMemoryScansStore.set(scanAlpha.id, scanAlpha);
-  await persistScanToPostgres(scanAlpha, scanAlpha.annotated_bom).catch(() => {});
+  await persistScanToPostgres(scanAlpha, scanAlpha.annotated_bom).catch((err) => { console.error("Alpha Error", err); });
 
   defaultObjectStateRegistry.registerProject({
     id: "project-alpha-001",
@@ -223,7 +223,7 @@ async function seedTwoTenantsData() {
     },
   };
   inMemoryScansStore.set(scanBeta.id, scanBeta);
-  await persistScanToPostgres(scanBeta, scanBeta.annotated_bom).catch(() => {});
+  await persistScanToPostgres(scanBeta, scanBeta.annotated_bom).catch((err) => { console.error("Beta Error", err); });
 
   defaultObjectStateRegistry.registerProject({
     id: "project-beta-001",

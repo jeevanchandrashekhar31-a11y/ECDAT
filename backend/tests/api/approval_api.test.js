@@ -89,7 +89,8 @@ test("Approval API - Full lifecycle with real distinct roles and separation of d
     assert.ok(
       selfAppData.message.includes("Four-Eyes") ||
         selfAppData.message.includes("cannot approve") ||
-        selfAppData.message.includes("Unauthorized"),
+        selfAppData.message.includes("Unauthorized") ||
+        selfAppData.message.includes("not authorized"),
       "Error must indicate Four-Eyes self-approval violation",
     );
 

@@ -14,7 +14,7 @@ test("Risk Engine - MD5 is classified as Critical classical risk", () => {
   const result = classifyFinding({
     algorithm: "md5",
     assetType: "file",
-    policyProfile: "internal_enterprise",
+    policyProfile: "ecdat_enterprise_baseline",
   });
 
   assert.strictEqual(result.algorithm, "MD5");
@@ -68,7 +68,7 @@ test("Risk Engine - RSA-2048 is Medium under standard policy but flagged under R
   const enterpriseResult = classifyFinding({
     algorithm: "RSA-2048",
     assetType: "certificate",
-    policyProfile: "internal_enterprise",
+    policyProfile: "ecdat_enterprise_baseline",
     dataSensitivity: "internal",
   });
   assert.strictEqual(enterpriseResult.algorithm, "RSA");
@@ -79,7 +79,7 @@ test("Risk Engine - RSA-2048 is Medium under standard policy but flagged under R
   const bfsiResult = classifyFinding({
     algorithm: "RSA-2048",
     assetType: "certificate",
-    policyProfile: "regulated_bfsi",
+    policyProfile: "india_financial_services_composite",
     dataSensitivity: "confidential",
   });
   assert.strictEqual(bfsiResult.key_size, 2048);
@@ -167,7 +167,7 @@ test("Risk Engine - Self-signed certificate in Public Internet vs Internal Enter
     algorithm: "RSA",
     keySize: 2048,
     assetType: "certificate",
-    policyProfile: "public_internet",
+    policyProfile: "pci_dss_v4_0_1",
     certificateProperties: { isSelfSigned: true, isExpired: false },
   });
   assert.ok(
@@ -180,7 +180,7 @@ test("Risk Engine - Self-signed certificate in Public Internet vs Internal Enter
     algorithm: "RSA",
     keySize: 2048,
     assetType: "certificate",
-    policyProfile: "internal_enterprise",
+    policyProfile: "nist_crypto_transition",
     certificateProperties: { isSelfSigned: true, isExpired: false },
   });
   assert.ok(

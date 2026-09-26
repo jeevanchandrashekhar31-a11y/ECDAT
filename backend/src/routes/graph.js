@@ -1,6 +1,6 @@
 const express = require("express");
 const { buildCryptoRelationshipGraph } = require("../services/crypto_graph_service");
-const { getScanById } = require("../services/cbom_ingestion");
+const { db, isDbConnected } = require("../db/connection");
 
 const router = express.Router();
 
@@ -15,22 +15,28 @@ router.get("/", async (req, res, next) => {
     const scanId = req.query.scanId || req.query.scan_id;
 
     if (scanId && scanId !== "all") {
+      const connected = await isDbConnected();
+      if (!connected) return res.status(503).json({ error: "Database unavailable" });
+
       const isPlatformAdmin = Boolean(req.tenantContext?.isPlatformAdmin);
       const callerTenant = req.tenantContext?.tenantId || req.auth?.user?.tenantId || req.auth?.tenantId;
 
-      const scan = await getScanById(scanId, { isPlatformAdmin: true });
-      if (!scan) {
-        return res.status(404).json({
-          error: "NotFound",
-          message: `Scan '${scanId}' not found`,
-        });
+      let scanQuery = db("scans").where("id", scanId);
+      
+      if (!isPlatformAdmin) {
+        if (callerTenant) {
+          scanQuery = scanQuery.andWhere("tenant_id", callerTenant);
+        } else {
+          scanQuery = scanQuery.whereRaw("1 = 0");
+        }
       }
 
-      if (!isPlatformAdmin && scan.tenantId && callerTenant && scan.tenantId !== callerTenant) {
-        return res.status(403).json({
-          error: "TenantBoundaryViolation",
-          code: "HORIZONTAL_TENANT_VIOLATION",
-          message: `Cannot access scan belonging to foreign tenant '${scan.tenantId}'`,
+      const scanRow = await scanQuery.select("id", "tenant_id").first();
+
+      if (!scanRow) {
+        return res.status(404).json({
+          error: "NotFound",
+          message: `Scan '${scanId}' not found or access denied`,
         });
       }
     }

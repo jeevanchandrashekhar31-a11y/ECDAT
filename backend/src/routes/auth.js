@@ -820,138 +820,7 @@ router.delete(
   }
 );
 
-/**
- * Helper to seed synthetic demo dataset into demo-tenant.
- */
-async function seedDemoDataset() {
-  const samplePath = path.resolve(__dirname, "../../../examples/FINAL_CBOM_SAMPLE.json");
-  let rawCbom = null;
-  if (fs.existsSync(samplePath)) {
-    try {
-      rawCbom = JSON.parse(fs.readFileSync(samplePath, "utf8"));
-    } catch {
-      rawCbom = null;
-    }
-  }
 
-  if (!rawCbom) {
-    rawCbom = {
-      bomFormat: "CycloneDX",
-      specVersion: "1.6",
-      serialNumber: `urn:uuid:${crypto.randomUUID()}`,
-      version: 1,
-      metadata: {
-        component: {
-          type: "application",
-          name: "Demo Payments & Cryptographic Gateway",
-          version: "2.4.0-synthetic",
-          description: "Demo Environment — synthetic dataset representing enterprise cryptographic posture",
-        },
-      },
-      components: [
-        {
-          type: "cryptographic-asset",
-          name: "legacy-session-signing-rsa",
-          version: "1.0.0",
-          cryptoProperties: {
-            assetType: "algorithm",
-            algorithmProperties: {
-              primitive: "signature",
-              parameterSetIdentifier: "RSA-1024",
-              classicalSecurityLevel: 80,
-              nistQuantumSecurityLevel: 0,
-            },
-          },
-          evidence: {
-            occurrences: [
-              {
-                location: "src/auth/legacy_token_signer.c",
-                line: 42,
-                symbol: "RSA_generate_key_ex",
-              },
-            ],
-          },
-        },
-        {
-          type: "cryptographic-asset",
-          name: "data-at-rest-3des",
-          version: "1.1.0",
-          cryptoProperties: {
-            assetType: "algorithm",
-            algorithmProperties: {
-              primitive: "block-cipher",
-              parameterSetIdentifier: "3DES-EDE-CBC",
-              classicalSecurityLevel: 80,
-              nistQuantumSecurityLevel: 0,
-            },
-          },
-          evidence: {
-            occurrences: [
-              {
-                location: "services/storage/legacy_crypto_driver.py",
-                line: 88,
-                symbol: "DES3.new",
-              },
-            ],
-          },
-        },
-        {
-          type: "cryptographic-asset",
-          name: "quantum-resistant-kem-candidate",
-          version: "1.0.0",
-          cryptoProperties: {
-            assetType: "algorithm",
-            algorithmProperties: {
-              primitive: "kem",
-              parameterSetIdentifier: "ML-KEM-768",
-              classicalSecurityLevel: 192,
-              nistQuantumSecurityLevel: 3,
-            },
-          },
-          evidence: {
-            occurrences: [
-              {
-                location: "src/crypto/pqc_hybrid_exchange.rs",
-                line: 15,
-                symbol: "ml_kem_768_keypair",
-              },
-            ],
-          },
-        },
-      ],
-    };
-  }
-
-  let activePolicyProfile = "internal_enterprise";
-  try {
-    const connected = await isDbConnected({ timeoutMs: 1500 });
-    if (connected && db) {
-      const seededRow = await db("policy_profiles").select("id").first();
-      if (seededRow?.id) {
-        activePolicyProfile = seededRow.id;
-      }
-    }
-  } catch (_err) {
-    // Non-fatal if DB is disconnected/in-memory mode
-  }
-
-  return await cbomIngestionService.ingestCbom(rawCbom, {
-    scanId: "demo-synthetic-scan",
-    scanName: "Demo Environment — synthetic dataset",
-    scannerType: "static",
-    projectName: "Demo Cryptographic Discovery",
-    policyProfile: activePolicyProfile,
-    threat_horizon: "baseline_2033",
-    deployment_context: "internet_facing",
-    tenantId: "demo-tenant",
-    tenantContext: {
-      tenantId: "demo-tenant",
-      userId: "demo-system",
-      roles: ["viewer"],
-      isPlatformAdmin: false,
-    },
-  });
-}
 
 /**
  * POST /api/v1/auth/demo/login & POST /auth/demo/login
@@ -978,6 +847,12 @@ async function handleDemoLogin(req, res) {
       name: "Security Analyst",
       roles: ["analyst"],
     },
+    reviewer: {
+      userId: "evaluation-reviewer",
+      username: "evaluation-reviewer",
+      name: "Security Reviewer",
+      roles: ["reviewer", "analyst"],
+    },
     approver: {
       userId: "evaluation-approver",
       username: "evaluation-approver",
@@ -988,7 +863,7 @@ async function handleDemoLogin(req, res) {
       userId: "evaluation-executive",
       username: "evaluation-executive",
       name: "Executive Viewer",
-      roles: ["viewer"],
+      roles: ["viewer", "evaluation_operator"],
     }
   };
 
@@ -1013,31 +888,7 @@ async function handleDemoLogin(req, res) {
     csrfToken,
   });
 
-  // Auto-seed synthetic data if evaluation tenant is empty and caller didn't explicitly request empty
-  const shouldSeed = req.body?.seed !== false && req.query?.seed !== "false" && req.query?.empty !== "true";
-  let seededScan = null;
-  if (shouldSeed) {
-    const existingScans = Array.from(inMemoryScansStore.values()).filter(
-      (s) => s.tenantId === "evaluation-tenant"
-    );
-    if (existingScans.length === 0) {
-      try {
-        seededScan = await seedDemoDataset(); // using existing function to seed synthetic dataset
-        // Ensure seeded scan uses the correct tenant
-        if (seededScan) {
-          seededScan.tenantId = "evaluation-tenant";
-          inMemoryScansStore.set(seededScan.id, seededScan);
-          const { db, isDbConnected } = require("../db/connection");
-          const connected = await isDbConnected();
-          if (connected) {
-            await db("scans").where("id", seededScan.id).update({ tenant_id: "evaluation-tenant" }).catch(() => {});
-          }
-        }
-      } catch (seedErr) {
-        console.warn("Evaluation dataset auto-seed notice:", seedErr.message);
-      }
-    }
-  }
+  // Auto-seed synthetic data removed due to prototype audit requirements forbidding fabricated evidence.
 
   defaultAuditService.logEvent({
     category: AUDIT_CATEGORIES.LOGIN,
@@ -1050,11 +901,14 @@ async function handleDemoLogin(req, res) {
     },
     tenantId: "evaluation-tenant",
     status: AUDIT_STATUSES.SUCCESS,
-    details: { method: "evaluation_auth", persona: requestedPersona, seeded: Boolean(seededScan) },
+    details: { method: "evaluation_auth", persona: requestedPersona },
   }).catch(() => {});
 
   return res.json({
     csrfToken,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    tokenType: "Bearer",
     demoMode: true, // Legacy flag mapping to evaluate
     evaluationMode: true,
     user: {
@@ -1086,6 +940,11 @@ const handleDemoReset = async (req, res) => {
     return res.status(403).json({ error: "Forbidden", message: "Evaluation mode is disabled." });
   }
 
+  const userRoles = req.auth?.roles || [req.auth?.role] || [];
+  if (authMode !== "demo" && !userRoles.includes("evaluation_operator") && !userRoles.includes("admin") && !userRoles.includes("platform administrator")) {
+    return res.status(403).json({ error: "Forbidden", message: "Requires EVALUATION_OPERATOR capability to reset environment." });
+  }
+
   // Clear scans for evaluation-tenant
   await clearScans({ tenantId: "evaluation-tenant", isPlatformAdmin: false });
 
@@ -1102,10 +961,53 @@ const handleDemoReset = async (req, res) => {
 router.post("/evaluation/reset", handleDemoReset);
 router.post("/demo/reset", handleDemoReset);
 
+async function seedDemoDataset() {
+  const cbom = {
+    bomFormat: "CycloneDX",
+    specVersion: "1.6",
+    serialNumber: "urn:uuid:" + require("crypto").randomUUID(),
+    version: 1,
+    components: [
+      {
+        type: "cryptographic-asset",
+        name: "Legacy RSA Key",
+        bomRef: "rsa-key-1",
+        cryptoProperties: {
+          assetType: "algorithm",
+          algorithmProperties: {
+            primitive: "public-key-encryption",
+            parameterSetIdentifier: "1024"
+          }
+        }
+      },
+      {
+        type: "cryptographic-asset",
+        name: "Legacy 3DES",
+        bomRef: "3des-alg-1",
+        cryptoProperties: {
+          assetType: "algorithm",
+          algorithmProperties: {
+            primitive: "block-cipher",
+            parameterSetIdentifier: "3des"
+          }
+        }
+      }
+    ]
+  };
+  
+  const scanResult = await cbomIngestionService.ingestCbom(cbom, { tenantId: "evaluation-tenant" });
+  return { id: scanResult.id, tenantId: "evaluation-tenant" };
+}
+
 // POST /evaluation/seed: Explicitly seed synthetic data
 const handleDemoSeed = async (req, res, next) => {
   if (!req.auth?.authenticated) {
     return res.status(401).json({ error: "Unauthorized", message: "Authentication required for evaluation seeds." });
+  }
+
+  const userRoles = req.auth?.roles || [req.auth?.role] || [];
+  if (config.AUTH_MODE !== "demo" && !userRoles.includes("evaluation_operator") && !userRoles.includes("admin") && !userRoles.includes("platform administrator")) {
+    return res.status(403).json({ error: "Forbidden", message: "Requires EVALUATION_OPERATOR capability to seed environment." });
   }
 
   const authMode = config.AUTH_MODE || "production";
@@ -1190,6 +1092,9 @@ router.post("/local/login", RATE_LIMITS.login.middleware(), (req, res) => {
     return res.json({
       csrfToken,
       user: authResult.user,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      tokenType: "Bearer"
     });
   } catch (err) {
     const ip = req.ip || req.socket?.remoteAddress || "127.0.0.1";
@@ -1733,6 +1638,9 @@ router.post("/mfa/verify", RATE_LIMITS.mfa.middleware(), (req, res) => {
 
     return res.json({
       csrfToken,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      tokenType: "Bearer",
       user: {
         userId: challengeUser.userId,
         username: challengeUser.username,

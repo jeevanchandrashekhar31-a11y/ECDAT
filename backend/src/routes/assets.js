@@ -600,7 +600,7 @@ router.get("/:assetId", async (req, res, next) => {
  */
 router.post("/", async (req, res, next) => {
   try {
-//     const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
+    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
     const callerTenant = req.tenantContext?.tenantId || "default-tenant";
     const { primary_identifier, asset_type = "cryptographic-key", data_sensitivity = "internal", business_criticality = "medium", metadata = {} } = req.body || {};
 
@@ -623,6 +623,36 @@ router.post("/", async (req, res, next) => {
       created_at: new Date().toISOString(),
     };
 
+    const mode = process.env.DATA_STORE_MODE || "postgres";
+
+    if (mode === "postgres") {
+      const connected = await isDbConnected();
+      if (!connected) throw new Error("Database connection required but unavailable.");
+      
+      const latestScan = await db("scans")
+        .select("id", "tenant_id")
+        .where(isPlatformAdmin ? {} : { tenant_id: callerTenant })
+        .orderBy("created_at", "desc")
+        .first();
+        
+      if (latestScan) {
+        await db("assets").insert({
+          scan_id: latestScan.id,
+          id: assetId,
+          primary_identifier,
+          tenant_id: callerTenant,
+          asset_type,
+          data_sensitivity,
+          business_criticality,
+          highest_severity: "Informational",
+          at_quantum_risk: false,
+          cicd_pass: true,
+          created_at: new Date().toISOString(),
+        });
+      }
+      return res.status(201).json(newAsset);
+    }
+
     const scan = getLatestScan(req.tenantContext);
     if (scan) {
       scan.top_risky_assets = scan.top_risky_assets || [];
@@ -644,8 +674,43 @@ router.put("/:id", async (req, res, next) => {
     const targetId = req.params.id;
     const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
     const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+    const { data_sensitivity, business_criticality } = req.body || {};
 
-    // Check in-memory scans store and database for target asset
+    const mode = process.env.DATA_STORE_MODE || "postgres";
+    if (mode === "postgres") {
+      const connected = await isDbConnected();
+      if (!connected) throw new Error("Database connection required but unavailable.");
+      
+      let query = db("assets")
+        .join("scans", "assets.scan_id", "scans.id")
+        .where((qb) => {
+          qb.where("assets.id", targetId).orWhere("assets.primary_identifier", targetId);
+        })
+        .select("assets.*", "scans.tenant_id");
+        
+      const assetRow = await query.first();
+      
+      if (!assetRow) {
+        return res.status(404).json({ error: "NotFound", message: `Asset '${targetId}' not found` });
+      }
+
+      if (!isPlatformAdmin && assetRow.tenant_id !== callerTenant) {
+        return res.status(403).json({ error: "Forbidden", message: "Permission denied", code: "HORIZONTAL_TENANT_VIOLATION" });
+      }
+      
+      const updateData = {};
+      if (data_sensitivity) updateData.data_sensitivity = data_sensitivity;
+      if (business_criticality) updateData.business_criticality = business_criticality;
+      
+      if (Object.keys(updateData).length > 0) {
+        await db("assets").where({ id: assetRow.id }).update(updateData);
+        Object.assign(assetRow, updateData);
+      }
+      
+      return res.json({ success: true, asset: assetRow });
+    }
+
+    // In-memory mode
     let targetScan = null;
     let asset = null;
 
@@ -654,42 +719,17 @@ router.put("/:id", async (req, res, next) => {
         (x) => x.asset_id === targetId || x.primary_identifier === targetId
       );
       if (a) {
+        if (!isPlatformAdmin && (s.tenantId || "default-tenant") !== callerTenant) continue;
         asset = a;
         targetScan = s;
         break;
       }
     }
 
-    const connected = await isDbConnected();
-    if (connected && !asset) {
-      try {
-        const assetRow = await db("assets")
-          .join("scans", "assets.scan_id", "scans.id")
-          .where((qb) => {
-            qb.where("assets.id", targetId).orWhere("assets.primary_identifier", targetId);
-          })
-          .select("assets.*", "scans.tenant_id")
-          .first();
-        if (assetRow) {
-          asset = assetRow;
-          targetScan = { tenantId: assetRow.tenant_id };
-        }
-      } catch (_err) {}
-    }
-
     if (!targetScan || !asset) {
       return res.status(404).json({ error: "NotFound", message: `Asset '${targetId}' not found` });
     }
 
-    if (!isPlatformAdmin && targetScan.tenantId && targetScan.tenantId !== callerTenant) {
-      return res.status(403).json({
-        error: "TenantBoundaryViolation",
-        code: "HORIZONTAL_TENANT_VIOLATION",
-        message: `Cannot modify asset belonging to tenant '${targetScan.tenantId}'`,
-      });
-    }
-
-    const { data_sensitivity, business_criticality } = req.body || {};
     if (data_sensitivity) asset.data_sensitivity = data_sensitivity;
     if (business_criticality) asset.business_criticality = business_criticality;
 
@@ -709,7 +749,35 @@ router.delete("/:id", async (req, res, next) => {
     const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
     const callerTenant = req.tenantContext?.tenantId || "default-tenant";
 
-    // Check in-memory scans store and database for target asset
+    const mode = process.env.DATA_STORE_MODE || "postgres";
+    if (mode === "postgres") {
+      const connected = await isDbConnected();
+      if (!connected) throw new Error("Database connection required but unavailable.");
+      
+      let query = db("assets")
+        .join("scans", "assets.scan_id", "scans.id")
+        .where((qb) => {
+          qb.where("assets.id", targetId).orWhere("assets.primary_identifier", targetId);
+        })
+        .select("assets.id", "scans.tenant_id");
+        
+      const assetRow = await query.first();
+      
+      if (!assetRow) {
+        return res.status(404).json({ error: "NotFound", message: `Asset '${targetId}' not found` });
+      }
+
+      if (!isPlatformAdmin && assetRow.tenant_id !== callerTenant) {
+        return res.status(403).json({ error: "Forbidden", message: "Permission denied", code: "HORIZONTAL_TENANT_VIOLATION" });
+      }
+      
+      await db("findings").where({ asset_id: targetId }).orWhere({ asset_id: assetRow.id }).del();
+      await db("assets").where({ id: assetRow.id }).del();
+      
+      return res.json({ success: true, message: `Asset '${targetId}' deleted successfully.` });
+    }
+
+    // In-memory mode
     let targetScan = null;
     let assetIdx = -1;
 
@@ -718,48 +786,18 @@ router.delete("/:id", async (req, res, next) => {
         (x) => x.asset_id === targetId || x.primary_identifier === targetId
       );
       if (idx !== -1) {
+        if (!isPlatformAdmin && (s.tenantId || "default-tenant") !== callerTenant) continue;
         assetIdx = idx;
         targetScan = s;
         break;
       }
     }
 
-    const connected = await isDbConnected();
-    let dbAssetRow = null;
-    if (connected && assetIdx === -1) {
-      try {
-        dbAssetRow = await db("assets")
-          .join("scans", "assets.scan_id", "scans.id")
-          .where((qb) => {
-            qb.where("assets.id", targetId).orWhere("assets.primary_identifier", targetId);
-          })
-          .select("assets.*", "scans.tenant_id")
-          .first();
-        if (dbAssetRow) {
-          targetScan = { tenantId: dbAssetRow.tenant_id };
-        }
-      } catch (_err) {}
-    }
-
-    if (!targetScan || (assetIdx === -1 && !dbAssetRow)) {
+    if (!targetScan || assetIdx === -1) {
       return res.status(404).json({ error: "NotFound", message: `Asset '${targetId}' not found` });
     }
 
-    if (!isPlatformAdmin && targetScan.tenantId && targetScan.tenantId !== callerTenant) {
-      return res.status(403).json({
-        error: "TenantBoundaryViolation",
-        code: "HORIZONTAL_TENANT_VIOLATION",
-        message: `Cannot delete asset belonging to tenant '${targetScan.tenantId}'`,
-      });
-    }
-
-    if (assetIdx !== -1 && targetScan.top_risky_assets) {
-      targetScan.top_risky_assets.splice(assetIdx, 1);
-    }
-    if (connected && dbAssetRow) {
-      await db("assets").where({ id: dbAssetRow.id }).del().catch(() => {});
-    }
-
+    targetScan.top_risky_assets.splice(assetIdx, 1);
     return res.json({ success: true, message: `Asset '${targetId}' deleted successfully.` });
   } catch (err) {
     next(err);

@@ -225,7 +225,7 @@ test("PHASE 4 E2E - Full Judge Demo Story Flow against Real Backend", async () =
     assert.equal(reviewRes.status, 200, "Review must succeed with 200 OK");
     const reviewedData = await reviewRes.json();
     assert.equal(reviewedData.state, "REVIEWED");
-    assert.equal(reviewedData.approval.metadata.reviewer.username, "evaluation-analyst");
+    assert.equal(reviewedData.approval.metadata.reviewer.username, "evaluation-reviewer");
 
     // ------------------------------------------------------------------------
     // Step 8: Four-Eyes Principle Enforcement Check

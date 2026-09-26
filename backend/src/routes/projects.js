@@ -20,22 +20,25 @@ const router = express.Router();
 async function resolveProject(projectId) {
   const cleanId = String(projectId).trim();
 
-  // 1. In-memory object registry
-  const regProject = defaultObjectStateRegistry.getProject(cleanId);
-  if (regProject) {
-    return { ...regProject };
-  }
+  const mode = process.env.DATA_STORE_MODE || "postgres";
+  if (mode !== "postgres") {
+    // 1. In-memory object registry
+    const regProject = defaultObjectStateRegistry.getProject(cleanId);
+    if (regProject) {
+      return { ...regProject };
+    }
 
-  // 2. In-memory scans matching project_id
-  for (const s of inMemoryScansStore.values()) {
-    if (s.project_id === cleanId) {
-      return {
-        id: cleanId,
-        name: s.name || cleanId,
-        tenantId: s.tenantId || "default-tenant",
-        ownerId: s.owner_id || null,
-        status: "active",
-      };
+    // 2. In-memory scans matching project_id
+    for (const s of inMemoryScansStore.values()) {
+      if (s.project_id === cleanId) {
+        return {
+          id: cleanId,
+          name: s.name || cleanId,
+          tenantId: s.tenantId || "default-tenant",
+          ownerId: s.owner_id || null,
+          status: "active",
+        };
+      }
     }
   }
 
@@ -84,24 +87,27 @@ router.get("/", paginationBoundsMiddleware(), async (req, res, next) => {
 
     const projectMap = new Map();
 
-    // 1. From object state registry
-    for (const p of defaultObjectStateRegistry.projects.values()) {
-      if (isPlatformAdmin || p.tenantId === callerTenant) {
-        projectMap.set(p.id, { ...p });
+    const mode = process.env.DATA_STORE_MODE || "postgres";
+    if (mode !== "postgres") {
+      // 1. From object state registry
+      for (const p of defaultObjectStateRegistry.projects.values()) {
+        if (isPlatformAdmin || p.tenantId === callerTenant) {
+          projectMap.set(p.id, { ...p });
+        }
       }
-    }
 
-    // 2. From in-memory scans
-    for (const s of inMemoryScansStore.values()) {
-      const scanTenant = s.tenantId || "default-tenant";
-      if (s.project_id && (isPlatformAdmin || scanTenant === callerTenant)) {
-        if (!projectMap.has(s.project_id)) {
-          projectMap.set(s.project_id, {
-            id: s.project_id,
-            name: s.name || s.project_id,
-            tenantId: scanTenant,
-            status: "active",
-          });
+      // 2. From in-memory scans
+      for (const s of inMemoryScansStore.values()) {
+        const scanTenant = s.tenantId || "default-tenant";
+        if (s.project_id && (isPlatformAdmin || scanTenant === callerTenant)) {
+          if (!projectMap.has(s.project_id)) {
+            projectMap.set(s.project_id, {
+              id: s.project_id,
+              name: s.name || s.project_id,
+              tenantId: scanTenant,
+              status: "active",
+            });
+          }
         }
       }
     }
@@ -124,6 +130,26 @@ router.get("/", paginationBoundsMiddleware(), async (req, res, next) => {
               tenantId: r.tenant_id || "default-tenant",
               status: r.status || "active",
             });
+          }
+        }
+        
+        // Also derive projects implicitly from scans
+        const hasScansTable = await db.schema.hasTable("scans").catch(() => false);
+        if (hasScansTable) {
+          let qScans = db("scans").select("project_id", "target_name", "tenant_id");
+          if (!isPlatformAdmin) {
+            qScans = qScans.where({ tenant_id: callerTenant });
+          }
+          const scanRows = await qScans;
+          for (const s of scanRows) {
+            if (s.project_id && !projectMap.has(s.project_id)) {
+              projectMap.set(s.project_id, {
+                id: s.project_id,
+                name: s.target_name || s.project_id,
+                tenantId: s.tenant_id || "default-tenant",
+                status: "active",
+              });
+            }
           }
         }
       } catch (_err) {}
@@ -159,7 +185,10 @@ router.post("/", async (req, res, next) => {
       createdAt: new Date().toISOString(),
     };
 
-    defaultObjectStateRegistry.registerProject(newProject);
+    const mode = process.env.DATA_STORE_MODE || "postgres";
+    if (mode !== "postgres") {
+      defaultObjectStateRegistry.registerProject(newProject);
+    }
 
     const connected = await isDbConnected();
     if (connected) {
@@ -246,8 +275,10 @@ router.put("/:id", async (req, res, next) => {
     if (description !== undefined) project.description = description;
     if (status) project.status = status;
 
-    defaultObjectStateRegistry.registerProject(project);
-
+    const mode = process.env.DATA_STORE_MODE || "postgres";
+    if (mode !== "postgres") {
+      defaultObjectStateRegistry.registerProject(project);
+    }
     return res.status(200).json({
       success: true,
       project,
@@ -283,7 +314,20 @@ router.delete("/:id", async (req, res, next) => {
       });
     }
 
-    defaultObjectStateRegistry.projects.delete(projectId);
+    const mode = process.env.DATA_STORE_MODE || "postgres";
+    if (mode === "postgres") {
+      const connected = await isDbConnected();
+      if (connected) {
+        try {
+          const hasProjectsTable = await db.schema.hasTable("projects").catch(() => false);
+          if (hasProjectsTable) {
+            await db("projects").where({ id: projectId }).del();
+          }
+        } catch (_err) {}
+      }
+    } else {
+      defaultObjectStateRegistry.projects.delete(projectId);
+    }
 
     return res.status(200).json({
       success: true,

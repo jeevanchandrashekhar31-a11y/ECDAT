@@ -4,6 +4,7 @@ const {
   getScanById,
   getScanErrors,
   clearScans,
+  deleteScanById,
 } = require("../services/cbom_ingestion");
 const { requireRole } = require("../middleware/auth");
 
@@ -109,12 +110,15 @@ router.delete("/:scanId", requireRole(["platform administrator", "security admin
     }
 
     // Delete scan record
-    await clearScans(req.tenantContext);
+    await deleteScanById(req.params.scanId, req.tenantContext);
     res.status(200).json({
       success: true,
       message: `Scan '${req.params.scanId}' deleted successfully.`,
     });
   } catch (err) {
+    if (err.statusCode === 404) {
+      return res.status(404).json({ error: "NotFound", message: err.message });
+    }
     next(err);
   }
 });

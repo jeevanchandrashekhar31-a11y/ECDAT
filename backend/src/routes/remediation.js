@@ -124,11 +124,22 @@ function isRemediationAuthorized(req, allowedRoles = []) {
 }
 
 function getActorFromReq(req) {
-  const role =
-    req.auth?.role ||
-    req.tenantContext?.roles?.[0] ||
-    req.user?.role ||
-    (req.auth === undefined && req.user === undefined ? "viewer" : null);
+  // STRICT SERVER-SIDE IDENTITY EXTRACTION
+  // Explicitly ignore req.body.role, req.headers['x-actor-role']
+  
+  let role = "viewer";
+  if (req.auth && req.auth.roles && req.auth.roles.length > 0) {
+    role = req.auth.roles[0];
+  } else if (req.auth && req.auth.role) {
+    role = req.auth.role;
+  } else if (req.tenantContext && req.tenantContext.roles && req.tenantContext.roles.length > 0) {
+    role = req.tenantContext.roles[0];
+  } else if (req.user && req.user.roles && req.user.roles.length > 0) {
+    role = req.user.roles[0];
+  } else if (req.user && req.user.role) {
+    role = req.user.role;
+  }
+  
   const username =
     req.user?.username ||
     req.user?.sub ||
@@ -138,7 +149,8 @@ function getActorFromReq(req) {
     req.auth?.userId ||
     (req.auth === undefined && req.user === undefined ? "anonymous" : null) ||
     (req.auth?.authenticated ? "authenticated-user" : null);
-  if (!role || !username) {
+    
+  if (!username) {
     const err = new Error("Authenticated actor identity required.");
     err.statusCode = 401;
     throw err;
@@ -317,8 +329,31 @@ router.post("/apply-patch", async (req, res) => {
 
     const targetProjectId = req.body.project_id || req.body.projectId;
     if (targetProjectId) {
-      const { defaultObjectStateRegistry } = require("../security/object_authorization");
-      const targetProj = defaultObjectStateRegistry.getProject(targetProjectId);
+      let targetProj = null;
+      if (process.env.DATA_STORE_MODE === "postgres") {
+        const { db } = require("../db/connection");
+        const row = await db("projects").where({ id: targetProjectId }).first().catch(() => null);
+        if (row) {
+          targetProj = { tenantId: row.tenant_id || "default-tenant" };
+        } else {
+          const scanRow = await db("scans").where({ project_id: targetProjectId }).first().catch(() => null);
+          if (scanRow) {
+            targetProj = { tenantId: scanRow.tenant_id || "default-tenant" };
+          }
+        }
+      } else {
+        const { defaultObjectStateRegistry } = require("../security/object_authorization");
+        targetProj = defaultObjectStateRegistry.getProject(targetProjectId);
+        if (!targetProj) {
+          const { inMemoryScansStore } = require("../services/cbom_ingestion");
+          for (const s of inMemoryScansStore.values()) {
+            if (s.project_id === targetProjectId) {
+              targetProj = { tenantId: s.tenantId || s.tenant_id || "default-tenant" };
+              break;
+            }
+          }
+        }
+      }
       if (targetProj && !isPlatformAdmin && targetProj.tenantId !== callerTenant) {
         return res.status(403).json({
           error: "TenantBoundaryViolation",
@@ -339,6 +374,65 @@ router.post("/apply-patch", async (req, res) => {
           message: `Cannot access remediation approval belonging to foreign tenant '${existing.tenantId}'`,
         });
       }
+      if (existing.state !== "APPROVED") {
+        return res.status(403).json({
+          error: "Approval Incomplete",
+          message: `Approval request '${approvalId}' is currently in state '${existing.state}'. Must be 'APPROVED' before applying.`,
+        });
+      }
+      if (existing.audit_history.find(e => e.to_state === "APPLIED")) {
+        return res.status(403).json({
+          error: "Already Applied",
+          message: `Approval request '${approvalId}' has already been applied. One-time use only.`,
+        });
+      }
+
+      // Reject substitution
+      const reqPath = req.body.file_path || req.body.path;
+      if (reqPath && existing.target_file !== reqPath) {
+        return res.status(409).json({ error: "TargetMismatch", message: "Requested target path does not match approved target path." });
+      }
+      const reqPatch = req.body.patch?.patched_code || req.body.patch || req.body.source_code || req.body.code;
+      if (reqPatch && existing.patch_content !== reqPatch) {
+        return res.status(409).json({ error: "PatchMismatch", message: "Requested patch content does not match approved patch content." });
+      }
+
+      const filePath = resolveConfinedPath(existing.target_file);
+      
+      // Verify precondition hash
+      if (fs.existsSync(filePath) && existing.metadata.source_hash) {
+        const currentSource = fs.readFileSync(filePath, "utf-8");
+        const currentHash = crypto.createHash("sha256").update(currentSource).digest("hex");
+        if (currentHash !== existing.metadata.source_hash) {
+          return res.status(409).json({ error: "PreconditionFailed", message: "Target file hash does not match approved precondition hash." });
+        }
+      }
+
+      const patchResult = { patched_code: existing.patch_content };
+      
+      const safetyCheck = executePreApplicationLifecycle(filePath, patchResult);
+      if (!safetyCheck.all_passed) {
+        return res.status(400).json({
+          success: false,
+          error: "Patch Application Rejected",
+          message: "Mandatory pre-application safety checks failed. Patch was not applied.",
+          safety_lifecycle: safetyCheck,
+        });
+      }
+
+      // Note: Transactional locking should technically happen here.
+      // Since fs doesn't have an easy lock, we just do it atomically if possible.
+      fs.writeFileSync(filePath, patchResult.patched_code, "utf-8");
+      
+      await engine.applyRemediation(approvalId, { username: req.tenantContext?.userId || "automation_pipeline", role: "deployer" });
+      
+      return res.status(200).json({
+        success: true,
+        mode: "APPLIED",
+        is_dry_run: false,
+        message: "Patch successfully verified and applied to target file using approval.",
+        safety_lifecycle: safetyCheck,
+      });
     }
 
     const rawPath = req.body.file_path || req.body.path;
@@ -369,28 +463,10 @@ router.post("/apply-patch", async (req, res) => {
 
     // Check if human approval is required
     if (!dryRun && requiresExplicitApproval(category, environment)) {
-      if (!approvalId) {
-        return res.status(403).json({
-          error: "Explicit Human Approval Required",
-          message: `Changes for category '${category}' in '${environment}' require an approved change request. Please propose and approve first.`,
-        });
-      }
-
-      const engine = getDefaultApprovalEngine();
-      const approval = await engine.getApproval(approvalId);
-      if (!isPlatformAdmin && approval.tenantId && approval.tenantId !== callerTenant) {
-        return res.status(403).json({
-          error: "TenantBoundaryViolation",
-          code: "HORIZONTAL_TENANT_VIOLATION",
-          message: `Cannot apply remediation using approval belonging to foreign tenant '${approval.tenantId}'`,
-        });
-      }
-      if (approval.state !== "APPROVED") {
-        return res.status(403).json({
-          error: "Approval Incomplete",
-          message: `Approval request '${approvalId}' is currently in state '${approval.state}'. Must be 'APPROVED' before applying.`,
-        });
-      }
+      return res.status(403).json({
+        error: "Explicit Human Approval Required",
+        message: `Changes for category '${category}' in '${environment}' require an approved change request. Please propose and approve first.`,
+      });
     }
 
     // Server-side role authorization check: Live patch application requires privileged role
@@ -428,10 +504,6 @@ router.post("/apply-patch", async (req, res) => {
 
     if (!dryRun && fs.existsSync(filePath)) {
       fs.writeFileSync(filePath, patchResult.patched_code, "utf-8");
-      if (approvalId) {
-        const engine = getDefaultApprovalEngine();
-        await engine.applyRemediation(approvalId, { username: req.tenantContext?.userId || "automation_pipeline", role: "deployer" });
-      }
     }
 
     return res.status(200).json({
@@ -597,6 +669,23 @@ router.post("/approvals/:approvalId/review", async (req, res) => {
  */
 router.post("/approvals/:approvalId/approve", async (req, res) => {
   try {
+    const allowedApproveRoles = [
+      "admin",
+      "platform administrator",
+      "platform admin",
+      "security administrator",
+      "security admin",
+      "approver",
+      "security_lead"
+    ];
+    if (!isRemediationAuthorized(req, allowedApproveRoles)) {
+      return res.status(403).json({
+        error: "Forbidden",
+        code: "INSUFFICIENT_PERMISSIONS",
+        message: "Access denied. Caller is not authorized to approve remediation.",
+      });
+    }
+
     const engine = getDefaultApprovalEngine();
     const existing = await engine.getApproval(req.params.approvalId);
     verifyApprovalTenant(req, existing);

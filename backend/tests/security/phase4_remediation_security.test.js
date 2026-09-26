@@ -106,9 +106,9 @@ describe("Phase 4: Remediation / File-System Security", () => {
         { title: "Test Fix", category: "ciphersuite modernization", environment: "staging" },
         { username: "dev1", role: "developer" }
       );
-      await engine.reviewRemediation(proposal.approval_id, { username: "rev1", role: "reviewer" });
-      await engine.approveRemediation(proposal.approval_id, { username: "adm1", role: "admin" });
-      await engine.applyRemediation(proposal.approval_id, { username: "dep1", role: "deployer" });
+      await engine.reviewRemediation((proposal.id || proposal.approval_id), { username: "rev1", role: "reviewer" });
+      await engine.approveRemediation((proposal.id || proposal.approval_id), { username: "adm1", role: "admin" });
+      await engine.applyRemediation((proposal.id || proposal.approval_id), { username: "dep1", role: "deployer" });
 
       const app = createTestApp({ auth: { authenticated: true, role: "admin" } });
       const server = http.createServer(app);
@@ -117,7 +117,7 @@ describe("Phase 4: Remediation / File-System Security", () => {
 
       try {
         // Send request WITHOUT verification_results
-        const res = await fetch(`http://127.0.0.1:${port}/api/v1/remediation/approvals/${proposal.approval_id}/verify`, {
+        const res = await fetch(`http://127.0.0.1:${port}/api/v1/remediation/approvals/${(proposal.id || proposal.approval_id)}/verify`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({}),
@@ -137,13 +137,13 @@ describe("Phase 4: Remediation / File-System Security", () => {
         { title: "Unit Test Verification", category: "ciphersuite modernization", environment: "staging" },
         { username: "dev2", role: "developer" }
       );
-      await engine.reviewRemediation(proposal.approval_id, { username: "rev2", role: "reviewer" });
-      await engine.approveRemediation(proposal.approval_id, { username: "adm2", role: "admin" });
-      await engine.applyRemediation(proposal.approval_id, { username: "dep2", role: "deployer" });
+      await engine.reviewRemediation((proposal.id || proposal.approval_id), { username: "rev2", role: "reviewer" });
+      await engine.approveRemediation((proposal.id || proposal.approval_id), { username: "adm2", role: "admin" });
+      await engine.applyRemediation((proposal.id || proposal.approval_id), { username: "dep2", role: "deployer" });
 
       await assert.rejects(
         async () => {
-          await engine.verifyRemediation(proposal.approval_id, { username: "ver1", role: "verifier" });
+          await engine.verifyRemediation((proposal.id || proposal.approval_id), { username: "ver1", role: "verifier" });
         },
         /verificationResults/
       );

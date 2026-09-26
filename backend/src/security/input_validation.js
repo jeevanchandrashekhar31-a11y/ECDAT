@@ -397,8 +397,21 @@ function validateCbomContent(buffer) {
     return { valid: false, error: `JSON parse error: ${err.message}` };
   }
 
-  if (typeof parsed !== "object" || parsed === null) {
-    return { valid: false, error: "JSON content must resolve to an object or array" };
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return { valid: false, error: "JSON content must resolve to an object" };
+  }
+
+  // Enforce CycloneDX CBOM structure
+  if (parsed.bomFormat !== "CycloneDX") {
+    return { valid: false, error: "Invalid format: bomFormat must be 'CycloneDX'" };
+  }
+  
+  if (!parsed.specVersion) {
+    return { valid: false, error: "Missing specVersion in CBOM" };
+  }
+
+  if (parsed.components && !Array.isArray(parsed.components)) {
+    return { valid: false, error: "components must be an array" };
   }
 
   // Check for private key leakage in uploaded document

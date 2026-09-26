@@ -1,5 +1,6 @@
 const { getRules } = require("./rules_loader");
 const { MoscaStatus, QuantumRelevance } = require("./types");
+const { evaluatePqcReadiness } = require("./pqc_readiness");
 
 /**
  * Computes Mosca theorem values and risk status for an asset.
@@ -94,43 +95,33 @@ function calculateMosca({
       : scenarioConfig.Z_quantum_threat_years;
 
   // 4. Calculate Total & Margin
-  // Round to 1 decimal place for clean explainability
-  finalX = Math.round(finalX * 10) / 10;
-  finalY = Math.round(finalY * 10) / 10;
-  const moscaTotal = Math.round((finalX + finalY) * 10) / 10;
-  const moscaMargin = Math.round((moscaTotal - finalZ) * 10) / 10;
-
   // 5. Determine Policy Urgency Threshold (Watch zone)
   const urgencyDeltaThreshold =
     policyProfile?.pqc_rules?.urgency_mosca_delta_threshold_years ?? 0.0;
 
-  // 6. Determine Mosca Status
-  let status = MoscaStatus.SAFE;
+  // 6. Calculate via PQC Readiness Engine
+  const pqcResult = evaluatePqcReadiness(finalX, finalY, finalZ, quantumRelevance, urgencyDeltaThreshold);
+  const { status, moscaTotal, moscaMargin } = pqcResult;
+
   let reason = "";
 
   if (quantumRelevance !== QuantumRelevance.SHOR_VULNERABLE) {
-    status = MoscaStatus.SAFE;
     reason =
       "Algorithm is not vulnerable to Shor's algorithm. Mosca theorem (X + Y > Z) applies specifically to public-key cryptography subject to polynomial-time quantum cryptanalysis.";
   } else if (moscaMargin > 2.5) {
-    status = MoscaStatus.CRITICAL_URGENT;
     reason = `Critical urgency: (X + Y = ${moscaTotal} yrs) materially exceeds quantum threat horizon Z = ${finalZ} yrs by ${moscaMargin} yrs. Immediate migration required.`;
   } else if (moscaMargin > 0) {
-    status = MoscaStatus.AT_RISK;
     reason = `At risk: Combined shelf-life and migration duration (${moscaTotal} yrs) exceeds threat timeline Z (${finalZ} yrs) by ${moscaMargin} yrs.`;
   } else if (
     moscaMargin >= -Math.abs(urgencyDeltaThreshold) ||
     finalZ - moscaTotal <= 2.0
   ) {
     if (moscaMargin === 0) {
-      status = MoscaStatus.WATCH;
       reason = `Watch: Margin is exactly 0. Migration must begin immediately to avoid falling behind the threat horizon.`;
     } else {
-      status = MoscaStatus.WATCH;
       reason = `Watch: Mosca margin (${moscaMargin} yrs) is within policy urgency buffer. Migration preparation must begin soon.`;
     }
   } else {
-    status = MoscaStatus.SAFE;
     reason = `Safe: Safe quantum margin of ${Math.abs(moscaMargin)} yrs remaining before CRQC estimated arrival.`;
   }
 

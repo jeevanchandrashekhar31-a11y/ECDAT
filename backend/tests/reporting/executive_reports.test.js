@@ -15,24 +15,43 @@ if (!config.ECDAT_API_KEY) {
   config.ECDAT_API_KEY = "test-exec-reports-key-32-chars-long-entropy!!";
 }
 
-const { inMemoryScansStore } = require("../../src/services/cbom_ingestion");
-inMemoryScansStore.set("scan-exec-1", {
+const { before } = require("node:test");
+const { inMemoryScansStore, persistScanToPostgres } = require("../../src/services/cbom_ingestion");
+const mockScanData = {
   id: "scan-exec-1",
   name: "Exec Scan",
   created_at: new Date().toISOString(),
   tenantId: "default-tenant",
   classified_findings: [
     { id: "f1", algorithm: "SHA-1", category: "hash", severity: "High", mosca_margin_years: -2, mosca_status: "CRITICAL_URGENT" },
-    { id: "f2", algorithm: "MD5", category: "hash", severity: "Critical", mosca_margin_years: -5, mosca_status: "CRITICAL_URGENT" },
+    { id: "f2", algorithm: "MD5", category: "hash", severity: "Critical", mosca_margin_years: -5, mosca_status: "CRITICAL_URGENT", policy_violations: ["nist_sp800_131a", "pci_dss_v4"] },
     { id: "f3", algorithm: "RSA", key_size: 1024, category: "encryption", severity: "High", mosca_status: "AT_RISK" },
     { id: "f4", algorithm: "ML-KEM", category: "pqc", severity: "Low", mosca_status: "SAFE" },
     { id: "f5", algorithm: "ML-DSA", category: "pqc", severity: "Low", mosca_status: "SAFE" },
     { id: "f6", algorithm: "kyber+rsa", category: "hybrid", severity: "Low", mosca_status: "SAFE" },
     { id: "f7", algorithm: "RSA", category: "certificate", severity: "High", mosca_status: "AT_RISK", metadata: { fingerprint: "a".repeat(64), issuer_dn: "Test", subject_dn: "Test" } },
-  ]
-});
+  ],
+  metrics: {
+    overall_cicd_pass: false,
+    total_assets: 7,
+    total_findings: 7,
+    assets_at_quantum_risk: 3,
+    severity_counts: {
+      critical: 1,
+      high: 2,
+      medium: 0,
+      low: 4,
+      informational: 0
+    }
+  }
+};
+
+inMemoryScansStore.set("scan-exec-1", mockScanData);
 
 describe("Enterprise Executive Reporting Engine (Phase 26.1)", () => {
+  before(async () => {
+    await persistScanToPostgres(mockScanData, {}).catch(err => console.error("Setup error", err));
+  });
   test("Generates comprehensive executive report covering all 9 domains", async () => {
     const report = await generateExecutiveReport({ scanId: "scan-exec-1", tenantContext: { isPlatformAdmin: true },
       policyProfile: "regulated_bfsi",
@@ -59,7 +78,7 @@ describe("Enterprise Executive Reporting Engine (Phase 26.1)", () => {
     assert.ok(report.pqc_readiness.quantum_vulnerable_count >= 1);
     assert.ok(report.pqc_readiness.hybrid_count >= 1);
     assert.ok(report.pqc_readiness.mosca_calculus);
-    assert.equal(report.pqc_readiness.mosca_calculus.quantum_collapse_year, 2033);
+    assert.equal(report.pqc_readiness.mosca_calculus.quantum_collapse_year, new Date().getFullYear() + 9);
     assert.ok(typeof report.pqc_readiness.mosca_calculus.mosca_delta_years === "number");
 
     // 4. Critical applications

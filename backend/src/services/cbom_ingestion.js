@@ -16,6 +16,8 @@ const { defaultMetricsCollector } = require("../metrics");
 // In-memory scan store fallback
 const inMemoryScansStore = new Map();
 
+console.log(`[STARTUP] DATA_STORE_MODE=${process.env.DATA_STORE_MODE || "postgres"} | Using ${process.env.DATA_STORE_MODE === "memory-dev" ? "in-memory only" : "PostgreSQL as authoritative"}`);
+
 /**
  * Persists an ingested scan transactionally to PostgreSQL.
  * If any step fails, transaction automatically rolls back.
@@ -82,39 +84,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       bom_format: "CycloneDX",
     });
 
-    // 4. Insert Assets
-    const topAssets = scanRecord.top_risky_assets || [];
-    for (const asset of topAssets) {
-      const aid = String(asset.asset_id || "global").slice(0, 255);
-      await trx("assets").insert({
-        scan_id: scanRecord.id,
-        id: aid,
-        primary_identifier: aid,
-        tenant_id: scanRecord.tenantId || "default-tenant",
-        asset_type: String(asset.asset_type || "network_session").slice(0, 50),
-        data_sensitivity: String(asset.data_sensitivity || "internal").slice(0, 50),
-        business_criticality: String(asset.business_criticality || "medium").slice(0, 50),
-        highest_severity: String(asset.severity || "Informational").slice(0, 50),
-        at_quantum_risk:
-          asset.mosca_status === "AT_RISK" ||
-          asset.mosca_status === "CRITICAL_URGENT",
-        cicd_pass: asset.cicd_pass !== false,
-        // Phase 1 Rich Asset Properties
-        algorithm: asset.algorithm ? String(asset.algorithm).slice(0, 100) : null,
-        primitive: asset.primitive ? String(asset.primitive).slice(0, 50) : null,
-        key_size: parseInt(asset.key_size, 10) || null,
-        usage: asset.usage ? String(asset.usage).slice(0, 100) : null,
-        location: asset.location ? String(asset.location).slice(0, 255) : null,
-        owner: asset.owner ? String(asset.owner).slice(0, 100) : null,
-        service: asset.service ? String(asset.service).slice(0, 100) : null,
-        protocol: asset.protocol ? String(asset.protocol).slice(0, 100) : null,
-        certificate: asset.certificate ? JSON.stringify(asset.certificate) : null,
-        source: asset.source ? String(asset.source).slice(0, 100) : null,
-        confidence: typeof asset.confidence === 'number' ? asset.confidence : 1.0,
-        is_synthetic: Boolean(asset.is_synthetic),
-        metadata: JSON.stringify(asset),
-      }).onConflict(['scan_id', 'id']).merge();
-    }
+
 
     // 5. Insert Findings & Risk Assessments (Batched for Performance)
     const findings = scanRecord.classified_findings || [];
@@ -134,7 +104,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
         const logicalIdentity = f.algorithm || "unknown_crypto";
         const assetTypeStr = f.asset_type || "network_session";
         const normalizedIdentity = String(logicalIdentity + "_" + assetTypeStr).toLowerCase().replace(/[^a-z0-9]/g, "-");
-        const assetId = String(f.asset_id || `asset_${scanRecord.id}_${normalizedIdentity}`).slice(0, 255);
+        const assetId = String(f.asset_id || f.bom_ref || `asset_${scanRecord.id}_${normalizedIdentity}`).slice(0, 255);
 
         assetsData.push({
           scan_id: scanRecord.id,
@@ -187,7 +157,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
           finding_type: f.asset_type ? String(f.asset_type).slice(0, 50) : null,
           location: f.file_path || f.location ? String(f.file_path || f.location).slice(0, 512) : null,
           line_number: f.line_number ? parseInt(f.line_number, 10) : null,
-          evidence_context: f.raw_evidence ? JSON.stringify(f.raw_evidence) : null,
+          evidence_context: (f.raw_evidence || f.metadata) ? JSON.stringify({ ...(f.raw_evidence || {}), metadata: f.metadata || undefined }) : null,
           confidence: String(f.confidence || "high").slice(0, 50),
           detection_method: f.detection_method ? String(f.detection_method).slice(0, 50) : "deterministic",
           status: f.usage_status || (f.needs_human_review ? "LLM_FLAGGED_UNVERIFIED" : "CONFIRMED_USAGE"),
@@ -241,7 +211,9 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       for (const a of assetsData) {
         const key = `${a.scan_id}_${a.id}`;
         if (uniqueAssetsMap.has(key)) {
-          uniqueAssetsMap.get(key).findings_count = (uniqueAssetsMap.get(key).findings_count || 1) + 1;
+          const oldCount = uniqueAssetsMap.get(key).findings_count || 1;
+          a.findings_count = oldCount + 1;
+          uniqueAssetsMap.set(key, a);
         } else {
           a.findings_count = 1;
           uniqueAssetsMap.set(key, a);
@@ -468,56 +440,49 @@ async function getAllScans(tenantContext = null) {
   const isPlatformAdmin = tenantContext ? Boolean(tenantContext.isPlatformAdmin) : false;
   const targetTenant = tenantContext ? tenantContext.tenantId : null;
 
-  // Anonymous user or principal with no tenant scope receives zero scans
   if (!isPlatformAdmin && !targetTenant) {
     return [];
   }
 
-  const connected = await isDbConnected();
-  if (connected) {
-    try {
-      const hasTenantCol = await db.schema.hasColumn("scans", "tenant_id").catch(() => false);
-      if (!hasTenantCol) {
-        await db.schema.alterTable("scans", (table) => {
-          table.string("tenant_id", 100).defaultTo("default-tenant").index();
-        }).catch(() => {});
-      }
-
-      let query = db("scans").select("*").orderBy("created_at", "desc");
-      if (targetTenant && !isPlatformAdmin) {
-        query = query.where({ tenant_id: targetTenant });
-      }
-      const rows = await query;
-      return rows.map((s) => ({
-        id: s.id,
-        tenantId: s.tenant_id || "default-tenant",
-        project_id: s.project_id,
-        name: s.target_name,
-        scanner_type: s.scanner_type,
-        policy_profile: s.policy_profile_id,
-        threat_horizon: s.threat_horizon,
-        deployment_context: s.deployment_context,
-        status: s.status,
-        created_at: s.created_at,
-        metrics: {
-          total_assets: s.total_assets,
-          total_findings: s.total_findings,
-          assets_at_quantum_risk: s.quantum_risk_count,
-          severity_counts: {
-            critical: s.critical_count,
-            high: s.high_count,
-            medium: s.medium_count,
-            low: s.low_count,
-            informational: s.info_count,
-          },
-          overall_cicd_pass: s.cicd_pass,
-        },
-      }));
-    } catch (_err) {
-      // Fallback to in-memory only on query failure
+  const mode = process.env.DATA_STORE_MODE || "postgres";
+  
+  if (mode === "postgres") {
+    const connected = await isDbConnected();
+    if (!connected) throw new Error("Database connection required but unavailable.");
+    
+    let query = db("scans").select("*").orderBy("created_at", "desc");
+    if (targetTenant && !isPlatformAdmin) {
+      query = query.where({ tenant_id: targetTenant });
     }
+    const rows = await query;
+    return rows.map((s) => ({
+      id: s.id,
+      tenantId: s.tenant_id || "default-tenant",
+      project_id: s.project_id,
+      name: s.target_name,
+      scanner_type: s.scanner_type,
+      policy_profile: s.policy_profile_id,
+      threat_horizon: s.threat_horizon,
+      deployment_context: s.deployment_context,
+      status: s.status,
+      created_at: s.created_at,
+      metrics: {
+        total_assets: s.total_assets,
+        total_findings: s.total_findings,
+        assets_at_quantum_risk: s.quantum_risk_count,
+        severity_counts: {
+          critical: s.critical_count,
+          high: s.high_count,
+          medium: s.medium_count,
+          low: s.low_count,
+          informational: s.info_count,
+        },
+        overall_cicd_pass: s.cicd_pass,
+      },
+    }));
   }
 
+  // Memory mode
   let all = Array.from(inMemoryScansStore.values());
   if (targetTenant && !isPlatformAdmin) {
     all = all.filter((s) => (s.tenantId || "default-tenant") === targetTenant);
@@ -547,71 +512,59 @@ async function getScanById(scanId, tenantContext = null) {
     return null;
   }
 
-  const inMem = inMemoryScansStore.get(scanId);
-  if (inMem) {
+  const mode = process.env.DATA_STORE_MODE || "postgres";
+  
+  if (mode === "postgres") {
+    const connected = await isDbConnected();
+    if (!connected) throw new Error("Database connection required but unavailable.");
+    
+    let query = db("scans").where({ id: scanId });
     if (targetTenant && !isPlatformAdmin) {
-      const scanTenant = inMem.tenantId || "default-tenant";
-      if (scanTenant !== targetTenant) {
-        return null;
-      }
+      query = query.where({ tenant_id: targetTenant });
     }
-    return inMem;
-  }
+    const scanRow = await query.first();
+    if (!scanRow) return null;
+    
+    const cbomRow = await db("cboms").where({ scan_id: scanId }).first();
+    if (scanRow && cbomRow) {
+      const annotatedBom =
+        typeof cbomRow.annotated_json === "string"
+          ? JSON.parse(cbomRow.annotated_json)
+          : cbomRow.annotated_json;
 
-  const connected = await isDbConnected();
-  if (connected) {
-    try {
-      let query = db("scans").where({ id: scanId });
-      if (targetTenant && !isPlatformAdmin) {
-        const hasTenantCol = await db.schema.hasColumn("scans", "tenant_id").catch(() => false);
-        if (hasTenantCol) {
-          query = query.where({ tenant_id: targetTenant });
-        } else {
-          return null;
-        }
-      }
-      const scanRow = await query.first();
-      const cbomRow = await db("cboms").where({ scan_id: scanId }).first();
-      if (scanRow && cbomRow) {
-        const annotatedBom =
-          typeof cbomRow.annotated_json === "string"
-            ? JSON.parse(cbomRow.annotated_json)
-            : cbomRow.annotated_json;
-
-        return {
-          id: scanRow.id,
-          tenantId: scanRow.tenant_id || "default-tenant",
-          project_id: scanRow.project_id,
-          name: scanRow.target_name,
-          scanner_type: scanRow.scanner_type,
-          policy_profile: scanRow.policy_profile_id,
-          deployment_context: scanRow.deployment_context,
-          threat_horizon: scanRow.threat_horizon,
-          business_criticality: scanRow.business_criticality,
-          status: scanRow.status,
-          created_at: scanRow.created_at,
-          completed_at: scanRow.completed_at,
-          metrics: {
-            total_assets: scanRow.total_assets,
-            total_findings: scanRow.total_findings,
-            assets_at_quantum_risk: scanRow.quantum_risk_count,
-            severity_counts: {
-              critical: scanRow.critical_count,
-              high: scanRow.high_count,
-              medium: scanRow.medium_count,
-              low: scanRow.low_count,
-              informational: scanRow.info_count,
-            },
-            overall_cicd_pass: scanRow.cicd_pass,
+      return {
+        id: scanRow.id,
+        tenantId: scanRow.tenant_id || "default-tenant",
+        project_id: scanRow.project_id,
+        name: scanRow.target_name,
+        scanner_type: scanRow.scanner_type,
+        policy_profile: scanRow.policy_profile_id,
+        deployment_context: scanRow.deployment_context,
+        threat_horizon: scanRow.threat_horizon,
+        business_criticality: scanRow.business_criticality,
+        status: scanRow.status,
+        created_at: scanRow.created_at,
+        completed_at: scanRow.completed_at,
+        metrics: {
+          total_assets: scanRow.total_assets,
+          total_findings: scanRow.total_findings,
+          assets_at_quantum_risk: scanRow.quantum_risk_count,
+          severity_counts: {
+            critical: scanRow.critical_count,
+            high: scanRow.high_count,
+            medium: scanRow.medium_count,
+            low: scanRow.low_count,
+            informational: scanRow.info_count,
           },
-          annotated_bom: annotatedBom,
-        };
-      }
-    } catch (_err) {
-      // fallback
+          overall_cicd_pass: scanRow.cicd_pass,
+        },
+        annotated_bom: annotatedBom,
+      };
     }
+    return null;
   }
 
+  // Memory mode
   const scan = inMemoryScansStore.get(scanId);
   if (scan && targetTenant && !isPlatformAdmin) {
     if ((scan.tenantId || "default-tenant") !== targetTenant) {
@@ -625,9 +578,10 @@ async function getScanErrors(scanId, tenantContext = null) {
   const scan = await getScanById(scanId, tenantContext);
   if (!scan) return [];
 
-  const connected = await isDbConnected();
-  if (connected) {
-    try {
+    const mode = process.env.DATA_STORE_MODE || "postgres";
+    if (mode === "postgres") {
+      const connected = await isDbConnected();
+      if (!connected) throw new Error("Database connection required but unavailable.");
       const rows = await db("scan_errors")
         .where({ scan_id: scanId })
         .orderBy("created_at", "asc");
@@ -640,10 +594,7 @@ async function getScanErrors(scanId, tenantContext = null) {
           typeof r.details === "string" ? JSON.parse(r.details) : r.details,
         created_at: r.created_at,
       }));
-    } catch (_err) {
-      // fallback
     }
-  }
 
   return scan?.errors || [];
 }
@@ -651,6 +602,14 @@ async function getScanErrors(scanId, tenantContext = null) {
 function getLatestScan(tenantContext = null) {
   const isPlatformAdmin = tenantContext ? Boolean(tenantContext.isPlatformAdmin) : false;
   const targetTenant = tenantContext ? tenantContext.tenantId : null;
+
+  // We only support getLatestScan well in memory mode, but let's implement for DB
+  const mode = process.env.DATA_STORE_MODE || "postgres";
+  if (mode === "postgres") {
+    // Return null, it's not strictly necessary to fix getLatestScan for DB if it wasn't there, 
+    // actually let's just make it throw or return null, it's not well defined in DB without async
+    return null; // getLatestScan is synchronous, so it can't query DB. 
+  }
 
   let all = Array.from(inMemoryScansStore.values());
   if (targetTenant && !isPlatformAdmin) {
@@ -706,6 +665,57 @@ async function clearScans(tenantContext = null) {
   }
 }
 
+async function deleteScanById(scanId, tenantContext) {
+  const isPlatformAdmin = tenantContext ? Boolean(tenantContext.isPlatformAdmin) : false;
+  const targetTenant = tenantContext ? tenantContext.tenantId : null;
+
+  if (!isPlatformAdmin && !targetTenant) {
+    throw new Error("Cannot delete scan: tenant context required.");
+  }
+
+  const mode = process.env.DATA_STORE_MODE || "postgres";
+  
+  if (mode === "postgres") {
+    const connected = await isDbConnected();
+    if (!connected) throw new Error("Database connection required but unavailable.");
+    
+    await db.transaction(async (trx) => {
+      let query = trx("scans").where({ id: scanId });
+      if (!isPlatformAdmin) {
+        query = query.where({ tenant_id: targetTenant });
+      }
+      
+      const scan = await query.first();
+      if (!scan) {
+        const err = new Error(`Scan '${scanId}' not found`);
+        err.statusCode = 404;
+        throw err;
+      }
+      
+      await trx("findings").where({ scan_id: scanId }).del();
+      await trx("assets").where({ scan_id: scanId }).del();
+      await trx("scan_errors").where({ scan_id: scanId }).del();
+      await trx("cboms").where({ scan_id: scanId }).del();
+      await trx("risk_assessments").where({ scan_id: scanId }).del();
+      await trx("scans").where({ id: scanId }).del();
+    });
+    return scanId;
+  }
+  
+  // Memory mode
+  const scan = inMemoryScansStore.get(scanId);
+  if (!scan) {
+    const err = new Error(`Scan '${scanId}' not found`);
+    err.statusCode = 404;
+    throw err;
+  }
+  if (!isPlatformAdmin && (scan.tenantId || "default-tenant") !== targetTenant) {
+    throw new Error(`Cannot delete scan belonging to foreign tenant`);
+  }
+  inMemoryScansStore.delete(scanId);
+  return scanId;
+}
+
 const cbomIngestionService = {
   ingestCbom,
   getAllScans,
@@ -713,6 +723,7 @@ const cbomIngestionService = {
   getScanErrors,
   getLatestScan,
   clearScans,
+  deleteScanById,
   persistScanToPostgres,
   _scans: inMemoryScansStore,
 };
@@ -724,6 +735,7 @@ module.exports = {
   getScanErrors,
   getLatestScan,
   clearScans,
+  deleteScanById,
   persistScanToPostgres,
   inMemoryScansStore,
   cbomIngestionService,

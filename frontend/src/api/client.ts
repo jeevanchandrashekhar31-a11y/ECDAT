@@ -667,12 +667,13 @@ export const api = {
   },
 
   switchEvaluationPersona: async (
-    persona: string
+    persona: string,
+    passcode?: string
   ): Promise<unknown> => {
     return request('/api/v1/auth/evaluation/persona', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ persona, seed: false }),
+      body: JSON.stringify({ persona, seed: false, passcode }),
     });
   },
 

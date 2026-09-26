@@ -258,6 +258,7 @@ async function generateExecutiveReport(options = {}) {
         location: f.location,
         line_number: f.line_number,
         evidence_context: f.evidence_context,
+        metadata: f.evidence_context ? (function(){ try { const p = JSON.parse(f.evidence_context); return p.metadata || p; } catch(e) { return null; } })() : null,
         severity: f.ra_severity || f.severity || "High",
         mosca_status: f.ra_mosca_status || f.mosca_status || "SAFE",
         mosca_margin_years: f.ra_mosca_margin_years || f.mosca_margin_years,

@@ -459,8 +459,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </button>
                   <button
                     onClick={async () => {
-                      await api.switchEvaluationPersona('approver');
-                      window.location.reload();
+                      const code = window.prompt("Enter Approver Passcode:");
+                      if (code) {
+                        try {
+                          await api.switchEvaluationPersona('approver', code);
+                          window.location.reload();
+                        } catch (e: any) { alert(e.message || "Failed"); }
+                      }
                     }}
                     className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-cyan-400"
                   >
@@ -468,8 +473,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </button>
                   <button
                     onClick={async () => {
-                      await api.switchEvaluationPersona('executive');
-                      window.location.reload();
+                      const code = window.prompt("Enter Executive Passcode:");
+                      if (code) {
+                        try {
+                          await api.switchEvaluationPersona('executive', code);
+                          window.location.reload();
+                        } catch (e: any) { alert(e.message || "Failed"); }
+                      }
                     }}
                     className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-cyan-400"
                   >

@@ -9,7 +9,7 @@ const { defaultTokenService } = require("../../src/identity/token_service");
 const { getDefaultApprovalEngine } = require("../../src/remediation");
 
 // Identities
-const normalViewer = { sub: "normal_viewer", roles: ["viewer"] };
+const normalViewer = { sub: "normal_viewer", roles: ["reviewer"] };
 const normalDev = { sub: "normal_dev", roles: ["developer"] };
 const realAdmin = { sub: "real_admin", roles: ["admin"] };
 const platformAdmin = { sub: "real_platform_admin", roles: ["platform administrator"] };
@@ -57,7 +57,7 @@ test("P0 Security Fix - Client-controlled role authorization rejected on remedia
     });
     assert.equal(propRes.status, 201);
     const propData = await propRes.json();
-    const approvalId = propData.approval_id;
+    const approvalId = propData.approval_id || propData.id;
 
     // Review it so it can be approved
     const revRes = await fetch(`${baseUrl}/api/v1/remediation/approvals/${approvalId}/review`, {

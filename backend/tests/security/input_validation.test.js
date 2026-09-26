@@ -229,6 +229,7 @@ test("Phase 19.10 — Content Validation (JSON Structure & Private Key Detection
 
   const maliciousCbom = {
     bomFormat: "CycloneDX",
+    specVersion: "1.6",
     components: [
       {
         name: "leaked-key",

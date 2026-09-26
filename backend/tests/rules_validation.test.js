@@ -82,7 +82,7 @@ test("ECDAT Rule Validation - mosca_config.json contains valid asset types, adju
   assert.strictEqual(typeof mosca.defaults.Z_quantum_threat_years, "number");
 
   // Scenarios
-  assert.ok(mosca.scenarios.optimistic_2037);
+  assert.ok(mosca.scenarios.extended_2035);
   assert.ok(mosca.scenarios.baseline_2033);
   assert.ok(mosca.scenarios.conservative_2030);
 

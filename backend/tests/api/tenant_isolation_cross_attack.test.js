@@ -210,7 +210,7 @@ test("Phase 3 & 4 & 5 & 6 — Full Tenant Isolation and Authorization Attack Ver
 
     scanB.top_risky_assets = [
       {
-        asset_id: "asset_beta_202",
+        asset_id: "ref_tenant_b_aes",
         primary_identifier: "beta-secret-key",
         highest_severity: "Critical",
         tenantId: "tenant-b",
@@ -257,11 +257,11 @@ test("Phase 3 & 4 & 5 & 6 — Full Tenant Isolation and Authorization Attack Ver
       });
       assert.equal(resAssetsUserA.status, 200);
       const assetsDataA = await resAssetsUserA.json();
-      const hasAssetB = assetsDataA.assets.some((a) => a.asset_id === "asset_beta_202");
+      const hasAssetB = assetsDataA.assets.some((a) => a.asset_id === "ref_tenant_b_aes");
       assert.equal(hasAssetB, false, "User A must not see Tenant B asset in asset list");
 
       // E. User A querying Tenant B asset directly by ID -> 404 Not Found
-      const resAssetBDirect = await fetch(`${baseUrl}/api/v1/assets/asset_beta_202`, {
+      const resAssetBDirect = await fetch(`${baseUrl}/api/v1/assets/ref_tenant_b_aes`, {
         headers: { Authorization: `Bearer ${tokenUserA}` },
       });
       assert.equal(resAssetBDirect.status, 404, "User A must receive 404 when fetching Tenant B asset");
@@ -272,7 +272,7 @@ test("Phase 3 & 4 & 5 & 6 — Full Tenant Isolation and Authorization Attack Ver
     // ========================================================================
     {
       // User A attempting to modify Tenant B asset -> 403 Forbidden
-      const resPutAsset = await fetch(`${baseUrl}/api/v1/assets/asset_beta_202`, {
+      const resPutAsset = await fetch(`${baseUrl}/api/v1/assets/ref_tenant_b_aes`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -285,7 +285,7 @@ test("Phase 3 & 4 & 5 & 6 — Full Tenant Isolation and Authorization Attack Ver
       assert.equal(errPut.code, "HORIZONTAL_TENANT_VIOLATION");
 
       // Admin A attempting to modify Tenant B asset -> 403 Forbidden
-      const resAdminPutAsset = await fetch(`${baseUrl}/api/v1/assets/asset_beta_202`, {
+      const resAdminPutAsset = await fetch(`${baseUrl}/api/v1/assets/ref_tenant_b_aes`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -301,7 +301,7 @@ test("Phase 3 & 4 & 5 & 6 — Full Tenant Isolation and Authorization Attack Ver
     // ========================================================================
     {
       // User A attempting to delete Tenant B asset -> 403 Forbidden
-      const resDelAsset = await fetch(`${baseUrl}/api/v1/assets/asset_beta_202`, {
+      const resDelAsset = await fetch(`${baseUrl}/api/v1/assets/ref_tenant_b_aes`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${tokenUserA}` },
       });

@@ -92,10 +92,18 @@ class ApprovalWorkflowEngine {
       requires_explicit_approval: explicitApprovalRequired,
       affected_asset: data.affected_asset || null,
       project_id: data.project_id || data.projectId || null,
+      scan_id: data.scan_id || null,
+      finding_id: data.finding_id || null,
       target_standard: data.target_standard || null,
+      target_algorithm: data.target_algorithm || null,
       test_plan: data.test_plan || null,
       rollback_plan: data.rollback_plan || null,
       current_state_hash: genesisHash,
+      target_path_hash: data.target_path_hash || (data.file_path ? crypto.createHash("sha256").update(data.file_path).digest("hex") : null),
+      patch_hash: data.patch_hash || (data.patch ? (typeof data.patch === 'string' ? crypto.createHash("sha256").update(data.patch).digest("hex") : crypto.createHash("sha256").update(data.patch.patched_code).digest("hex")) : null),
+      source_hash: data.source_hash || (data.source_code ? crypto.createHash("sha256").update(data.source_code).digest("hex") : null),
+      created_at: nowTs,
+      version: 1
     };
 
     const approvalRecord = {
@@ -109,7 +117,7 @@ class ApprovalWorkflowEngine {
       audit_history: JSON.stringify([initialAudit]),
       metadata: JSON.stringify(metadata),
       target_file: data.file_path || data.path || null,
-      patch_content: data.source_code || data.code || null,
+      patch_content: (data.patch ? (typeof data.patch === 'string' ? data.patch : data.patch.patched_code) : (data.source_code || data.code || null)),
     };
 
     await db("remediations").insert(approvalRecord);
@@ -119,6 +127,11 @@ class ApprovalWorkflowEngine {
   async reviewRemediation(approvalId, reviewer = { username: "tech_lead", role: "reviewer" }, comments = "Reviewed and verified.") {
     const record = await this.getApproval(approvalId);
     if (record.state !== ApprovalState.PROPOSED) throw new ApprovalWorkflowError(`Cannot review approval in state ${record.state}. Expected ${ApprovalState.PROPOSED}.`);
+
+    if (record.proposer.username.toLowerCase() === reviewer.username.toLowerCase()) throw new ApprovalWorkflowError("Four-Eyes Governance Violation: Proposer cannot review their own proposal.", 403);
+    
+    const allowedRoles = ["reviewer", "admin", "security lead", "secops", "platform administrator", "platform admin", "security administrator", "security admin", "tech lead"];
+    if (!allowedRoles.includes(String(reviewer.role || "").toLowerCase().replace(/[-_]/g, " "))) throw new ApprovalWorkflowError("User is not authorized to review remediations.", 403);
 
     const nowTs = new Date().toISOString();
     const newHash = this._computeTransitionHash(record.metadata.current_state_hash, {
@@ -328,6 +341,41 @@ class ApprovalWorkflowEngine {
 
   async verifyStateChain(approvalId) {
     const record = await this.getApproval(approvalId);
+    let prevHash = null;
+    
+    for (let i = 0; i < record.audit_history.length; i++) {
+      const evt = record.audit_history[i];
+      let transitionData = {};
+      
+      if (evt.to_state === ApprovalState.PROPOSED) {
+        transitionData = { approvalId, state: ApprovalState.PROPOSED, proposer: evt.actor, timestamp: evt.timestamp };
+      } else if (evt.to_state === ApprovalState.REVIEWED) {
+        transitionData = { approvalId, from_state: evt.from_state, to_state: ApprovalState.REVIEWED, reviewer: evt.actor, timestamp: evt.timestamp };
+      } else if (evt.to_state === ApprovalState.APPROVED) {
+        transitionData = { approvalId, from_state: evt.from_state, to_state: ApprovalState.APPROVED, approver: evt.actor, timestamp: evt.timestamp };
+      } else if (evt.to_state === ApprovalState.APPLIED) {
+        transitionData = { approvalId, from_state: evt.from_state, to_state: ApprovalState.APPLIED, deployer: evt.actor, timestamp: evt.timestamp };
+      } else if (evt.to_state === ApprovalState.VERIFIED) {
+        transitionData = { approvalId, from_state: evt.from_state, to_state: ApprovalState.VERIFIED, verifier: evt.actor, timestamp: evt.timestamp };
+      } else if (evt.to_state === ApprovalState.ROLLED_BACK || evt.to_state === ApprovalState.FAILED) {
+        // extract reason from comments: "Rollback executed: <reason>" or "Remediation marked as failed: <reason>"
+        let reason = evt.comments;
+        if (reason.includes("Rollback executed: ")) reason = reason.replace("Rollback executed: ", "");
+        if (reason.includes("Remediation marked as failed: ")) reason = reason.replace("Remediation marked as failed: ", "");
+        transitionData = { approvalId, from_state: evt.from_state, to_state: evt.to_state, actor: evt.actor, reason, timestamp: evt.timestamp };
+      }
+      
+      const expectedHash = this._computeTransitionHash(prevHash, transitionData);
+      if (expectedHash !== evt.hash) {
+        return { valid: false, error: `Hash mismatch at event index ${i}` };
+      }
+      prevHash = expectedHash;
+    }
+    
+    if (prevHash !== record.metadata.current_state_hash) {
+      return { valid: false, error: "Terminal hash mismatch" };
+    }
+    
     return { valid: true, total_events: record.audit_history.length, current_hash: record.metadata.current_state_hash };
   }
 }

@@ -15,7 +15,30 @@ if (!config.ECDAT_API_KEY) {
   config.ECDAT_API_KEY = "test-reports-key-32-chars-long-entropy!!";
 }
 
+const { persistScanToPostgres } = require("../../src/services/cbom_ingestion");
+const { db } = require("../../src/db/connection");
+
 describe("Technical Drill-Down Reporting Engine (Phase 26.2)", () => {
+  test("setup", async () => {
+    await persistScanToPostgres({
+      id: "scan-tech-1",
+      name: "technical-test-scan",
+      status: "COMPLETED",
+      tenantId: "default-tenant",
+      classified_findings: [
+        { id: "find_rsa_1024_auth", algorithm: "RSA-1024", key_size: 1024, category: "encryption", severity: "High", mosca_status: "AT_RISK" }
+      ],
+      metrics: {
+        overall_cicd_pass: true,
+        total_assets: 1,
+        total_findings: 1,
+        severity_counts: { critical: 0, high: 1, medium: 0, low: 0, informational: 0 },
+        assets_at_quantum_risk: 1,
+        compliance_violations: 0
+      }
+    }, {});
+  });
+
   test("Generates report where every finding satisfies all 12 technical dimensions", async () => {
     const report = await generateTechnicalDrillDownReport({ limit: 10 });
 
@@ -162,7 +185,7 @@ describe("Technical Drill-Down Reporting Engine (Phase 26.2)", () => {
     const port = server.address().port;
 
     try {
-      const res = await fetch(`http://localhost:${port}/api/v1/reports/technical/find_rsa_1024_auth`, {
+      const res = await fetch(`http://localhost:${port}/api/v1/reports/technical/find_rsa_1024_auth?scanId=scan-tech-1`, {
         headers: { "X-API-Key": config.ECDAT_API_KEY },
       });
 

@@ -1,7 +1,7 @@
 const express = require("express");
 const { getScanById, getLatestScan } = require("../services/cbom_ingestion");
 const { db, isDbConnected } = require("../db/connection");
-const { exec } = require("child_process");
+const { execFile } = require("child_process");
 const path = require("path");
 
 const router = express.Router();
@@ -39,8 +39,9 @@ router.get("/", async (req, res, next) => {
         : (page - 1) * pageSize;
 
     const connected = await isDbConnected();
-    if (connected) {
-      try {
+    if (!connected) return res.status(503).json({ error: "Database unavailable" });
+
+    try {
         // Resolve target scan_id if explicitly specified and not 'all'
         let targetScanId = null;
         if (scanId === 'all' || scanId === 'ALL') {
@@ -265,74 +266,6 @@ router.get("/", async (req, res, next) => {
         // Fail loudly on database query errors and schema mismatches instead of quietly degrading
         return next(dbErr);
       }
-    }
-
-    // In-memory fallback
-    const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
-    if (!scan) {
-      return res.status(200).json({
-        scan_id: null,
-        total: 0,
-        page: 1,
-        pageSize,
-        totalPages: 0,
-        findings: [],
-      });
-    }
-
-    let findings = scan.classified_findings || [];
-
-    if (severity) {
-      const targetSev = String(severity).toLowerCase();
-      findings = findings.filter(
-        (f) => (f.severity || "").toLowerCase() === targetSev,
-      );
-    }
-
-    if (moscaStatus) {
-      const targetMosca = String(moscaStatus).toUpperCase();
-      findings = findings.filter((f) => f.mosca?.status === targetMosca);
-    }
-
-    if (algorithm) {
-      const targetAlg = String(algorithm).toLowerCase();
-      findings = findings.filter((f) =>
-        (f.algorithm || "").toLowerCase().includes(targetAlg),
-      );
-    }
-
-    if (assetType) {
-      const targetType = String(assetType).toLowerCase();
-      findings = findings.filter((f) =>
-        (f.asset_type || "").toLowerCase().includes(targetType),
-      );
-    }
-
-    if (classicalRisk) {
-      const targetRisk = String(classicalRisk).toLowerCase();
-      findings = findings.filter(
-        (f) => (f.classical_risk || "").toLowerCase() === targetRisk,
-      );
-    }
-
-    if (quantumRelevance) {
-      const targetQ = String(quantumRelevance).toLowerCase();
-      findings = findings.filter(
-        (f) => (f.quantum_relevance || "").toLowerCase() === targetQ,
-      );
-    }
-
-    const total = findings.length;
-    const paginated = findings.slice(offset, offset + pageSize);
-
-    res.status(200).json({
-      scan_id: scan.id,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize) || 1,
-      findings: paginated,
-    });
   } catch (err) {
     next(err);
   }
@@ -348,8 +281,9 @@ router.get("/:findingId", async (req, res, next) => {
     const findingId = decodeURIComponent(rawFindingId);
 
     const connected = await isDbConnected();
-    if (connected) {
-      try {
+    if (!connected) return res.status(503).json({ error: "Database unavailable" });
+
+    try {
         let findingQuery = db("findings")
           .join("scans", "findings.scan_id", "scans.id")
           .join(
@@ -475,48 +409,11 @@ router.get("/:findingId", async (req, res, next) => {
             },
           });
         }
+        return res.status(404).json({ error: "Finding not found" });
       } catch (dbErr) {
         // Fail loudly on database query errors and schema mismatches instead of quietly degrading
         return next(dbErr);
       }
-    }
-
-    // In-memory fallback
-    const scanId = req.query.scanId || req.query.scan_id;
-    const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
-    if (!scan) {
-      return res.status(404).json({
-        error: "NotFound",
-        message: "No scan data available.",
-      });
-    }
-
-    const finding = (scan.classified_findings || []).find(
-      (f) => (f.bom_ref || f.id) === findingId || f.id === findingId,
-    );
-    if (!finding) {
-      return res.status(404).json({
-        error: "NotFound",
-        message: `Finding '${findingId}' not found.`,
-      });
-    }
-
-    res.status(200).json({
-      finding_id: finding.id || finding.bom_ref,
-      scan_id: scan.id,
-      algorithm: finding.algorithm,
-      key_size: finding.key_size,
-      confidence: finding.confidence,
-      location: finding.file_path || finding.location,
-      risk_assessment: {
-        severity: finding.severity,
-        classical_risk: finding.classical_risk,
-        quantum_relevance: finding.quantum_relevance,
-        mosca_status: finding.mosca?.status || "SAFE",
-        explanation: finding.explanation,
-      },
-      recommendation: finding.recommendation || null,
-    });
   } catch (err) {
     next(err);
   }
@@ -533,36 +430,23 @@ router.post("/:id/suppress", async (req, res, next) => {
     const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
     const callerTenant = req.tenantContext?.tenantId || "default-tenant";
 
-    // 1. Check all in-memory scans to see if finding exists in any tenant
-    let targetScan = null;
-    let finding = null;
-
-    for (const s of require("../services/cbom_ingestion").cbomIngestionService._scans.values()) {
-      const f = (s.classified_findings || []).find(
-        (x) => (x.bom_ref || x.id) === findingId || x.id === findingId
-      );
-      if (f) {
-        finding = f;
-        targetScan = s;
-        break;
-      }
-    }
-
-    // 2. Check DB
+    // 1. Check DB
     const connected = await isDbConnected();
-    if (connected && !finding) {
-      try {
-        const row = await db("findings")
-          .join("scans", "findings.scan_id", "scans.id")
-          .where("findings.id", findingId)
-          .select("findings.id", "scans.tenant_id")
-          .first();
-        if (row) {
-          finding = row;
-          targetScan = { tenantId: row.tenant_id };
-        }
-      } catch (_err) {}
-    }
+    if (!connected) return res.status(503).json({ error: "Database unavailable" });
+
+    let finding = null;
+    let targetScan = null;
+    try {
+      const row = await db("findings")
+        .join("scans", "findings.scan_id", "scans.id")
+        .where("findings.id", findingId)
+        .select("findings.id", "scans.tenant_id")
+        .first();
+      if (row) {
+        finding = row;
+        targetScan = { tenantId: row.tenant_id };
+      }
+    } catch (_err) {}
 
     if (!targetScan || !finding) {
       return res.status(404).json({ error: "NotFound", message: `Finding '${findingId}' not found.` });
@@ -577,8 +461,10 @@ router.post("/:id/suppress", async (req, res, next) => {
       });
     }
 
-    finding.suppressed = true;
-    finding.suppressionReason = reason;
+    await db("findings").where({ id: finding.id }).update({
+      suppressed: true,
+      suppression_reason: reason
+    });
 
     return res.json({ success: true, findingId, suppressed: true, reason });
   } catch (err) {
@@ -638,38 +524,24 @@ router.delete("/:id", async (req, res, next) => {
     const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
     const callerTenant = req.tenantContext?.tenantId || "default-tenant";
 
-    // 1. Search in-memory scans
-    let targetScan = null;
-    let findingIdx = -1;
-
-    for (const s of require("../services/cbom_ingestion").cbomIngestionService._scans.values()) {
-      const idx = (s.classified_findings || []).findIndex(
-        (x) => (x.bom_ref || x.id) === findingId || x.id === findingId
-      );
-      if (idx !== -1) {
-        findingIdx = idx;
-        targetScan = s;
-        break;
-      }
-    }
-
-    // 2. Search database
+    // 1. Search database
     const connected = await isDbConnected();
-    let dbFindingRow = null;
-    if (connected && findingIdx === -1) {
-      try {
-        dbFindingRow = await db("findings")
-          .join("scans", "findings.scan_id", "scans.id")
-          .where("findings.id", findingId)
-          .select("findings.id", "scans.tenant_id")
-          .first();
-        if (dbFindingRow) {
-          targetScan = { tenantId: dbFindingRow.tenant_id };
-        }
-      } catch (_err) {}
-    }
+    if (!connected) return res.status(503).json({ error: "Database unavailable" });
 
-    if (!targetScan || (findingIdx === -1 && !dbFindingRow)) {
+    let targetScan = null;
+    let dbFindingRow = null;
+    try {
+      dbFindingRow = await db("findings")
+        .join("scans", "findings.scan_id", "scans.id")
+        .where("findings.id", findingId)
+        .select("findings.id", "scans.tenant_id")
+        .first();
+      if (dbFindingRow) {
+        targetScan = { tenantId: dbFindingRow.tenant_id };
+      }
+    } catch (_err) {}
+
+    if (!targetScan || !dbFindingRow) {
       return res.status(404).json({ error: "NotFound", message: `Finding '${findingId}' not found.` });
     }
 
@@ -682,12 +554,7 @@ router.delete("/:id", async (req, res, next) => {
       });
     }
 
-    if (findingIdx !== -1 && targetScan.classified_findings) {
-      targetScan.classified_findings.splice(findingIdx, 1);
-    }
-    if (connected && dbFindingRow) {
-      await db("findings").where({ id: dbFindingRow.id }).del().catch(() => {});
-    }
+    await db("findings").where({ id: dbFindingRow.id }).del().catch(() => {});
 
     return res.json({ success: true, message: `Finding '${findingId}' deleted successfully.` });
   } catch (err) {
@@ -698,25 +565,34 @@ router.delete("/:id", async (req, res, next) => {
 router.post("/:findingId/rerun", async (req, res, next) => {
   try {
     const findingId = req.params.findingId;
+    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+
     const connected = await isDbConnected();
-    
-    // We only support this when DB is connected or from mockData if we wanted, but let's assume DB
     if (!connected) {
-       return res.json({ success: true, message: "Rerun requested in mock mode." });
+       return res.status(503).json({ error: "Database unavailable" });
     }
 
-    const finding = await db("findings").where("id", findingId).first();
-    if (!finding) return res.status(404).json({ error: "NotFound" });
+    let query = db("findings")
+      .join("scans", "findings.scan_id", "scans.id")
+      .where("findings.id", findingId)
+      .select("findings.*", "scans.tenant_id");
+      
+    if (!isPlatformAdmin) {
+      query = query.andWhere("scans.tenant_id", callerTenant);
+    }
+    const finding = await query.first();
 
-    // location contains the file path
+    if (!finding) return res.status(404).json({ error: "NotFound", message: "Finding not found or access denied" });
+
     const targetFile = finding.location;
-    if (!targetFile) {
-       return res.status(400).json({ error: "No location attached to this finding." });
+    if (!targetFile || targetFile.includes("..") || targetFile.includes("\0")) {
+       return res.status(400).json({ error: "Invalid location attached to this finding." });
     }
 
-    // Call python script
     const pyScript = path.resolve(__dirname, "../../../scanners/semantic/run_single.py");
-    exec(`python "${pyScript}" "${targetFile}"`, async (err, stdout, _stderr) => {
+    
+    execFile("python", [pyScript, targetFile], async (err, stdout, stderr) => {
        if (err) {
          console.error("Rerun error:", err);
          return res.status(500).json({ error: "Failed to run semantic scanner." });
@@ -725,15 +601,24 @@ router.post("/:findingId/rerun", async (req, res, next) => {
          const result = JSON.parse(stdout);
          if (result.error) return res.status(500).json({ error: result.error });
 
-         // If we get findings, we just want to update the DB finding context to say cached=false
+         const stillExists = result.findings && result.findings.length > 0;
+
          let ctx = {};
          try { ctx = JSON.parse(finding.evidence_context || "{}"); } catch(_e){}
          ctx.cached = false;
-         await db("findings").where("id", findingId).update({
+         
+         const updateData = {
            evidence_context: JSON.stringify(ctx)
-         });
+         };
+         
+         if (stillExists && ["DISMISSED_FALSE_POSITIVE", "RESOLVED", "CLOSED"].includes(finding.status)) {
+           updateData.status = "OPEN";
+           updateData.dismissal_reason = null;
+         }
 
-         return res.json({ success: true, message: "Live rerun complete!" });
+         await db("findings").where("id", findingId).update(updateData);
+
+         return res.json({ success: true, message: "Live rerun complete!", stillExists, status: updateData.status || finding.status });
        } catch (_e) {
          return res.status(500).json({ error: "Failed to parse runner output" });
        }

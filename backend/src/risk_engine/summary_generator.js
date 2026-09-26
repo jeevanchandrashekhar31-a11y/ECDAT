@@ -13,8 +13,8 @@ const { prioritizeEnterpriseRisk } = require("./prioritizer");
  * @returns {Object} Executive summary object
  */
 function generateSummary(cbomData, options = {}) {
-  const policyProfile = options.policyProfile || "internal_enterprise";
-  const threatHorizon = options.threatHorizon || "baseline";
+  const policyProfile = options.policyProfile || options.policy_profile || "internal_enterprise";
+  const threatHorizon = options.threatHorizon || options.scenario || "baseline";
   const rules = getRules();
   const ruleVersion = rules.algorithm_risk?.version || "1.0.0";
   const profileConfig = rules.policy_profiles?.profiles?.[policyProfile] || {};
@@ -204,6 +204,7 @@ function generateSummary(cbomData, options = {}) {
       policy_profile: policyProfile,
       profile_description: profileConfig.description || "",
       threatHorizon: threatHorizon,
+      scenario: threatHorizon,
     },
     metrics: {
       total_assets: allAssets.length,

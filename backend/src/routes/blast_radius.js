@@ -22,16 +22,7 @@ router.get("/", async (req, res, next) => {
     // Use existing graph logic to fetch all nodes
     const graphData = await buildCryptoRelationshipGraph({ scanId }, req.tenantContext);
     
-    if (scanId === "demo-synthetic-scan" && graphData.graph.nodes.length > 0) {
-      const targetNode = graphData.graph.nodes.find(n => n.id === "app_root") || graphData.graph.nodes[0];
-      if (!targetNode.metadata) {
-        targetNode.metadata = {};
-      }
-      targetNode.metadata.mosca_x_years = 10;
-      targetNode.metadata.mosca_y_years = 5;
-      targetNode.pqc_readiness = "AT_RISK";
-    }
-
+    // Removed synthetic mock injection block
     const projection = [];
 
     for (const node of graphData.graph.nodes) {
