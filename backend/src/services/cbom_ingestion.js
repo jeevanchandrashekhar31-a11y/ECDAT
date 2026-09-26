@@ -160,7 +160,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
           evidence_context: (f.raw_evidence || f.metadata) ? JSON.stringify({ ...(f.raw_evidence || {}), metadata: f.metadata || undefined }) : null,
           confidence: String(f.confidence || "high").slice(0, 50),
           detection_method: f.detection_method ? String(f.detection_method).slice(0, 50) : "deterministic",
-          status: f.usage_status || (f.needs_human_review ? "LLM_FLAGGED_UNVERIFIED" : "CONFIRMED_USAGE"),
+          status: f.remediation_status || f.usage_status || (f.needs_human_review ? "LLM_FLAGGED_UNVERIFIED" : "CONFIRMED_USAGE"),
         });
 
         riskAssessmentsData.push({

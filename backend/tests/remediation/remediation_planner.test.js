@@ -99,7 +99,7 @@ test("Remediation Planner - Generates all 10 required dimensions for every findi
 
   // 9. Rollback plan
   assert.ok(item.rollback_plan);
-  assert.equal(item.rollback_plan.zero_downtime_guaranteed, true);
+  assert.equal(item.rollback_plan.zero_downtime_viable, true);
   assert.ok(Array.isArray(item.rollback_plan.step_by_step_procedure));
 
   // 10. Confidence

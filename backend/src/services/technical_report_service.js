@@ -492,6 +492,7 @@ function validateTechnicalReportCompleteness(report) {
 function generateTechnicalHtmlReport(report) {
   const meta = report.metadata;
   const items = report.findings;
+  const isVerified = validateEvidenceIntegrity(report).passed;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -542,20 +543,20 @@ function generateTechnicalHtmlReport(report) {
     <!-- Evidence Integrity & Provenance Block (Phase 26.3) -->
     <div class="integrity-card" style="margin-bottom: 24px; padding: 18px 24px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-        <span style="font-weight: 700; color: #10b981; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
-          🛡️ EVIDENCE INTEGRITY &amp; PROVENANCE VERIFIED
+        <span style="font-weight: 700; color: ${isVerified ? '#10b981' : '#f43f5e'}; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+          🛡️ EVIDENCE INTEGRITY &amp; PROVENANCE ${isVerified ? 'VERIFIED' : 'UNVERIFIED'}
         </span>
         <span style="font-family: monospace; font-size: 0.8rem; background: #0f172a; padding: 4px 8px; border-radius: 4px; color: #94a3b8;">
-          Fingerprint: ${report.evidence_integrity?.hashes?.canonical_fingerprint || "SHA256:VERIFIED"}
+          Fingerprint: ${report.evidence_integrity?.hashes?.canonical_fingerprint || "UNKNOWN"}
         </span>
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 0.82rem; color: var(--text-muted);">
         <div><b>Scan Timestamp:</b> ${report.evidence_integrity?.scan_timestamp || meta.generated_at}</div>
-        <div><b>ECDAT Version:</b> ${report.evidence_integrity?.ecdat_version || "1.0.0"}</div>
+        <div><b>ECDAT Version:</b> ${report.evidence_integrity?.ecdat_version || "UNKNOWN"}</div>
         <div><b>Scanner Engine:</b> v1.0.0 (AST, Uprobe, TLS)</div>
         <div><b>Config Hash:</b> <span style="font-family: monospace;">${(report.evidence_integrity?.configuration?.config_hash_sha256 || "").substring(0, 16)}...</span></div>
-        <div><b>Policy Version:</b> ${report.evidence_integrity?.policy_version?.profile_id || "regulated_bfsi"} (v${report.evidence_integrity?.policy_version?.version || "1.0.0"})</div>
-        <div><b>CBOM Spec:</b> ${report.evidence_integrity?.cbom_version?.spec_version || "CycloneDX 1.6"}</div>
+        <div><b>Policy Version:</b> ${report.evidence_integrity?.policy_version?.profile_id || "UNKNOWN"} (v${report.evidence_integrity?.policy_version?.version || "UNKNOWN"})</div>
+        <div><b>CBOM Spec:</b> ${report.evidence_integrity?.cbom_version?.spec_version || "UNKNOWN"}</div>
       </div>
       <!-- Anti-Misrepresentation Disclaimer Banner (Mandate 26.3) -->
       <div style="margin-top: 14px; padding: 10px 14px; background: rgba(245, 158, 11, 0.08); border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 0.8rem; color: #cbd5e1; line-height: 1.4;">

@@ -11,7 +11,11 @@ exports.up = async function(knex) {
   // First, let's delete findings where asset_id doesn't exist in assets table.
   await knex.raw(`
     DELETE FROM findings 
-    WHERE asset_id NOT IN (SELECT id FROM assets)
+    WHERE NOT EXISTS (
+      SELECT 1 FROM assets 
+      WHERE assets.id = findings.asset_id 
+      AND assets.scan_id = findings.scan_id
+    )
   `);
 
   // Now add the foreign key

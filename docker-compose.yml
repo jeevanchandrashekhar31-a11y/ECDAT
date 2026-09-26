@@ -19,7 +19,7 @@ services:
     security_opt:
       - no-new-privileges:true
       - seccomp=docker/security/seccomp-profile.json
-    pids_limit: 100
+    
     deploy:
       resources:
         limits:
@@ -70,7 +70,7 @@ services:
       - no-new-privileges:true
       - seccomp=docker/security/seccomp-profile.json
       - apparmor=ecdat-profile
-    pids_limit: 150
+    
     deploy:
       resources:
         limits:
@@ -112,7 +112,7 @@ services:
       - no-new-privileges:true
       - seccomp=docker/security/seccomp-profile.json
       - apparmor=ecdat-profile
-    pids_limit: 50
+    
     deploy:
       resources:
         limits:
@@ -153,7 +153,7 @@ services:
     security_opt:
       - no-new-privileges:true
       - seccomp=docker/security/seccomp-profile.json
-    pids_limit: 50
+    
     deploy:
       resources:
         limits:
@@ -183,7 +183,7 @@ services:
     security_opt:
       - no-new-privileges:true
       - seccomp=docker/security/seccomp-profile.json
-    pids_limit: 100
+    
     deploy:
       resources:
         limits:
@@ -204,3 +204,4 @@ networks:
   data:
     driver: bridge
     internal: true
+

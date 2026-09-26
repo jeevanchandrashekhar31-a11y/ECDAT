@@ -206,7 +206,7 @@ function buildEvidenceIntegrity(context = {}) {
       policy_hash_sha256: policyHash,
     },
     cbom_version: {
-      spec_version: cbomData.specVersion || "CycloneDX 1.6",
+      spec_version: cbomData.specVersion || "UNKNOWN",
       cbom_schema_version: "1.6",
       cbom_serial_number: cbomData.serialNumber || cbomData.serial_number || "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
       cbom_version: Number(cbomData.version || 1),

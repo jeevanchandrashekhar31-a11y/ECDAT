@@ -169,9 +169,7 @@
         "prefer_hybrid": true,
         "target_pqc_standards": [
           "ML-KEM-1024",
-          "ML-DSA-87",
-          "AES-256"
-        ]
+          "ML-DSA-87"]
       },
       "certificate_rules": {
         "allow_self_signed": false,
@@ -236,9 +234,7 @@
         "prefer_hybrid": true,
         "target_pqc_standards": [
           "ML-KEM-1024",
-          "ML-DSA-87",
-          "AES-256"
-        ]
+          "ML-DSA-87"]
       },
       "certificate_rules": {
         "allow_self_signed": false,

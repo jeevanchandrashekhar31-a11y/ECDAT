@@ -141,7 +141,7 @@ test("Migration Planner - Step 8: defineRollback provides zero-downtime safety",
   assert.ok(rollback.pre_condition_triggers.some((t) => t.includes("Handshake error rate")));
   assert.ok(rollback.pre_condition_triggers.some((t) => t.includes("packet fragmentation")));
   assert.ok(rollback.automated_procedure.length >= 3);
-  assert.equal(rollback.zero_downtime_guaranteed, true);
+  assert.equal(rollback.zero_downtime_viable, true);
 });
 
 test("Migration Planner - Step 9: defineRescanVerification includes CBOM diff and absence disclaimer", () => {

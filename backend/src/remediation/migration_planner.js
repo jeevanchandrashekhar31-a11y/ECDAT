@@ -396,7 +396,7 @@ function defineRollback(_asset) {
       "Step 4: Automated alert dispatch to security operations and on-call engineering.",
     ],
     estimated_rollback_time_seconds: 30,
-    zero_downtime_guaranteed: true,
+    zero_downtime_viable: true,
   };
 }
 

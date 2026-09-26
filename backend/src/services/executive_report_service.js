@@ -268,6 +268,7 @@ async function generateExecutiveReport(options = {}) {
         mosca_y_years: f.ra_mosca_y_years || f.mosca_y_years,
         mosca_z_years: f.ra_mosca_z_years || f.mosca_z_years,
         policy_violations: typeof f.ra_policy_violations === 'string' ? JSON.parse(f.ra_policy_violations) : (f.ra_policy_violations || []),
+        remediation_status: f.status || f.remediation_status || "open",
       }));
       assets = aRows.map((a) => ({
         id: a.id,
@@ -303,6 +304,7 @@ async function generateExecutiveReport(options = {}) {
       mosca_y_years: f.mosca_y_years || f.mosca?.final_values?.Y_migration_years || 0,
       mosca_z_years: f.mosca_z_years || f.mosca?.final_values?.Z_quantum_threat_years || 0,
       policy_violations: f.policy_violations || [],
+      remediation_status: f.remediation_status || f.status || "open",
       metadata: f.metadata,
     }));
   }
@@ -659,17 +661,19 @@ async function generateExecutiveReport(options = {}) {
     verified: [],
   };
 
-  findings.forEach((f, idx) => {
+  findings.forEach((f) => {
     const ref = createEvidenceReference(f);
-    if (idx === 0) {
+    const status = f.remediation_status ? String(f.remediation_status).toLowerCase() : "open";
+    
+    if (status === "patch_generated" || status === "executing") {
       remediationStatusGroups.patch_generated.push(ref);
-    } else if (idx === 1) {
+    } else if (status === "planned" || status === "pending_approval") {
       remediationStatusGroups.planned.push(ref);
-    } else if (idx === 2) {
+    } else if (status === "under_review" || status === "verifying") {
       remediationStatusGroups.under_review.push(ref);
-    } else if (idx === 3) {
+    } else if (status === "risk_accepted" || status === "approved") {
       remediationStatusGroups.risk_accepted.push(ref);
-    } else if (idx >= 4 && idx <= 5) {
+    } else if (status === "verified" || status === "resolved") {
       remediationStatusGroups.verified.push(ref);
     } else {
       remediationStatusGroups.open.push(ref);
@@ -686,7 +690,7 @@ async function generateExecutiveReport(options = {}) {
   const remediationProgress = {
     total_findings: totalFindingsCount,
     remediation_rate_percentage: remediationRatePercentage,
-    mean_time_to_remediate_days: 14.2,
+    mean_time_to_remediate_days: null,
     status_counts: {
       open: remediationStatusGroups.open.length,
       planned: remediationStatusGroups.planned.length,
@@ -731,29 +735,17 @@ async function generateExecutiveReport(options = {}) {
     owners: Array.from(ownerBuckets.values()).map((o) => ({
       ...o,
       pqc_readiness_pct: o.total_assets > 0 ? Number((((o.total_assets - o.critical_high_count) / o.total_assets) * 100).toFixed(1)) : 100,
-      sla_compliant_pct: 95.0,
+      sla_compliant_pct: null,
     })),
   };
 
   // -------------------------------------------------------------------------
   // 9. Trend Over Time
   // -------------------------------------------------------------------------
-  const trendPoints = [
-    { period: "2026-04", total_assets: 18, weak_assets: 12, quantum_vulnerable: 14, quantum_safe: 4, critical_findings: 8, aggregate_risk_score: 88.5 },
-    { period: "2026-05", total_assets: 20, weak_assets: 10, quantum_vulnerable: 15, quantum_safe: 5, critical_findings: 7, aggregate_risk_score: 82.0 },
-    { period: "2026-06", total_assets: 22, weak_assets: 8, quantum_vulnerable: 15, quantum_safe: 7, critical_findings: 5, aggregate_risk_score: 75.4 },
-    { period: "2026-07", total_assets: 23, weak_assets: 6, quantum_vulnerable: 14, quantum_safe: 9, critical_findings: 4, aggregate_risk_score: 68.2 },
-    { period: "2026-08", total_assets: 25, weak_assets: 4, quantum_vulnerable: 13, quantum_safe: 12, critical_findings: 3, aggregate_risk_score: 59.0 },
-    { period: "2026-09", total_assets: totalCryptoAssets.total_count, weak_assets: weakDeprecatedAssets.total_weak_count, quantum_vulnerable: pqcReadiness.quantum_vulnerable_count, quantum_safe: pqcReadiness.quantum_safe_count, critical_findings: policyViolations.critical_violations_count, aggregate_risk_score: 48.0 },
-  ];
-
   const trendOverTime = {
-    historical_periods: trendPoints,
+    historical_periods: [],
     velocity_summary: {
-      weak_assets_reduction_pct: -66.7,
-      pqc_adoption_growth_pct: +200.0,
-      risk_score_reduction_pct: -45.8,
-      direction: "IMPROVING",
+      direction: "UNKNOWN",
     },
   };
 
@@ -873,6 +865,7 @@ function generateExecutiveHtmlReport(report) {
   const remediation = report.remediation_progress;
   const owners = report.business_ownership;
   const trend = report.trend_over_time;
+  const isVerified = validateEvidenceIntegrity(report).passed;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -977,20 +970,20 @@ function generateExecutiveHtmlReport(report) {
     <!-- Evidence Integrity & Provenance Block (Phase 26.3) -->
     <div class="integrity-card" style="margin-bottom: 24px; padding: 18px 24px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-        <span style="font-weight: 700; color: #10b981; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
-          🛡️ EVIDENCE INTEGRITY &amp; PROVENANCE VERIFIED
+        <span style="font-weight: 700; color: ${isVerified ? '#10b981' : '#f43f5e'}; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+          🛡️ EVIDENCE INTEGRITY &amp; PROVENANCE ${isVerified ? 'VERIFIED' : 'UNVERIFIED'}
         </span>
         <span style="font-family: monospace; font-size: 0.8rem; background: #0f172a; padding: 4px 8px; border-radius: 4px; color: #94a3b8;">
-          Fingerprint: ${report.evidence_integrity?.hashes?.canonical_fingerprint || "SHA256:VERIFIED"}
+          Fingerprint: ${report.evidence_integrity?.hashes?.canonical_fingerprint || "UNKNOWN"}
         </span>
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 0.82rem; color: var(--text-muted);">
         <div><b>Scan Timestamp:</b> ${report.evidence_integrity?.scan_timestamp || meta.generated_at}</div>
-        <div><b>ECDAT Version:</b> ${report.evidence_integrity?.ecdat_version || "1.0.0"}</div>
+        <div><b>ECDAT Version:</b> ${report.evidence_integrity?.ecdat_version || "UNKNOWN"}</div>
         <div><b>Scanner Engine:</b> v1.0.0 (AST, Uprobe, TLS)</div>
         <div><b>Config Hash:</b> <span style="font-family: monospace;">${(report.evidence_integrity?.configuration?.config_hash_sha256 || "").substring(0, 16)}...</span></div>
-        <div><b>Policy Version:</b> ${report.evidence_integrity?.policy_version?.profile_id || meta.policy_profile} (v${report.evidence_integrity?.policy_version?.version || "1.0.0"})</div>
-        <div><b>CBOM Spec:</b> ${report.evidence_integrity?.cbom_version?.spec_version || "CycloneDX 1.6"}</div>
+        <div><b>Policy Version:</b> ${report.evidence_integrity?.policy_version?.profile_id || meta.policy_profile} (v${report.evidence_integrity?.policy_version?.version || "UNKNOWN"})</div>
+        <div><b>CBOM Spec:</b> ${report.evidence_integrity?.cbom_version?.spec_version || "UNKNOWN"}</div>
       </div>
       <!-- Anti-Misrepresentation Disclaimer Banner (Mandate 26.3) -->
       <div style="margin-top: 14px; padding: 10px 14px; background: rgba(245, 158, 11, 0.08); border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 0.8rem; color: #cbd5e1; line-height: 1.4;">

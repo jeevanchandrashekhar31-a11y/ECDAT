@@ -57,7 +57,7 @@ test("Remediation API - POST /api/v1/remediation/plan defaults to DRY RUN", asyn
     assert.ok(rem.expected_impact.blast_radius);
     assert.ok(rem.dependencies.required_libraries);
     assert.ok(rem.testing_plan.stages.length >= 3);
-    assert.equal(rem.rollback_plan.zero_downtime_guaranteed, true);
+    assert.equal(rem.rollback_plan.zero_downtime_viable, true);
     assert.ok(rem.confidence.level);
     assert.equal(rem.dry_run.mode, "DRY_RUN");
   });

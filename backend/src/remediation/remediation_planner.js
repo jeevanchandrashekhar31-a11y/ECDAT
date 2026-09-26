@@ -271,7 +271,7 @@ function buildMigrationOptions(finding, asset = {}) {
       description: "Combines NIST P-256 curve with ML-KEM-768 for strict US Fed / BFSI regulatory mandates.",
       pros: [
         "Satisfies strict FIPS 140-3 and NSA CNSA 2.0 compliance mandates.",
-        "Guarantees post-quantum forward secrecy.",
+        "Provides post-quantum forward secrecy.",
       ],
       cons: ["Slightly higher compute overhead than X25519."],
       effort: "LOW",
@@ -294,7 +294,8 @@ function buildMigrationOptions(finding, asset = {}) {
 
     options.push(primaryPqc, hybridTransition, classicalHardening);
   } else if (["RSA", "ECDSA", "DSA"].some((s) => algo.includes(s)) || category.includes("asymmetric")) {
-    const isEnc = category.includes("encryption") || category.includes("key_exchange") || category.includes("encapsulation");
+    const context = String(finding.evidence_context || finding.function_scope || "").toLowerCase();
+    const isEnc = category.includes("encryption") || category.includes("key_exchange") || category.includes("encapsulation") || context.includes("encrypt") || context.includes("decrypt") || context.includes("cipher") || context.includes("kem");
     primaryPqc = {
       option_id: isEnc ? "OPT-1-PQC-KEM" : "OPT-1-PQC-SIGNATURE",
       name: isEnc ? "NIST FIPS 203 ML-KEM-768 Migration" : "NIST FIPS 204 ML-DSA-65 Migration",
@@ -526,7 +527,7 @@ function deriveRollbackPlan(finding, _asset = {}) {
       "5. Capture error telemetry and client user-agent breakdown for root cause analysis.",
     ],
     recovery_time_objective_minutes: 5,
-    zero_downtime_guaranteed: true,
+    zero_downtime_viable: true,
   };
 }
 
@@ -710,7 +711,7 @@ class RemediationPlanner {
           ["CRITICAL", "HIGH"].includes(String(p.finding.severity).toUpperCase()),
         ).length,
         default_mode: "DRY_RUN",
-        zero_downtime_viable: planItems.every((p) => p.rollback_plan.zero_downtime_guaranteed),
+        zero_downtime_viable: planItems.every((p) => p.rollback_plan.zero_downtime_viable),
       },
       remediations: planItems,
       plan_digest: planDigest,
