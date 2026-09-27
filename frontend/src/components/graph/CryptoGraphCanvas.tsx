@@ -139,10 +139,11 @@ const MemoizedNode = React.memo(({ node, isSelected, isHovered, isDimmed, onSele
     <g
       data-testid={`graph-node-${node.id}`}
       transform={`translate(${node.x}, ${node.y})`}
-      onClick={(e) => {
-        e.stopPropagation();
+      onMouseDown={(e) => {
+        e.stopPropagation(); // prevent panning the canvas when clicking a node
         onSelect(node.id);
       }}
+      onClick={(e) => e.stopPropagation()}
       onMouseEnter={() => onHoverStart(node.id)}
       onMouseLeave={() => onHoverEnd()}
       className="cursor-pointer"
