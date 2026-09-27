@@ -189,7 +189,7 @@ async function extractZipArchive(zipFilePath, targetDir) {
     'extract', zipFilePath, targetDir,
     '--max-size-mb', '500',
     '--max-entry-mb', '100',
-    '--max-files', '100000',
+    '--max-files', '10000000',
     '--allow-nested',
   ], 180000);
 }

@@ -21,7 +21,7 @@ const os = require("os");
 // Default bounded security thresholds
 const DEFAULT_MAX_TOTAL_BYTES = 500 * 1024 * 1024; // 500 MB total
 const DEFAULT_MAX_ENTRY_SIZE = 100 * 1024 * 1024; // 100 MB per entry
-const DEFAULT_MAX_FILES_COUNT = 100000; // 100,000 files
+const DEFAULT_MAX_FILES_COUNT = 10000000; // 10,000,000 files
 const DEFAULT_MAX_RATIO = 100.0; // 100:1 max compression ratio
 
 const NESTED_ARCHIVE_EXTS = new Set([

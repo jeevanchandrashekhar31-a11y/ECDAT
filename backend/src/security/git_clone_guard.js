@@ -28,7 +28,7 @@ const { resolveAndValidateTarget } = require("./ssrf_protection");
 const DEFAULT_CLONE_TIMEOUT_MS = 180000;
 const MAX_CLONE_TIMEOUT_MS = 300000;
 const DEFAULT_MAX_REPO_SIZE_BYTES = 250 * 1024 * 1024; // 250 MB
-const DEFAULT_MAX_FILE_COUNT = 100000; // 100,000 files
+const DEFAULT_MAX_FILE_COUNT = 10000000; // 10,000,000 files
 
 // Disallowed sensitive system paths for local target_dir scans
 const SENSITIVE_SYSTEM_PATHS = [

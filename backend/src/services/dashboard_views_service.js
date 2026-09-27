@@ -656,8 +656,8 @@ async function getEnterpriseDashboardViews(options = {}) {
     certItems = certAssets.map((ca) => {
       const meta = ca.metadata || {};
       const cert = ca.certificate || {};
-      const keySize = ca.key_size || meta.key_size || cert.key_size || null;
-      const isWeak = keySize && keySize < 2048;
+      const algorithm = cert.algo_family || cert.algorithm || ca.algorithm || "RSA";
+      const isWeak = keySize && ((algorithm.toUpperCase().includes("RSA") && keySize < 2048) || (algorithm.toUpperCase().includes("EC") && keySize < 224));
 
       const subjectDn = cert.subjectName || cert.subject_dn || meta.subject_dn || ca.primary_identifier || `Certificate [${ca.id}]`;
       const issuerDn = cert.issuerName || cert.issuer_dn || meta.issuer_dn || "UNKNOWN";
@@ -688,10 +688,10 @@ async function getEnterpriseDashboardViews(options = {}) {
         validity_start: validStart,
         validity_end: validEnd,
         days_remaining: daysRemaining,
-        algorithm: ca.algorithm || "RSA",
+        algorithm: algorithm,
         key_size: keySize,
         renewal_state: renewalState,
-        detected_anomalies: meta.anomalies || (isWeak ? [`weak_key:${(ca.algorithm || "").toLowerCase()}_${keySize}`] : []),
+        detected_anomalies: meta.anomalies || (isWeak ? [`weak_key:${algorithm.toLowerCase()}_${keySize}`] : []),
         evidence_link: findings.find(f => f.asset_id === ca.id)?.id || ca.id,
       };
     });
@@ -703,7 +703,7 @@ async function getEnterpriseDashboardViews(options = {}) {
     expiring_soon_count: certItems.filter(
       (c) => c.renewal_state === "EXPIRING_SOON" || c.renewal_state === "CRITICAL_EXPIRING"
     ).length,
-    weak_keys_count: certItems.filter((c) => c.key_size && c.key_size < 2048).length,
+    weak_keys_count: certItems.filter((c) => c.key_size && ((c.algorithm.toUpperCase().includes("RSA") && c.key_size < 2048) || (c.algorithm.toUpperCase().includes("EC") && c.key_size < 224))).length,
     certificates: certItems,
   };
 

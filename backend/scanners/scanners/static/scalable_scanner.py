@@ -243,7 +243,7 @@ class ScalableScanner:
         include_exts: Optional[Set[str]] = None,
         exclude_dirs: Optional[Set[str]] = None,
         max_file_size_mb: int = 10,
-        max_files: int = 100000,
+        max_files: int = 10000000,
         max_depth: int = 25,
         enable_cache: bool = True,
         cache_dir: Optional[str | Path] = None,
