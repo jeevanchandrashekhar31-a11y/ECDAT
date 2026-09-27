@@ -77,6 +77,20 @@ router.get("/summary", async (req, res, next) => {
     if (!connected) return res.status(503).json({ error: "Database unavailable" });
 
     try {
+        // Aggressive runtime purge to completely eliminate mock data from dashboard numbers
+        await db("scans")
+          .where("target_name", "ilike", "%wycheproof%")
+          .orWhere("target_name", "ilike", "%mock%")
+          .orWhere("target_name", "ilike", "%synthetic%")
+          .orWhere("target_name", "ilike", "%demo%")
+          .del();
+
+        const syntheticScans = await db("assets").select("scan_id").where("is_synthetic", true).groupBy("scan_id");
+        const scanIds = syntheticScans.map(s => s.scan_id).filter(Boolean);
+        if (scanIds.length > 0) {
+          await db("scans").whereIn("id", scanIds).del();
+        }
+
         let scanQuery = db("scans").select("*");
         if (scanId && scanId !== "all" && scanId !== "ALL") {
           // Validate specific scan belongs to this tenant via getScanById(scanId, req.tenantContext)
