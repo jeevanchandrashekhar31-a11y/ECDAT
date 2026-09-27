@@ -51,3 +51,7 @@ examples/real_target/
 
 examples/real_target/wolfssl/
 testing/examples/real_targets/mbedtls/
+
+# Never commit real .env.docker with actual credentials
+.env.docker
+!.env.docker.example
