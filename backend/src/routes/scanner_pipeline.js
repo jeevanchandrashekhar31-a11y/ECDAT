@@ -378,7 +378,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     // Python scanner - supplemental, non-fatal
     let pythonComponents = [];
     const tempStaticTs = Date.now();
-    const tempOut = path.resolve(REPO_ROOT, "artifacts/temp_static_" + tempStaticTs + ".json");
+    const tempOut = path.resolve(ARTIFACTS_DIR, "temp_static_" + tempStaticTs + ".json");
     if (!fs.existsSync(path.dirname(tempOut))) {
       fs.mkdirSync(path.dirname(tempOut), { recursive: true });
     }
@@ -468,7 +468,7 @@ router.post('/scan/network', concurrencyQuotaMiddleware(), RATE_LIMITS.networkSc
     }
 
     const { hostname: host, port, authorizedBy, timeoutSeconds } = guardResult.targetInfo;
-    const tempOut = path.resolve(REPO_ROOT, `artifacts/temp_network_${Date.now()}.json`);
+    const tempOut = path.resolve(ARTIFACTS_DIR, `temp_network_${Date.now()}.json`);
     const networkScanId = `scan_net_${Date.now()}`;
 
     emitScanAudit({
@@ -672,7 +672,7 @@ router.post('/scan/binary', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       });
     }
 
-    const tempOut = path.resolve(REPO_ROOT, `artifacts/temp_binary_${Date.now()}.json`);
+    const tempOut = path.resolve(ARTIFACTS_DIR, `temp_binary_${Date.now()}.json`);
     if (!fs.existsSync(path.dirname(tempOut))) {
       fs.mkdirSync(path.dirname(tempOut), { recursive: true });
     }
