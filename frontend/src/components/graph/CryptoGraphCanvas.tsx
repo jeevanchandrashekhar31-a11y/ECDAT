@@ -13,7 +13,7 @@ import {
   X,
   Lock,
   Network,
-  Map,
+  Map as MapIcon,
 } from 'lucide-react';
 import { GraphNode, GraphEdge, GraphTier, EvidenceFinding, SeverityLevel } from '../../types';
 
@@ -127,7 +127,6 @@ const MemoizedEdge = React.memo(({ srcNode, tgtNode, isEdgeHighlighted, isDimmed
         strokeWidth={isEdgeHighlighted ? 3 : 1.5}
         strokeOpacity={isDimmed ? 0.15 : isEdgeHighlighted ? 1 : 0.6}
         markerEnd={isEdgeHighlighted ? 'url(#edge-arrow-highlight)' : 'url(#edge-arrow)'}
-        className="transition-all duration-200"
       />
     </g>
   );
@@ -168,7 +167,7 @@ const MemoizedNode = React.memo(({ node, isSelected, isHovered, isDimmed, onSele
             : '#1e293b'
         }
         strokeWidth={isSelected ? 2.5 : isHovered ? 2 : blastStatus === 'AFFECTED' ? 2 : 1}
-        className={`transition-all duration-150 ${blastStatus === 'AFFECTED' ? 'animate-pulse' : ''}`}
+        className={`transition-colors duration-150 ${blastStatus === 'AFFECTED' ? 'animate-pulse' : ''}`}
       />
       <rect x="10" y="10" width="32" height="32" rx="8" fill="#1e293b" className="opacity-70" />
       <g transform="translate(16, 16)">
@@ -506,7 +505,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
           className={`p-1 rounded transition-colors ${showMinimap ? 'text-cyan-400 bg-cyan-950' : 'text-slate-400 hover:text-white hover:bg-surfaceHover'}`}
           title="Toggle Overview Map"
         >
-          <Map className="w-3.5 h-3.5" />
+          <MapIcon className="w-3.5 h-3.5" />
         </button>
         <div className="h-3 w-px bg-slate-700" />
         <span className="text-slate-600 text-[10px] hidden sm:block">Scroll=Zoom · Drag=Pan</span>
@@ -584,7 +583,14 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
           </defs>
 
           {/* Transform group for Pan and Zoom */}
-          <g ref={transformGroupRef} transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+          <g 
+            ref={transformGroupRef} 
+            transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
+            style={{ 
+              pointerEvents: isPanning ? 'none' : 'auto',
+              willChange: 'transform'
+            }}
+          >
             {/* Column Background Dividers */}
             {TIER_ORDER.map((tier) => {
               const bounds = tierBounds[tier];
@@ -614,29 +620,43 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
               );
             })}
 
-            {/* Render Directed Edges */}
-            {edges.map((edge) => {
-              const srcNode = nodeMap.get(edge.source);
-              const tgtNode = nodeMap.get(edge.target);
-              if (!srcNode || !tgtNode) return null;
-              const isEdgeHighlighted = connectedIds && connectedIds.has(edge.source) && connectedIds.has(edge.target);
-              const isDimmed = connectedIds && !isEdgeHighlighted;
-              return <MemoizedEdge key={edge.id} edge={edge} srcNode={srcNode} tgtNode={tgtNode} isEdgeHighlighted={isEdgeHighlighted} isDimmed={isDimmed} />;
-            })}
-
-            {/* Render Positioned Nodes — viewport culled for large datasets */}
-            {positionedNodes
-              .filter(node => {
-                // Skip off-screen nodes for performance (virtual rendering)
-                if (!containerRef.current) return true;
+            {/* Pre-calculate viewport bounds once per render instead of per-node to prevent layout thrashing */}
+            {(() => {
+              let vx0 = -10000, vy0 = -10000, vx1 = 10000, vy1 = 10000;
+              if (containerRef.current) {
                 const { width, height } = containerRef.current.getBoundingClientRect();
-                const vx0 = -pan.x / zoom - 300 / zoom;
-                const vy0 = -pan.y / zoom - 300 / zoom;
-                const vx1 = vx0 + width / zoom + 600 / zoom;
-                const vy1 = vy0 + height / zoom + 600 / zoom;
-                return node.x < vx1 && node.x + node.width > vx0 && node.y < vy1 && node.y + node.height > vy0;
-              })
-              .map((node) => {
+                vx0 = -pan.x / zoom - 300 / zoom;
+                vy0 = -pan.y / zoom - 300 / zoom;
+                vx1 = vx0 + width / zoom + 600 / zoom;
+                vy1 = vy0 + height / zoom + 600 / zoom;
+              }
+
+              const visibleNodesSet = new Set<string>();
+
+              const culledNodes = positionedNodes.filter(node => {
+                const isVisible = node.x < vx1 && node.x + node.width > vx0 && node.y < vy1 && node.y + node.height > vy0;
+                if (isVisible) visibleNodesSet.add(node.id);
+                return isVisible;
+              });
+
+              return (
+                <>
+                  {/* Render Directed Edges - Cull edges where both ends are off-screen unless highlighted */}
+                  {edges.map((edge) => {
+                    const srcNode = nodeMap.get(edge.source);
+                    const tgtNode = nodeMap.get(edge.target);
+                    if (!srcNode || !tgtNode) return null;
+                    const isEdgeHighlighted = connectedIds && connectedIds.has(edge.source) && connectedIds.has(edge.target);
+                    const isDimmed = connectedIds && !isEdgeHighlighted;
+                    
+                    // Edge culling: skip if neither source nor target is visible AND it's not highlighted
+                    if (!isEdgeHighlighted && !visibleNodesSet.has(edge.source) && !visibleNodesSet.has(edge.target)) return null;
+
+                    return <MemoizedEdge key={edge.id} edge={edge} srcNode={srcNode} tgtNode={tgtNode} isEdgeHighlighted={isEdgeHighlighted} isDimmed={isDimmed} />;
+                  })}
+
+                  {/* Render Positioned Nodes */}
+                  {culledNodes.map((node) => {
               const isSelected = selectedNodeId === node.id;
               const isHovered = hoveredNodeId === node.id;
               const isConnected = connectedIds ? connectedIds.has(node.id) : true;
@@ -662,6 +682,9 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
                 />
               );
             })}
+                </>
+              );
+            })()}
           </g>
         </svg>
       </div>

@@ -141,7 +141,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
     try {
       await fetch('/api/v1/scan/abort', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authManager.getSession().token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(authManager.getSession() as any).token}` },
         body: JSON.stringify({ scan_session_id: activeScanIdRef.current }),
       });
     } catch { /* server may already be gone */ }

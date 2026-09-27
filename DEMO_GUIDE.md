@@ -2,7 +2,7 @@
 
 > **Audience**: SIH Evaluators / Technical Judges  
 > **Duration**: 8–10 minutes  
-> **Live URL**: `http://localhost:5173` (or your Railway/Render deployment)
+> **Live URL**: `http://localhost:5173` 
 
 ---
 

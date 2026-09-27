@@ -18,7 +18,6 @@ import {
   Sparkles,
   Info,
   Zap,
-  TrendingDown,
   Calendar,
   BarChart3,
   ChevronDown,
@@ -691,14 +690,15 @@ export const Roadmap: React.FC = () => {
                             </span>
                           );
                         }
-                        return normalised || `${rec.algorithm || 'Unknown'} — detected in scan`;
+                        const r = rec as any;
+                        return normalised || `${r.algorithm || 'Unknown'} — detected in scan`;
                       })()}
                     </p>
                     {/* Show algorithm explicitly if available */}
-                    {rec.algorithm && (
+                    {(rec as any).algorithm && (
                       <p className="text-[10px] text-slate-500 font-mono mt-1">
-                        Algorithm: <span className="text-amber-400">{rec.algorithm}</span>
-                        {rec.key_size ? ` · Key: ${rec.key_size}-bit` : ''}
+                        Algorithm: <span className="text-amber-400">{(rec as any).algorithm}</span>
+                        {(rec as any).key_size ? ` · Key: ${(rec as any).key_size}-bit` : ''}
                       </p>
                     )}
                   </div>
@@ -726,9 +726,9 @@ export const Roadmap: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/60 print:hidden">
                   {/* Affected assets count — links to assets page filtered by algorithm */}
-                  {rec.algorithm && (
+                  {(rec as any).algorithm && (
                     <Link
-                      to={`/assets?algorithm=${encodeURIComponent(rec.algorithm)}${scanId ? `&scanId=${scanId}` : ''}`}
+                      to={`/assets?algorithm=${encodeURIComponent((rec as any).algorithm)}${scanId ? `&scanId=${scanId}` : ''}`}
                       className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-primary transition-colors"
                     >
                       <BarChart3 className="w-3.5 h-3.5" />

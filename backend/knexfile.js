@@ -26,7 +26,7 @@ module.exports = {
   development: {
     client: 'pg',
     connection: buildConnection('development'),
-    acquireConnectionTimeout: 10000,
+    acquireConnectionTimeout: 30000,
     migrations: {
       directory: path.join(__dirname, 'src/db/migrations'),
       tableName: 'knex_migrations'

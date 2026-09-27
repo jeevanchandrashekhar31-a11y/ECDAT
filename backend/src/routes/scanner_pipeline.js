@@ -93,7 +93,7 @@ function loadJsonSafe(filePath) {
 /**
  * Runs a python command asynchronously with timeout
  */
-function runPythonCommand(args, timeoutMs = 15000) {
+function runPythonCommand(args, timeoutMs = 60000) {
   return new Promise((resolve, reject) => {
     const pythonBin = process.platform === 'win32' ? 'python' : 'python3';
     const child = spawn(pythonBin, args, { cwd: REPO_ROOT, shell: false });
