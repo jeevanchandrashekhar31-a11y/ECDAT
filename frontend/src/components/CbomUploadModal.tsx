@@ -59,6 +59,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
   const [scannerType, setScannerType] = useState('combined');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [scanProgress, setScanProgress] = useState<string>('');
 
   if (!isOpen) return null;
@@ -114,6 +115,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
           setScanLabel(dropped.name.replace(/\.[^/.]+$/, ''));
         }
         setError(null);
+        setSuccessMessage(null);
         return;
       }
       if (dropped.size > MAX_CBOM_UPLOAD_BYTES) {
@@ -126,6 +128,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
         setScanLabel(dropped.name.replace(/\.json$/i, ''));
       }
       setError(null);
+      setSuccessMessage(null);
     }
   };
 
@@ -155,6 +158,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
     setScanProgress(mode === 'scan' ? 'Initialising scanner…' : 'Ingesting…');
 
     // Create a fresh AbortController for this scan
@@ -256,6 +260,9 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
           setScanProgress('Complete! Loading results…');
           onSuccess(scanRes.scan_id);
           onClose();
+        } else if (scanRes?.success && !scanRes?.scan_id) {
+          setSuccessMessage(scanRes.message || 'Scan completed, but no cryptographic assets were found in this target.');
+          setScanProgress('');
         } else {
           throw new Error('Scan completed without returning a scan ID.');
         }
@@ -329,6 +336,13 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
           <div className="mb-4 p-3 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
             <AlertTriangle size={16} className="shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-4 p-3 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+            <CheckCircle2 size={16} className="shrink-0" />
+            <span>{successMessage}</span>
           </div>
         )}
 
