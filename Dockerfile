@@ -10,6 +10,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip python3-venv git curl openssl build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Syft for Binary / Container scanning
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
 # Create a proper virtual environment for Python packages (fixes PEP 668 and permissions)
 RUN python3 -m venv /opt/venv && chown -R node:node /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
