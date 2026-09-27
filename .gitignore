@@ -48,3 +48,6 @@ artifacts/temp_*.json
 # Large generated files that don't belong in source
 network_scan_audit.jsonl
 examples/real_target/
+
+examples/real_target/wolfssl/
+testing/examples/real_targets/mbedtls/
