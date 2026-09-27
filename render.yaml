@@ -7,9 +7,9 @@ services:
     runtime: node
     region: oregon           # or singapore for lower latency from India
     plan: free               # upgrade to starter ($7/mo) for always-on
-    rootDir: .
-    buildCommand: cd backend && npm ci --production && pip3 install -r ../requirements.txt
-    startCommand: cd backend && npm run migrate && PYTHONPATH=.. node src/server.js
+    rootDir: backend
+    buildCommand: npm ci --production && pip3 install -r ../requirements.txt
+    startCommand: npm run migrate && node src/server.js
     healthCheckPath: /health
     autoDeploy: true
 
@@ -43,7 +43,7 @@ services:
         sync: false            # Your Vercel frontend URL e.g. https://ecdat.vercel.app
 
       - key: PYTHONPATH
-        value: ..          # Repo root — contains scanners/ package (rootDir is backend/)
+        value: .
 
       - key: SCAN_ARTIFACTS_DIR
         value: /tmp/ecdat-scans  # Render has ephemeral disk; scans go to /tmp then Neon
