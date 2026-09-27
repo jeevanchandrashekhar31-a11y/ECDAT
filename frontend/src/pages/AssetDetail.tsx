@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams, useOutletContext } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -402,12 +402,21 @@ export const AssetDetail: React.FC = () => {
                           {item.category || 'Cryptographic Primitive'}
                         </td>
                         <td className="py-3.5 pr-3">
-                          <div className="flex items-center gap-1.5 text-slate-300 font-mono text-[11px]">
+                          <div className="relative group flex items-center gap-1.5 text-slate-300 font-mono text-[11px]">
                             <FileCode className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate max-w-[180px]" title={item.location || 'Endpoint / Session'}>
+                            <span className="truncate max-w-[180px] cursor-help">
                               {item.location || 'Endpoint / Session'}
                             </span>
                             {item.line_number ? <span className="text-slate-500">:{item.line_number}</span> : null}
+                            
+                            {/* Hover Tooltip / Dropdown */}
+                            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50">
+                              <div className="bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl min-w-[250px] max-w-[400px] break-all whitespace-normal text-slate-200 text-xs">
+                                {item.location || 'Endpoint / Session'}
+                                {item.line_number ? `:${item.line_number}` : ''}
+                              </div>
+                              <div className="absolute -bottom-1 left-4 w-2 h-2 bg-slate-900 border-b border-r border-slate-700 rotate-45"></div>
+                            </div>
                           </div>
                         </td>
                         <td className="py-3.5 text-right">

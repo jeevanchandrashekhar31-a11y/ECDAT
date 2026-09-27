@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Layers,
   Search,
@@ -212,12 +212,20 @@ export const CryptoInventoryView: React.FC<Props> = ({
                       </td>
                       <td className="py-3 px-4 font-mono text-slate-400">
                         {comp.location ? (
-                          <div className="flex items-center gap-1.5 truncate max-w-xs">
+                          <div className="relative group flex items-center gap-1.5 max-w-xs">
                             <FileCode className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                            <span className="truncate">{comp.location}</span>
+                            <span className="truncate cursor-help">{comp.location}</span>
                             {comp.line_number && (
-                              <span className="text-primary">:{comp.line_number}</span>
+                              <span className="text-primary shrink-0">:{comp.line_number}</span>
                             )}
+                            {/* Hover Tooltip / Dropdown */}
+                            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-[100]">
+                              <div className="bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl min-w-[250px] max-w-[400px] break-all whitespace-normal text-slate-200 text-xs">
+                                {comp.location}
+                                {comp.line_number ? `:${comp.line_number}` : ''}
+                              </div>
+                              <div className="absolute -bottom-1 left-4 w-2 h-2 bg-slate-900 border-b border-r border-slate-700 rotate-45"></div>
+                            </div>
                           </div>
                         ) : (
                           'Network / Dynamic'

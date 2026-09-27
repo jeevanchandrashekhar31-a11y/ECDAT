@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   X,
   FileCode,
@@ -245,14 +245,22 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                 </div>
 
                 {/* Exact Code Location */}
-                <div className="flex items-center gap-2 mb-2 text-xs font-mono text-slate-400 bg-surface/80 px-2.5 py-1.5 rounded-lg border border-border">
+                <div className="relative group flex items-center gap-2 mb-2 text-xs font-mono text-slate-400 bg-surface/80 px-2.5 py-1.5 rounded-lg border border-border">
                   <FileCode className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span className="truncate">{item.location || 'Endpoint / Session'}</span>
+                  <span className="truncate cursor-help">{item.location || 'Endpoint / Session'}</span>
                   {item.line_number ? (
                     <span className="text-primary/80 font-semibold shrink-0">
                       :line {item.line_number}
                     </span>
                   ) : null}
+                  {/* Hover Tooltip / Dropdown */}
+                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-[100]">
+                    <div className="bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl min-w-[250px] max-w-[400px] break-all whitespace-normal text-slate-200 text-xs">
+                      {item.location || 'Endpoint / Session'}
+                      {item.line_number ? `:${item.line_number}` : ''}
+                    </div>
+                    <div className="absolute -bottom-1 left-4 w-2 h-2 bg-slate-900 border-b border-r border-slate-700 rotate-45"></div>
+                  </div>
                 </div>
 
                 {/* Evidence Code Snippet / AST context */}
