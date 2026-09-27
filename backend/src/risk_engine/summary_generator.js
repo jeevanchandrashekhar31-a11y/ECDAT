@@ -90,7 +90,8 @@ function generateSummary(cbomData, options = {}) {
 
     // 3. Asset grouping
     const logicalIdentity = item.algorithm || "unknown_crypto";
-    const normalizedIdentity = String(logicalIdentity).toLowerCase().replace(/[^a-z0-9]/g, "-");
+    const assetTypeStr = item.asset_type || "network_session";
+    const normalizedIdentity = String(logicalIdentity + "_" + assetTypeStr).toLowerCase().replace(/[^a-z0-9]/g, "-");
     const assetId = `asset_${normalizedIdentity}`;
     
     if (!assetMap.has(assetId)) {

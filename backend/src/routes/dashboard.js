@@ -77,10 +77,6 @@ router.get("/summary", async (req, res, next) => {
     if (!connected) return res.status(503).json({ error: "Database unavailable" });
 
     try {
-        // Unconditional forceful wipe of all data to satisfy user request for a completely clean slate.
-        // We use TRUNCATE CASCADE to ensure all orphaned assets/findings are destroyed.
-        await db.raw('TRUNCATE TABLE scans CASCADE');
-
         let scanQuery = db("scans").select("*");
         if (scanId && scanId !== "all" && scanId !== "ALL") {
           // Validate specific scan belongs to this tenant via getScanById(scanId, req.tenantContext)
