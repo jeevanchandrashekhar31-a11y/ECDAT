@@ -450,7 +450,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     }
     try {
       await runPythonCommand(
-        [path.join(REPO_ROOT, 'scanners', 'static', 'main.py'), targetDir, "-o", tempOut, "--include-ext", ".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.ts,.tsx,.py,.java", "--fail-on", "none"],
+        [path.join(REPO_ROOT, 'scanners', 'static', 'main.py'), targetDir, "-o", tempOut, "--include-ext", ".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.ts,.tsx,.py,.java,.json,.yml,.yaml,.properties,.ini,.xml,.env", "--fail-on", "none"],
         120000
       );
       const pyData = loadJsonSafe(tempOut);
