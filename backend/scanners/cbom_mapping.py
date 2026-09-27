@@ -777,6 +777,7 @@ def runtime_event_to_cbom(event: Any) -> Bom:
 def merge_cboms(cboms: List[Bom]) -> Bom:
     merged = Bom()
     comp_map = {}
+    comp_locs_map = {}  # Cache of existing locations to avoid O(N^2) set recreation
 
     for bom in cboms:
         for comp in bom.components:
@@ -784,17 +785,28 @@ def merge_cboms(cboms: List[Bom]) -> Bom:
             if ref not in comp_map:
                 comp_map[ref] = comp
                 merged.components.add(comp)
+                
+                # Initialize the location cache for this component
+                if comp.evidence and comp.evidence.occurrences:
+                    comp_locs_map[ref] = {
+                        (o.location, getattr(o, "line", None)) 
+                        for o in comp.evidence.occurrences
+                    }
+                else:
+                    comp_locs_map[ref] = set()
             else:
                 # Merge occurrences
                 existing = comp_map[ref]
                 if comp.evidence and comp.evidence.occurrences:
                     if not existing.evidence:
                         existing.evidence = ComponentEvidence(occurrences=[])
+                        comp_locs_map[ref] = set()
                     if not existing.evidence.occurrences:
                         existing.evidence.occurrences = []
+                        comp_locs_map[ref] = set()
                     
-                    # Add new occurrences, avoiding exact duplicates
-                    existing_locs = {(o.location, getattr(o, "line", None)) for o in existing.evidence.occurrences}
+                    # Add new occurrences, using the O(1) external cache
+                    existing_locs = comp_locs_map[ref]
                     for new_occ in comp.evidence.occurrences:
                         loc_key = (new_occ.location, getattr(new_occ, "line", None))
                         if loc_key not in existing_locs:
