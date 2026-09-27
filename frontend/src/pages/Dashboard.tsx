@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useOutletContext, Link } from 'react-router-dom';
+import { useOutletContext, Link, useLocation } from 'react-router-dom';
 import {
   Shield,
   Layers,
@@ -66,8 +66,21 @@ export const Dashboard: React.FC = () => {
   const outlet = useOutletContext<{ selectedScanId?: string; onUploadSuccess?: (id: string) => void }>() || {};
   const selectedScanId = outlet.selectedScanId;
 
-  // Active view tab state
-  const [activeTab, setActiveTab] = useState<DashboardTab>('executive_overview');
+  const location = useLocation();
+
+  // Active view tab state (default to CBOM if accessed via /cbom)
+  const [activeTab, setActiveTab] = useState<DashboardTab>(
+    location.pathname === '/cbom' ? 'crypto_inventory' : 'executive_overview'
+  );
+
+  // Sync tab if URL changes
+  useEffect(() => {
+    if (location.pathname === '/cbom') {
+      setActiveTab('crypto_inventory');
+    } else if (location.pathname === '/') {
+      setActiveTab('executive_overview');
+    }
+  }, [location.pathname]);
 
   // Governance settings
   const [selectedPolicy, setSelectedPolicy] = useState<string>('ecdat_enterprise_baseline');

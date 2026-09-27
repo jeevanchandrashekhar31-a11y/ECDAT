@@ -1,4 +1,4 @@
-﻿import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
@@ -9,6 +9,7 @@ import { Roadmap } from './pages/Roadmap';
 import { CryptoGraph } from './pages/CryptoGraph';
 import { Findings } from './pages/Findings';
 import { Remediation } from './pages/Remediation';
+import { Scans } from './pages/Scans';
 
 import { Login } from './pages/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -74,6 +75,7 @@ export const App: React.FC = () => {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/cbom" element={<Dashboard />} />
               <Route path="/assets" element={<Assets />} />
               <Route path="/assets/:assetId" element={<AssetDetail />} />
               <Route path="/findings" element={<Findings />} />
@@ -81,6 +83,7 @@ export const App: React.FC = () => {
               <Route path="/roadmap" element={<Roadmap />} />
               <Route path="/graph" element={<CryptoGraph />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/scans" element={<Scans />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -18,6 +18,8 @@ import {
   UserCheck,
   Wrench,
   Zap,
+  Database,
+  Clock,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { authManager } from '../security';
@@ -257,6 +259,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <p className="section-label pt-1 pb-2">Core</p>
           <NavLink to="/" end className={({ isActive }) => navCls(isActive)}><LayoutDashboard size={14} /><span>Executive Dashboard</span></NavLink>
+          <NavLink to="/cbom" className={({ isActive }) => navCls(isActive)}><Database size={14} /><span>CBOM (Inventory)</span></NavLink>
           <NavLink to="/assets" className={({ isActive }) => navCls(isActive)}><Layers size={14} /><span>Cryptographic Assets</span></NavLink>
           <NavLink to="/findings" className={({ isActive }) => navCls(isActive)}><AlertCircle size={14} /><span>Findings</span></NavLink>
 
@@ -267,6 +270,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <p className="section-label pt-4 pb-2">Intelligence</p>
           <NavLink to="/graph" className={({ isActive }) => navCls(isActive)}><Network size={14} /><span>Crypto Graph</span></NavLink>
           <NavLink to="/reports" className={({ isActive }) => navCls(isActive)}><FileText size={14} /><span>Compliance Reports</span></NavLink>
+          <NavLink to="/scans" className={({ isActive }) => navCls(isActive)}><Clock size={14} /><span>Scan History</span></NavLink>
           <NavLink to="/login" className={({ isActive }) => navCls(isActive)}>
             <Key size={14} />
             <span>{currentUser?.isEvaluation ? 'Eval Options' : currentUser ? 'Account' : 'Sign In'}</span>
