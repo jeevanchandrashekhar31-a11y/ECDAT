@@ -35,6 +35,10 @@ export function LocationTooltip({
   }, [isOpen]);
 
   const displayLocation = location || 'Endpoint / Session';
+  const segments = displayLocation.split(/[\/\\]/);
+  const filename = segments.length > 1 ? segments.pop() : displayLocation;
+  const directory = segments.length > 0 && displayLocation !== filename ? segments.join('/') + '/' : '';
+  
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
 
   const toggleTooltip = (e: React.MouseEvent) => {
@@ -50,17 +54,24 @@ export function LocationTooltip({
   return (
     <div 
       ref={containerRef}
-      className={`relative flex items-center gap-1.5 font-mono text-[11px] ${className}`}
+      className={`relative flex items-start gap-2 font-mono text-[11px] ${className}`}
     >
-      <FileCode className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+      <FileCode className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
       <button 
         onClick={toggleTooltip}
-        className={`truncate ${maxWidth} cursor-pointer hover:text-primary transition-colors text-left outline-none`}
+        className={`flex flex-col text-left cursor-pointer hover:bg-surfaceHover p-1 -ml-1 rounded transition-colors outline-none`}
         title="Click to view full path"
       >
-        {displayLocation}
+        <div className="flex items-center flex-wrap gap-1">
+          <span className="font-semibold text-slate-200 break-all">{filename}</span>
+          {lineNumber && <span className="text-primary font-bold bg-primary/10 px-1.5 rounded-sm">:{lineNumber}</span>}
+        </div>
+        {directory && (
+          <span className="text-slate-500 text-[10px] leading-tight mt-0.5 break-all max-w-full">
+            {directory}
+          </span>
+        )}
       </button>
-      {lineNumber ? <span className="text-slate-500 shrink-0">:{lineNumber}</span> : null}
       
       {/* Click Dropdown Portalled to Body to escape table overflow:hidden */}
       {isOpen && typeof document !== 'undefined' && createPortal(
