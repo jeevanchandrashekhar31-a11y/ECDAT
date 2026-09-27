@@ -62,7 +62,7 @@ function setAuthCookies(res, { accessToken, refreshToken = null, csrfToken = nul
     const accessCookieOpts = [
       `${ACCESS_COOKIE_NAME}=${encodeURIComponent(accessToken)}`,
       "HttpOnly",
-      "SameSite=Strict",
+      "SameSite=None",
       "Path=/",
       `Max-Age=${15 * 60}`, // 15 minutes
     ];
@@ -75,7 +75,7 @@ function setAuthCookies(res, { accessToken, refreshToken = null, csrfToken = nul
     const refreshCookieOpts = [
       `${REFRESH_COOKIE_NAME}=${encodeURIComponent(refreshToken)}`,
       "HttpOnly",
-      "SameSite=Strict",
+      "SameSite=None",
       "Path=/api/v1/auth",
       `Max-Age=${7 * 24 * 60 * 60}`, // 7 days
     ];
@@ -87,7 +87,7 @@ function setAuthCookies(res, { accessToken, refreshToken = null, csrfToken = nul
   if (csrfToken) {
     const csrfCookieOpts = [
       `${CSRF_COOKIE_NAME}=${encodeURIComponent(csrfToken)}`,
-      "SameSite=Strict",
+      "SameSite=None",
       "Path=/",
       `Max-Age=${15 * 60}`,
     ];
@@ -100,9 +100,9 @@ function setAuthCookies(res, { accessToken, refreshToken = null, csrfToken = nul
  * Clears all authentication and CSRF cookies.
  */
 function clearAuthCookies(res) {
-  const clearFlags = "Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict";
+  const clearFlags = "Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure";
   res.appendHeader("Set-Cookie", `${ACCESS_COOKIE_NAME}=; ${clearFlags}; HttpOnly`);
-  res.appendHeader("Set-Cookie", `${REFRESH_COOKIE_NAME}=; Path=/api/v1/auth; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict`);
+  res.appendHeader("Set-Cookie", `${REFRESH_COOKIE_NAME}=; Path=/api/v1/auth; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=None; Secure`);
   res.appendHeader("Set-Cookie", `${CSRF_COOKIE_NAME}=; ${clearFlags}`);
 }
 
