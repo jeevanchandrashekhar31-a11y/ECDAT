@@ -1016,41 +1016,7 @@ async function seedDemoDataset() {
   return { id: scanResult.id, tenantId: "evaluation-tenant" };
 }
 
-// POST /evaluation/seed: Explicitly seed synthetic data
-const handleDemoSeed = async (req, res, next) => {
-  if (!req.auth?.authenticated) {
-    return res.status(401).json({ error: "Unauthorized", message: "Authentication required for evaluation seeds." });
-  }
 
-  const userRoles = req.auth?.roles || [req.auth?.role] || [];
-  if (config.AUTH_MODE !== "demo" && !userRoles.includes("evaluation_operator") && !userRoles.includes("admin") && !userRoles.includes("platform administrator")) {
-    return res.status(403).json({ error: "Forbidden", message: "Requires EVALUATION_OPERATOR capability to seed environment." });
-  }
-
-  const authMode = config.AUTH_MODE || "production";
-  if (authMode !== "demo" && authMode !== "evaluation") {
-    return res.status(403).json({ error: "Forbidden", message: "Evaluation mode is disabled." });
-  }
-
-  try {
-    const record = await seedDemoDataset();
-    if (record) {
-      record.tenantId = "evaluation-tenant";
-      inMemoryScansStore.set(record.id, record);
-      const { db, isDbConnected } = require("../db/connection");
-      const connected = await isDbConnected();
-      if (connected) {
-        await db("scans").where("id", record.id).update({ tenant_id: "evaluation-tenant" }).catch(() => {});
-      }
-    }
-    return res.json({ success: true, scan_id: record.id, message: "Synthetic dataset seeded for evaluation tenant." });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-router.post("/evaluation/seed", handleDemoSeed);
-router.post("/demo/seed", handleDemoSeed);
 
 /**
  * POST /api/v1/auth/local/login

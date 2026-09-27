@@ -683,11 +683,6 @@ export const api = {
     });
   },
 
-  seedEvaluationTenant: async (): Promise<{ success: boolean; scan_id: string; message: string }> => {
-    return request('/api/v1/auth/evaluation/seed', {
-      method: 'POST',
-    });
-  },
 
   // --------------------------------------------------------------------------
   // Safe Remediation & Four-Eyes Governance Lifecycle
