@@ -77,12 +77,10 @@ router.get("/summary", async (req, res, next) => {
     if (!connected) return res.status(503).json({ error: "Database unavailable" });
 
     try {
-        // Aggressive runtime purge to completely eliminate mock data from dashboard numbers
+        // One-time comprehensive wipe of all historical data as requested by user
+        // Deletes all scans created before 2026-09-27T18:15:00Z (which covers all existing scans)
         await db("scans")
-          .where("target_name", "ilike", "%wycheproof%")
-          .orWhere("target_name", "ilike", "%mock%")
-          .orWhere("target_name", "ilike", "%synthetic%")
-          .orWhere("target_name", "ilike", "%demo%")
+          .where("created_at", "<", "2026-09-27T18:15:00Z")
           .del();
 
         const syntheticScans = await db("assets").select("scan_id").where("is_synthetic", true).groupBy("scan_id");
