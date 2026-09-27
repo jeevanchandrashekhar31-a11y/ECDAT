@@ -2,6 +2,12 @@ import argparse
 import sys
 from pathlib import Path
 import logging
+
+# Self-bootstrap: ensure the repo root (containing 'scanners/') is always on sys.path,
+# regardless of how PYTHONPATH is set by the caller (e.g. Render free tier).
+_REPO_ROOT = str(Path(__file__).resolve().parent.parent.parent)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Tuple
 

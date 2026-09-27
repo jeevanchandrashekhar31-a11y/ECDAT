@@ -3,6 +3,11 @@ import sys
 import json
 from pathlib import Path
 
+# Self-bootstrap: ensure the repo root (containing 'scanners/') is always on sys.path
+_REPO_ROOT = str(Path(__file__).resolve().parent.parent.parent)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 from scanners.static.discovery import FileDiscovery
 from scanners.static.regex_rules import apply_regex_rules
 from scanners.static.sanitization import redact_secrets

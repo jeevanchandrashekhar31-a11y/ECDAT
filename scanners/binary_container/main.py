@@ -3,6 +3,11 @@ import logging
 import sys
 from pathlib import Path
 
+# Self-bootstrap: ensure the repo root (containing 'scanners/') is always on sys.path
+_REPO_ROOT = str(Path(__file__).resolve().parent.parent.parent)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 from scanners.binary_container.target_validation import validate_target
 from scanners.binary_container.syft_runner import run_syft_scan
 from scanners.binary_container.component_classifier import parse_cyclonedx_for_crypto
