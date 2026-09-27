@@ -1,0 +1,32 @@
+# GitGuardian configuration
+# Excludes intentional synthetic test fixtures from secret scanning alerts.
+# These directories contain FAKE credentials used to test ECDAT's own secret scanner.
+
+version: 2
+
+exit-zero: false
+
+ignored-paths:
+  # Synthetic secret corpus — intentional fake credentials for testing ECDAT's scanner
+  - tests/fixtures/synthetic_secrets/
+  # Security regression tests use synthetic tokens to test rejection logic
+  - tests/test_secret_scanning_audit.py
+
+ignored-detectors:
+  # Test files use "ecdat:fixture" marked fake tokens — not real credentials
+  - name: "Generic High Entropy Secret"
+    paths:
+      - tests/fixtures/
+      - backend/tests/security/
+  - name: "JSON Web Token"
+    paths:
+      - backend/tests/security/final_redteam_phase.test.js
+  - name: "Bearer Token"
+    paths:
+      - tests/test_secret_scanning_audit.py
+  - name: "Stripe Keys"
+    paths:
+      - tests/test_secret_scanning_audit.py
+  - name: "Google API Key"
+    paths:
+      - tests/test_secret_scanning_audit.py

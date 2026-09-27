@@ -77,7 +77,7 @@ describe("Phase 25: P1 — Testing Architecture (Node.js 25-Category Regression 
   // ==========================================================================
   describe("Category 01: Authentication", () => {
     test("Constant-time comparison protects against timing attacks", () => {
-      const secret = "correct_horse_battery_staple_2026";
+      const secret = "correct_horse_battery_staple_2026"; // gitguardian:ignore;
       const candidateGood = "correct_horse_battery_staple_2026";
       const candidateBad = "correct_horse_battery_staple_2025";
 

@@ -84,8 +84,8 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:-ecdat-redis-secret}@redis:6379
       # Auth
       AUTH_MODE: ${AUTH_MODE:-demo}
-      JWT_SECRET: ${JWT_SECRET:-change-this-in-production-use-256bit-random}
-      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY must be set}
       # CORS
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost,http://localhost:80,http://frontend}
       # Scanner

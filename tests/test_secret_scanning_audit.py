@@ -79,7 +79,7 @@ class TestEightSecretCategories:
     def test_jwt_secrets_and_tokens_detected(self):
         # Raw signed JWT
         jwt_content = (
-            'auth_header = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
+            'auth_header = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9  # gitguardian:ignore.'
             'eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkplZXZhbiIsImlhdCI6MTUxNjIzOTAyMn0.'
             '4P4Nvhdp1Zf09_jV7Yn7W5Z2U8B9Z1V5K2V7W3Y8Z4Q"\n'
         )
@@ -87,7 +87,7 @@ class TestEightSecretCategories:
         assert any(c.candidate_type == "JWT_TOKEN" and not c.is_synthetic for c in jwt_cands)
 
         # JWT Secret assignment
-        jwt_sec_content = 'jwt_secret = "my-super-secret-signing-key-high-entropy-prod-32chars"\n'
+        jwt_sec_content = 'jwt_secret = "my-super-secret-signing-key-high-entropy-prod-32chars"  # gitguardian:ignore\n'
         _, sec_cands = SecretSafeDetector.detect_and_redact(jwt_sec_content, file_path="config/jwt.py")
         assert any(c.candidate_type == "JWT_SECRET" and not c.is_synthetic for c in sec_cands)
 
@@ -120,7 +120,7 @@ class TestEightSecretCategories:
 
     def test_cloud_credentials_detected(self):
         # GCP API Key (AIzaSy...)
-        gcp_content = 'gcp_key = "AIzaSyDaBcDeFgHiJkLmNoPqRsTuVwXyZ012345"\n'
+        gcp_content = 'gcp_key = "AIzaSyDaBcDeFgHiJkLmNoPqRsTuVwXyZ012345"  # gitguardian:ignore\n'
         _, gcp_cands = SecretSafeDetector.detect_and_redact(gcp_content, file_path="cloud/gcp.py")
         assert any(c.candidate_type == "GCP_API_KEY" and not c.is_synthetic for c in gcp_cands)
 
@@ -146,12 +146,12 @@ class TestEightSecretCategories:
         assert any(c.candidate_type == "SLACK_TOKEN" and not c.is_synthetic for c in slack_cands)
 
         # Stripe
-        stripe_content = 'stripe_key = "sk_live_51AbCdEfGhIjKlMnOpQrStUvWx"\n'
+        stripe_content = 'stripe_key = "sk_live_51AbCdEfGhIjKlMnOpQrStUvWx"  # gitguardian:ignore\n'
         _, stripe_cands = SecretSafeDetector.detect_and_redact(stripe_content, file_path="billing/stripe.py")
         assert any(c.candidate_type == "STRIPE_KEY" and not c.is_synthetic for c in stripe_cands)
 
         # Generic API Key
-        generic_content = 'api_key = "live_prod_api_key_super_secret_99887766"\n'
+        generic_content = 'api_key = "live_prod_api_key_super_secret_99887766"  # gitguardian:ignore\n'
         _, gen_cands = SecretSafeDetector.detect_and_redact(generic_content, file_path="services/api.py")
         assert any(c.candidate_type == "GENERIC_API_KEY" and not c.is_synthetic for c in gen_cands)
 
