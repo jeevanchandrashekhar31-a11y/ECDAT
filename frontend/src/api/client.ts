@@ -852,5 +852,11 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action }),
     });
+  },
+  
+  wipeDatabase: async (): Promise<{ success: boolean; message: string }> => {
+    return request('/api/v1/scans/nuclear-wipe', {
+      method: 'DELETE',
+    });
   }
 };
