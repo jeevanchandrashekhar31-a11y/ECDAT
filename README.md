@@ -270,7 +270,10 @@ Each finding gets a `SAFE | WATCH | AT_RISK | CRITICAL_URGENT` Mosca classificat
 ### 3. 🌐 Blast Radius Simulation
 The interactive **Crypto Graph** maps cryptographic dependencies across your architecture. The blast radius simulator shows *cascade failures* — when one algorithm breaks, what else breaks with it? This is the feature no other open-source tool has.
 
-### 4. 📋 CycloneDX CBOM Generation (v1.6 + v1.7)
+### 4. ⚖️ Compliance & Policy Engine (NIST / FIPS)
+Evaluate your CBOMs against complex cryptographic policies (e.g., "If Algorithm = RSA AND KeySize < 2048, THEN FAIL"). The frontend provides a visual, real-time interactive dashboard for managing NIST SP 800-52, FIPS 140-3, and CNSA 2.0 PQC requirements, integrated directly with a "four-eyes" governance bypass for rapid prototyping.
+
+### 5. 📋 CycloneDX CBOM Generation (v1.6 + v1.7)
 Outputs standards-compliant Cryptographic Bills of Materials mapping:
 - Algorithm name + OID
 - Key sizes and modes
@@ -279,7 +282,7 @@ Outputs standards-compliant Cryptographic Bills of Materials mapping:
 - PQC migration recommendation
 - Mosca risk classification
 
-### 5. 🔐 Four-Eyes Cryptographic Governance
+### 6. 🔐 Four-Eyes Cryptographic Governance
 Remediation pipeline with **programmatic separation of duties**:
 ```
 PROPOSED → REVIEWED → APPROVED → APPLIED → VERIFIED
@@ -287,7 +290,7 @@ PROPOSED → REVIEWED → APPROVED → APPLIED → VERIFIED
 ```
 The developer who proposes a fix is *mathematically prevented* from approving it — enforced at the API layer, not just the UI.
 
-### 6. 🏢 Multi-Tenant Enterprise Architecture
+### 7. 🏢 Multi-Tenant Enterprise Architecture
 - Full row-level tenant isolation on all DB queries
 - `SCAN_TENANT_FORBIDDEN` sentinel (cross-tenant access returns 404, not 403)
 - JWT with embedded `tenantId` + `roles`
