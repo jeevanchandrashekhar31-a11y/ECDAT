@@ -253,6 +253,27 @@ router.get('/debug/paths', async (req, res) => {
 // 1. POST /scan/static
 // --------------------------------------------------------------------------
 router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmission.middleware(), upload.any(), async (req, res, _next) => {
+  // Prevent Render's 100-second reverse proxy timeout by streaming whitespace.
+  // The JSON.parse() on the client side gracefully ignores leading whitespace.
+  res.setHeader('Content-Type', 'application/json');
+  res.flushHeaders();
+  const keepAliveInterval = setInterval(() => {
+    res.write(' ');
+  }, 15000);
+
+  // Wrap res.json/res.send to automatically clear the interval and correctly append the payload
+  const originalJson = res.json.bind(res);
+  res.json = function (body) {
+    clearInterval(keepAliveInterval);
+    res.write(JSON.stringify(body));
+    res.end();
+  };
+  const originalStatus = res.status.bind(res);
+  res.status = function (statusCode) {
+    res.statusCode = statusCode;
+    return this;
+  };
+
   const uploadSessionId = `scan_${Date.now()}`;
   const uploadDir = path.resolve(ARTIFACTS_DIR, 'uploads', uploadSessionId);
   let targetDir = null;
