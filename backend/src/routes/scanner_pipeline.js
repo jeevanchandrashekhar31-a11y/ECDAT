@@ -232,9 +232,11 @@ router.get('/debug/paths', async (req, res) => {
   
   let pythonTest = '';
   try {
-    pythonTest = execSync('python3 -c "import sys; print(sys.path); import cyclonedx; print(\'SUCCESS\')"').toString();
+    const syspath = execSync('python3 -c "import sys; print(sys.path)"').toString();
+    const piplist = execSync('pip3 list').toString();
+    pythonTest = `SYSPATH: ${syspath}\n\nPIPLIST:\n${piplist}`;
   } catch (e) {
-    pythonTest = "FAILED: " + (e.stderr ? e.stderr.toString() : e.message);
+    pythonTest = "FAILED: " + (e.stderr ? e.stderr.toString() : e.message) + " | STDOUT: " + (e.stdout ? e.stdout.toString() : '');
   }
 
   res.json({ REPO_ROOT, ARTIFACTS_DIR, pythonTest });
