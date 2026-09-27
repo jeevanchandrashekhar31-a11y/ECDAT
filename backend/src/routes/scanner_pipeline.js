@@ -142,7 +142,7 @@ async function _runGitClone(repoUrl, targetDir, timeoutMs = 180000) {
 async function extractZipArchive(zipFilePath, targetDir) {
   fs.mkdirSync(targetDir, { recursive: true });
   await runPythonCommand([
-    '-m', 'scanners.common.archive_guard',
+    path.join(REPO_ROOT, 'scanners', 'common', 'archive_guard.py'),
     'extract', zipFilePath, targetDir,
     '--max-size-mb', '500',
     '--max-entry-mb', '100',
@@ -388,7 +388,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     }
     try {
       await runPythonCommand(
-        ["-m", "scanners.static.main", targetDir, "-o", tempOut, "--include-ext", ".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.ts,.tsx,.py,.java", "--fail-on", "none"],
+        [path.join(REPO_ROOT, 'scanners', 'static', 'main.py'), targetDir, "-o", tempOut, "--include-ext", ".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.ts,.tsx,.py,.java", "--fail-on", "none"],
         120000
       );
       const pyData = loadJsonSafe(tempOut);
@@ -492,7 +492,7 @@ router.post('/scan/network', concurrencyQuotaMiddleware(), RATE_LIMITS.networkSc
     try {
       await runPythonCommand(
         [
-          '-m', 'scanners.network.main',
+          path.join(REPO_ROOT, 'scanners', 'network', 'main.py'),
           `${host}:${port}`,
           '-o', tempOut,
           '--timeout', String(timeoutSeconds),
@@ -683,7 +683,7 @@ router.post('/scan/binary', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
 
     try {
       await runPythonCommand(
-        ['-m', 'scanners.binary_container.main', target, '--target-type', targetType, '-o', tempOut, '--timeout', '45'],
+        [path.join(REPO_ROOT, 'scanners', 'binary_container', 'main.py'), target, '--target-type', targetType, '-o', tempOut, '--timeout', '45'],
         120000
       );
     } catch (scannerErr) {
