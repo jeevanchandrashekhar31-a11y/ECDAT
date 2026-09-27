@@ -202,7 +202,8 @@ function csrfProtectionMiddleware(req, res, next) {
       const isAllowed =
         allowedOrigins.includes(originBase) ||
         originUrl.hostname === "localhost" ||
-        originUrl.hostname === "127.0.0.1";
+        originUrl.hostname === "127.0.0.1" ||
+        originUrl.hostname.endsWith(".vercel.app");
 
       if (!isAllowed) {
         return res.status(403).json({
