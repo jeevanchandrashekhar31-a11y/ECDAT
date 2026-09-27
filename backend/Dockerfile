@@ -10,14 +10,17 @@ FROM node:20-bookworm-slim AS base
 WORKDIR /app
 
 # Install Python for scanner pipeline + curl for healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip git curl openssl \
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip python3-venv git curl openssl build-essential \
     && rm -rf /var/lib/apt/lists/*
+
+# Create a proper virtual environment for Python packages (fixes PEP 668 and permissions)
+RUN python3 -m venv /opt/venv && chown -R node:node /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy requirements first to cache python dependencies layer
 COPY requirements.txt ./
-RUN pip3 install --no-cache-dir -r requirements.txt --break-system-packages
-RUN pip3 install --no-cache-dir semgrep --break-system-packages
-
+RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir semgrep
 
 # Read-only filesystem support: create writable dirs as root before switching
 RUN mkdir -p /app/artifacts /tmp && chown -R node:node /app /tmp
