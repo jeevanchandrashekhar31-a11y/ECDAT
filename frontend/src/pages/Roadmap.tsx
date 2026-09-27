@@ -195,6 +195,32 @@ export const Roadmap: React.FC = () => {
     });
   }, [enrichedRecommendations, activeStepFilter, priorityFilter]);
 
+  // ── Derived KPIs — must be above early returns (Rules of Hooks) ────────────────────
+  const totalCritical = useMemo(
+    () => enrichedRecommendations.filter(r => r.priority === 'critical').length,
+    [enrichedRecommendations]
+  );
+  const quickWins = useMemo(
+    () => enrichedRecommendations.filter(r =>
+      (r.migration_complexity || '').toLowerCase() === 'low' && r.priority === 'critical'
+    ).length,
+    [enrichedRecommendations]
+  );
+  const hybridRecs = useMemo(
+    () => enrichedRecommendations.filter(r => r.hybrid_transition_recommended).length,
+    [enrichedRecommendations]
+  );
+  const stepCounts = useMemo(() => {
+    const counts: Record<number, number> = {};
+    enrichedRecommendations.forEach(r => {
+      counts[r.sequenceStep] = (counts[r.sequenceStep] || 0) + 1;
+    });
+    return counts;
+  }, [enrichedRecommendations]);
+  const q_year = 2033;
+  const current_year = new Date().getFullYear();
+  const years_left = q_year - current_year;
+
   // Export JSON handler
   const handleExportJson = () => {
     setDownloadingJson(true);
@@ -298,24 +324,7 @@ export const Roadmap: React.FC = () => {
     'Zero secret literal policy: private keys must remain inside HSM or KMS envelopes and never appear in source code or telemetry.',
   ];
 
-  // ── Derived KPIs ──────────────────────────────────────────────────────────
-  const totalCritical = enrichedRecommendations.filter(r => r.priority === 'critical').length;
-  const quickWins = enrichedRecommendations.filter(r =>
-    (r.migration_complexity || '').toLowerCase() === 'low' && r.priority === 'critical'
-  ).length;
-  const hybridRecs = enrichedRecommendations.filter(r => r.hybrid_transition_recommended).length;
-  const q_year = 2033; // baseline
-  const current_year = new Date().getFullYear();
-  const years_left = q_year - current_year;
-
-  // Step counts for phase badges
-  const stepCounts = useMemo(() => {
-    const counts: Record<number, number> = {};
-    enrichedRecommendations.forEach(r => {
-      counts[r.sequenceStep] = (counts[r.sequenceStep] || 0) + 1;
-    });
-    return counts;
-  }, [enrichedRecommendations]);
+  // ── Derived KPIs are now above early returns (see above) ─────────────────
 
   return (
     <div className="space-y-8 animate-fade-in print:text-slate-900 print:bg-white print:p-0">
