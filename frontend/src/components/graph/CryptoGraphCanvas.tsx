@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   AppWindow,
   Server,
@@ -13,6 +13,7 @@ import {
   X,
   Lock,
   Network,
+  Map,
 } from 'lucide-react';
 import { GraphNode, GraphEdge, GraphTier, EvidenceFinding, SeverityLevel } from '../../types';
 
@@ -230,15 +231,61 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
   // DOM Refs for high-performance direct manipulation (bypassing React re-renders)
   const transformGroupRef = useRef<SVGGElement>(null);
   const panRef = useRef(pan);
+  const zoomRef = useRef(zoom);
   const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showMinimap, setShowMinimap] = useState(false);
 
-  // Keep panRef synced with any external pan state changes (like resetView)
   useEffect(() => {
     panRef.current = pan;
     if (transformGroupRef.current) {
       transformGroupRef.current.setAttribute('transform', `translate(${pan.x}, ${pan.y}) scale(${zoom})`);
     }
   }, [pan, zoom]);
+
+  useEffect(() => {
+    panRef.current = pan;
+    zoomRef.current = zoom;
+    if (transformGroupRef.current) {
+      transformGroupRef.current.setAttribute('transform', `translate(${pan.x}, ${pan.y}) scale(${zoom})`);
+    }
+  }, [pan, zoom]);
+
+  // ── KEY FIX: non-passive wheel listener ───────────────────────────────────
+  // React's synthetic onWheel is passive by default — e.preventDefault() does
+  // nothing there, so the browser zooms the whole page. We attach a native
+  // non-passive listener instead and do zoom-to-cursor (Figma / Miro UX).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = el.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const factor = e.deltaY < 0 ? 1.07 : 0.935;
+      const curZ = zoomRef.current;
+      const newZ = Math.min(4, Math.max(0.04, curZ * factor));
+      // Zoom toward mouse cursor
+      const newX = mouseX - (mouseX - panRef.current.x) * (newZ / curZ);
+      const newY = mouseY - (mouseY - panRef.current.y) * (newZ / curZ);
+      zoomRef.current = newZ;
+      panRef.current = { x: newX, y: newY };
+      // Direct DOM update (no re-render — fast)
+      if (transformGroupRef.current) {
+        transformGroupRef.current.setAttribute('transform', `translate(${newX}, ${newY}) scale(${newZ})`);
+      }
+      // Debounced state sync for zoom indicator
+      if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
+      wheelTimeoutRef.current = setTimeout(() => {
+        setZoom(zoomRef.current);
+        setPan(panRef.current);
+      }, 120);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Tier Colors & Icons
 
@@ -361,28 +408,10 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
     return set;
   }, [activeFocusId, edges]);
 
-  // Mouse wheel pan/zoom
-  const handleWheel = (e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      // Zoom with Ctrl/Cmd + Scroll
-      e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 1.03 : 0.97;
-      setZoom((prev) => Math.min(2.2, Math.max(0.02, prev * zoomFactor)));
-    } else {
-      // Pan with normal Scroll
-      const newX = panRef.current.x - e.deltaX;
-      const newY = panRef.current.y - e.deltaY;
-      panRef.current = { x: newX, y: newY };
-      
-      if (transformGroupRef.current) {
-        transformGroupRef.current.setAttribute('transform', `translate(${newX}, ${newY}) scale(${zoom})`);
-      }
-
-      if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
-      wheelTimeoutRef.current = setTimeout(() => {
-        setPan(panRef.current);
-      }, 150);
-    }
+  // Mouse wheel — React handler now only handles Ctrl+scroll as fallback
+  // (the non-passive useEffect above handles all wheel events first)
+  const handleWheel = (_e: React.WheelEvent) => {
+    // No-op: handled by the non-passive native listener
   };
 
   // Pan interaction
@@ -451,14 +480,14 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
         <span className="text-slate-400 font-mono">Zoom: {Math.round(zoom * 100)}%</span>
         <div className="h-3 w-px bg-slate-700" />
         <button
-          onClick={() => setZoom((z) => Math.min(2.2, z * 1.05))}
+          onClick={() => { const nz = Math.min(4, zoomRef.current * 1.15); setZoom(nz); }}
           className="p-1 rounded text-slate-300 hover:text-white hover:bg-surfaceHover transition-colors"
           title="Zoom In"
         >
           <ZoomIn className="w-3.5 h-3.5" />
         </button>
         <button
-          onClick={() => setZoom((z) => Math.max(0.02, z * 0.95))}
+          onClick={() => { const nz = Math.max(0.04, zoomRef.current * 0.87); setZoom(nz); }}
           className="p-1 rounded text-slate-300 hover:text-white hover:bg-surfaceHover transition-colors"
           title="Zoom Out"
         >
@@ -471,6 +500,16 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
         >
           <Maximize2 className="w-3.5 h-3.5" />
         </button>
+        <div className="h-3 w-px bg-slate-700" />
+        <button
+          onClick={() => setShowMinimap(v => !v)}
+          className={`p-1 rounded transition-colors ${showMinimap ? 'text-cyan-400 bg-cyan-950' : 'text-slate-400 hover:text-white hover:bg-surfaceHover'}`}
+          title="Toggle Overview Map"
+        >
+          <Map className="w-3.5 h-3.5" />
+        </button>
+        <div className="h-3 w-px bg-slate-700" />
+        <span className="text-slate-600 text-[10px] hidden sm:block">Scroll=Zoom · Drag=Pan</span>
       </div>
 
       {/* Tier Column Headers Floating Strip */}
@@ -585,8 +624,19 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
               return <MemoizedEdge key={edge.id} edge={edge} srcNode={srcNode} tgtNode={tgtNode} isEdgeHighlighted={isEdgeHighlighted} isDimmed={isDimmed} />;
             })}
 
-            {/* Render Positioned Nodes */}
-            {positionedNodes.map((node) => {
+            {/* Render Positioned Nodes — viewport culled for large datasets */}
+            {positionedNodes
+              .filter(node => {
+                // Skip off-screen nodes for performance (virtual rendering)
+                if (!containerRef.current) return true;
+                const { width, height } = containerRef.current.getBoundingClientRect();
+                const vx0 = -pan.x / zoom - 300 / zoom;
+                const vy0 = -pan.y / zoom - 300 / zoom;
+                const vx1 = vx0 + width / zoom + 600 / zoom;
+                const vy1 = vy0 + height / zoom + 600 / zoom;
+                return node.x < vx1 && node.x + node.width > vx0 && node.y < vy1 && node.y + node.height > vy0;
+              })
+              .map((node) => {
               const isSelected = selectedNodeId === node.id;
               const isHovered = hoveredNodeId === node.id;
               const isConnected = connectedIds ? connectedIds.has(node.id) : true;
@@ -616,7 +666,39 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
         </svg>
       </div>
 
-      {/* Selected Node Details Drawer */}
+      {/* Node count badge for large datasets */}
+      {nodes.length > 150 && (
+        <div className="absolute top-14 left-4 z-20 px-2 py-1 rounded-lg text-[10px] font-mono border border-amber-700/40 bg-amber-950/70 text-amber-300">
+          {nodes.length} nodes — use filters or zoom out for overview
+        </div>
+      )}
+
+      {/* Mini-map overview */}
+      {showMinimap && nodes.length > 0 && (
+        <div className="absolute bottom-4 left-4 z-20 rounded-xl border border-slate-700 overflow-hidden shadow-2xl bg-slate-950/95 backdrop-blur-md" style={{width:180,height:110}}>
+          <svg width={180} height={110}>
+            {positionedNodes.map(n => {
+              const mmSX = 180 / (totalGraphWidth || 1);
+              const mmSY = 110 / (canvasHeight || 1);
+              let fill = '#334155';
+              if (blastRadiusProjections) {
+                const p = blastRadiusProjections.find(pr => pr.id === n.id);
+                if (p?.status === 'AFFECTED') fill = '#f43f5e';
+                else if (p?.status === 'SAFE') fill = '#10b981';
+              }
+              return <rect key={n.id} x={n.x * mmSX} y={n.y * mmSY} width={Math.max(2, n.width * mmSX)} height={Math.max(1.5, n.height * mmSY)} rx="1" fill={fill} opacity="0.8"/>;
+            })}
+            {containerRef.current && (() => {
+              const r = containerRef.current.getBoundingClientRect();
+              const mmSX = 180 / (totalGraphWidth || 1);
+              const mmSY = 110 / (canvasHeight || 1);
+              return <rect x={(-pan.x/zoom)*mmSX} y={(-pan.y/zoom)*mmSY} width={(r.width/zoom)*mmSX} height={(r.height/zoom)*mmSY} fill="none" stroke="#06b6d4" strokeWidth="1.5" opacity="0.8"/>;
+            })()}
+          </svg>
+          <div className="absolute top-1 left-2 text-[8px] font-mono text-slate-700">OVERVIEW</div>
+        </div>
+      )}
+
       {selectedNode && (
         <div className="absolute right-0 top-0 bottom-0 w-96 bg-surface/95 backdrop-blur-xl border-l border-border p-6 overflow-y-auto shadow-2xl z-30 animate-in slide-in-from-right-4 duration-200">
           <div className="flex items-start justify-between mb-4 gap-4">
