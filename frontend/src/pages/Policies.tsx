@@ -35,7 +35,7 @@ export const Policies: React.FC = () => {
   const togglePolicy = async (id: string, currentAction: string) => {
     try {
       setUpdating(id);
-      const newAction = currentAction.toUpperCase() === 'FAIL' || currentAction.toUpperCase() === 'BLOCK' ? 'WARN' : 'FAIL';
+      const newAction = currentAction.toUpperCase() === 'BLOCK' ? 'WARN' : 'BLOCK';
       const res = await api.togglePolicyRule(id, newAction);
       if (res.success && res.rules) {
         setPolicies(res.rules);
@@ -88,7 +88,7 @@ export const Policies: React.FC = () => {
                     {policy.name}
                   </h3>
                   <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
-                    policy.action.toUpperCase() === 'FAIL' || policy.action.toUpperCase() === 'BLOCK' ? 'bg-rose-950/70 text-rose-400 border border-rose-800' : 'bg-amber-950/70 text-amber-400 border border-amber-800'
+                    policy.action.toUpperCase() === 'BLOCK' ? 'bg-rose-950/70 text-rose-400 border border-rose-800' : 'bg-amber-950/70 text-amber-400 border border-amber-800'
                   }`}>
                     Action: {policy.action}
                   </span>

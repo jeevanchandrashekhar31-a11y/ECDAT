@@ -304,7 +304,7 @@ router.post("/rules/:ruleId/toggle", (req, res) => {
     // 2. Modify policy
     const currentAction = String(policy.rules[ruleIndex].action).toUpperCase();
     const providedAction = action ? String(action).toUpperCase() : null;
-    policy.rules[ruleIndex].action = providedAction || (currentAction === 'FAIL' || currentAction === 'BLOCK' ? 'WARN' : 'FAIL');
+    policy.rules[ruleIndex].action = providedAction || (currentAction === 'BLOCK' ? 'WARN' : 'BLOCK');
     const newVersion = policy.version.split('-')[0] + '-patch.' + Date.now();
     policy.version = newVersion;
     policy.id = policy.id + "-" + Date.now(); // Ensure unique ID
@@ -320,8 +320,8 @@ router.post("/rules/:ruleId/toggle", (req, res) => {
 
     return res.status(200).json({ success: true, rules: activePolicy.policy_document.rules });
   } catch (err) {
-    const status = err.status || 500;
-    return res.status(status).json({ error: err.name, message: err.message });
+    const status = err.status || (err instanceof PolicyValidationError ? 400 : 500);
+    return res.status(status).json({ error: err.name, message: err.message, details: err.errors });
   }
 });
 

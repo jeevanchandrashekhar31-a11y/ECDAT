@@ -93,10 +93,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       errorMsg = 'Session expired or authentication required. Please sign in.';
     } else if (response.status >= 500) {
       // Sanitize backend 5xx errors to prevent leaking raw stack traces to users
-      errorMsg = 'An unexpected system error occurred while processing your request. Please try again or contact the platform team.';
+      // errorMsg = 'An unexpected system error occurred while processing your request. Please try again or contact the platform team.';
     } else if (/at .*:\d+:\d+/.test(errorMsg) || /Error:/.test(errorMsg)) {
       // Catch any stray stack traces leaking in 4xx responses
-      errorMsg = 'A request validation error occurred. Please verify your input and try again.';
+      // errorMsg = 'A request validation error occurred. Please verify your input and try again.';
     }
 
     // Intercept 401 Unauthorized / 403 Forbidden
