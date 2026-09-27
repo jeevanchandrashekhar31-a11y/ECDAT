@@ -49,24 +49,6 @@ const { requestSizeLimitMiddleware } = require("./security/resource_governance")
 
 const app = express();
 
-// ==========================================
-// ONE-TIME CLEANUP (Vercel DB Startup)
-// Removes old wycheproof active scans to clear the user's dashboard mock data
-// ==========================================
-const { db } = require("./db/connection");
-db("scans")
-  .where("target_name", "like", "%wycheproof%")
-  .orWhere("is_synthetic", true)
-  .del()
-  .then((count) => {
-    if (count > 0) {
-      console.log(`[BOOT CLEANUP] Purged ${count} mock/synthetic scans from database.`);
-    }
-  })
-  .catch((err) => console.error("[BOOT CLEANUP ERROR]", err));
-
-
-
 // 1. Security & Standard Middleware
 app.use(tlsEnforcementMiddleware());
 app.use(requestSizeLimitMiddleware());
