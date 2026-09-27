@@ -265,6 +265,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <p className="section-label pt-4 pb-2">Governance</p>
           <NavLink to="/remediation" className={({ isActive }) => navCls(isActive)}><Wrench size={14} /><span>Remediation</span></NavLink>
+          <NavLink to="/policies" className={({ isActive }) => navCls(isActive)}><Shield size={14} /><span>Policy Engine</span></NavLink>
           <NavLink to="/roadmap" className={({ isActive }) => navCls(isActive)}><Milestone size={14} /><span>Migration Roadmap</span></NavLink>
 
           <p className="section-label pt-4 pb-2">Intelligence</p>

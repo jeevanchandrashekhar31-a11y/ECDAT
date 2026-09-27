@@ -1,0 +1,412 @@
+{
+  "components": [
+    {
+      "bom-ref": "crypto:algo/aes-256-gcm@src/crypto/cipher.py:42",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "nistQuantumSecurityLevel": 0,
+          "parameterSetIdentifier": "256",
+          "algorithmFamily": "AES"
+        },
+        "assetType": "algorithm"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "additionalContext": "AESGCM(key).encrypt(iv, data, aad)",
+            "line": 42,
+            "location": "src/crypto/cipher.py"
+          }
+        ]
+      },
+      "name": "AES-256-GCM",
+      "properties": [
+        {
+          "name": "ecdat:algorithm",
+          "value": "AES"
+        },
+        {
+          "name": "ecdat:detectionMethod",
+          "value": "runtime_hook"
+        },
+        {
+          "name": "ecdat:effectiveGroverSecurityBits",
+          "value": "128"
+        },
+        {
+          "name": "ecdat:inferenceConfidence",
+          "value": "1.00"
+        },
+        {
+          "name": "ecdat:keySizeBits",
+          "value": "256"
+        },
+        {
+          "name": "ecdat:mode",
+          "value": "GCM"
+        },
+        {
+          "name": "ecdat:quantumClassification",
+          "value": "quantum-resistant"
+        },
+        {
+          "name": "ecdat:reachabilityLevel",
+          "value": "RUNTIME_CONFIRMED"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto:algo/ml-dsa-65@src/crypto/signing.py:88",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "nistQuantumSecurityLevel": 3,
+          "parameterSetIdentifier": "65",
+          "algorithmFamily": "ML-DSA"
+        },
+        "assetType": "algorithm"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "additionalContext": "dilithium3 / ML-DSA-65 digital signature generator",
+            "line": 88,
+            "location": "src/crypto/signing.py"
+          }
+        ]
+      },
+      "name": "ML-DSA-65",
+      "properties": [
+        {
+          "name": "ecdat:algorithm",
+          "value": "ML-DSA"
+        },
+        {
+          "name": "ecdat:detectionMethod",
+          "value": "ast"
+        },
+        {
+          "name": "ecdat:inferenceConfidence",
+          "value": "0.95"
+        },
+        {
+          "name": "ecdat:parameterSet",
+          "value": "65"
+        },
+        {
+          "name": "ecdat:quantumClassification",
+          "value": "quantum-resistant"
+        },
+        {
+          "name": "ecdat:reachabilityLevel",
+          "value": "AST_ACCESSIBLE"
+        },
+        {
+          "name": "ecdat:standard",
+          "value": "NIST FIPS 204"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto:algo/ml-kem-768@src/crypto/kex.py:54",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "nistQuantumSecurityLevel": 3,
+          "parameterSetIdentifier": "768",
+          "algorithmFamily": "ML-KEM"
+        },
+        "assetType": "algorithm"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "additionalContext": "pqcrypto.kem.kyber768.encapsulate invocation",
+            "line": 54,
+            "location": "src/crypto/kex.py"
+          }
+        ]
+      },
+      "name": "ML-KEM-768",
+      "properties": [
+        {
+          "name": "ecdat:algorithm",
+          "value": "ML-KEM"
+        },
+        {
+          "name": "ecdat:detectionMethod",
+          "value": "runtime_hook"
+        },
+        {
+          "name": "ecdat:inferenceConfidence",
+          "value": "1.00"
+        },
+        {
+          "name": "ecdat:parameterSet",
+          "value": "768"
+        },
+        {
+          "name": "ecdat:quantumClassification",
+          "value": "quantum-resistant"
+        },
+        {
+          "name": "ecdat:reachabilityLevel",
+          "value": "RUNTIME_CONFIRMED"
+        },
+        {
+          "name": "ecdat:standard",
+          "value": "NIST FIPS 203"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "kms:key/mrk-payments-kek@us-east-1",
+      "cryptoProperties": {
+        "assetType": "related-crypto-material",
+        "relatedCryptoMaterialProperties": {
+          "size": 256,
+          "type": "secret-key"
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "additionalContext": "KMS CMK ARN metadata referenced in deployment configuration",
+            "location": "aws:kms:us-east-1:123456789012:key/mrk-payments-kek"
+          }
+        ]
+      },
+      "name": "Payments Master Key KEK (Envelope Metadata)",
+      "properties": [
+        {
+          "name": "ecdat:detectionMethod",
+          "value": "runtime_hook"
+        },
+        {
+          "name": "ecdat:keyAlias",
+          "value": "alias/payments-kek"
+        },
+        {
+          "name": "ecdat:keyManager",
+          "value": "AWS_KMS"
+        },
+        {
+          "name": "ecdat:reachabilityLevel",
+          "value": "RUNTIME_CONFIRMED"
+        },
+        {
+          "name": "ecdat:rotationEnabled",
+          "value": "true"
+        },
+        {
+          "name": "ecdat:zeroSecretVerified",
+          "value": "true"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto:algo/rsa-2048@src/legacy/token_verifier.py:105",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "nistQuantumSecurityLevel": 0,
+          "parameterSetIdentifier": "2048",
+          "algorithmFamily": "RSASSA-PKCS1"
+        },
+        "assetType": "algorithm"
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "additionalContext": "jwt.decode(..., algorithms=['RS256'])",
+            "line": 105,
+            "location": "src/legacy/token_verifier.py"
+          }
+        ]
+      },
+      "name": "RSA-2048",
+      "properties": [
+        {
+          "name": "ecdat:algorithm",
+          "value": "RSA"
+        },
+        {
+          "name": "ecdat:detectionMethod",
+          "value": "ast"
+        },
+        {
+          "name": "ecdat:inferenceConfidence",
+          "value": "1.00"
+        },
+        {
+          "name": "ecdat:keySizeBits",
+          "value": "2048"
+        },
+        {
+          "name": "ecdat:migrationUrgency",
+          "value": "HIGH"
+        },
+        {
+          "name": "ecdat:quantumClassification",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "ecdat:reachabilityLevel",
+          "value": "AST_ACCESSIBLE"
+        },
+        {
+          "name": "ecdat:shorVulnerability",
+          "value": "true"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "net:protocol/tls1.3@api.payments.bank.corp:443",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "cipherSuites": [
+            {
+              "name": "TLS_AES_256_GCM_SHA384"
+            },
+            {
+              "name": "TLS_CHACHA20_POLY1305_SHA256"
+            }
+          ],
+          "type": "tls",
+          "version": "1.3"
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "additionalContext": "Negotiated during TLS 1.3 live probe handshake",
+            "location": "api.payments.bank.corp:443"
+          }
+        ]
+      },
+      "name": "TLS 1.3 Production Listener",
+      "properties": [
+        {
+          "name": "ecdat:alpn",
+          "value": "h2,http/1.1"
+        },
+        {
+          "name": "ecdat:detectionMethod",
+          "value": "network_handshake"
+        },
+        {
+          "name": "ecdat:hndlResilient",
+          "value": "true"
+        },
+        {
+          "name": "ecdat:reachabilityLevel",
+          "value": "RUNTIME_CONFIRMED"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "net:cert/api.payments.bank.corp:443",
+      "cryptoProperties": {
+        "assetType": "certificate",
+        "certificateProperties": {
+          "certificateFormat": "X.509",
+          "issuerName": "CN=DigiCert Global Root G2, O=DigiCert Inc, C=US",
+          "notValidAfter": "2027-01-01T00:00:00+00:00",
+          "notValidBefore": "2025-01-01T00:00:00+00:00",
+          "subjectName": "CN=api.payments.bank.corp, O=Global Banking Corp, C=US"
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "additionalContext": "Presented leaf certificate in TLS handshake chain",
+            "location": "api.payments.bank.corp:443"
+          }
+        ]
+      },
+      "name": "api.payments.bank.corp Leaf Certificate",
+      "properties": [
+        {
+          "name": "ecdat:detectionMethod",
+          "value": "network_handshake"
+        },
+        {
+          "name": "ecdat:fingerprintSha256",
+          "value": "d8f7b5a2e1c390b4f8a619d0e74b321a56bc9102456e7890abcdef1234567890"
+        },
+        {
+          "name": "ecdat:reachabilityLevel",
+          "value": "RUNTIME_CONFIRMED"
+        },
+        {
+          "name": "ecdat:signatureAlgorithm",
+          "value": "SHA256withRSA"
+        }
+      ],
+      "type": "cryptographic-asset"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "crypto:algo/aes-256-gcm@src/crypto/cipher.py:42"
+    },
+    {
+      "ref": "crypto:algo/ml-dsa-65@src/crypto/signing.py:88"
+    },
+    {
+      "ref": "crypto:algo/ml-kem-768@src/crypto/kex.py:54"
+    },
+    {
+      "ref": "crypto:algo/rsa-2048@src/legacy/token_verifier.py:105"
+    },
+    {
+      "ref": "kms:key/mrk-payments-kek@us-east-1"
+    },
+    {
+      "ref": "net:cert/api.payments.bank.corp:443"
+    },
+    {
+      "ref": "net:protocol/tls1.3@api.payments.bank.corp:443"
+    },
+    {
+      "dependsOn": [
+        "crypto:algo/aes-256-gcm@src/crypto/cipher.py:42",
+        "crypto:algo/ml-dsa-65@src/crypto/signing.py:88",
+        "crypto:algo/ml-kem-768@src/crypto/kex.py:54",
+        "crypto:algo/rsa-2048@src/legacy/token_verifier.py:105",
+        "kms:key/mrk-payments-kek@us-east-1",
+        "net:cert/api.payments.bank.corp:443",
+        "net:protocol/tls1.3@api.payments.bank.corp:443"
+      ],
+      "ref": "pkg:generic/ecdat-enterprise-app@2.0.0"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "pkg:generic/ecdat-enterprise-app@2.0.0",
+      "description": "Production reference banking gateway demonstrating comprehensive CycloneDX 1.7 Cryptographic Bill of Materials",
+      "name": "Enterprise Payments & Cryptographic Gateway",
+      "type": "application",
+      "version": "2.0.0"
+    },
+    "timestamp": "2026-09-18T15:44:00.295333+00:00",
+    "tools": {
+      "components": [
+        {
+          "name": "ECDAT Cryptographic Discovery and Analysis Tool",
+          "type": "application",
+          "version": "1.0.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:16f632d9-d8b1-461f-910a-79e38a0c10fc",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7"
+}

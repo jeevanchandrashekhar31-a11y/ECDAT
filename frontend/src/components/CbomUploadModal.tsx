@@ -167,7 +167,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
 
     try {
       if (mode === 'scan') {
-        let scanRes: { scan_id?: string } | undefined;
+        let scanRes: { scan_id?: string | null; success?: boolean; message?: string } | undefined;
 
         // Progress hint messages
         const progressMessages = [
@@ -260,11 +260,12 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
           setScanProgress('Complete! Loading results…');
           onSuccess(scanRes.scan_id);
           onClose();
-        } else if (scanRes?.success && !scanRes?.scan_id) {
+        } else if (scanRes && !scanRes.scan_id && (scanRes.success || scanRes.message)) {
           setSuccessMessage(scanRes.message || 'Scan completed, but no cryptographic assets were found in this target.');
           setScanProgress('');
         } else {
-          throw new Error('Scan completed without returning a scan ID.');
+          setError('Scan completed without returning a scan ID.');
+          setScanProgress('');
         }
       } else {
         let uploadTarget: File | object;

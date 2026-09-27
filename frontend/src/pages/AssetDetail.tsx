@@ -206,6 +206,26 @@ export const AssetDetail: React.FC = () => {
               <SeverityBadge severity={asset.highest_severity} />
               <MoscaStatusBadge status={asset.mosca?.status || 'SAFE'} />
 
+              {/* Blast Radius UI */}
+              {(() => {
+                const crit = asset.business_criticality?.toLowerCase() || 'standard';
+                const evidenceCount = asset.evidence?.length || 0;
+                let level = 'Low', color = 'text-emerald-400', bg = 'bg-emerald-950/70 border-emerald-800/60';
+                
+                if (crit === 'high' || crit === 'critical' || evidenceCount > 5) {
+                  level = 'High'; color = 'text-rose-400'; bg = 'bg-rose-950/70 border-rose-800/60';
+                } else if (crit === 'medium' || evidenceCount > 2) {
+                  level = 'Medium'; color = 'text-amber-400'; bg = 'bg-amber-950/70 border-amber-800/60';
+                }
+                
+                return (
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${bg} ${color}`}>
+                    <Layers className="w-3.5 h-3.5" />
+                    Blast Radius: {level}
+                  </span>
+                );
+              })()}
+
               {asset.at_quantum_risk ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-950/70 text-rose-300 border border-rose-800/60">
                   <Zap className="w-3.5 h-3.5 text-rose-400" />

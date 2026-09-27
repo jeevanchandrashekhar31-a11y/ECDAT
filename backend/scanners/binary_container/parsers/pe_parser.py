@@ -244,6 +244,10 @@ class SafePeParser:
             strings=crypto_strings,
         )
 
+        from scanners.binary_container.parsers.string_scanner import detect_binary_constants
+        constant_indicators = detect_binary_constants(data[:options.max_bytes_to_scan])
+        crypto_indicators.extend(constant_indicators)
+
         sha256_hash = hashlib.sha256(data).hexdigest()
 
         return BinaryMetadata(

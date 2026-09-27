@@ -60,12 +60,15 @@ def _parse_binary_worker_task(file_path: str, options_dict: Dict[str, Any]) -> D
         result = parser.parse(data, file_path, options)
     else:
         # Fallback for unknown / generic binary (run bounded string scanning)
-        from scanners.binary_container.parsers.string_scanner import extract_bounded_strings
+        from scanners.binary_container.parsers.string_scanner import extract_bounded_strings, detect_binary_constants
         from scanners.binary_container.parsers.crypto_detector import detect_crypto_indicators
         import hashlib
 
         _, crypto_strings = extract_bounded_strings(data, max_bytes=options.max_bytes_to_scan)
         crypto_indicators = detect_crypto_indicators([], [], crypto_strings)
+        
+        constant_indicators = detect_binary_constants(data[:options.max_bytes_to_scan])
+        crypto_indicators.extend(constant_indicators)
 
         result = BinaryMetadata(
             file_path=file_path,
