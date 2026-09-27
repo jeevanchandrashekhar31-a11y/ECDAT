@@ -225,6 +225,36 @@ const upload = multer({
   limits: { fileSize: 150 * 1024 * 1024, files: 250 }
 });
 
+router.get('/debug/paths', async (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const results = {};
+  
+  const searchDirs = [
+    '/opt/render/project/src',
+    '/opt/render/project/src/backend',
+    '/app',
+    '/srv',
+    __dirname,
+    process.cwd(),
+    REPO_ROOT
+  ];
+
+  for (const dir of searchDirs) {
+    try {
+      if (fs.existsSync(dir)) {
+        results[dir] = fs.readdirSync(dir);
+      } else {
+        results[dir] = "DOES_NOT_EXIST";
+      }
+    } catch (e) {
+      results[dir] = "ERROR: " + e.message;
+    }
+  }
+
+  res.json({ REPO_ROOT, ARTIFACTS_DIR, results });
+});
+
 // --------------------------------------------------------------------------
 // 1. POST /scan/static
 // --------------------------------------------------------------------------
