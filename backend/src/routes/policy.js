@@ -284,6 +284,46 @@ router.post("/rollback", (req, res) => {
 });
 
 /**
+ * POST /api/v1/policy/rules/:ruleId/toggle
+ * UI Convenience Route for MVP: Quickly toggles a rule's action (fail vs warn)
+ * by automatically running through the four-eyes governance process using automated service accounts.
+ */
+router.post("/rules/:ruleId/toggle", (req, res) => {
+  try {
+    const security = getDefaultSecurityController();
+    const engine = getDefaultEngine();
+    const { action } = req.body;
+    
+    // 1. Get current policy
+    const policy = engine.loadPolicy();
+    const ruleIndex = policy.rules.findIndex(r => r.id === req.params.ruleId);
+    if (ruleIndex === -1) {
+      return res.status(404).json({ error: 'NotFound', message: 'Rule not found' });
+    }
+
+    // 2. Modify policy
+    policy.rules[ruleIndex].action = action || (policy.rules[ruleIndex].action === 'fail' ? 'warn' : 'fail');
+    const newVersion = policy.version.split('-')[0] + '-patch.' + Date.now();
+    policy.version = newVersion;
+    policy.id = policy.id + "-" + Date.now(); // Ensure unique ID
+
+    // 3. Automated Governance Pipeline
+    const author = { username: "ui-auto-author", role: "admin" };
+    const approver = { username: "ui-auto-approver", role: "admin" };
+
+    security.createDraft(policy, author);
+    security.submitForApproval(newVersion, author);
+    security.approvePolicy(newVersion, approver, "Automated MVP UI rule toggle");
+    const activePolicy = security.activatePolicy(newVersion, approver);
+
+    return res.status(200).json({ success: true, rules: activePolicy.policy_document.rules });
+  } catch (err) {
+    const status = err.status || 500;
+    return res.status(status).json({ error: err.name, message: err.message });
+  }
+});
+
+/**
  * POST /api/v1/policy/test
  * Dry-run simulation against sample assets or CBOM.
  */

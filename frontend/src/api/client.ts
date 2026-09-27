@@ -827,5 +827,17 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
+  },
+
+  getPolicyRules: async (): Promise<{ success: boolean; rules: any[] }> => {
+    return request('/api/v1/policy/rules');
+  },
+
+  togglePolicyRule: async (ruleId: string, action?: string): Promise<{ success: boolean; rules: any[] }> => {
+    return request(`/api/v1/policy/rules/${encodeURIComponent(ruleId)}/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    });
   }
 };
