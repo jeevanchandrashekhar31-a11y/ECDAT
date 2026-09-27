@@ -2,14 +2,22 @@
 # ECDAT Backend — Production Dockerfile
 # Build context: repo root (so rules/ is accessible)
 ###############################################
-FROM node:20-alpine AS base
+FROM node:20-bookworm-slim AS base
 
 WORKDIR /app
 
 # Install Python for scanner pipeline + curl for healthcheck
-RUN apk add --no-cache python3 py3-pip git curl openssl \
-    && pip3 install --no-cache-dir semgrep --break-system-packages 2>/dev/null || \
-       pip3 install --no-cache-dir semgrep 2>/dev/null || echo "semgrep install skipped"
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip python3-venv git curl openssl build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a proper virtual environment for Python packages (fixes PEP 668 and permissions)
+RUN python3 -m venv /opt/venv && chown -R node:node /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install dependencies from requirements.txt
+COPY backend/requirements.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir semgrep
 
 # Read-only filesystem support: create writable dirs as root before switching
 RUN mkdir -p /app/artifacts /tmp && chown -R node:node /app /tmp
