@@ -252,7 +252,13 @@ export const api = {
 
   // Scans
   getScans: async (): Promise<{ total: number; scans: ScanItem[] }> => {
-    return request<{ total: number; scans: ScanItem[] }>('/api/v1/scans');
+    const data = await request<{ total: number; scans: ScanItem[] }>('/api/v1/scans');
+    // Filter out empty/aborted binary scans per user request
+    const validScans = data.scans.filter(s => s.metrics && (s.metrics.total_assets ?? 0) > 0);
+    return {
+      total: validScans.length,
+      scans: validScans
+    };
   },
 
   getScanById: async (scanId: string): Promise<ScanItem> => {
