@@ -3,7 +3,6 @@ import {
   Layers,
   Search,
   Filter,
-  FileCode,
   ExternalLink,
   KeyRound,
 } from 'lucide-react';

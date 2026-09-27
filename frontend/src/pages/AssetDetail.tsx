@@ -7,7 +7,6 @@ import {
   Zap,
   CheckCircle2,
   XCircle,
-  FileCode,
   Layers,
   Copy,
   Check,

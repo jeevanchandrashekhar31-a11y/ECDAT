@@ -16,7 +16,6 @@ import {
   Play,
   Sliders,
   RefreshCw,
-  Zap,
   Loader2,
   AlertTriangle,
   CheckCircle2,
@@ -97,7 +96,6 @@ export const Dashboard: React.FC = () => {
   const [networkTarget, setNetworkTarget] = useState<string>('');
   const [runningAction, setRunningAction] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [seedingDemo, setSeedingDemo] = useState(false);
 
 
 

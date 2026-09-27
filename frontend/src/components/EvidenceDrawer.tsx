@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
   X,
-  FileCode,
   Copy,
   Check,
   ExternalLink,
