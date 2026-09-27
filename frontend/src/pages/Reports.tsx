@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useOutletContext } from 'react-router-dom';
 import {
   FileText,
@@ -30,6 +30,8 @@ export const Reports: React.FC = () => {
   const [previewHeight, setPreviewHeight] = useState<'standard' | 'tall' | 'compact'>('standard');
   const [iframeKey, setIframeKey] = useState(0);
   const [showAdvancedExports, setShowAdvancedExports] = useState(false);
+  const [reportHtml, setReportHtml] = useState<string>('');
+  const [reportLoading, setReportLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -62,6 +64,23 @@ export const Reports: React.FC = () => {
     setIframeKey((prev) => prev + 1);
   };
 
+  useEffect(() => {
+    let mounted = true;
+    const fetchHtml = async () => {
+      setReportLoading(true);
+      try {
+        const html = await api.getReportHtml(activeScanId === 'latest' ? '' : activeScanId);
+        if (mounted) setReportHtml(html);
+      } catch (err) {
+        if (mounted) setReportHtml(`<div style="padding: 2rem; font-family: sans-serif; color: #f43f5e; text-align: center;"><h3>Failed to load report</h3><p>${(err as Error).message || 'Unknown error'}</p></div>`);
+      } finally {
+        if (mounted) setReportLoading(false);
+      }
+    };
+    fetchHtml();
+    return () => { mounted = false; };
+  }, [activeScanId, iframeKey]);
+
   const handleDownload = async (type: 'annotated' | 'raw' | 'summary') => {
     setDownloading(type);
     setDownloadSuccess(null);
@@ -89,7 +108,6 @@ export const Reports: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
       setDownloadSuccess(type);
       setTimeout(() => setDownloadSuccess(null), 3000);
     } catch (err) {
@@ -101,7 +119,7 @@ export const Reports: React.FC = () => {
   };
 
   const queryParam = activeScanId && activeScanId !== 'latest' ? `?scanId=${encodeURIComponent(activeScanId)}` : '';
-  const htmlReportUrl = sanitizeUrl(`/api/v1/reports/executive/html${queryParam}`);
+  const htmlReportUrl = sanitizeUrl(`${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')}/api/v1/reports/executive/html${queryParam}`);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -392,14 +410,21 @@ export const Reports: React.FC = () => {
             minHeight: isFullscreen ? '0px' : '700px',
           }}
         >
-          <iframe
-            id="report-iframe"
-            key={iframeKey}
-            src={htmlReportUrl}
-            title="Executive Cryptographic Report"
-            className="w-full h-full border-0 bg-background block"
-            sandbox="allow-same-origin allow-modals allow-scripts allow-popups"
-          />
+          {reportLoading ? (
+            <div className="w-full h-full flex items-center justify-center bg-background text-slate-400">
+              <RefreshCw className="w-6 h-6 animate-spin mb-2" />
+              <span>Generating report...</span>
+            </div>
+          ) : (
+            <iframe
+              id="report-iframe"
+              key={iframeKey}
+              srcDoc={reportHtml}
+              title="Executive Cryptographic Report"
+              className="w-full h-full border-0 bg-background block"
+              sandbox="allow-same-origin allow-scripts allow-popups"
+            />
+          )}
         </div>
       </div>
     </div>

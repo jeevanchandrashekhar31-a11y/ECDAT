@@ -6,9 +6,6 @@ import {
   Shield,
   Clock,
   Play,
-  Layers,
-  CheckCircle2,
-  AlertTriangle,
   Loader2,
   ExternalLink
 } from 'lucide-react';
