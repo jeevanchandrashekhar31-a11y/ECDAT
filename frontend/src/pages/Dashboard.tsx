@@ -359,27 +359,6 @@ export const Dashboard: React.FC = () => {
             <span>Scan Operations</span>
             {showScanDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
-
-          {/* Nuclear Database Wipe Button */}
-          <button
-            onClick={async () => {
-              if (window.confirm("NUCLEAR WIPE: Are you 100% sure you want to annihilate all scans, assets, and findings across the entire database? This cannot be undone.")) {
-                setLoading(true);
-                try {
-                  await api.wipeDatabase();
-                  window.location.reload();
-                } catch (err: unknown) {
-                  alert((err as Error).message || 'Wipe failed.');
-                  setLoading(false);
-                }
-              }
-            }}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-950/80 hover:bg-rose-900 text-rose-400 border border-rose-700/60 inline-flex items-center gap-1.5 transition-colors ml-2"
-            title="Reset prototype database to absolutely zero"
-          >
-            <Flame className="w-3.5 h-3.5" />
-            <span>Wipe Database</span>
-          </button>
         </div>
       </div>
 
