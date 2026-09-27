@@ -43,31 +43,45 @@ const router = express.Router();
 const os = require('os');
 
 // Root directory of ECDAT project — scanners/ lives here.
-// On Render (Docker), PYTHONPATH env var is set to the repo root via render.yaml or startCommand.
-// Fallback: traverse up from this file's location.
+// Smart resolver: tries multiple strategies to find the dir containing scanners/
 const REPO_ROOT = (() => {
-  // Prefer explicit env var (most reliable on Render)
+  const fs = require('fs');
+  const hasScanners = (d) => { try { return fs.existsSync(path.join(d, 'scanners')); } catch { return false; } };
+
+  // Strategy 1: PYTHONPATH env var (explicitly set in render.yaml)
   if (process.env.PYTHONPATH && process.env.PYTHONPATH !== '.') {
     const candidate = path.resolve(process.env.PYTHONPATH);
-    if (require('fs').existsSync(path.join(candidate, 'scanners'))) {
-      return candidate;
-    }
+    if (hasScanners(candidate)) return candidate;
   }
-  // Fallback: __dirname/../../../ (works locally and most CI environments)
-  const fromDir = path.resolve(__dirname, '../../../');
-  if (require('fs').existsSync(path.join(fromDir, 'scanners'))) {
-    return fromDir;
-  }
-  // Last resort: walk up from __dirname until we find scanners/
-  let dir = __dirname;
-  for (let i = 0; i < 10; i++) {
-    if (require('fs').existsSync(path.join(dir, 'scanners'))) return dir;
+
+  // Strategy 2: Walk up from process.cwd() (most reliable on Docker)
+  let dir = process.cwd();
+  for (let i = 0; i < 15; i++) {
+    if (hasScanners(dir)) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
+
+  // Strategy 3: Walk up from __dirname
+  dir = __dirname;
+  for (let i = 0; i < 15; i++) {
+    if (hasScanners(dir)) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+
+  // Strategy 4: Known Render paths
+  for (const candidate of ['/opt/render/project/src', '/app', '/srv', '/workspace', '/repo']) {
+    if (hasScanners(candidate)) return candidate;
+  }
+
+  // Fallback
   return path.resolve(__dirname, '../../../');
 })();
+
+console.log('[ECDAT] REPO_ROOT resolved to:', REPO_ROOT);
 // Use SCAN_ARTIFACTS_DIR env var (set in .env/docker) or fall back to OS temp dir.
 // Scan uploads are temporary working dirs — results go to Neon after scan completes.
 const ARTIFACTS_DIR = process.env.SCAN_ARTIFACTS_DIR
