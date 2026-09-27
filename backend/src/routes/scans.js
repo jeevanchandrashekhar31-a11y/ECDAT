@@ -27,53 +27,6 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-/**
- * DELETE /api/v1/scans
- * Clears scan records scoped to caller's tenant.
- */
-router.delete("/", requireRole(["platform administrator", "security administrator"]), async (req, res, next) => {
-  try {
-    await clearScans(req.tenantContext);
-    res.status(200).json({
-      success: true,
-      message: "Scans and cryptographic inventory successfully cleared.",
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-/**
- * DELETE /api/v1/scans/system/purge-synthetic
- * Permanently deletes all mock/synthetic data from the database.
- */
-router.delete("/system/purge-synthetic", requireRole(["platform administrator", "security administrator"]), async (req, res, next) => {
-  try {
-    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
-    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
-
-    const { db } = require("../db/connection");
-    let q = db("assets").select("scan_id").where("is_synthetic", true).groupBy("scan_id");
-    
-    if (!isPlatformAdmin && callerTenant) {
-      q = q.join("scans", "assets.scan_id", "scans.id").where("scans.tenant_id", callerTenant);
-    }
-
-    const syntheticScans = await q;
-    const scanIds = syntheticScans.map(s => s.scan_id).filter(Boolean);
-
-    if (scanIds.length > 0) {
-      await db("scans").whereIn("id", scanIds).del();
-    }
-
-    res.status(200).json({
-      success: true,
-      message: `Successfully purged ${scanIds.length} synthetic mock scans.`,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
 
 /**
  * GET /api/v1/scans/:scanId
@@ -118,44 +71,6 @@ router.get("/:scanId", async (req, res, next) => {
   }
 });
 
-/**
- * DELETE /api/v1/scans/:scanId
- * Deletes a specific scan verifying caller's tenant boundary.
- */
-router.delete("/:scanId", requireRole(["platform administrator", "security administrator"]), async (req, res, next) => {
-  try {
-    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
-    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
-
-    // Lookup scan in system to verify existence and check cross-tenant boundary
-    const scan = await getScanById(req.params.scanId, { isPlatformAdmin: true });
-    if (!scan) {
-      return res.status(404).json({
-        error: "NotFound",
-        message: `Scan '${req.params.scanId}' not found`,
-      });
-    }
-    if (!isPlatformAdmin && scan.tenantId && scan.tenantId !== callerTenant) {
-      return res.status(403).json({
-        error: "TenantBoundaryViolation",
-        code: "HORIZONTAL_TENANT_VIOLATION",
-        message: `Cannot delete scan belonging to tenant '${scan.tenantId}'`,
-      });
-    }
-
-    // Delete scan record
-    await deleteScanById(req.params.scanId, req.tenantContext);
-    res.status(200).json({
-      success: true,
-      message: `Scan '${req.params.scanId}' deleted successfully.`,
-    });
-  } catch (err) {
-    if (err.statusCode === 404) {
-      return res.status(404).json({ error: "NotFound", message: err.message });
-    }
-    next(err);
-  }
-});
 
 /**
  * GET /api/v1/scans/:scanId/errors

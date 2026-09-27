@@ -36,28 +36,8 @@ export const Scans: React.FC = () => {
     navigate(`/?scanId=${scanId}`);
   };
 
-  const handleDelete = async (scanId: string) => {
-    if (!window.confirm("Are you sure you want to completely delete this scan? This cannot be undone.")) return;
-    try {
-      await api.deleteScan(scanId);
-      setScans(prev => prev.filter(s => s.id !== scanId));
-    } catch (err: any) {
-      alert("Failed to delete scan: " + err.message);
-    }
-  };
-
-  const handlePurgeMockData = async () => {
-    if (!window.confirm("Are you sure you want to completely purge ALL synthetic mock scans from the database? This cannot be undone.")) return;
-    try {
-      const res = await api.purgeSyntheticScans();
-      alert(res.message);
-      setLoading(true);
-      const data = await api.getScans();
-      setScans(data.scans || []);
-      setLoading(false);
-    } catch (err: any) {
-      alert("Failed to purge mock data: " + err.message);
-    }
+  const viewScanDetails = (scanId: string) => {
+    navigate(`/?scanId=${scanId}`);
   };
 
   return (
@@ -70,15 +50,6 @@ export const Scans: React.FC = () => {
           <p className="text-sm text-slate-400 mt-1">
             Historical log of all cryptographic discovery scans and artifact ingestions.
           </p>
-        </div>
-        <div>
-          <button
-            onClick={handlePurgeMockData}
-            className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            Purge Mock Data
-          </button>
         </div>
       </div>
 
@@ -145,13 +116,6 @@ export const Scans: React.FC = () => {
                           >
                             <span>View Dashboard</span>
                             <ExternalLink className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(scan.id)}
-                            className="px-2 py-1.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors inline-flex items-center"
-                            title="Delete Scan"
-                          >
-                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

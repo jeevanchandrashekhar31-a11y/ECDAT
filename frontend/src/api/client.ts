@@ -288,7 +288,8 @@ export const api = {
   },
 
   getReportHtml: async (scanId: string): Promise<string> => {
-    return request<string>(`/api/v1/reports/${encodeURIComponent(scanId)}/html`);
+    const targetId = scanId ? encodeURIComponent(scanId) : 'latest';
+    return request<string>(`/api/v1/reports/${targetId}/html`);
   },
 
   getReportCbom: async (scanId: string, type: 'annotated' | 'raw' = 'annotated'): Promise<unknown> => {

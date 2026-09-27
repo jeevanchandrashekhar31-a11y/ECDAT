@@ -97,8 +97,8 @@ export const Policies: React.FC = () => {
                 
                 <div className="mt-3 inline-flex flex-wrap items-center gap-2 px-3 py-1.5 bg-slate-900/80 rounded-lg border border-slate-700/50">
                   <span className="text-xs text-slate-500 font-mono">IF</span>
-                  <span className="text-xs text-emerald-400 font-mono font-semibold max-w-lg truncate" title={JSON.stringify(policy.condition)}>
-                    {Object.keys(policy.condition).length > 0 ? JSON.stringify(policy.condition).replace(/[{}"']/g, '').substring(0, 80) : "ALL"}
+                  <span className="text-xs text-emerald-400 font-mono font-semibold max-w-lg truncate" title={JSON.stringify(policy.condition || {})}>
+                    {Object.keys(policy.condition || {}).length > 0 ? JSON.stringify(policy.condition || {}).replace(/[{}"']/g, '').substring(0, 80) : "ALL"}
                   </span>
                   <span className="text-xs text-slate-500 font-mono">THEN {policy.action.toUpperCase()}</span>
                 </div>
