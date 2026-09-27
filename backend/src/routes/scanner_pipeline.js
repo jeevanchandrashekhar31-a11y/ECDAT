@@ -133,7 +133,12 @@ function loadJsonSafe(filePath) {
  */
 function runPythonCommand(args, timeoutMs = 60000) {
   return new Promise((resolve, reject) => {
-    const pythonBin = process.platform === 'win32' ? 'python' : 'python3';
+    let pythonBin = process.platform === 'win32' ? 'python' : 'python3';
+    // If running in the Docker container, strictly use the venv python to bypass Render PATH overrides
+    if (fs.existsSync('/opt/venv/bin/python3')) {
+      pythonBin = '/opt/venv/bin/python3';
+    }
+
     const child = spawn(pythonBin, args, { 
       cwd: REPO_ROOT, 
       shell: false,
@@ -232,9 +237,11 @@ router.get('/debug/paths', async (req, res) => {
   
   let pythonTest = '';
   try {
-    const syspath = execSync('python3 -c "import sys; print(sys.path)"').toString();
-    const piplist = execSync('pip3 list').toString();
-    pythonTest = `SYSPATH: ${syspath}\n\nPIPLIST:\n${piplist}`;
+    const pythonBin = fs.existsSync('/opt/venv/bin/python3') ? '/opt/venv/bin/python3' : 'python3';
+    const pipBin = fs.existsSync('/opt/venv/bin/pip3') ? '/opt/venv/bin/pip3' : 'pip3';
+    const syspath = execSync(`${pythonBin} -c "import sys; print(sys.path)"`).toString();
+    const piplist = execSync(`${pipBin} list`).toString();
+    pythonTest = `BIN: ${pythonBin}\n\nSYSPATH: ${syspath}\n\nPIPLIST:\n${piplist}`;
   } catch (e) {
     pythonTest = "FAILED: " + (e.stderr ? e.stderr.toString() : e.message) + " | STDOUT: " + (e.stdout ? e.stdout.toString() : '');
   }
