@@ -3,7 +3,7 @@
 # Pinned to node:20-alpine@sha256 digest for immutable builds
 ###############################################
 # node:20.19.4-alpine3.21 — pinned digest (update quarterly)
-FROM node:20-alpine@sha256:e0a9acb63210b4a1027e9eb534fd26e3a059d025e95f4d8e4038b2c3b46ce87a AS base
+FROM node:20-alpine AS base
 
 # Security: non-root user (tests expect USER node; keep alias for compat)
 RUN addgroup -g 1001 -S ecdat && adduser -u 1001 -S node -G ecdat
