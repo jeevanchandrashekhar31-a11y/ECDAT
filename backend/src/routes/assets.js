@@ -237,7 +237,7 @@ router.get("/", async (req, res, next) => {
             highest_severity: r.highest_severity,
             at_quantum_risk: r.at_quantum_risk,
             cicd_pass: r.cicd_pass,
-            source: r.source,
+            source: r.asset_source || r.scan_source || "unknown",
             policy_profile: r.policy_profile,
             mosca_status:
               meta.mosca_status || (r.at_quantum_risk ? "AT_RISK" : "SAFE"),
