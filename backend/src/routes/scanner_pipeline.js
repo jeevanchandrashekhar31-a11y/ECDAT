@@ -766,6 +766,19 @@ router.post('/scan/binary', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     // Clean up temporary output file
     try { fs.unlinkSync(tempOut); } catch {}
 
+    if (!cbomData.components || cbomData.components.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Scan complete. No compiled cryptographic binaries or libraries detected in the target.",
+        scan_source: "live_scanner", 
+        scan_id: null,
+        metrics: { total_assets: 0 },
+        cbom: cbomData, 
+        top_risky_assets: [], 
+        recommendations: [],
+      });
+    }
+
     const scanRecord = await ingestCbom(cbomData, {
       scannerType: 'binary_container',
       scanName: scanLabel || 'Binary/Container Library Inventory',

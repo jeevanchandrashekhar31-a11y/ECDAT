@@ -103,6 +103,33 @@ def main():
     for f in findings:
         cboms.append(binary_finding_to_cbom(f))
 
+    # 5. If target is a directory (e.g. extracted ZIP), directly analyze any raw binary files found
+    if args.target_type == "directory":
+        target_path = Path(args.target)
+        if target_path.is_dir():
+            try:
+                from scanners.binary_container.parsers import analyze_binary, BinaryFormat
+                from scanners.cbom_mapping import binary_metadata_to_cbom
+                binary_exts = {".dll", ".so", ".exe", ".elf", ".dylib", ".pyd", ".a", ".lib", ".ko", ".o", ".obj"}
+                for file_path in target_path.rglob("*"):
+                    if file_path.is_file() and (file_path.suffix.lower() in binary_exts or not file_path.suffix):
+                        try:
+                            # Skip likely text files without extension
+                            if not file_path.suffix:
+                                with open(file_path, "rb") as f:
+                                    header = f.read(4)
+                                    if not header.startswith(b"\x7fELF") and not header.startswith(b"MZ") and not header.startswith(b"\xca\xfe\xba\xbe") and not header.startswith(b"\xce\xfa\xed\xfe") and not header.startswith(b"\xcf\xfa\xed\xfe"):
+                                        continue
+                            
+                            meta = analyze_binary(str(file_path), timeout_seconds=args.timeout)
+                            if meta.binary_format != BinaryFormat.UNKNOWN and meta.crypto_library_indicators:
+                                logging.info(f"Detected {meta.binary_format.value} binary via directory traversal: {file_path.name}")
+                                cboms.append(binary_metadata_to_cbom(meta, target_name=file_path.name))
+                        except Exception as e:
+                            logging.warning(f"Failed to analyze binary {file_path.name}: {e}")
+            except Exception as outer_e:
+                logging.warning(f"Directory binary traversal failed: {outer_e}")
+
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
