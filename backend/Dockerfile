@@ -2,23 +2,21 @@
 # ECDAT Backend — Production Dockerfile
 # Pinned to node:20-alpine@sha256 digest for immutable builds
 ###############################################
-# node:20.19.4-alpine3.21 — pinned digest (update quarterly)
-FROM node:20-alpine AS base
+# node:20.19-bookworm-slim (Debian based for python wheel support)
+FROM node:20-bookworm-slim AS base
 
 
 
 WORKDIR /app
 
 # Install Python for scanner pipeline + curl for healthcheck
-RUN apk add --no-cache python3 py3-pip git curl openssl
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip git curl openssl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to cache python dependencies layer
 COPY requirements.txt ./
-RUN pip3 install --no-cache-dir -r requirements.txt --break-system-packages 2>/dev/null || \
-    pip3 install --no-cache-dir -r requirements.txt 2>/dev/null || echo "requirements install skipped"
-
-RUN pip3 install --no-cache-dir semgrep --break-system-packages 2>/dev/null || \
-       pip3 install --no-cache-dir semgrep 2>/dev/null || echo "semgrep install skipped"
+RUN pip3 install --no-cache-dir -r requirements.txt --break-system-packages
+RUN pip3 install --no-cache-dir semgrep --break-system-packages
 
 
 # Read-only filesystem support: create writable dirs as root before switching
