@@ -10,7 +10,6 @@ import { CryptoGraph } from './pages/CryptoGraph';
 import { Findings } from './pages/Findings';
 import { Remediation } from './pages/Remediation';
 import { Scans } from './pages/Scans';
-import { Policies } from './pages/Policies';
 
 import { Login } from './pages/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -82,7 +81,6 @@ export const App: React.FC = () => {
               <Route path="/findings" element={<Findings />} />
               <Route path="/remediation" element={<Remediation />} />
               <Route path="/roadmap" element={<Roadmap />} />
-              <Route path="/policies" element={<Policies />} />
               <Route path="/graph" element={<CryptoGraph />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/scans" element={<Scans />} />
