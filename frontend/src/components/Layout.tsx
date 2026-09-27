@@ -238,19 +238,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Nav */}
         <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
           {/* Eval CTA */}
+          {/* Eval CTA */}
           {!currentUser ? (
             <div className="mb-3 p-1 rounded-2xl" style={{ background: 'rgba(34,211,238,0.05)', border: '1px solid rgba(34,211,238,0.1)' }}>
               <NavLink to="/login"
                 className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-slate-950 transition-all hover:brightness-110"
                 style={{ background: 'linear-gradient(90deg, #22D3EE, #6366F1)' }}>
-                <ShieldCheck size={12} /> Enter Evaluation
+                <ShieldCheck size={12} /> Platform Access
               </NavLink>
             </div>
           ) : currentUser.isEvaluation ? (
             <div className="mb-3 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-semibold"
               style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.15)' }}>
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#10B981' }} />
-              <span style={{ color: '#34D399' }}>Evaluation Active</span>
+              <span style={{ color: '#34D399' }}>Live Analytics</span>
             </div>
           ) : null}
 
@@ -317,14 +318,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="absolute inset-0 bg-dots opacity-20 rounded-3xl" />
         </div>
 
-        {/* Evaluation banner */}
-        {currentUser?.isEvaluation && (
-          <div className="relative z-10 px-6 py-1.5 flex items-center justify-center gap-2 text-xs font-medium"
-            style={{ background: 'linear-gradient(90deg,rgba(99,102,241,0.1),rgba(34,211,238,0.07),rgba(99,102,241,0.1))', borderBottom: '1px solid rgba(99,102,241,0.15)', color: 'rgba(165,180,252,0.8)' }}>
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#818CF8' }} />
-            Evaluation Environment · Synthetic data · No production systems connected
-          </div>
-        )}
+
 
         {/* Header */}
         <header className="relative z-10 h-[52px] flex items-center justify-between px-5 shrink-0"
@@ -390,14 +384,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                       </button>
                     ))}
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', margin: '4px 0' }} />
-                    <button onClick={async () => { if (window.confirm('Reset Evaluation?')) { await api.resetEvaluationTenant(); window.location.reload(); } }}
+                    <button onClick={async () => { if (window.confirm('Reset Workspace?')) { await api.resetEvaluationTenant(); window.location.reload(); } }}
                       className="w-full text-left px-4 py-2.5 text-xs font-semibold" style={{ color: '#F59E0B' }}
                       onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245,158,11,0.05)'}
-                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = ''}>Reset Evaluation</button>
+                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = ''}>Reset Workspace</button>
                     <button onClick={() => { authManager.clearSession(); window.location.href = '/login'; }}
                       className="w-full text-left px-4 py-2.5 text-xs font-semibold" style={{ color: '#FB7185' }}
                       onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(244,63,94,0.05)'}
-                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = ''}>Exit Evaluation</button>
+                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = ''}>Sign Out</button>
                   </div>
                 )}
               </div>

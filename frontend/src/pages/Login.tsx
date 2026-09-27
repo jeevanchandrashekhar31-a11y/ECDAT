@@ -399,7 +399,7 @@ export const Login: React.FC = () => {
               >
                 {/* Corner badge */}
                 <div className="absolute top-4 right-4">
-                  <span className="badge badge-primary uppercase tracking-widest">Evaluation</span>
+                  <span className="badge badge-primary uppercase tracking-widest">Platform Access</span>
                 </div>
 
                 {/* Subtle gradient overlay */}
@@ -410,9 +410,9 @@ export const Login: React.FC = () => {
                     <ShieldCheck size={22} className="text-primary" />
                   </div>
 
-                  <h2 className="text-xl font-display font-bold text-white mb-2">Enter Evaluation Environment</h2>
+                  <h2 className="text-xl font-display font-bold text-white mb-2">Analyst Access</h2>
                   <p className="text-sm text-slate-400 mb-6 leading-relaxed">
-                    Explore cryptographic discovery, CBOM, PQC assessment, and remediation workflows using realistic synthetic data. No production systems connected.
+                    Access the Cryptographic Discovery, CBOM, PQC Assessment, and Remediation workflows to analyze scanned repository data.
                   </p>
 
                   <button
@@ -426,7 +426,7 @@ export const Login: React.FC = () => {
                       ? <RefreshCw size={18} className="animate-spin" />
                       : <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-200" />
                     }
-                    <span>Enter Evaluation Environment</span>
+                    <span>Enter Analyst Dashboard</span>
                   </button>
                 </div>
               </div>
