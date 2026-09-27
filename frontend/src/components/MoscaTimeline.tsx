@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   Clock,
   RotateCcw,
@@ -210,7 +210,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
       case 'WATCH':
         return {
           label: 'WATCH',
-          badgeClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+          badgeClass: 'bg-primary/20 text-primary/80 border-primary/40',
           gaugeColor: '#06b6d4',
           description: `Safety Buffer Narrowing: Only ${safetyBuffer} years remain before threat horizon. Migration planning should commence.`,
         };
@@ -236,12 +236,12 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
   }, [maxScale]);
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+    <div className="bg-surface/90 border border-border rounded-2xl p-6 shadow-2xl space-y-6">
       {/* 1. Header with Mode Badge & Reset Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-cyan-950/60 border border-cyan-800/50 text-cyan-400">
+            <div className="p-2 rounded-xl bg-cyan-950/60 border border-cyan-800/50 text-primary">
               <Clock className="w-5 h-5" />
             </div>
             <div>
@@ -254,7 +254,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
                     Simulation only — not persisted
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surfaceHover/80 text-slate-300 border border-borderMid">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                     Policy Assessed Values
                   </span>
@@ -275,12 +275,12 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
             disabled={!isSimulated}
             className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
               isSimulated
-                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 shadow-md cursor-pointer hover:text-white'
-                : 'bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed'
+                ? 'bg-surfaceHover hover:bg-surfaceMid text-slate-200 border border-slate-600 shadow-md cursor-pointer hover:text-white'
+                : 'bg-surface text-slate-600 border border-border cursor-not-allowed'
             }`}
             title="Reset all inputs back to original policy assessment values"
           >
-            <RotateCcw className={`w-3.5 h-3.5 ${isSimulated ? 'text-cyan-400' : 'text-slate-600'}`} />
+            <RotateCcw className={`w-3.5 h-3.5 ${isSimulated ? 'text-primary' : 'text-slate-600'}`} />
             <span>Reset to policy values</span>
           </button>
         </div>
@@ -290,11 +290,11 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
       <div className="p-4 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-cyan-900/30 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none"></div>
         <div className="flex items-start gap-3 relative z-10">
-          <div className="p-1.5 rounded-lg bg-cyan-950/70 border border-cyan-800/60 text-cyan-400 shrink-0 mt-0.5">
+          <div className="p-1.5 rounded-lg bg-cyan-950/70 border border-cyan-800/60 text-primary shrink-0 mt-0.5">
             <Info className="w-4 h-4" />
           </div>
           <div className="space-y-1">
-            <div className="text-sm font-semibold text-cyan-300">Fundamental Quantum Theorem:</div>
+            <div className="text-sm font-semibold text-primary/80">Fundamental Quantum Theorem:</div>
             <p className="text-xs md:text-sm text-slate-200 font-medium leading-relaxed">
               <strong className="text-amber-300 font-mono tracking-wide">
                 If X + Y &gt; Z, the asset may be exposed before migration completes.
@@ -302,7 +302,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
             </p>
             <p className="text-xs text-slate-400">
               When the combined duration of data confidentiality shelf-life (
-              <code className="text-cyan-300 font-mono">X</code>) and cryptographic migration time (
+              <code className="text-primary/80 font-mono">X</code>) and cryptographic migration time (
               <code className="text-purple-300 font-mono">Y</code>) exceeds the arrival horizon of a cryptanalytically
               relevant quantum computer (<code className="text-amber-300 font-mono">Z</code>), adversaries who record
               encrypted data today will decrypt it tomorrow.
@@ -314,12 +314,12 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
       {/* 3. Numeric KPI Cards with Exact Values */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {/* X */}
-        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+        <div className="p-3.5 rounded-xl bg-background/70 border border-border space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Shelf-Life (X)</span>
-            <span className="text-[10px] font-mono text-cyan-400">Data Secrecy</span>
+            <span className="text-[10px] font-mono text-primary">Data Secrecy</span>
           </div>
-          <div className="text-2xl font-bold font-mono text-cyan-300">
+          <div className="text-2xl font-bold font-mono text-primary/80">
             {currentX.toFixed(1)} <span className="text-xs font-normal text-slate-400">yrs</span>
           </div>
           <p className="text-[11px] text-slate-500 truncate" title={SENSITIVITY_CONFIG[localSensitivity]?.description}>
@@ -328,7 +328,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
         </div>
 
         {/* Y */}
-        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+        <div className="p-3.5 rounded-xl bg-background/70 border border-border space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Migration (Y)</span>
             <span className="text-[10px] font-mono text-purple-400">Deployment</span>
@@ -344,7 +344,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
         </div>
 
         {/* X + Y */}
-        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+        <div className="p-3.5 rounded-xl bg-background/70 border border-border space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Total (X + Y)</span>
             <span className="text-[10px] font-mono text-indigo-400">Exposure Sum</span>
@@ -356,7 +356,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
         </div>
 
         {/* Z */}
-        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+        <div className="p-3.5 rounded-xl bg-background/70 border border-border space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Threat (Z)</span>
             <span className="text-[10px] font-mono text-amber-400">Q-Day</span>
@@ -392,10 +392,10 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
       </div>
 
       {/* 4. Interactive Visual Timeline & Dual Bar Representation */}
-      <div className="p-6 rounded-2xl bg-slate-950/80 border border-slate-800/90 space-y-6">
+      <div className="p-6 rounded-2xl bg-background/80 border border-border/90 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-cyan-400" />
+            <Layers className="w-4 h-4 text-primary" />
             <span className="text-xs font-bold text-white uppercase tracking-wider">
               Comparative Lifespan Timeline (0 to {maxScale} Years)
             </span>
@@ -415,14 +415,14 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
           {/* Timeline Bar Canvas */}
           <div className="relative pt-8 pb-4">
             {/* Timeline Ruler / Background Grid */}
-            <div className="h-10 bg-slate-900/90 rounded-xl border border-slate-800 relative overflow-hidden flex items-center shadow-inner">
+            <div className="h-10 bg-surface/90 rounded-xl border border-border relative overflow-hidden flex items-center shadow-inner">
               {/* Scale graduation lines */}
               {ticks.map((tick) => {
                 const leftPercent = (tick / maxScale) * 100;
                 return (
                   <div
                     key={tick}
-                    className="absolute top-0 bottom-0 border-l border-slate-800/80 pointer-events-none"
+                    className="absolute top-0 bottom-0 border-l border-border/80 pointer-events-none"
                     style={{ left: `${leftPercent}%` }}
                   />
                 );
@@ -587,7 +587,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
           ) : currentStatus === 'AT_RISK' ? (
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           ) : currentStatus === 'WATCH' ? (
-            <Clock className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+            <Clock className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           ) : (
             <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
           )}
@@ -599,10 +599,10 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
       </div>
 
       {/* 5. What-If Interactive Controls Section */}
-      <div className="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div className="p-6 rounded-2xl bg-background/80 border border-border space-y-6">
+        <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-cyan-400" />
+            <Sliders className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">
               What-If Scenario &amp; Migration Modeler
             </h3>
@@ -612,7 +612,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Control 1: Adjust Migration Time Y */}
-          <div className="space-y-3 p-4 rounded-xl bg-slate-900/60 border border-slate-800/80">
+          <div className="space-y-3 p-4 rounded-xl bg-surface/60 border border-border/80">
             <div className="flex items-center justify-between">
               <label htmlFor="migration-slider" className="text-xs font-semibold text-slate-300">
                 Migration Time (Y)
@@ -631,7 +631,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
               step="0.5"
               value={localY}
               onChange={(e) => setLocalY(parseFloat(e.target.value))}
-              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              className="w-full h-2 bg-surfaceHover rounded-lg appearance-none cursor-pointer accent-purple-500"
             />
 
             {/* Quick Adjust Buttons */}
@@ -639,7 +639,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
               <button
                 type="button"
                 onClick={() => setLocalY((prev) => Math.max(0.5, Math.round((prev - 1.0) * 10) / 10))}
-                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono"
+                className="px-2 py-1 bg-surfaceHover hover:bg-surfaceMid text-slate-300 rounded text-xs font-mono"
                 title="Decrease Y by 1 year"
               >
                 -1.0y
@@ -647,7 +647,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
               <button
                 type="button"
                 onClick={() => setLocalY((prev) => Math.max(0.5, Math.round((prev - 0.5) * 10) / 10))}
-                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono"
+                className="px-2 py-1 bg-surfaceHover hover:bg-surfaceMid text-slate-300 rounded text-xs font-mono"
                 title="Decrease Y by 0.5 year"
               >
                 -0.5y
@@ -655,7 +655,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
               <button
                 type="button"
                 onClick={() => setLocalY((prev) => Math.min(15.0, Math.round((prev + 0.5) * 10) / 10))}
-                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono"
+                className="px-2 py-1 bg-surfaceHover hover:bg-surfaceMid text-slate-300 rounded text-xs font-mono"
                 title="Increase Y by 0.5 year"
               >
                 +0.5y
@@ -663,7 +663,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
               <button
                 type="button"
                 onClick={() => setLocalY((prev) => Math.min(15.0, Math.round((prev + 1.0) * 10) / 10))}
-                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono"
+                className="px-2 py-1 bg-surfaceHover hover:bg-surfaceMid text-slate-300 rounded text-xs font-mono"
                 title="Increase Y by 1 year"
               >
                 +1.0y
@@ -675,10 +675,10 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
           </div>
 
           {/* Control 2: Select Sensitivity */}
-          <div className="space-y-3 p-4 rounded-xl bg-slate-900/60 border border-slate-800/80">
+          <div className="space-y-3 p-4 rounded-xl bg-surface/60 border border-border/80">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-300">Data Sensitivity (Affects X)</label>
-              <span className="text-xs font-bold font-mono text-cyan-400 uppercase">{localSensitivity}</span>
+              <span className="text-xs font-bold font-mono text-primary uppercase">{localSensitivity}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -689,8 +689,8 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
                   onClick={() => setLocalSensitivity(key)}
                   className={`p-2 rounded-lg text-left transition-all text-xs border ${
                     localSensitivity === key
-                      ? 'bg-cyan-950/80 border-cyan-500 text-cyan-300 font-semibold shadow-sm'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850'
+                      ? 'bg-cyan-950/80 border-cyan-500 text-primary/80 font-semibold shadow-sm'
+                      : 'bg-surface/60 border-border text-slate-400 hover:text-white hover:bg-slate-850'
                   }`}
                 >
                   <div className="font-semibold">{item.label}</div>
@@ -699,13 +699,13 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
               ))}
             </div>
             <p className="text-[11px] text-slate-500">
-              Sets baseline confidentiality shelf-life <code className="text-cyan-400 font-mono">X</code> according to
+              Sets baseline confidentiality shelf-life <code className="text-primary font-mono">X</code> according to
               policy rules.
             </p>
           </div>
 
           {/* Control 3: Select Quantum Scenario */}
-          <div className="space-y-3 p-4 rounded-xl bg-slate-900/60 border border-slate-800/80">
+          <div className="space-y-3 p-4 rounded-xl bg-surface/60 border border-border/80">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-300">Quantum Threat Scenario (Affects Z)</label>
               <span className="text-xs font-bold font-mono text-amber-400 uppercase">{localScenario}</span>
@@ -723,7 +723,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
                     className={`w-full p-2 rounded-lg flex items-center justify-between transition-all text-xs border ${
                       isSelected
                         ? 'bg-amber-950/80 border-amber-500 text-amber-300 font-semibold shadow-sm'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850'
+                        : 'bg-surface/60 border-border text-slate-400 hover:text-white hover:bg-slate-850'
                     }`}
                   >
                     <div>
@@ -750,7 +750,7 @@ export const MoscaTimeline: React.FC<MoscaTimelineProps> = ({
                   Y = {initialY.toFixed(1)}y, Z = {initialZ.toFixed(1)}y
                 </code>{' '}
                 <span className="text-slate-500">→</span> Simulated:{' '}
-                <code className="font-mono text-cyan-300">
+                <code className="font-mono text-primary/80">
                   Y = {localY.toFixed(1)}y, Z = {currentZ.toFixed(1)}y
                 </code>
               </div>

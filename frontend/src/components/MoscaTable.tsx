@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldAlert, AlertTriangle, Clock, ShieldCheck, ExternalLink } from 'lucide-react';
 import { MoscaTableRow, MoscaStatus } from '../types';
@@ -27,8 +27,8 @@ export const MoscaStatusBadge: React.FC<{ status: MoscaStatus }> = ({ status }) 
       );
     case 'WATCH':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-          <Clock size={12} className="text-cyan-400" />
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-primary/15 text-primary/80 border border-primary/30">
+          <Clock size={12} className="text-primary" />
           Watch
         </span>
       );
@@ -58,7 +58,7 @@ export const MoscaTable: React.FC<MoscaTableProps> = ({ rows, scanId, limit }) =
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs">
-        <thead className="bg-slate-900/90 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-800">
+        <thead className="bg-surface/90 text-slate-400 uppercase tracking-wider text-[11px] border-b border-border">
           <tr>
             <th className="py-3 px-4">Asset / Target</th>
             <th className="py-3 px-3">Algorithm</th>
@@ -85,7 +85,7 @@ export const MoscaTable: React.FC<MoscaTableProps> = ({ rows, scanId, limit }) =
           {displayRows.map((row, idx) => {
             const isDeficit = row.mosca_margin_years > 0;
             return (
-              <tr key={`${row.asset_id}-${idx}`} className="hover:bg-slate-800/40 transition-colors">
+              <tr key={`${row.asset_id}-${idx}`} className="hover:bg-surfaceHover/40 transition-colors">
                 <td
                   className="py-3 px-4 font-sans font-medium text-slate-100 max-w-[220px] truncate"
                   title={row.asset_id}
@@ -93,7 +93,7 @@ export const MoscaTable: React.FC<MoscaTableProps> = ({ rows, scanId, limit }) =
                   {row.asset_id}
                 </td>
                 <td className="py-3 px-3">
-                  <span className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 text-xs">{row.algorithm}</span>
+                  <span className="px-2 py-0.5 rounded bg-surfaceHover text-primary/80 text-xs">{row.algorithm}</span>
                 </td>
                 <td className="py-3 px-2 text-center text-slate-300">{row.X_shelf_life_years}y</td>
                 <td className="py-3 px-2 text-center text-slate-300">{row.Y_migration_years}y</td>
@@ -108,7 +108,7 @@ export const MoscaTable: React.FC<MoscaTableProps> = ({ rows, scanId, limit }) =
                 <td className="py-3 px-2 text-right font-sans">
                   <Link
                     to={`/assets/${encodeURIComponent(row.asset_id)}${scanId ? `?scanId=${scanId}` : ''}`}
-                    className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline text-xs"
+                    className="inline-flex items-center gap-1 text-primary hover:text-primary/80 hover:underline text-xs"
                   >
                     <span>Inspect</span>
                     <ExternalLink size={12} />

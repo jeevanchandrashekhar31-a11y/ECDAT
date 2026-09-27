@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Wrench,
   Zap,
@@ -33,7 +33,7 @@ export const RemediationView: React.FC<Props> = ({
       <div className="glass-card p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Wrench className="w-5 h-5 text-cyan-400" />
+            <Wrench className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-bold text-slate-100">Cryptographic Remediation & Automated Patching</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -86,7 +86,7 @@ export const RemediationView: React.FC<Props> = ({
                   {/* Unified Diff */}
                   {win.patch_diff && (
                     <div className="relative group/diff mb-3">
-                      <pre className="text-[11px] font-mono bg-slate-950 p-2.5 rounded-lg border border-slate-850 overflow-x-auto text-slate-300">
+                      <pre className="text-[11px] font-mono bg-background p-2.5 rounded-lg border border-slate-850 overflow-x-auto text-slate-300">
                         {win.patch_diff.split('\n').map((line, lIdx) => {
                           const isAdd = line.startsWith('+');
                           const isDel = line.startsWith('-');
@@ -108,7 +108,7 @@ export const RemediationView: React.FC<Props> = ({
                       </pre>
                       <button
                         onClick={() => handleCopyPatch(win.id, win.patch_diff)}
-                        className="absolute right-2 top-2 px-2 py-1 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 hover:text-slate-100 hover:bg-slate-700 transition-colors inline-flex items-center gap-1"
+                        className="absolute right-2 top-2 px-2 py-1 rounded text-[10px] font-semibold bg-surfaceHover text-slate-300 hover:text-slate-100 hover:bg-surfaceMid transition-colors inline-flex items-center gap-1"
                         title="Copy unified diff"
                       >
                         {copiedId === win.id ? (
@@ -127,7 +127,7 @@ export const RemediationView: React.FC<Props> = ({
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 min-w-0">
+                <div className="pt-2 border-t border-border/80 flex items-center justify-between gap-2 min-w-0">
                   <span className="text-[10px] font-mono text-slate-500 truncate min-w-0 block" title={`Asset: ${win.asset_id}`}>Asset: {win.asset_id}</span>
                   <button
                     onClick={() =>
@@ -137,7 +137,7 @@ export const RemediationView: React.FC<Props> = ({
                         relatedEvidenceIds
                       )
                     }
-                    className="text-xs text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1 shrink-0"
+                    className="text-xs text-primary hover:text-primary/80 font-medium inline-flex items-center gap-1 shrink-0"
                   >
                     <span>Inspect Evidence</span>
                     <ExternalLink className="w-3 h-3" />
@@ -150,7 +150,7 @@ export const RemediationView: React.FC<Props> = ({
       </div>
 
       {/* Section 2: Complex PQC Migrations */}
-      <div className="space-y-3 pt-4 border-t border-slate-800">
+      <div className="space-y-3 pt-4 border-t border-border">
         <div className="flex items-center gap-2">
           <Atom className="w-4 h-4 text-violet-400" />
           <h4 className="text-sm font-semibold text-slate-200">
@@ -182,7 +182,7 @@ export const RemediationView: React.FC<Props> = ({
 
                   <p className="text-xs text-slate-300 mb-3">{mig.rationale}</p>
 
-                  <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-850 text-xs font-mono text-slate-300 mb-3">
+                  <div className="p-3 rounded-lg bg-background/70 border border-slate-850 text-xs font-mono text-slate-300 mb-3">
                     <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
                       Migration Plan:
                     </span>
@@ -190,7 +190,7 @@ export const RemediationView: React.FC<Props> = ({
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 min-w-0">
+                <div className="pt-2 border-t border-border/80 flex items-center justify-between gap-2 min-w-0">
                   <span className="text-[10px] font-mono text-slate-500 truncate min-w-0 block" title={`Asset: ${mig.asset_id}`}>Asset: {mig.asset_id}</span>
                   <button
                     onClick={() =>
@@ -200,7 +200,7 @@ export const RemediationView: React.FC<Props> = ({
                         relatedEvidenceIds
                       )
                     }
-                    className="text-xs text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1 shrink-0"
+                    className="text-xs text-primary hover:text-primary/80 font-medium inline-flex items-center gap-1 shrink-0"
                   >
                     <span>Inspect Evidence</span>
                     <ExternalLink className="w-3 h-3" />

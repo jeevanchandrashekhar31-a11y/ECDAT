@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 interface StatusIndicatorProps {
   online: boolean;
@@ -7,7 +7,7 @@ interface StatusIndicatorProps {
 
 export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ online, version }) => {
   return (
-    <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-xs font-medium">
+    <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface/80 border border-border text-xs font-medium">
       <span className="relative flex h-2 w-2">
         {online ? (
           <>

@@ -1,5 +1,5 @@
 const express = require("express");
-const { getScanById, getLatestScan } = require("../services/cbom_ingestion");
+const { getScanById, getLatestScan, SCAN_TENANT_FORBIDDEN } = require("../services/cbom_ingestion");
 const { db, isDbConnected } = require("../db/connection");
 const { getRules, calculateMosca } = require("../risk_engine");
 const { getEnterpriseDashboardViews } = require("../services/dashboard_views_service");
@@ -79,6 +79,11 @@ router.get("/summary", async (req, res, next) => {
     try {
         let scanQuery = db("scans").select("*");
         if (scanId && scanId !== "all" && scanId !== "ALL") {
+          // Validate specific scan belongs to this tenant via getScanById(scanId, req.tenantContext)
+          const scanCheck = await getScanById(scanId, req.tenantContext);
+          if (scanCheck === SCAN_TENANT_FORBIDDEN) {
+            return res.status(404).json({ error: "Not Found", message: "Scan not found." });
+          }
           scanQuery = scanQuery.where("id", scanId);
         }
         if (policyProfile) {

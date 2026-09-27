@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { authManager } from '../security';
 import { api } from '../api/client';
@@ -55,8 +55,8 @@ export const ProtectedRoute: React.FC = () => {
 
   if (status === 'checking') {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
-        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mb-3" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
         <p className="text-xs text-slate-400 font-medium tracking-wide">
           Verifying security session...
         </p>

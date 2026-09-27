@@ -149,16 +149,19 @@ class TlsScanner:
                     partial = True
 
             finding.scan_status = "partial" if partial else "success"
-            
+
             # --- MANUALLY PROBE FOR LEGACY CIPHERS (RC4/3DES fallback) ---
-            if loc.ip_address:
-                legacy_cipher, legacy_cert_der = self._probe_legacy_ciphers(loc.ip_address, loc.port, loc.hostname)
+            # Use getattr() so both real sslyze ServerNetworkLocation and SimpleNamespace
+            # mocks (which may not have ip_address) work correctly
+            loc_ip = getattr(loc, "ip_address", None)
+            if loc_ip:
+                legacy_cipher, legacy_cert_der = self._probe_legacy_ciphers(loc_ip, loc.port, loc.hostname)
                 if legacy_cipher:
                     if legacy_cipher not in finding.cipher_suites:
                         finding.cipher_suites.append(legacy_cipher)
                     if "TLSv1.2" not in finding.tls_versions:
                         finding.tls_versions.append("TLSv1.2")
-                    
+
                     if legacy_cert_der and not finding.cert_chain:
                         try:
                             from cryptography.hazmat.backends import default_backend

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Flame,
   ExternalLink,
@@ -60,7 +60,7 @@ export const RiskHeatmapView: React.FC<Props> = ({
               {likelihoods.map((l) => (
                 <div
                   key={l}
-                  className="text-xs font-bold text-center text-slate-300 uppercase tracking-wider py-1.5 bg-slate-950/60 rounded-lg border border-slate-800 font-mono"
+                  className="text-xs font-bold text-center text-slate-300 uppercase tracking-wider py-1.5 bg-background/60 rounded-lg border border-border font-mono"
                 >
                   {l}
                 </div>
@@ -71,7 +71,7 @@ export const RiskHeatmapView: React.FC<Props> = ({
             {impacts.map((impact) => (
               <div key={impact} className="grid grid-cols-5 gap-3 mb-3">
                 {/* Row Header */}
-                <div className="text-xs font-bold text-slate-300 uppercase tracking-wider py-4 px-3 bg-slate-950/60 rounded-lg border border-slate-800 flex items-center justify-between font-mono">
+                <div className="text-xs font-bold text-slate-300 uppercase tracking-wider py-4 px-3 bg-background/60 rounded-lg border border-border flex items-center justify-between font-mono">
                   <span>{impact}</span>
                   <span
                     className={`w-2 h-2 rounded-full ${
@@ -106,8 +106,8 @@ export const RiskHeatmapView: React.FC<Props> = ({
                       }}
                       className={`h-24 p-3 rounded-xl border flex flex-col justify-between transition-all ${
                         count > 0
-                          ? `${cell?.colorClass || 'bg-slate-900 border-slate-700'} cursor-pointer hover:scale-105 hover:shadow-xl`
-                          : 'bg-slate-950/40 border-slate-850 text-slate-600 cursor-default'
+                          ? `${cell?.colorClass || 'bg-surface border-borderMid'} cursor-pointer hover:scale-105 hover:shadow-xl`
+                          : 'bg-background/40 border-slate-850 text-slate-600 cursor-default'
                       }`}
                       title={
                         count > 0
@@ -159,7 +159,7 @@ export const RiskHeatmapView: React.FC<Props> = ({
                   cell.evidence_items
                 )
               }
-              className="p-3.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-slate-700 cursor-pointer transition-all flex items-center justify-between group"
+              className="p-3.5 rounded-xl border border-border bg-background/60 hover:border-borderMid cursor-pointer transition-all flex items-center justify-between group"
             >
               <div>
                 <div className="flex items-center gap-2">
@@ -167,12 +167,12 @@ export const RiskHeatmapView: React.FC<Props> = ({
                     {cell.impact} Impact / {cell.likelihood}
                   </span>
                 </div>
-                <span className="text-[11px] text-cyan-400 group-hover:underline mt-1 block">
+                <span className="text-[11px] text-primary group-hover:underline mt-1 block">
                   Click to inspect {cell.count} evidence items
                 </span>
               </div>
 
-              <div className="text-xl font-bold px-3 py-1 rounded-lg bg-slate-800 text-slate-100 border border-slate-700">
+              <div className="text-xl font-bold px-3 py-1 rounded-lg bg-surfaceHover text-slate-100 border border-borderMid">
                 {cell.count}
               </div>
             </div>

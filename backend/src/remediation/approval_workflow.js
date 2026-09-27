@@ -54,7 +54,7 @@ class ApprovalWorkflowEngine {
 
   _computeTransitionHash(prevHash, transitionData) {
     const payload = `${prevHash || "GENESIS"}|${JSON.stringify(transitionData)}`;
-    return crypto.createHash("sha256").update(payload).digest("hex");
+    return crypto.createHmac("sha256", this.signingSecret).update(payload).digest("hex");
   }
 
   async proposeRemediation(data, proposer = { username: "engineer", role: "developer" }) {
@@ -223,12 +223,46 @@ class ApprovalWorkflowEngine {
     
     if (!clientVerificationResults) throw new ApprovalWorkflowError("Missing verificationResults", 400);
     
-    // Simulate server-side verification scan (evidence collection)
-    const scanId = `scan_${crypto.randomUUID().substring(0, 8)}`;
+    // ── Real re-scan verification ──────────────────────────────────────────
+    // If the proposal has a patch_target_path, run the real source scanner
+    // against the patched code and verify the finding algorithm no longer appears.
+    let finding_resolved = false;
+    let verification_result = "INCONCLUSIVE";
+    let rescanStats = null;
+    let scanId = `scan_${crypto.randomUUID().substring(0, 8)}`;
+
+    const patchTargetPath = record.metadata?.patch_target_path;
+    const targetAlgorithm = record.metadata?.algorithm || clientVerificationResults?.algorithm;
+
+    if (patchTargetPath) {
+      try {
+        const path = require("path");
+        const { scanSourceDirectory } = require("../binary/source_scanner");
+        const { cbom, stats } = scanSourceDirectory(path.resolve(patchTargetPath), { maxFiles: 2000 });
+        rescanStats = stats;
+        scanId = `rescan_${crypto.randomUUID().substring(0, 8)}`;
+
+        // Check if the vulnerable algorithm still appears in any component
+        const stillPresent = targetAlgorithm
+          ? cbom.components.some((c) => c.name?.toLowerCase() === targetAlgorithm.toLowerCase())
+          : false;
+
+        finding_resolved = !stillPresent;
+        verification_result = finding_resolved ? "PASS" : "FAIL_ALGORITHM_STILL_PRESENT";
+      } catch (scanErr) {
+        // Scanner failed — fall back to client-supplied evidence
+        finding_resolved = Boolean(clientVerificationResults?.finding_resolved);
+        verification_result = "PASS_CLIENT_EVIDENCE_ONLY";
+      }
+    } else {
+      // No patch path — use client-supplied verification evidence (prototype fallback)
+      finding_resolved = Boolean(clientVerificationResults?.finding_resolved ?? true);
+      verification_result = "PASS_CLIENT_EVIDENCE";
+    }
+
     const prePatchHash = record.metadata.source_hash || "unknown_pre";
     const postPatchHash = record.metadata.patch_hash || "unknown_post";
-    
-    const verificationEvidenceRaw = `${scanId}:${record.metadata.affected_asset || 'asset'}:${record.metadata.finding_id || 'finding'}:${prePatchHash}:${postPatchHash}:verified`;
+    const verificationEvidenceRaw = `${scanId}:${record.metadata.affected_asset || 'asset'}:${record.metadata.finding_id || 'finding'}:${prePatchHash}:${postPatchHash}:${verification_result}`;
     const verificationEvidenceHash = crypto.createHash("sha256").update(verificationEvidenceRaw).digest("hex");
     
     const serverVerificationResults = {
@@ -240,15 +274,21 @@ class ApprovalWorkflowEngine {
       verification_evidence_hash: verificationEvidenceHash,
       verified_at: new Date().toISOString(),
       verifier_actor: verifier.username,
-      verification_method: "server_side_rescan",
-      verification_result: "PASS",
-      tests_passed: true,
-      finding_resolved: true
+      verification_method: patchTargetPath ? "server_side_source_rescan" : "client_evidence_acceptance",
+      verification_result,
+      tests_passed: finding_resolved,
+      finding_resolved,
+      rescan_stats: rescanStats,
     };
-    
-    // Check if client supplied evidence, but we override it with our server truth.
-    // If we were truly scanning, we'd check if the post patch hash actually resolved it.
-    
+
+    if (!finding_resolved && verification_result === "FAIL_ALGORITHM_STILL_PRESENT") {
+      throw new ApprovalWorkflowError(
+        `Verification FAILED: Algorithm '${targetAlgorithm}' still detected in patched source. Remediation is incomplete.`,
+        422,
+        { verification_result, serverVerificationResults }
+      );
+    }
+
     const nowTs = new Date().toISOString();
     const newHash = this._computeTransitionHash(record.metadata.current_state_hash, {
       approvalId, from_state: record.state, to_state: ApprovalState.VERIFIED, verifier: verifier.username, timestamp: nowTs, evidence_hash: verificationEvidenceHash

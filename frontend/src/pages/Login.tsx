@@ -298,341 +298,366 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
-      {/* ECDAT Logo & Branding */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-slate-950 shadow-xl shadow-cyan-500/20">
-          <Shield size={36} className="stroke-[2.5]" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            ECDAT
-          </h1>
-          <p className="text-sm text-slate-400 font-medium tracking-wide">
-            Enterprise Cryptographic Discovery and Assessment Tool
-          </p>
-        </div>
+    <div className="min-h-screen flex bg-background relative overflow-hidden">
+
+      {/* ── Animated background orbs ──────────────────────────────────── */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full animate-pulse-slow" style={{ background: 'radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full animate-float" style={{ background: 'radial-gradient(circle, rgba(129,140,248,0.08) 0%, transparent 70%)' }} />
+        <div className="absolute top-[40%] right-[25%] w-[300px] h-[300px] rounded-full animate-float-delayed" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)' }} />
+        {/* Subtle grid */}
+        <div className="absolute inset-0 bg-grid opacity-40" />
       </div>
 
-      {/* Alert Notices */}
-      {errorMsg && (
-        <div className="max-w-md w-full mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-300 text-sm shadow-lg">
-          <AlertCircle size={18} className="shrink-0 mt-0.5 text-rose-400" />
-          <div className="flex-1">{errorMsg}</div>
-        </div>
-      )}
-      {successMsg && (
-        <div className="max-w-md w-full mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3 text-emerald-300 text-sm shadow-lg">
-          <CheckCircle size={18} className="shrink-0 mt-0.5 text-emerald-400" />
-          <div className="flex-1">{successMsg}</div>
-        </div>
-      )}
-
-      {/* STEP 1: Login Form */}
-      {step === 'login' && (
-        <div className="w-full max-w-md space-y-6">
-          {/* Evaluation Environment Primary Action */}
-          <div className="glass-card p-8 rounded-3xl border border-slate-700 bg-slate-900/80 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-3">
-              <span className="text-xs px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-300 font-bold border border-cyan-500/20 uppercase tracking-widest">
-                Evaluation
-              </span>
+      {/* ── Left: Hero Panel ──────────────────────────────────────────── */}
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-between p-12 relative">
+        {/* Brand */}
+        <div className="flex items-center gap-3">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #22D3EE, #6366F1)', boxShadow: '0 4px 20px rgba(34,211,238,0.35)' }}
+          >
+            <Shield size={22} className="text-slate-950" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-display font-bold text-white">ECDAT</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-widest" style={{ background: 'rgba(34,211,238,0.12)', border: '1px solid rgba(34,211,238,0.25)', color: '#22D3EE' }}>PQC</span>
             </div>
+          </div>
+        </div>
 
-            <h2 className="text-xl font-bold text-white mb-2">Enter Evaluation Environment</h2>
-            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
-              Explore cryptographic discovery, CBOM, PQC assessment, migration planning and remediation using synthetic evaluation data. No production systems connected.
-            </p>
+        {/* Hero text */}
+        <div className="animate-slide-up">
+          <div className="mb-6">
+            <span className="badge badge-primary mb-4">Enterprise Cryptographic Security</span>
+          </div>
+          <h1 className="text-4xl font-display font-bold text-white leading-tight mb-4">
+            Quantum-Ready<br />
+            <span className="gradient-text">Cryptographic</span><br />
+            Intelligence
+          </h1>
+          <p className="text-slate-400 text-base leading-relaxed mb-8 max-w-sm">
+            Discover, assess, and migrate your cryptographic assets before quantum computers break them. CBOM generation, Mosca theorem calculus, and PQC migration planning.
+          </p>
 
-            <button
-              type="button"
-              onClick={handleEnterEvaluation}
-              disabled={loading}
-              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50 group cursor-pointer"
-            >
-              {loading ? <RefreshCw size={18} className="animate-spin" /> : <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
-              <span>Enter Evaluation Environment</span>
-            </button>
+          {/* Feature pills */}
+          <div className="space-y-3">
+            {[
+              { icon: '🔍', label: 'Real-time CBOM generation & inventory' },
+              { icon: '⚛️', label: 'Mosca theorem quantum-risk horizon calculus' },
+              { icon: '🛡️', label: 'Post-quantum cryptography migration roadmaps' },
+              { icon: '📋', label: 'NIST, FIPS 140-3, PCI-DSS compliance reporting' },
+            ].map((f) => (
+              <div key={f.label} className="flex items-center gap-3 text-sm text-slate-300">
+                <span className="text-base">{f.icon}</span>
+                <span>{f.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer note */}
+        <p className="text-xs text-slate-600">
+          CycloneDX 1.6 · NIST SP 800-208 · Mosca Theorem · RFC 6238 MFA
+        </p>
+      </div>
+
+      {/* ── Right: Auth Panel ─────────────────────────────────────────── */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+        <div className="w-full max-w-md animate-slide-up">
+
+          {/* Mobile brand (lg:hidden) */}
+          <div className="flex items-center gap-3 mb-8 lg:hidden">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #22D3EE, #6366F1)', boxShadow: '0 4px 16px rgba(34,211,238,0.3)' }}>
+              <Shield size={20} className="text-slate-950" />
+            </div>
+            <span className="text-xl font-display font-bold text-white">ECDAT</span>
           </div>
 
-          {/* Technical / Production Login Details Collapsed */}
-          <details className="group glass-card rounded-2xl border border-slate-800 bg-slate-900/40">
-            <summary className="px-6 py-4 cursor-pointer flex items-center justify-between text-sm font-semibold text-slate-400 hover:text-slate-200 transition-colors list-none select-none">
-              <div className="flex items-center gap-2">
-                <Lock size={16} />
-                <span>Production Authentication</span>
-              </div>
-              <div className="text-slate-600 group-open:rotate-180 transition-transform">▼</div>
-            </summary>
-            
-            <div className="p-6 pt-0 border-t border-slate-800/50 mt-2">
-              <p className="text-xs text-slate-500 mb-4">
-                Authorized personnel only. Authenticate via local credentials. Session established using secure HTTP-only cookies.
-              </p>
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="login-username" className="block text-xs font-semibold text-slate-400 mb-1">Username</label>
-                  <input
-                    id="login-username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter username"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-600"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="login-password" className="block text-xs font-semibold text-slate-400 mb-1">Password</label>
-                  <input
-                    id="login-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-600"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all disabled:opacity-50"
-                >
-                  {loading ? 'Authenticating...' : 'Sign In'}
-                </button>
-              </form>
+          {/* Alerts */}
+          {errorMsg && (
+            <div className="mb-5 p-4 rounded-xl flex items-start gap-3 text-sm animate-slide-up" style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', color: '#FCA5A5' }}>
+              <AlertCircle size={16} className="shrink-0 mt-0.5 text-danger" />
+              <span>{errorMsg}</span>
             </div>
-          </details>
-        </div>
-      )}
-
-      {/* STEP 2: MFA Challenge Verification */}
-      {step === 'mfa_challenge' && (
-        <div className="glass-card max-w-lg mx-auto p-8 rounded-2xl border border-slate-800 bg-slate-900/60 shadow-2xl">
-          <div className="text-center mb-6">
-            <div className="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20 flex items-center justify-center mx-auto mb-3">
-              <Smartphone size={24} />
+          )}
+          {successMsg && (
+            <div className="mb-5 p-4 rounded-xl flex items-start gap-3 text-sm animate-slide-up" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: '#6EE7B7' }}>
+              <CheckCircle size={16} className="shrink-0 mt-0.5 text-accent" />
+              <span>{successMsg}</span>
             </div>
-            <h2 className="text-xl font-bold text-white">Two-Factor Authentication</h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Enter the 6-digit verification code from your authenticator app or an emergency backup code.
-            </p>
-          </div>
+          )}
 
-          <form onSubmit={handleMfaVerifySubmit} className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-slate-300">
-                  {isBackupCode ? 'Emergency Backup Code' : 'TOTP Verification Code'}
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsBackupCode(!isBackupCode)}
-                  className="text-xs text-cyan-400 hover:text-cyan-300 font-medium"
-                >
-                  {isBackupCode ? 'Use 6-digit TOTP instead' : 'Use 8-character backup code'}
-                </button>
-              </div>
-
-              <input
-                type="text"
-                value={mfaCode}
-                onChange={(e) => setMfaCode(e.target.value)}
-                placeholder={isBackupCode ? 'e.g. A1B2C3D4' : '000000'}
-                maxLength={isBackupCode ? 16 : 8}
-                required
-                autoFocus
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-center text-lg font-mono tracking-widest text-cyan-300 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-colors"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setStep('login');
-                  setMfaToken(null);
-                  setMfaCode('');
-                }}
-                className="w-1/3 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+          {/* STEP 1: Login */}
+          {step === 'login' && (
+            <div className="space-y-4">
+              {/* Evaluation card */}
+              <div
+                className="p-7 rounded-2xl relative overflow-hidden"
+                style={{ background: 'rgba(12,24,41,0.8)', border: '1px solid rgba(34,211,238,0.15)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}
               >
-                Back
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-2/3 py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {loading ? <RefreshCw size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                <span>{loading ? 'Verifying...' : 'Verify & Sign In'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* STEP 3: Authenticated Session & MFA Enrollment Surface */}
-      {step === 'authenticated' && (
-        <div className="space-y-6">
-          {/* Active Session Overview */}
-          <div className="glass-card p-6 rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <UserCheck size={20} />
+                {/* Corner badge */}
+                <div className="absolute top-4 right-4">
+                  <span className="badge badge-primary uppercase tracking-widest">Evaluation</span>
                 </div>
-                <div>
-                  <h2 className="text-base font-bold text-white">Active Authenticated Session</h2>
-                  <p className="text-xs text-slate-400">
-                    HTTP-only cookie session active: <code className="text-emerald-400">ecdat_access_token</code>
+
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 pointer-events-none rounded-2xl" style={{ background: 'linear-gradient(135deg, rgba(34,211,238,0.04) 0%, rgba(99,102,241,0.04) 100%)' }} />
+
+                <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-xl mb-5 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(34,211,238,0.15), rgba(99,102,241,0.15))', border: '1px solid rgba(34,211,238,0.2)' }}>
+                    <ShieldCheck size={22} className="text-primary" />
+                  </div>
+
+                  <h2 className="text-xl font-display font-bold text-white mb-2">Enter Evaluation Environment</h2>
+                  <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                    Explore cryptographic discovery, CBOM, PQC assessment, and remediation workflows using realistic synthetic data. No production systems connected.
                   </p>
+
+                  <button
+                    type="button"
+                    onClick={handleEnterEvaluation}
+                    disabled={loading}
+                    className="w-full py-3.5 px-5 rounded-xl font-bold text-slate-950 text-sm flex items-center justify-center gap-2.5 transition-all duration-200 group disabled:opacity-60"
+                    style={{ background: 'linear-gradient(90deg, #22D3EE, #6366F1)', boxShadow: '0 4px 20px rgba(34,211,238,0.3)' }}
+                  >
+                    {loading
+                      ? <RefreshCw size={18} className="animate-spin" />
+                      : <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-200" />
+                    }
+                    <span>Enter Evaluation Environment</span>
+                  </button>
                 </div>
               </div>
 
-              <button
-                onClick={handleLogout}
-                disabled={loading}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-colors"
+              {/* Production auth (collapsible) */}
+              <details
+                className="rounded-xl overflow-hidden"
+                style={{ background: 'rgba(12,24,41,0.6)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(12px)' }}
               >
-                <LogOut size={14} />
-                <span>Sign Out</span>
-              </button>
-            </div>
+                <summary className="px-5 py-4 cursor-pointer flex items-center justify-between text-sm font-semibold text-slate-400 hover:text-slate-200 transition-colors list-none select-none group">
+                  <div className="flex items-center gap-2.5">
+                    <Lock size={15} />
+                    <span>Production Authentication</span>
+                  </div>
+                  <span className="text-slate-600 group-open:rotate-180 transition-transform duration-200">▼</span>
+                </summary>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-800 text-xs">
-              <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
-                <span className="text-slate-500 font-medium block mb-1">Username / Subject</span>
-                <span className="text-white font-mono font-bold text-sm">
-                  {sessionUser?.username || sessionUser?.userId || 'Authenticated User'}
-                </span>
-              </div>
-              <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
-                <span className="text-slate-500 font-medium block mb-1">Assigned Role</span>
-                <span className="text-cyan-300 font-mono font-bold text-sm">
-                  {sessionUser?.role || 'Viewer'}
-                </span>
-              </div>
-              <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
-                <span className="text-slate-500 font-medium block mb-1">Tenant Context</span>
-                <span className="text-slate-300 font-mono text-sm">
-                  {sessionUser?.tenantId || 'default-tenant'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* MFA Enrollment & Management Surface */}
-          <div className="glass-card p-6 rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                  <Smartphone size={20} />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Multi-Factor Authentication (MFA) Setup</h3>
-                  <p className="text-xs text-slate-400">
-                    Configure RFC 6238 TOTP (Google Authenticator, 1Password, Authy) for this account.
+                <div className="px-5 pb-5 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <p className="text-xs text-slate-500 mt-3 mb-4">
+                    Authorized personnel only. Session established using secure HTTP-only cookies.
                   </p>
-                </div>
-              </div>
-
-              {!mfaSetupData && (
-                <button
-                  onClick={handleStartMfaEnrollment}
-                  disabled={loading}
-                  className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-md shadow-violet-600/20 transition-all"
-                >
-                  Configure MFA
-                </button>
-              )}
-            </div>
-
-            {/* MFA Setup Flow */}
-            {mfaSetupData && (
-              <div className="mt-6 pt-6 border-t border-slate-800 space-y-6">
-                <div className="p-4 rounded-xl bg-violet-950/30 border border-violet-500/30 text-xs text-slate-300">
-                  <p className="font-semibold text-violet-300 mb-1">Step 1: Save your Secret Key or Scan URI</p>
-                  <p>{mfaSetupData.instructions}</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Secret details */}
-                  <div className="space-y-4 text-xs">
+                  <form onSubmit={handleLoginSubmit} className="space-y-3">
                     <div>
-                      <span className="text-slate-400 block mb-1 font-semibold">TOTP Secret Key</span>
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 p-2.5 rounded-lg bg-slate-950 border border-slate-800 font-mono text-cyan-300 text-sm break-all">
-                          {mfaSetupData.secret}
-                        </code>
-                        <button
-                          onClick={() => copyToClipboard(mfaSetupData.secret)}
-                          className="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                          title="Copy secret key"
-                        >
-                          {copiedSecret ? <CheckCircle size={16} className="text-emerald-400" /> : <Copy size={16} />}
-                        </button>
-                      </div>
+                      <label htmlFor="login-username" className="label-text">Username</label>
+                      <input
+                        id="login-username"
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Enter username"
+                        className="input-field"
+                      />
                     </div>
-
                     <div>
-                      <span className="text-slate-400 block mb-1 font-semibold">Authenticator URI (`otpauth://`)</span>
-                      <div className="p-2 rounded-lg bg-slate-950 border border-slate-800 font-mono text-2xs text-slate-400 break-all">
-                        {mfaSetupData.otpAuthUri}
-                      </div>
+                      <label htmlFor="login-password" className="label-text">Password</label>
+                      <input
+                        id="login-password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter password"
+                        className="input-field"
+                      />
                     </div>
-                  </div>
-
-                  {/* Backup codes */}
-                  <div>
-                    <span className="text-slate-400 block mb-1 font-semibold text-xs">
-                      Single-Use Recovery Codes (Save these securely)
-                    </span>
-                    <div className="grid grid-cols-2 gap-1.5 p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-emerald-400">
-                      {mfaSetupData.backupCodes.map((code, idx) => (
-                        <span key={idx} className="px-1 py-0.5 bg-slate-900 rounded border border-slate-800">
-                          {code}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step 2: Confirm Code */}
-                <form onSubmit={handleConfirmMfaEnrollment} className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-end gap-3">
-                  <div className="flex-1 w-full">
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Step 2: Enter 6-digit Code from Authenticator to Confirm
-                    </label>
-                    <input
-                      type="text"
-                      value={enrollmentCode}
-                      onChange={(e) => setEnrollmentCode(e.target.value)}
-                      placeholder="000000"
-                      maxLength={8}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
-                    />
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => setMfaSetupData(null)}
-                      className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
-                    >
-                      Cancel
-                    </button>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-50"
+                      className="btn-secondary w-full mt-1"
                     >
-                      {loading ? 'Confirming...' : 'Enable MFA'}
+                      {loading ? 'Authenticating...' : 'Sign In'}
+                    </button>
+                  </form>
+                </div>
+              </details>
+            </div>
+          )}
+
+          {/* STEP 2: MFA Challenge */}
+          {step === 'mfa_challenge' && (
+            <div
+              className="p-8 rounded-2xl"
+              style={{ background: 'rgba(12,24,41,0.8)', border: '1px solid rgba(34,211,238,0.15)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}
+            >
+              <div className="text-center mb-7">
+                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.25)' }}>
+                  <Smartphone size={26} className="text-secondary" />
+                </div>
+                <h2 className="text-xl font-display font-bold text-white">Two-Factor Authentication</h2>
+                <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                  Enter the 6-digit code from your authenticator app or an emergency backup code.
+                </p>
+              </div>
+
+              <form onSubmit={handleMfaVerifySubmit} className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="label-text">{isBackupCode ? 'Emergency Backup Code' : 'TOTP Code'}</label>
+                    <button type="button" onClick={() => setIsBackupCode(!isBackupCode)} className="text-xs text-primary hover:text-primary/80 font-medium transition-colors">
+                      {isBackupCode ? 'Use 6-digit code' : 'Use backup code'}
                     </button>
                   </div>
-                </form>
+                  <input
+                    type="text"
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value)}
+                    placeholder={isBackupCode ? 'A1B2C3D4' : '000000'}
+                    maxLength={isBackupCode ? 16 : 8}
+                    required
+                    autoFocus
+                    className="input-field text-center text-xl font-mono tracking-[0.5em] text-primary"
+                  />
+                </div>
+                <div className="flex gap-2.5">
+                  <button type="button" onClick={() => { setStep('login'); setMfaToken(null); setMfaCode(''); }} className="btn-ghost flex-1 border border-border rounded-xl">
+                    ← Back
+                  </button>
+                  <button type="submit" disabled={loading} className="btn-primary flex-[2]">
+                    {loading ? <RefreshCw size={15} className="animate-spin" /> : <ShieldCheck size={15} />}
+                    {loading ? 'Verifying...' : 'Verify & Sign In'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* STEP 3: Authenticated */}
+          {step === 'authenticated' && (
+            <div className="space-y-4 animate-slide-up">
+              <div
+                className="p-6 rounded-2xl"
+                style={{ background: 'rgba(12,24,41,0.8)', border: '1px solid rgba(16,185,129,0.2)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                      <UserCheck size={20} className="text-accent" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-white">Active Session</h2>
+                      <p className="text-xs text-slate-500">HTTP-only cookie session active</p>
+                    </div>
+                  </div>
+                  <button onClick={handleLogout} disabled={loading} className="btn-danger text-xs">
+                    <LogOut size={13} />
+                    Sign Out
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  {[
+                    { label: 'Username', val: sessionUser?.username || sessionUser?.userId || 'User', mono: true },
+                    { label: 'Role', val: sessionUser?.role || 'Viewer', mono: true, highlight: true },
+                    { label: 'Tenant', val: sessionUser?.tenantId || 'default', mono: true },
+                  ].map(({ label, val, mono, highlight }) => (
+                    <div key={label} className="px-3 py-2.5 rounded-xl text-xs" style={{ background: 'rgba(5,13,26,0.6)', border: '1px solid rgba(34,211,238,0.07)' }}>
+                      <span className="text-slate-500 block mb-1">{label}</span>
+                      <span className={`font-semibold text-sm ${mono ? 'font-mono' : ''} ${highlight ? 'text-primary' : 'text-slate-200'}`}>{val}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
+
+              {/* MFA Enrollment */}
+              <div
+                className="p-6 rounded-2xl"
+                style={{ background: 'rgba(12,24,41,0.8)', border: '1px solid rgba(129,140,248,0.15)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)' }}>
+                      <Smartphone size={20} className="text-secondary" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white">MFA Setup</h3>
+                      <p className="text-xs text-slate-500">RFC 6238 TOTP (Authenticator App)</p>
+                    </div>
+                  </div>
+                  {!mfaSetupData && (
+                    <button onClick={handleStartMfaEnrollment} disabled={loading} className="btn-secondary text-xs px-3 py-1.5" style={{ borderColor: 'rgba(129,140,248,0.3)', color: '#818CF8' }}>
+                      Configure MFA
+                    </button>
+                  )}
+                </div>
+
+                {mfaSetupData && (
+                  <div className="space-y-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div className="p-3.5 rounded-xl text-xs" style={{ background: 'rgba(129,140,248,0.06)', border: '1px solid rgba(129,140,248,0.2)' }}>
+                      <p className="font-semibold text-secondary mb-1">Step 1: Add to your authenticator app</p>
+                      <p className="text-slate-400">{mfaSetupData.instructions}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3 text-xs">
+                        <div>
+                          <span className="label-text">TOTP Secret Key</span>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <code className="flex-1 p-2.5 rounded-lg font-mono text-primary text-sm break-all" style={{ background: 'rgba(5,13,26,0.8)', border: '1px solid rgba(34,211,238,0.12)' }}>
+                              {mfaSetupData.secret}
+                            </code>
+                            <button onClick={() => copyToClipboard(mfaSetupData.secret)} className="btn-ghost p-2.5 border border-border rounded-lg" title="Copy">
+                              {copiedSecret ? <CheckCircle size={15} className="text-accent" /> : <Copy size={15} />}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="label-text">Authenticator URI</span>
+                          <div className="p-2.5 rounded-lg font-mono text-2xs text-slate-500 break-all mt-1.5" style={{ background: 'rgba(5,13,26,0.8)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            {mfaSetupData.otpAuthUri}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="label-text">Recovery Codes — Save Securely</span>
+                        <div className="grid grid-cols-2 gap-1.5 p-3 rounded-xl mt-1.5" style={{ background: 'rgba(5,13,26,0.8)', border: '1px solid rgba(16,185,129,0.12)' }}>
+                          {mfaSetupData.backupCodes.map((code, idx) => (
+                            <span key={idx} className="px-2 py-1 rounded-md font-mono text-xs text-accent" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.1)' }}>
+                              {code}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleConfirmMfaEnrollment} className="flex gap-2.5 items-end pt-2">
+                      <div className="flex-1">
+                        <label className="label-text">Step 2: Enter code from authenticator to confirm</label>
+                        <input
+                          type="text"
+                          value={enrollmentCode}
+                          onChange={(e) => setEnrollmentCode(e.target.value)}
+                          placeholder="000000"
+                          maxLength={8}
+                          className="input-field font-mono text-center tracking-widest text-primary mt-1.5"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => setMfaSetupData(null)} className="btn-ghost border border-border rounded-xl px-4 py-2.5 text-xs">Cancel</button>
+                        <button type="submit" disabled={loading} className="btn-primary text-xs px-5" style={{ background: 'linear-gradient(90deg, #10B981, #059669)' }}>
+                          {loading ? 'Confirming...' : 'Enable MFA'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -6,15 +6,18 @@ const router = express.Router();
 
 router.get("/", async (req, res, next) => {
   try {
-    const { quantum_arrival_year, scanId } = req.query;
-    if (!quantum_arrival_year) {
+    // Accept both snake_case and camelCase for the quantum arrival year
+    const { quantum_arrival_year, quantumArrivalYear, scanId } = req.query;
+    const rawYear = quantum_arrival_year || quantumArrivalYear;
+    if (!rawYear) {
       return res.status(400).json({ error: "Missing quantum_arrival_year parameter" });
     }
 
-    const year = Number(quantum_arrival_year);
+    const year = Number(rawYear);
     if (isNaN(year)) {
       return res.status(400).json({ error: "Invalid quantum_arrival_year parameter" });
     }
+
 
     const currentYear = new Date().getFullYear();
     const hypotheticalZ = year - currentYear;

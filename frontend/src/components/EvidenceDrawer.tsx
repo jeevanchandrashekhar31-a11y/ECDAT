@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   X,
   FileCode,
@@ -86,7 +86,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
       case 'Low':
         return 'bg-sky-950/60 border-sky-500/50 text-sky-300';
       default:
-        return 'bg-slate-800 border-slate-700 text-slate-300';
+        return 'bg-surfaceHover border-borderMid text-slate-300';
     }
   };
 
@@ -107,19 +107,19 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
     <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-background/70 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       {/* Slide-over panel */}
-      <div className="relative w-full max-w-2xl bg-slate-900/95 border-l border-slate-800 shadow-2xl shadow-cyan-950/30 flex flex-col h-full z-10">
+      <div className="relative w-full max-w-2xl bg-surface/95 border-l border-border shadow-2xl shadow-cyan-950/30 flex flex-col h-full z-10">
         {/* Header */}
-        <div className="p-5 border-b border-slate-800 bg-slate-950/80 flex items-start justify-between">
+        <div className="p-5 border-b border-border bg-background/80 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-cyan-400" />
+              <ShieldAlert className="w-5 h-5 text-primary" />
               <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-950/80 border border-cyan-800/60 text-cyan-300">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-950/80 border border-cyan-800/60 text-primary/80">
                 {items.length} {items.length === 1 ? 'Finding' : 'Findings'} Linked
               </span>
             </div>
@@ -129,7 +129,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopyAllJson}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surfaceHover/80 hover:bg-surfaceMid/80 text-slate-200 border border-borderMid transition-colors"
               title="Copy all evidence items as JSON"
             >
               {allCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
@@ -137,7 +137,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-surfaceHover transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -145,7 +145,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
         </div>
 
         {/* Filter Bar */}
-        <div className="px-5 py-3 border-b border-slate-800/80 bg-slate-900/50 flex flex-wrap items-center gap-3">
+        <div className="px-5 py-3 border-b border-border/80 bg-surface/50 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[180px]">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
@@ -153,7 +153,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
               placeholder="Search file, algorithm, line..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-slate-950/80 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-background/80 border border-border text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
             />
           </div>
 
@@ -166,7 +166,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                 className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
                   severityFilter === sev
                     ? 'bg-cyan-950 border border-cyan-700 text-cyan-200'
-                    : 'bg-slate-850 border border-slate-800 text-slate-400 hover:text-slate-200'
+                    : 'bg-slate-850 border border-border text-slate-400 hover:text-slate-200'
                 }`}
               >
                 {sev}
@@ -187,12 +187,12 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
             filteredItems.map((item, index) => (
               <div
                 key={item.id || index}
-                className="bg-slate-950/80 border border-slate-800/90 rounded-xl p-4 transition-all hover:border-slate-700/90"
+                className="bg-background/80 border border-border/90 rounded-xl p-4 transition-all hover:border-borderMid/90"
               >
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-3 mb-2.5">
                   <div className="flex items-center flex-wrap gap-2">
-                    <span className="font-mono text-xs font-semibold text-cyan-400">
+                    <span className="font-mono text-xs font-semibold text-primary">
                       {item.id}
                     </span>
                     <span
@@ -209,7 +209,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                     >
                       Mosca: {item.mosca_status}
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[11px] bg-slate-800/80 border border-slate-700/80 text-slate-300">
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-surfaceHover/80 border border-borderMid/80 text-slate-300">
                       {item.category || 'algorithm'}
                     </span>
                   </div>
@@ -218,7 +218,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                     to={`/findings?search=${item.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300"
+                    className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80"
                     title="Open full finding details in separate tab"
                   >
                     <span>Inspect</span>
@@ -227,7 +227,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                 </div>
 
                 {/* Algorithm & threat horizon specs */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2 mb-2 text-xs border-y border-slate-800/70">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2 mb-2 text-xs border-y border-border/70">
                   <div>
                     <span className="text-slate-500 block text-[10px] uppercase font-mono">Algorithm</span>
                     <span className="text-slate-200 font-medium">
@@ -245,11 +245,11 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                 </div>
 
                 {/* Exact Code Location */}
-                <div className="flex items-center gap-2 mb-2 text-xs font-mono text-slate-400 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-slate-800">
-                  <FileCode className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <div className="flex items-center gap-2 mb-2 text-xs font-mono text-slate-400 bg-surface/80 px-2.5 py-1.5 rounded-lg border border-border">
+                  <FileCode className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span className="truncate">{item.location || 'Endpoint / Session'}</span>
                   {item.line_number ? (
-                    <span className="text-cyan-300 font-semibold shrink-0">
+                    <span className="text-primary/80 font-semibold shrink-0">
                       :line {item.line_number}
                     </span>
                   ) : null}
@@ -258,12 +258,12 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                 {/* Evidence Code Snippet / AST context */}
                 {item.evidence_context && (
                   <div className="relative group">
-                    <pre className="text-xs font-mono text-cyan-200 bg-slate-950 p-3 rounded-lg border border-slate-850 overflow-x-auto selection:bg-cyan-900">
+                    <pre className="text-xs font-mono text-cyan-200 bg-background p-3 rounded-lg border border-slate-850 overflow-x-auto selection:bg-cyan-900">
                       <code>{item.evidence_context}</code>
                     </pre>
                     <button
                       onClick={() => handleCopySnippet(item.id, item.evidence_context)}
-                      className="absolute right-2 top-2 p-1 rounded bg-slate-800/90 text-slate-400 hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-2 top-2 p-1 rounded bg-surfaceHover/90 text-slate-400 hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Copy snippet"
                     >
                       {copiedId === item.id ? (
@@ -280,13 +280,13 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-xs text-slate-400">
+        <div className="p-4 border-t border-border bg-background/80 flex items-center justify-between text-xs text-slate-400">
           <span>
             Showing {filteredItems.length} of {items.length} evidence items
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+            className="px-4 py-1.5 rounded-lg font-medium bg-surfaceHover hover:bg-surfaceMid text-slate-200 transition-colors"
           >
             Close
           </button>

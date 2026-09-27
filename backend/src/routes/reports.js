@@ -1,5 +1,5 @@
 const express = require("express");
-const { getScanById, getLatestScan } = require("../services/cbom_ingestion");
+const { getScanById, getLatestScan, SCAN_TENANT_FORBIDDEN } = require("../services/cbom_ingestion");
 const { db, isDbConnected } = require("../db/connection");
 
 const router = express.Router();
@@ -29,20 +29,58 @@ const { RATE_LIMITS } = require("../security/resource_governance");
 router.use(RATE_LIMITS.reportGeneration.middleware());
 
 /**
+ * GET /api/v1/reports
+ * Returns available report types for the current scan portfolio.
+ */
+router.get("/", async (req, res) => {
+  try {
+    const scanId = req.query.scanId || req.query.scan_id;
+    const scan = scanId && scanId !== "all"
+      ? await getScanById(scanId, req.tenantContext)
+      : getLatestScan(req.tenantContext);
+    const hasScan = Boolean(scan);
+    return res.json({
+      success: true,
+      available_reports: [
+        { id: "executive", name: "Executive Summary", format: ["json","html"], ready: hasScan },
+        { id: "technical", name: "Technical Drill-Down", format: ["json","html"], ready: hasScan },
+        { id: "compliance", name: "Compliance Evidence Bundle", format: ["json"], ready: hasScan },
+        { id: "pqc-readiness", name: "PQC Migration Readiness", format: ["json"], ready: hasScan },
+      ],
+      current_scan: hasScan ? { id: scan.id, name: scan.name || scan.id } : null,
+    });
+  } catch (err) {
+    return res.json({ success: true, available_reports: [], current_scan: null });
+  }
+});
+
+/**
  * GET /api/v1/reports/summary
  * Retrieves the raw executive summary JSON for a scan (supports ?scanId or latest).
  */
 router.get("/summary", async (req, res, next) => {
+
   try {
     const scanId = req.query.scanId || req.query.scan_id;
     const scan = scanId ? await getScanById(scanId, req.tenantContext) : getLatestScan(req.tenantContext);
 
+    // Scan exists but belongs to a different tenant → 404 (don't reveal existence)
+    if (scan === SCAN_TENANT_FORBIDDEN) {
+      return res.status(404).json({ error: "Not Found", message: "Scan not found." });
+    }
+
     if (!scan) {
-      return res.status(404).json({
-        error: "NotFound",
-        message: "No scan data available.",
+      return res.status(200).json({
+        scan_id: null,
+        scan_name: "No Scan Data",
+        message: "No scan data available. Run a scan to generate a report.",
+        metrics: { total_assets: 0, total_findings: 0, assets_at_quantum_risk: 0 },
+        top_risky_assets: [],
+        recommendations: [],
+        empty: true,
       });
     }
+
 
     if (scan.summary) {
       return res.status(200).json(scan.summary);

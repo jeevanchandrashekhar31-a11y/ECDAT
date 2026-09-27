@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Users,
   ExternalLink,
@@ -23,7 +23,7 @@ export const OwnershipView: React.FC<Props> = ({
       <div className="glass-card p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-cyan-400" />
+            <Users className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-bold text-slate-100">Asset Ownership & Security Remediation SLAs</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -32,7 +32,7 @@ export const OwnershipView: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-surfaceHover text-slate-300 border border-borderMid">
             {data.total_teams} Engineering Teams
           </span>
           {data.unowned_assets_count > 0 && (
@@ -55,12 +55,12 @@ export const OwnershipView: React.FC<Props> = ({
           return (
             <div
               key={team.team_name}
-              className="glass-card p-5 flex flex-col justify-between hover:border-slate-700 transition-all group min-w-0"
+              className="glass-card p-5 flex flex-col justify-between hover:border-borderMid transition-all group min-w-0"
             >
               <div>
                 <div className="flex items-start justify-between gap-2 mb-2 min-w-0">
                   <div className="min-w-0">
-                    <h4 className="font-bold text-slate-100 text-base group-hover:text-cyan-300 transition-colors truncate" title={team.team_name}>
+                    <h4 className="font-bold text-slate-100 text-base group-hover:text-primary/80 transition-colors truncate" title={team.team_name}>
                       {team.team_name}
                     </h4>
                     <span className="text-xs text-slate-400 flex items-center gap-1 mt-0.5 font-mono truncate" title={team.lead}>
@@ -81,7 +81,7 @@ export const OwnershipView: React.FC<Props> = ({
                 </div>
 
                 {/* Numbers Grid (Every number links to evidence) */}
-                <div className="grid grid-cols-3 gap-2 my-3 p-2.5 rounded-lg bg-slate-950/50 border border-slate-850 text-center">
+                <div className="grid grid-cols-3 gap-2 my-3 p-2.5 rounded-lg bg-background/50 border border-slate-850 text-center">
                   <div
                     onClick={() =>
                       onOpenEvidence(
@@ -90,7 +90,7 @@ export const OwnershipView: React.FC<Props> = ({
                         teamEvidenceIds
                       )
                     }
-                    className="cursor-pointer hover:bg-slate-900 rounded p-1 transition-colors"
+                    className="cursor-pointer hover:bg-surface rounded p-1 transition-colors"
                   >
                     <span className="text-[10px] text-slate-500 block uppercase font-mono">Assets</span>
                     <span className="text-base font-bold text-slate-200">{team.asset_count}</span>
@@ -107,7 +107,7 @@ export const OwnershipView: React.FC<Props> = ({
                         critIds
                       )
                     }}
-                    className="cursor-pointer hover:bg-slate-900 rounded p-1 transition-colors"
+                    className="cursor-pointer hover:bg-surface rounded p-1 transition-colors"
                   >
                     <span className="text-[10px] text-slate-500 block uppercase font-mono">Critical</span>
                     <span
@@ -130,7 +130,7 @@ export const OwnershipView: React.FC<Props> = ({
                         highIds
                       )
                     }}
-                    className="cursor-pointer hover:bg-slate-900 rounded p-1 transition-colors"
+                    className="cursor-pointer hover:bg-surface rounded p-1 transition-colors"
                   >
                     <span className="text-[10px] text-slate-500 block uppercase font-mono">High</span>
                     <span
@@ -145,7 +145,7 @@ export const OwnershipView: React.FC<Props> = ({
               </div>
 
               {/* Action */}
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+              <div className="pt-3 border-t border-border/80 flex items-center justify-between">
                 <span className="text-xs text-slate-400">
                   {team.total_findings} total findings
                 </span>
@@ -158,7 +158,7 @@ export const OwnershipView: React.FC<Props> = ({
                       teamEvidenceIds
                     )
                   }
-                  className="text-xs text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1"
+                  className="text-xs text-primary hover:text-primary/80 font-medium inline-flex items-center gap-1"
                 >
                   <span>Inspect Team Evidence</span>
                   <ExternalLink className="w-3 h-3" />

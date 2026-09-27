@@ -1,44 +1,47 @@
-# Stage 1: Build Frontend Assets with pinned builder digest
-FROM node:20-alpine@sha256:20a068eb0d0891d1e43e263c9db862ecbe6ff4ad599f6aa6a188be2849896796 AS builder
+###############################################
+# ECDAT Frontend — Production Dockerfile
+# Pinned to immutable @sha256 digests for reproducible builds
+###############################################
+# node:20.19.4-alpine3.21
+FROM node:20-alpine@sha256:e0a9acb63210b4a1027e9eb534fd26e3a059d025e95f4d8e4038b2c3b46ce87a AS builder
 
 WORKDIR /app
-ENV SOURCE_DATE_EPOCH=0
 
-# Copy dependency specifications
-COPY package.json package-lock.json* ./
-
-# Install dependencies deterministically without executing arbitrary scripts
+COPY package*.json ./
 RUN npm ci --ignore-scripts
 
-# Copy application source
 COPY . .
 
-# Build production bundle
+# Build with production API URL
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=${VITE_API_URL}
+
 RUN npm run build
 
-# Stage 2: Serve with Nginx with pinned runner digest
-FROM nginx:alpine@sha256:28929e7c5b6b19a0a2df3324c43ee7d76ee676b744d0c1154c1ff06a13241b44
+###############################################
+# Nginx — serve built assets + proxy API
+# nginx:1.27.5-alpine3.21 pinned digest
+###############################################
+FROM nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f8a4f7c076e83a2f81f0de AS runner
 
-# Remove default static files and configurations
-RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
+# Remove default config
+RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy built distribution from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy hardened unprivileged Nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Configure ownership for unprivileged nginx user (UID 101)
-RUN chown -R nginx:nginx /usr/share/nginx/html /etc/nginx \
-    && chmod -R 0555 /usr/share/nginx/html /etc/nginx \
-    && touch /tmp/nginx.pid \
-    && chown nginx:nginx /tmp/nginx.pid
-
-# Drop root privileges completely
+# Non-root: nginx official image uses 'nginx' user (uid 101)
 USER nginx
-EXPOSE 8080
 
-HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1
+# Read-only filesystem compatibility: tmpfs mount point for nginx cache/pid
+ENV TMPDIR=/tmp
+
+# Copy nginx config
+COPY --chown=nginx:nginx nginx.conf /etc/nginx/conf.d/ecdat.conf
+
+# Copy built files
+COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost/health-check || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

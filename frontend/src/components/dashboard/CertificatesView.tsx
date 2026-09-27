@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   FileCheck2,
   Clock,
@@ -52,7 +52,7 @@ export const CertificatesView: React.FC<Props> = ({
       <div className="glass-card p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <FileCheck2 className="w-5 h-5 text-cyan-400" />
+            <FileCheck2 className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-bold text-slate-100">X.509 Certificate Intelligence & Cryptographic Lifecycles</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -60,7 +60,7 @@ export const CertificatesView: React.FC<Props> = ({
           </p>
         </div>
 
-        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-surfaceHover text-slate-300 border border-borderMid">
           {data.total_certificates} Certificates Monitored
         </span>
       </div>
@@ -157,10 +157,10 @@ export const CertificatesView: React.FC<Props> = ({
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
               Total Monitored
             </span>
-            <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+            <CheckCircle2 className="w-4 h-4 text-primary" />
           </div>
-          <div className="text-3xl font-extrabold text-cyan-300">{data.total_certificates}</div>
-          <span className="text-[11px] text-cyan-400 underline decoration-cyan-500/50 mt-2 block">
+          <div className="text-3xl font-extrabold text-primary/80">{data.total_certificates}</div>
+          <span className="text-[11px] text-primary underline decoration-cyan-500/50 mt-2 block">
             Inspect All Certificates →
           </span>
         </div>
@@ -168,7 +168,7 @@ export const CertificatesView: React.FC<Props> = ({
 
       {/* Certificates Table */}
       <div className="glass-card overflow-hidden">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="relative max-w-sm flex-1">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
@@ -176,14 +176,14 @@ export const CertificatesView: React.FC<Props> = ({
               placeholder="Search by Subject DN, Issuer, or Fingerprint..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-slate-950/80 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-background/80 border border-border text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
             />
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+            <thead className="bg-background/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-border">
               <tr>
                 <th className="py-3 px-4">Subject & Issuer</th>
                 <th className="py-3 px-4">Algorithm & Key</th>
@@ -264,7 +264,7 @@ export const CertificatesView: React.FC<Props> = ({
                               relatedEvidenceIds.length > 0 ? relatedEvidenceIds : Object.keys(evidenceLookup).slice(0, 2)
                             )
                           }
-                          className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 border border-slate-700 text-xs inline-flex items-center gap-1 transition-colors"
+                          className="px-2.5 py-1 rounded bg-surfaceHover hover:bg-surfaceMid text-primary hover:text-primary/80 border border-borderMid text-xs inline-flex items-center gap-1 transition-colors"
                         >
                           <span>Evidence</span>
                           <ExternalLink className="w-3 h-3" />

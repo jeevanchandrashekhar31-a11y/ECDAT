@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Upload, X, FileCode, CheckCircle2, AlertTriangle, Loader2, Globe, Folder, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Upload, X, FileCode, CheckCircle2, AlertTriangle, Loader2, Globe, Folder, ShieldCheck, Square } from 'lucide-react';
 import { api } from '../api/client';
 import { authManager } from '../security';
 
@@ -28,6 +28,11 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
   const [binarySubMode, setBinarySubMode] = useState<'upload' | 'image'>('upload');
   const [binaryImageName, setBinaryImageName] = useState('');
 
+  // Abort controller ref — allows cancelling the in-flight scan fetch
+  const abortControllerRef = useRef<AbortController | null>(null);
+  // Scan session ID for server-side abort
+  const activeScanIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (isOpen) {
       const cur = authManager.getSession();
@@ -37,6 +42,15 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
     }
   }, [isOpen]);
 
+  // Clean up abort controller on unmount / close
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   const [scanLabel, setScanLabel] = useState('');
   const [policyProfile, setPolicyProfile] = useState('ecdat_enterprise_baseline');
   const [deploymentContext, setDeploymentContext] = useState('internet_facing');
@@ -45,6 +59,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
   const [scannerType, setScannerType] = useState('combined');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanProgress, setScanProgress] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -63,7 +78,6 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
       if (isArchiveFile(selected.name)) {
-        // User picked a .zip or archive on File Upload tab: seamlessly switch them to Static Scan!
         setMode('scan');
         setScanType('static');
         setStaticSubMode('upload');
@@ -115,80 +129,131 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
     }
   };
 
+  /** Stop the currently running scan (frontend abort + server-side kill) */
+  const handleStopScan = async () => {
+    setScanProgress('Stopping scan…');
+    // 1. Abort the fetch (stops waiting for response)
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    // 2. Tell the server to kill the running process
+    try {
+      await fetch('/api/v1/scan/abort', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authManager.getSession().token}` },
+        body: JSON.stringify({ scan_session_id: activeScanIdRef.current }),
+      });
+    } catch { /* server may already be gone */ }
+    activeScanIdRef.current = null;
+    setLoading(false);
+    setScanProgress('');
+    setError('Scan stopped by user.');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setScanProgress(mode === 'scan' ? 'Initialising scanner…' : 'Ingesting…');
+
+    // Create a fresh AbortController for this scan
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     try {
       if (mode === 'scan') {
         let scanRes: { scan_id?: string } | undefined;
-        if (scanType === 'static') {
-          if (staticSubMode === 'git') {
-            if (!scanGitUrl.trim()) throw new Error('Please provide a Git repository URL.');
-            scanRes = await api.triggerStaticScan(undefined, {
-              github_url: scanGitUrl.trim(),
+
+        // Progress hint messages
+        const progressMessages = [
+          'Cloning / staging input…',
+          'Running cryptographic discovery…',
+          'Analysing call graph…',
+          'Generating CBOM…',
+          'Persisting to Neon…',
+        ];
+        let msgIdx = 0;
+        const progressTimer = setInterval(() => {
+          msgIdx = (msgIdx + 1) % progressMessages.length;
+          setScanProgress(progressMessages[msgIdx]);
+        }, 4000);
+
+        try {
+          if (scanType === 'static') {
+            if (staticSubMode === 'git') {
+              if (!scanGitUrl.trim()) throw new Error('Please provide a Git repository URL.');
+              // Strip trailing text after whitespace (e.g. "https://repo.git extra text")
+              const cleanUrl = scanGitUrl.trim().split(/\s+/)[0];
+              scanRes = await api.triggerStaticScan(undefined, {
+                github_url: cleanUrl,
+                scan_label: scanLabel.trim() || undefined,
+                policy_profile: policyProfile,
+                deployment_context: deploymentContext,
+                threat_horizon: threatHorizon,
+                business_criticality: businessCriticality,
+              });
+            } else if (staticSubMode === 'folder') {
+              if (!folderFiles || folderFiles.length === 0) throw new Error('Please select a project folder containing source code.');
+              scanRes = await api.triggerStaticScan(folderFiles, {
+                scan_label: scanLabel.trim() || undefined,
+                policy_profile: policyProfile,
+                deployment_context: deploymentContext,
+                threat_horizon: threatHorizon,
+                business_criticality: businessCriticality,
+              });
+            } else {
+              if (!scanUploadFile) throw new Error('Please select a project .ZIP archive or source file to scan.');
+              scanRes = await api.triggerStaticScan(scanUploadFile || undefined, {
+                scan_label: scanLabel.trim() || undefined,
+                policy_profile: policyProfile,
+                deployment_context: deploymentContext,
+                threat_horizon: threatHorizon,
+                business_criticality: businessCriticality,
+              });
+            }
+          } else if (scanType === 'network') {
+            const target = scanTarget.trim();
+            if (!target) throw new Error('Please enter a target URL or hostname (e.g. https://api.yourdomain.com)');
+            scanRes = await api.triggerNetworkScan(target, undefined, {
               scan_label: scanLabel.trim() || undefined,
               policy_profile: policyProfile,
               deployment_context: deploymentContext,
               threat_horizon: threatHorizon,
               business_criticality: businessCriticality,
-            });
-          } else if (staticSubMode === 'folder') {
-            if (!folderFiles || folderFiles.length === 0) throw new Error('Please select a project folder containing source code.');
-            scanRes = await api.triggerStaticScan(folderFiles, {
-              scan_label: scanLabel.trim() || undefined,
-              policy_profile: policyProfile,
-              deployment_context: deploymentContext,
-              threat_horizon: threatHorizon,
-              business_criticality: businessCriticality,
+              authorized_by: authorizedBy.trim() || 'demo-developer',
             });
           } else {
-            if (!scanUploadFile) throw new Error('Please select a project .ZIP archive or source file to scan.');
-            scanRes = await api.triggerStaticScan(scanUploadFile || undefined, {
-              scan_label: scanLabel.trim() || undefined,
-              policy_profile: policyProfile,
-              deployment_context: deploymentContext,
-              threat_horizon: threatHorizon,
-              business_criticality: businessCriticality,
-            });
+            if (binarySubMode === 'image') {
+              const img = binaryImageName.trim();
+              if (!img) throw new Error('Please enter a container image name (e.g. your-org/app:latest)');
+              scanRes = await api.triggerBinaryScan(undefined, {
+                image: img,
+                scan_label: scanLabel.trim() || undefined,
+                policy_profile: policyProfile,
+                deployment_context: deploymentContext,
+                threat_horizon: threatHorizon,
+                business_criticality: businessCriticality,
+              });
+            } else {
+              if (!scanUploadFile) throw new Error('Please select a binary file or archive to scan.');
+              scanRes = await api.triggerBinaryScan(scanUploadFile, {
+                scan_label: scanLabel.trim() || undefined,
+                policy_profile: policyProfile,
+                deployment_context: deploymentContext,
+                threat_horizon: threatHorizon,
+                business_criticality: businessCriticality,
+              });
+            }
           }
-        } else if (scanType === 'network') {
-          const target = scanTarget.trim();
-          if (!target) throw new Error('Please enter a target URL or hostname (e.g. https://api.yourdomain.com)');
-          scanRes = await api.triggerNetworkScan(target, undefined, {
-            scan_label: scanLabel.trim() || undefined,
-            policy_profile: policyProfile,
-            deployment_context: deploymentContext,
-            threat_horizon: threatHorizon,
-            business_criticality: businessCriticality,
-            authorized_by: authorizedBy.trim() || 'demo-developer',
-          });
-        } else {
-          if (binarySubMode === 'image') {
-            const img = binaryImageName.trim();
-            if (!img) throw new Error('Please enter a container image name (e.g. your-org/app:latest)');
-            scanRes = await api.triggerBinaryScan(undefined, {
-              image: img,
-              scan_label: scanLabel.trim() || undefined,
-              policy_profile: policyProfile,
-              deployment_context: deploymentContext,
-              threat_horizon: threatHorizon,
-              business_criticality: businessCriticality,
-            });
-          } else {
-            if (!scanUploadFile) throw new Error('Please select a binary file or archive to scan.');
-            scanRes = await api.triggerBinaryScan(scanUploadFile, {
-              scan_label: scanLabel.trim() || undefined,
-              policy_profile: policyProfile,
-              deployment_context: deploymentContext,
-              threat_horizon: threatHorizon,
-              business_criticality: businessCriticality,
-            });
-          }
+        } finally {
+          clearInterval(progressTimer);
         }
 
+        if (controller.signal.aborted) return; // User stopped — don't proceed
+
         if (scanRes?.scan_id) {
+          setScanProgress('Complete! Loading results…');
           onSuccess(scanRes.scan_id);
           onClose();
         } else {
@@ -229,29 +294,33 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
         onClose();
       }
     } catch (err: unknown) {
+      if ((err as Error).name === 'AbortError') return; // User cancelled — no error shown
       setError((err as Error).message || 'Operation failed.');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+        setScanProgress('');
+      }
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="glass-card max-w-xl w-full p-6 border border-slate-700/80 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="glass-card max-w-xl w-full p-6 border border-borderMid/80 shadow-2xl relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-surfaceHover transition-colors"
           aria-label="Close modal"
         >
           <X size={18} />
         </button>
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+          <div className="p-2.5 rounded-xl bg-primary/15 border border-primary/30 text-primary">
             <Upload size={20} />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Cryptographic Discovery & Ingestion</h3>
+            <h3 className="text-lg font-bold text-white">Cryptographic Discovery &amp; Ingestion</h3>
             <p className="text-xs text-slate-400">Run a live scan or ingest CycloneDX CBOM for quantum risk assessment</p>
           </div>
         </div>
@@ -265,7 +334,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {/* Input Mode Switcher */}
-          <div className="flex rounded-lg bg-slate-900 p-1 border border-slate-800">
+          <div className="flex rounded-lg bg-surface p-1 border border-border">
             <button
               type="button"
               onClick={() => setMode('scan')}
@@ -303,7 +372,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
 
           {/* Mode 1: Live Scanner Trigger */}
           {mode === 'scan' && (
-            <div className="space-y-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+            <div className="space-y-3 bg-background/50 p-4 rounded-xl border border-border">
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -311,7 +380,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                   className={`flex-1 py-1.5 px-3 rounded-lg font-semibold text-2xs uppercase tracking-wider transition-all border ${
                     scanType === 'network'
                       ? 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                      : 'bg-surface border-border text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   Network TLS
@@ -321,8 +390,8 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                   onClick={() => setScanType('static')}
                   className={`flex-1 py-1.5 px-3 rounded-lg font-semibold text-2xs uppercase tracking-wider transition-all border ${
                     scanType === 'static'
-                      ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-300'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-primary/20 border-cyan-500/60 text-primary/80'
+                      : 'bg-surface border-border text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   Static Code
@@ -333,7 +402,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                   className={`flex-1 py-1.5 px-3 rounded-lg font-semibold text-2xs uppercase tracking-wider transition-all border ${
                     scanType === 'binary'
                       ? 'bg-blue-500/20 border-blue-500/60 text-blue-300'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                      : 'bg-surface border-border text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   Binary / Container
@@ -351,7 +420,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                         value={scanTarget}
                         onChange={(e) => setScanTarget(e.target.value)}
                         placeholder="e.g. https://api.yourdomain.com or 192.168.1.1"
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono text-xs"
+                        className="w-full bg-surface border border-border rounded-lg pl-9 pr-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono text-xs"
                       />
                     </div>
                   </div>
@@ -369,7 +438,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                       value={authorizedBy}
                       onChange={(e) => setAuthorizedBy(e.target.value)}
                       placeholder="e.g. demo-developer or your user ID"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono text-xs"
+                      className="w-full bg-surface border border-border rounded-lg px-3 py-1.5 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono text-xs"
                     />
                     <p className="text-[11px] text-slate-500 mt-1">
                       Must match your active session identity (<span className="text-emerald-400 font-mono">{session.userId || 'demo-developer'}</span>) or an administrator role.
@@ -385,7 +454,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                       type="button"
                       onClick={() => setStaticSubMode('upload')}
                       className={`px-2.5 py-1 rounded text-2xs font-medium transition-all ${
-                        staticSubMode === 'upload' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'
+                        staticSubMode === 'upload' ? 'bg-primary/20 text-primary/80 border border-primary/40' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       Upload Project (.ZIP)
@@ -394,7 +463,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                       type="button"
                       onClick={() => setStaticSubMode('folder')}
                       className={`px-2.5 py-1 rounded text-2xs font-medium transition-all ${
-                        staticSubMode === 'folder' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'
+                        staticSubMode === 'folder' ? 'bg-primary/20 text-primary/80 border border-primary/40' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       Local Folder
@@ -403,7 +472,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                       type="button"
                       onClick={() => setStaticSubMode('git')}
                       className={`px-2.5 py-1 rounded text-2xs font-medium transition-all ${
-                        staticSubMode === 'git' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'
+                        staticSubMode === 'git' ? 'bg-primary/20 text-primary/80 border border-primary/40' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       Git Repository URL
@@ -412,14 +481,14 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
 
                   {staticSubMode === 'upload' && (
                     <div>
-                      <label className="w-full flex items-center justify-between bg-slate-900 border border-dashed border-slate-700 hover:border-cyan-500/60 rounded-lg px-3 py-2.5 text-xs text-slate-300 cursor-pointer">
+                      <label className="w-full flex items-center justify-between bg-surface border border-dashed border-borderMid hover:border-cyan-500/60 rounded-lg px-3 py-2.5 text-xs text-slate-300 cursor-pointer">
                         <div className="flex items-center gap-2 truncate">
-                          <Upload className="w-4 h-4 text-cyan-400 shrink-0" />
+                          <Upload className="w-4 h-4 text-primary shrink-0" />
                           <span className="truncate">
                             {scanUploadFile ? scanUploadFile.name : 'Select project .ZIP or source archive'}
                           </span>
                         </div>
-                        <span className="text-2xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700 font-medium">
+                        <span className="text-2xs bg-surfaceHover text-slate-300 px-2 py-0.5 rounded border border-borderMid font-medium">
                           Browse
                         </span>
                         <input
@@ -445,16 +514,16 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
 
                   {staticSubMode === 'folder' && (
                     <div>
-                      <label className="w-full flex items-center justify-between bg-slate-900 border border-dashed border-slate-700 hover:border-cyan-500/60 rounded-lg px-3 py-2.5 text-xs text-slate-300 cursor-pointer">
+                      <label className="w-full flex items-center justify-between bg-surface border border-dashed border-borderMid hover:border-cyan-500/60 rounded-lg px-3 py-2.5 text-xs text-slate-300 cursor-pointer">
                         <div className="flex items-center gap-2 truncate">
-                          <Folder className="w-4 h-4 text-cyan-400 shrink-0" />
+                          <Folder className="w-4 h-4 text-primary shrink-0" />
                           <span className="truncate">
                             {folderFiles && folderFiles.length > 0
                               ? `Selected folder with ${folderFiles.length} files (${(folderFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024)).toFixed(2)} MB)`
                               : 'Select local project directory / folder'}
                           </span>
                         </div>
-                        <span className="text-2xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700 font-medium">
+                        <span className="text-2xs bg-surfaceHover text-slate-300 px-2 py-0.5 rounded border border-borderMid font-medium">
                           Choose Folder
                         </span>
                         <input
@@ -488,7 +557,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                         value={scanGitUrl}
                         onChange={(e) => setScanGitUrl(e.target.value)}
                         placeholder="e.g. https://github.com/org/repo.git"
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500 font-mono text-xs"
+                        className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500 font-mono text-xs"
                       />
                       <p className="text-[11px] text-slate-500">ECDAT will shallow-clone and discover AST cryptographic call sites.</p>
                     </div>
@@ -521,14 +590,14 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
 
                   {binarySubMode === 'upload' ? (
                     <div>
-                      <label className="w-full flex items-center justify-between bg-slate-900 border border-dashed border-slate-700 hover:border-blue-500/60 rounded-lg px-3 py-2.5 text-xs text-slate-300 cursor-pointer">
+                      <label className="w-full flex items-center justify-between bg-surface border border-dashed border-borderMid hover:border-blue-500/60 rounded-lg px-3 py-2.5 text-xs text-slate-300 cursor-pointer">
                         <div className="flex items-center gap-2 truncate">
                           <Upload className="w-4 h-4 text-blue-400 shrink-0" />
                           <span className="truncate">
                             {scanUploadFile ? scanUploadFile.name : 'Select .ZIP, .jar, .dll, or binary executable'}
                           </span>
                         </div>
-                        <span className="text-2xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700 font-medium">
+                        <span className="text-2xs bg-surfaceHover text-slate-300 px-2 py-0.5 rounded border border-borderMid font-medium">
                           Browse
                         </span>
                         <input
@@ -554,7 +623,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                         value={binaryImageName}
                         onChange={(e) => setBinaryImageName(e.target.value)}
                         placeholder="e.g. your-org/app:latest"
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 font-mono text-xs"
+                        className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 font-mono text-xs"
                       />
                       <p className="text-[11px] text-slate-500">Catalogs package libraries, dependencies, and CPE identifiers using Syft.</p>
                     </div>
@@ -570,7 +639,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
-                className="border-2 border-dashed border-slate-700/80 hover:border-cyan-500/60 rounded-xl p-6 text-center transition-colors bg-slate-950/40"
+                className="border-2 border-dashed border-borderMid/80 hover:border-cyan-500/60 rounded-xl p-6 text-center transition-colors bg-background/40"
               >
                 <input
                   type="file"
@@ -581,8 +650,8 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 />
                 <label htmlFor="cbom-file" className="cursor-pointer block">
                   {file ? (
-                    <div className="flex items-center justify-center gap-2 text-cyan-300">
-                      <FileCode size={24} className="text-cyan-400" />
+                    <div className="flex items-center justify-center gap-2 text-primary/80">
+                      <FileCode size={24} className="text-primary" />
                       <span className="font-semibold truncate max-w-[280px]">{file.name}</span>
                       <span className="text-slate-500 text-[11px]">({(file.size / 1024).toFixed(1)} KB)</span>
                     </div>
@@ -596,9 +665,9 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 </label>
               </div>
 
-              <div className="p-3 bg-cyan-950/30 border border-cyan-500/20 rounded-lg flex items-center justify-between text-xs">
+              <div className="p-3 bg-cyan-950/30 border border-primary/20 rounded-lg flex items-center justify-between text-xs">
                 <div className="text-slate-300">
-                  <span className="text-cyan-400 font-semibold">Want to scan source code or a .ZIP project?</span>
+                  <span className="text-primary font-semibold">Want to scan source code or a .ZIP project?</span>
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     Use the Live Code Scanner to analyze source code repositories, folders, or archives.
                   </p>
@@ -610,7 +679,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                     setScanType('static');
                     setStaticSubMode('upload');
                   }}
-                  className="shrink-0 px-2.5 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded font-medium transition-all ml-3"
+                  className="shrink-0 px-2.5 py-1.5 bg-primary/20 hover:bg-cyan-500/30 text-primary/80 border border-primary/40 rounded font-medium transition-all ml-3"
                 >
                   Switch to Code Scan &rarr;
                 </button>
@@ -627,7 +696,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 value={jsonText}
                 onChange={(e) => setJsonText(e.target.value)}
                 placeholder='{"bomFormat": "CycloneDX", "specVersion": "1.6", "components": [...]}'
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-[11px] text-slate-200 focus:outline-none focus:border-cyan-500/80"
+                className="w-full bg-background border border-border rounded-lg p-3 font-mono text-[11px] text-slate-200 focus:outline-none focus:border-cyan-500/80"
               />
             </div>
           )}
@@ -641,7 +710,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 value={scanLabel}
                 onChange={(e) => setScanLabel(e.target.value)}
                 placeholder="e.g. Production Infrastructure Scan"
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
               />
             </div>
 
@@ -651,7 +720,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 <select
                   value={policyProfile}
                   onChange={(e) => setPolicyProfile(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
                 >
                   <option value="ecdat_enterprise_baseline">ECDAT Enterprise Crypto Baseline</option>
                   <option value="nist_crypto_transition">NIST Crypto Transition Baseline</option>
@@ -669,7 +738,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 <select
                   value={deploymentContext}
                   onChange={(e) => setDeploymentContext(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
                 >
                   <option value="internet_facing">Internet-Facing</option>
                   <option value="internal_enterprise">Internal Enterprise</option>
@@ -687,7 +756,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 <select
                   value={threatHorizon}
                   onChange={(e) => setThreatHorizon(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
                 >
                   <option value="baseline_2033">Baseline — 2033</option>
                   <option value="conservative_2030">Conservative — 2030</option>
@@ -701,7 +770,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                 <select
                   value={businessCriticality}
                   onChange={(e) => setBusinessCriticality(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
                 >
                   <option value="critical">Critical</option>
                   <option value="high">High</option>
@@ -716,7 +785,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               <select
                 value={scannerType}
                 onChange={(e) => setScannerType(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500"
               >
                 <option value="combined">Combined Multi-Scanner</option>
                 <option value="network">Network (TLS / SSLyze)</option>
@@ -726,11 +795,32 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          {/* Progress indicator while scanning */}
+          {loading && scanProgress && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/20 text-xs text-cyan-300">
+              <Loader2 size={13} className="animate-spin shrink-0" />
+              <span className="flex-1">{scanProgress}</span>
+            </div>
+          )}
+
+          <div className="pt-3 border-t border-border flex justify-end gap-2">
+            {/* Stop Scan button — only visible while a scan is running */}
+            {loading && mode === 'scan' && (
+              <button
+                type="button"
+                onClick={handleStopScan}
+                className="px-4 py-2 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-semibold flex items-center gap-2 transition-all"
+                title="Stop the current scan"
+              >
+                <Square size={13} className="fill-rose-400 text-rose-400" />
+                Stop Scan
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors"
+              className="px-4 py-2 rounded-lg bg-surfaceHover hover:bg-surfaceMid text-slate-300 font-medium transition-colors"
             >
               Cancel
             </button>
@@ -754,7 +844,7 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               {loading ? (
                 <>
                   <Loader2 size={15} className="animate-spin" />
-                  <span>{mode === 'scan' ? 'Executing Scan...' : 'Ingesting...'}</span>
+                  <span>{mode === 'scan' ? 'Executing Scan…' : 'Ingesting…'}</span>
                 </>
               ) : (
                 <>

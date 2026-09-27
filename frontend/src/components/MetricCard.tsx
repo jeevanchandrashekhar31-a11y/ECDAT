@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 interface MetricCardProps {
   title: string;
@@ -38,15 +38,15 @@ export const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, 
         };
       case 'slate':
         return {
-          iconBg: 'bg-slate-800 text-slate-400 border-slate-700',
-          badgeBg: 'bg-slate-800 text-slate-300 border-slate-700',
+          iconBg: 'bg-surfaceHover text-slate-400 border-borderMid',
+          badgeBg: 'bg-surfaceHover text-slate-300 border-borderMid',
           accent: 'border-l-slate-600',
         };
       case 'cyan':
       default:
         return {
-          iconBg: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
-          badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+          iconBg: 'bg-primary/15 text-primary border-primary/30',
+          badgeBg: 'bg-primary/20 text-primary/80 border-primary/40',
           accent: 'border-l-cyan-500',
         };
     }

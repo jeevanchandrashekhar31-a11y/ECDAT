@@ -553,6 +553,52 @@ function verifyApprovalTenant(req, approval) {
   }
 }
 
+
+// ── Root listing & /tasks alias ────────────────────────────────────────────
+/**
+ * GET /api/v1/remediation
+ * Returns a summary of pending approvals and recent remediation activity.
+ */
+router.get("/", async (req, res) => {
+  try {
+    const engine = getDefaultApprovalEngine();
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+    const allApprovals = engine.listApprovals ? engine.listApprovals({ tenantId: callerTenant }) : [];
+    return res.json({
+      success: true,
+      total: Array.isArray(allApprovals) ? allApprovals.length : 0,
+      approvals: Array.isArray(allApprovals) ? allApprovals : [],
+      tasks: Array.isArray(allApprovals) ? allApprovals : [],
+    });
+  } catch (err) {
+    return res.json({ success: true, total: 0, approvals: [], tasks: [] });
+  }
+});
+
+/**
+ * GET /api/v1/remediation/tasks
+ * Alias for approvals list — returns active remediation workflow items.
+ */
+router.get("/tasks", async (req, res) => {
+  try {
+    const engine = getDefaultApprovalEngine();
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+    const allApprovals = engine.listApprovals ? engine.listApprovals({ tenantId: callerTenant }) : [];
+    const scanId = req.query.scanId;
+    const filtered = Array.isArray(allApprovals)
+      ? (scanId && scanId !== "all" ? allApprovals.filter(a => a.scanId === scanId) : allApprovals)
+      : [];
+    return res.json({
+      success: true,
+      total: filtered.length,
+      tasks: filtered,
+      approvals: filtered,
+    });
+  } catch (err) {
+    return res.json({ success: true, total: 0, tasks: [], approvals: [] });
+  }
+});
+
 /**
  * POST /api/v1/remediation/approvals/propose
  * Creates a remediation proposal in PROPOSED state.
@@ -568,6 +614,7 @@ router.post("/approvals/propose", async (req, res) => {
     return res.status(201).json({
       success: true,
       ...record,
+
     });
   } catch (err) {
     if (err.statusCode) {

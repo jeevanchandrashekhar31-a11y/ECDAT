@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import {
   Shield,
@@ -273,27 +273,27 @@ export const Dashboard: React.FC = () => {
         {/* Global Governance Filters & Actions */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Policy Profile Selector */}
-          <div className="flex items-center gap-1.5 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
-            <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+          <div className="flex items-center gap-1.5 bg-background/80 px-3 py-1.5 rounded-lg border border-border text-xs">
+            <Sliders className="w-3.5 h-3.5 text-primary" />
             <span className="text-slate-400 hidden sm:inline">Profile:</span>
             <select
               value={selectedPolicy}
               onChange={(e) => setSelectedPolicy(e.target.value)}
               className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-medium max-w-[150px] truncate"
             >
-              <option value="ecdat_enterprise_baseline" className="bg-slate-900 text-slate-200">ECDAT Enterprise Crypto Baseline</option>
-              <option value="nist_crypto_transition" className="bg-slate-900 text-slate-200">NIST Crypto Transition Baseline</option>
-              <option value="pci_dss_v4_0_1" className="bg-slate-900 text-slate-200">PCI DSS v4.0.1</option>
-              <option value="india_financial_services_composite" className="bg-slate-900 text-slate-200">India Financial Services — Composite</option>
-              <option value="us_federal_cloud_fedramp" className="bg-slate-900 text-slate-200">U.S. Federal Cloud — FedRAMP</option>
-              <option value="cnsa_2_0_nss" className="bg-slate-900 text-slate-200">CNSA 2.0 / NSS</option>
-              <option value="ot_ics_high_assurance" className="bg-slate-900 text-slate-200">OT/ICS High-Assurance</option>
-              <option value="custom_policy" className="bg-slate-900 text-slate-200">Custom Policy</option>
+              <option value="ecdat_enterprise_baseline" className="bg-surface text-slate-200">ECDAT Enterprise Crypto Baseline</option>
+              <option value="nist_crypto_transition" className="bg-surface text-slate-200">NIST Crypto Transition Baseline</option>
+              <option value="pci_dss_v4_0_1" className="bg-surface text-slate-200">PCI DSS v4.0.1</option>
+              <option value="india_financial_services_composite" className="bg-surface text-slate-200">India Financial Services — Composite</option>
+              <option value="us_federal_cloud_fedramp" className="bg-surface text-slate-200">U.S. Federal Cloud — FedRAMP</option>
+              <option value="cnsa_2_0_nss" className="bg-surface text-slate-200">CNSA 2.0 / NSS</option>
+              <option value="ot_ics_high_assurance" className="bg-surface text-slate-200">OT/ICS High-Assurance</option>
+              <option value="custom_policy" className="bg-surface text-slate-200">Custom Policy</option>
             </select>
           </div>
 
           {/* Deployment Context Selector */}
-          <div className="flex items-center gap-1.5 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+          <div className="flex items-center gap-1.5 bg-background/80 px-3 py-1.5 rounded-lg border border-border text-xs">
             <Layers className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-slate-400 hidden sm:inline">Context:</span>
             <select
@@ -301,17 +301,17 @@ export const Dashboard: React.FC = () => {
               onChange={(e) => setSelectedDeploymentContext(e.target.value)}
               className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-medium max-w-[150px] truncate"
             >
-              <option value="internet_facing" className="bg-slate-900 text-slate-200">Internet-Facing</option>
-              <option value="internal_enterprise" className="bg-slate-900 text-slate-200">Internal Enterprise</option>
-              <option value="cloud_saas" className="bg-slate-900 text-slate-200">Cloud / SaaS</option>
-              <option value="government_high_assurance" className="bg-slate-900 text-slate-200">Government / High Assurance</option>
-              <option value="ot_ics" className="bg-slate-900 text-slate-200">OT / ICS</option>
-              <option value="iot_embedded" className="bg-slate-900 text-slate-200">IoT / Embedded</option>
+              <option value="internet_facing" className="bg-surface text-slate-200">Internet-Facing</option>
+              <option value="internal_enterprise" className="bg-surface text-slate-200">Internal Enterprise</option>
+              <option value="cloud_saas" className="bg-surface text-slate-200">Cloud / SaaS</option>
+              <option value="government_high_assurance" className="bg-surface text-slate-200">Government / High Assurance</option>
+              <option value="ot_ics" className="bg-surface text-slate-200">OT / ICS</option>
+              <option value="iot_embedded" className="bg-surface text-slate-200">IoT / Embedded</option>
             </select>
           </div>
 
           {/* Threat Horizon Selector */}
-          <div className="flex items-center gap-1.5 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+          <div className="flex items-center gap-1.5 bg-background/80 px-3 py-1.5 rounded-lg border border-border text-xs">
             <Atom className="w-3.5 h-3.5 text-violet-400" />
             <span className="text-slate-400 hidden sm:inline">Horizon:</span>
             <select
@@ -319,10 +319,10 @@ export const Dashboard: React.FC = () => {
               onChange={(e) => setSelectedThreatHorizon(e.target.value)}
               className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-medium max-w-[150px] truncate"
             >
-              <option value="baseline_2033" className="bg-slate-900 text-slate-200">Baseline (2033)</option>
-              <option value="conservative_2030" className="bg-slate-900 text-slate-200">Conservative (2030)</option>
-              <option value="extended_2035" className="bg-slate-900 text-slate-200">Extended (2035)</option>
-              <option value="custom" className="bg-slate-900 text-slate-200">Custom</option>
+              <option value="baseline_2033" className="bg-surface text-slate-200">Baseline (2033)</option>
+              <option value="conservative_2030" className="bg-surface text-slate-200">Conservative (2030)</option>
+              <option value="extended_2035" className="bg-surface text-slate-200">Extended (2035)</option>
+              <option value="custom" className="bg-surface text-slate-200">Custom</option>
             </select>
           </div>
 
@@ -330,16 +330,16 @@ export const Dashboard: React.FC = () => {
           <button
             onClick={() => fetchDashboardData()}
             disabled={loading}
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-slate-100 border border-slate-700 transition-colors"
+            className="p-2 rounded-lg bg-surfaceHover/80 hover:bg-surfaceMid text-slate-300 hover:text-slate-100 border border-borderMid transition-colors"
             title="Refresh dashboard views"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-primary' : ''}`} />
           </button>
 
           {/* Trigger Scan Drawer Toggle */}
           <button
             onClick={() => setShowScanDrawer((prev) => !prev)}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 inline-flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-950/80 hover:bg-cyan-900 text-primary/80 border border-cyan-700/60 inline-flex items-center gap-1.5 transition-colors"
           >
             <Play className="w-3.5 h-3.5" />
             <span>Scan Operations</span>
@@ -350,10 +350,10 @@ export const Dashboard: React.FC = () => {
 
       {/* Collapsible Quick Scan Operations Drawer */}
       {showScanDrawer && (
-        <div className="glass-card p-5 border-cyan-850 bg-slate-950/70 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="glass-card p-5 border-cyan-850 bg-background/70 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-              <Play className="w-4 h-4 text-cyan-400" />
+              <Play className="w-4 h-4 text-primary" />
               <span>Operational Scanners & CBOM Pipeline</span>
             </h4>
             <span className="text-xs text-slate-500">Run quick discovery on network endpoint or test targets</span>
@@ -366,7 +366,7 @@ export const Dashboard: React.FC = () => {
                 placeholder="Target endpoint (e.g. api.ecdat.io:443 or https://gateway.internal)"
                 value={networkTarget}
                 onChange={(e) => setNetworkTarget(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-xs bg-slate-900 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full px-3 py-2 rounded-lg text-xs bg-surface border border-border text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
               />
             </div>
             <button
@@ -388,7 +388,7 @@ export const Dashboard: React.FC = () => {
             </button>
             <Link
               to="/scans"
-              className="px-3 py-2 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors inline-flex items-center gap-1"
+              className="px-3 py-2 rounded-lg text-xs bg-surfaceHover hover:bg-surfaceMid text-slate-300 border border-borderMid transition-colors inline-flex items-center gap-1"
             >
               <span>Full Pipeline Center</span>
               <ExternalLink className="w-3 h-3" />
@@ -428,17 +428,17 @@ export const Dashboard: React.FC = () => {
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                   isActive
                     ? 'bg-cyan-950 text-cyan-200 border border-cyan-700/70 shadow-md shadow-cyan-950/40'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-surface/60 border border-transparent'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-slate-500'}`} />
                 <span>{tab.label}</span>
                 {tab.badge !== undefined && (
                   <span
                     className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
                       isActive
-                        ? 'bg-cyan-850 text-cyan-300 border border-cyan-700/60'
-                        : 'bg-slate-800 text-slate-400'
+                        ? 'bg-cyan-850 text-primary/80 border border-cyan-700/60'
+                        : 'bg-surfaceHover text-slate-400'
                     }`}
                   >
                     {tab.badge}
@@ -453,7 +453,7 @@ export const Dashboard: React.FC = () => {
       {/* Main View Area */}
       {loading && !viewsData ? (
         <div className="glass-card p-16 flex flex-col items-center justify-center text-center">
-          <Loader2 className="w-10 h-10 text-cyan-400 animate-spin mb-3" />
+          <Loader2 className="w-10 h-10 text-primary animate-spin mb-3" />
           <p className="text-sm font-semibold text-slate-200">
             Synthesizing Enterprise Cryptographic Evidence...
           </p>

@@ -504,6 +504,9 @@ async function getAllScans(tenantContext = null) {
   }));
 }
 
+// Sentinel returned when a scan exists but belongs to a different tenant (403 vs 404)
+const SCAN_TENANT_FORBIDDEN = Symbol("SCAN_TENANT_FORBIDDEN");
+
 async function getScanById(scanId, tenantContext = null) {
   const isPlatformAdmin = tenantContext ? Boolean(tenantContext.isPlatformAdmin) : false;
   const targetTenant = tenantContext ? tenantContext.tenantId : null;
@@ -513,65 +516,65 @@ async function getScanById(scanId, tenantContext = null) {
   }
 
   const mode = process.env.DATA_STORE_MODE || "postgres";
-  
+
   if (mode === "postgres") {
     const connected = await isDbConnected();
     if (!connected) throw new Error("Database connection required but unavailable.");
-    
-    let query = db("scans").where({ id: scanId });
-    if (targetTenant && !isPlatformAdmin) {
-      query = query.where({ tenant_id: targetTenant });
-    }
-    const scanRow = await query.first();
-    if (!scanRow) return null;
-    
-    const cbomRow = await db("cboms").where({ scan_id: scanId }).first();
-    if (scanRow && cbomRow) {
-      const annotatedBom =
-        typeof cbomRow.annotated_json === "string"
-          ? JSON.parse(cbomRow.annotated_json)
-          : cbomRow.annotated_json;
 
-      return {
-        id: scanRow.id,
-        tenantId: scanRow.tenant_id || "default-tenant",
-        project_id: scanRow.project_id,
-        name: scanRow.target_name,
-        scanner_type: scanRow.scanner_type,
-        policy_profile: scanRow.policy_profile_id,
-        deployment_context: scanRow.deployment_context,
-        threat_horizon: scanRow.threat_horizon,
-        business_criticality: scanRow.business_criticality,
-        status: scanRow.status,
-        created_at: scanRow.created_at,
-        completed_at: scanRow.completed_at,
-        metrics: {
-          total_assets: scanRow.total_assets,
-          total_findings: scanRow.total_findings,
-          assets_at_quantum_risk: scanRow.quantum_risk_count,
-          severity_counts: {
-            critical: scanRow.critical_count,
-            high: scanRow.high_count,
-            medium: scanRow.medium_count,
-            low: scanRow.low_count,
-            informational: scanRow.info_count,
-          },
-          overall_cicd_pass: scanRow.cicd_pass,
-        },
-        annotated_bom: annotatedBom,
-      };
+    // First check if scan exists at all (without tenant filter)
+    const existsRow = await db("scans").where({ id: scanId }).select("id", "tenant_id").first();
+    if (!existsRow) return null; // Genuinely not found → 404
+
+    // Exists — but belongs to a different tenant → 403 (return sentinel)
+    if (!isPlatformAdmin && targetTenant && existsRow.tenant_id !== targetTenant) {
+      return SCAN_TENANT_FORBIDDEN;
     }
-    return null;
+
+    const scanRow = await db("scans").where({ id: scanId }).first();
+    if (!scanRow) return null;
+
+    const cbomRow = await db("cboms").where({ scan_id: scanId }).first();
+    const annotatedBom = cbomRow
+      ? (typeof cbomRow.annotated_json === "string" ? JSON.parse(cbomRow.annotated_json) : cbomRow.annotated_json)
+      : null;
+
+    return {
+      id: scanRow.id,
+      tenantId: scanRow.tenant_id || "default-tenant",
+      project_id: scanRow.project_id,
+      name: scanRow.target_name,
+      scanner_type: scanRow.scanner_type,
+      policy_profile: scanRow.policy_profile_id,
+      deployment_context: scanRow.deployment_context,
+      threat_horizon: scanRow.threat_horizon,
+      business_criticality: scanRow.business_criticality,
+      status: scanRow.status,
+      created_at: scanRow.created_at,
+      completed_at: scanRow.completed_at,
+      metrics: {
+        total_assets: scanRow.total_assets,
+        total_findings: scanRow.total_findings,
+        assets_at_quantum_risk: scanRow.quantum_risk_count,
+        severity_counts: {
+          critical: scanRow.critical_count,
+          high: scanRow.high_count,
+          medium: scanRow.medium_count,
+          low: scanRow.low_count,
+          informational: scanRow.info_count,
+        },
+        overall_cicd_pass: scanRow.cicd_pass,
+      },
+      annotated_bom: annotatedBom,
+    };
   }
 
   // Memory mode
   const scan = inMemoryScansStore.get(scanId);
-  if (scan && targetTenant && !isPlatformAdmin) {
-    if ((scan.tenantId || "default-tenant") !== targetTenant) {
-      return null;
-    }
+  if (!scan) return null;
+  if (!isPlatformAdmin && targetTenant && (scan.tenantId || "default-tenant") !== targetTenant) {
+    return SCAN_TENANT_FORBIDDEN; // Exists but wrong tenant
   }
-  return scan || null;
+  return scan;
 }
 
 async function getScanErrors(scanId, tenantContext = null) {
@@ -739,4 +742,5 @@ module.exports = {
   persistScanToPostgres,
   inMemoryScansStore,
   cbomIngestionService,
+  SCAN_TENANT_FORBIDDEN,
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link, useOutletContext } from 'react-router-dom';
 import {
   Milestone,
@@ -258,13 +258,13 @@ export const Roadmap: React.FC = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-64 bg-slate-800 animate-pulse rounded"></div>
+        <div className="h-8 w-64 bg-surfaceHover animate-pulse rounded"></div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-40 bg-slate-900/60 border border-slate-800 rounded-xl animate-pulse"></div>
+            <div key={i} className="h-40 bg-surface/60 border border-border rounded-xl animate-pulse"></div>
           ))}
         </div>
-        <div className="h-96 bg-slate-900/60 border border-slate-800 rounded-xl animate-pulse"></div>
+        <div className="h-96 bg-surface/60 border border-border rounded-xl animate-pulse"></div>
       </div>
     );
   }
@@ -277,7 +277,7 @@ export const Roadmap: React.FC = () => {
         <p className="text-sm text-slate-400 max-w-md mx-auto">{error || 'Please ensure CBOM data is ingested.'}</p>
         <Link
           to="/"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-surfaceHover hover:bg-surfaceMid text-white rounded-lg text-sm font-medium transition-colors"
         >
           Return to Dashboard
         </Link>
@@ -295,7 +295,7 @@ export const Roadmap: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in print:text-slate-900 print:bg-white print:p-0">
       {/* 1. Header & Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-5 print:border-b-2 print:border-slate-800 print:pb-6 print:mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/80 pb-5 print:border-b-2 print:border-border print:pb-6 print:mb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-purple-950/60 border border-purple-800/50 text-purple-400 print:hidden">
@@ -318,7 +318,7 @@ export const Roadmap: React.FC = () => {
           <button
             onClick={handleExportJson}
             disabled={downloadingJson}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all shadow-sm disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surfaceHover hover:bg-surfaceMid text-slate-200 border border-borderMid text-xs font-semibold transition-all shadow-sm disabled:opacity-50"
             title="Download complete migration roadmap JSON payload"
           >
             {downloadingJson ? (
@@ -332,7 +332,7 @@ export const Roadmap: React.FC = () => {
           <button
             onClick={handleDownloadPdf}
             disabled={downloadingPdf}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all shadow-sm disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surfaceHover hover:bg-surfaceMid text-slate-200 border border-borderMid text-xs font-semibold transition-all shadow-sm disabled:opacity-50"
             title="Download formal PDF Roadmap"
           >
             {downloadingPdf ? (
@@ -383,13 +383,13 @@ export const Roadmap: React.FC = () => {
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
-            <Layers className="w-4 h-4 text-cyan-400" />
+            <Layers className="w-4 h-4 text-primary" />
             <span>Suggested Execution Sequence (5 Strategic Phases)</span>
           </div>
           {activeStepFilter !== null && (
             <button
               onClick={() => setActiveStepFilter(null)}
-              className="text-xs text-cyan-400 hover:underline font-medium"
+              className="text-xs text-primary hover:underline font-medium"
             >
               Clear Phase Filter (Show All)
             </button>
@@ -407,13 +407,13 @@ export const Roadmap: React.FC = () => {
                 onClick={() => setActiveStepFilter(isSelected ? null : step.id)}
                 className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 relative group ${
                   isSelected
-                    ? 'bg-cyan-950/40 border-cyan-500 ring-1 ring-cyan-500/50 shadow-lg'
-                    : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
+                    ? 'bg-cyan-950/40 border-cyan-500 ring-1 ring-primary/50 shadow-lg'
+                    : 'bg-surface/70 border-border hover:border-borderMid hover:bg-slate-850'
                 } print:border-slate-300 print:bg-white print:break-inside-avoid print:shadow-md print:rounded-xl print:p-8 print:shadow-md print:rounded-xl print:p-8`}
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surfaceHover text-slate-300 border border-borderMid">
                       Step {step.id}
                     </span>
                     <StepIcon
@@ -423,7 +423,7 @@ export const Roadmap: React.FC = () => {
                           : step.id === 2
                             ? 'text-amber-400'
                             : step.id === 3
-                              ? 'text-cyan-400'
+                              ? 'text-primary'
                               : step.id === 4
                                 ? 'text-purple-400'
                                 : 'text-emerald-400'
@@ -431,7 +431,7 @@ export const Roadmap: React.FC = () => {
                     />
                   </div>
 
-                  <h3 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-2 print:text-slate-900">
+                  <h3 className="text-xs font-bold text-white group-hover:text-primary/80 transition-colors line-clamp-2 print:text-slate-900">
                     {step.title.replace(/^\d+\.\s*/, '')}
                   </h3>
 
@@ -440,9 +440,9 @@ export const Roadmap: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/60 text-[10px] font-mono text-slate-500 flex items-center justify-between">
+                <div className="pt-2 border-t border-border/60 text-[10px] font-mono text-slate-500 flex items-center justify-between">
                   <span>{step.recommendedPhase.split(' ')[0]}</span>
-                  <span className="text-cyan-400 font-semibold group-hover:underline">
+                  <span className="text-primary font-semibold group-hover:underline">
                     {isSelected ? 'Selected' : 'Filter Step'}
                   </span>
                 </div>
@@ -453,9 +453,9 @@ export const Roadmap: React.FC = () => {
       </div>
 
       {/* 4. Filter Controls for Recommendations */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-surface/60 border border-border/80 print:hidden">
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-cyan-400" />
+          <Filter className="w-4 h-4 text-primary" />
           <span className="text-xs font-semibold text-slate-300">Filter Recommendations:</span>
         </div>
 
@@ -467,7 +467,7 @@ export const Roadmap: React.FC = () => {
               className={`px-3 py-1 rounded-lg capitalize font-medium transition-all ${
                 priorityFilter === p
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                  : 'bg-surfaceHover text-slate-400 hover:text-white'
               }`}
             >
               {p} Priority
@@ -478,7 +478,7 @@ export const Roadmap: React.FC = () => {
 
       {/* 5. Detailed Actionable Recommendations Queue */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-purple-400" />
             <h2 className="text-base font-bold text-white tracking-wide print:text-slate-900">
@@ -486,7 +486,7 @@ export const Roadmap: React.FC = () => {
             </h2>
           </div>
           {activeStepFilter && (
-            <span className="text-xs text-cyan-400 font-mono">Showing Step {activeStepFilter} Actions</span>
+            <span className="text-xs text-primary font-mono">Showing Step {activeStepFilter} Actions</span>
           )}
         </div>
 
@@ -495,10 +495,10 @@ export const Roadmap: React.FC = () => {
             {filteredRecommendations.map((rec) => (
               <div
                 key={rec.id}
-                className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-5 hover:border-slate-700 transition-colors print:border-slate-300 print:bg-white print:break-inside-avoid print:shadow-md print:rounded-xl print:p-8"
+                className="p-6 rounded-2xl bg-surface/80 border border-border shadow-xl space-y-5 hover:border-borderMid transition-colors print:border-slate-300 print:bg-white print:break-inside-avoid print:shadow-md print:rounded-xl print:p-8"
               >
                 {/* Header: Priority & Target */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 pb-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2.5">
                       <span
@@ -512,11 +512,11 @@ export const Roadmap: React.FC = () => {
                       >
                         {rec.priority} Priority
                       </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surfaceHover text-slate-400">
                         Sequence Step {rec.sequenceStep}
                       </span>
                       {rec.hybrid_transition_recommended && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/50">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-primary/80 border border-cyan-800/50">
                           Hybrid Transition Recommended
                         </span>
                       )}
@@ -537,7 +537,7 @@ export const Roadmap: React.FC = () => {
                 {/* Current State vs Dual-Track Remediation */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Current State */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                  <div className="p-3.5 rounded-xl bg-background/60 border border-border space-y-1 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                       Current Cryptographic State
                     </p>
@@ -545,7 +545,7 @@ export const Roadmap: React.FC = () => {
                   </div>
 
                   {/* Phase 1: Classical Remediation */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                  <div className="p-3.5 rounded-xl bg-background/60 border border-border space-y-1 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
                     <p className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider print:text-amber-800">
                       Phase 1: Classical Remediation
                     </p>
@@ -555,8 +555,8 @@ export const Roadmap: React.FC = () => {
                   </div>
 
                   {/* Phase 2: PQC / Hybrid Path */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
-                    <p className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider print:text-cyan-800">
+                  <div className="p-3.5 rounded-xl bg-background/60 border border-border space-y-1 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                    <p className="text-[11px] font-semibold text-primary uppercase tracking-wider print:text-cyan-800">
                       Phase 2: Post-Quantum Migration
                     </p>
                     <p className="text-xs text-slate-200 leading-relaxed print:text-slate-700">
@@ -565,38 +565,38 @@ export const Roadmap: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-2 border-t border-slate-800/60 print:hidden">
+                <div className="flex justify-end pt-2 border-t border-border/60 print:hidden">
                   <button
                     onClick={() => toggleTechnicalDetails(rec.id)}
-                    className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
                   >
                     {showTechnicalDetails[rec.id] ? 'Hide Technical Details' : 'Show Technical Details'}
                   </button>
                 </div>
 
                 {showTechnicalDetails[rec.id] && (
-                  <div className="space-y-4 pt-4 border-t border-slate-800/60 mt-4">
+                  <div className="space-y-4 pt-4 border-t border-border/60 mt-4">
                     {/* Engineering Impact Matrix */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                      <div className="p-2.5 rounded-lg bg-background/50 border border-border/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
                         <span className="text-slate-500 block text-[10px] uppercase font-mono">Complexity</span>
                         <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
                           {rec.migration_complexity || 'Medium'}
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                      <div className="p-2.5 rounded-lg bg-background/50 border border-border/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
                         <span className="text-slate-500 block text-[10px] uppercase font-mono">Latency Impact</span>
                         <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
                           {rec.latency_impact || 'Low (<5ms)'}
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                      <div className="p-2.5 rounded-lg bg-background/50 border border-border/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
                         <span className="text-slate-500 block text-[10px] uppercase font-mono">Bandwidth Overhead</span>
                         <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
                           {rec.bandwidth_impact || 'Moderate (+1-2KB)'}
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
+                      <div className="p-2.5 rounded-lg bg-background/50 border border-border/80 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm">
                         <span className="text-slate-500 block text-[10px] uppercase font-mono">Cost Category</span>
                         <span className="font-semibold text-slate-200 capitalize print:text-slate-900">
                           {rec.cost_category || 'Operational'}
@@ -621,7 +621,7 @@ export const Roadmap: React.FC = () => {
                           {rec.references.map((refStr, rIdx) => (
                             <span
                               key={rIdx}
-                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 print:border-slate-300 print:text-slate-800 print:bg-slate-100"
+                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-surfaceHover text-slate-300 border border-borderMid print:border-slate-300 print:text-slate-800 print:bg-slate-100"
                             >
                               {refStr}
                             </span>
@@ -635,7 +635,7 @@ export const Roadmap: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center space-y-3">
+          <div className="p-8 rounded-2xl bg-surface/60 border border-border text-center space-y-3">
             <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
             <p className="text-sm font-semibold text-white">No actions match the active phase and priority filter.</p>
             <p className="text-xs text-slate-400">
@@ -646,7 +646,7 @@ export const Roadmap: React.FC = () => {
                 setActiveStepFilter(null);
                 setPriorityFilter('all');
               }}
-              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold"
+              className="px-3.5 py-1.5 bg-surfaceHover hover:bg-surfaceMid text-white rounded-lg text-xs font-semibold"
             >
               Reset Filters
             </button>
@@ -656,8 +656,8 @@ export const Roadmap: React.FC = () => {
 
       {/* 6. Highest Priority Assets Table */}
       {summary.top_risky_assets && summary.top_risky_assets.length > 0 && (
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 print:border-slate-300 print:bg-white print:break-inside-avoid print:shadow-md print:rounded-xl print:p-8">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="bg-surface/80 border border-border rounded-2xl p-6 shadow-xl space-y-4 print:border-slate-300 print:bg-white print:break-inside-avoid print:shadow-md print:rounded-xl print:p-8">
+          <div className="flex items-center justify-between border-b border-border pb-3">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-rose-400" />
               <h2 className="text-base font-bold text-white tracking-wide print:text-slate-900">
@@ -666,7 +666,7 @@ export const Roadmap: React.FC = () => {
             </div>
             <Link
               to="/assets"
-              className="text-xs text-cyan-400 hover:underline inline-flex items-center gap-1 print:hidden"
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1 print:hidden"
             >
               <span>View Full Inventory</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -675,7 +675,7 @@ export const Roadmap: React.FC = () => {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px] print:border-slate-300 print:text-slate-700">
+              <thead className="border-b border-border text-slate-400 uppercase font-mono text-[11px] print:border-slate-300 print:text-slate-700">
                 <tr>
                   <th className="pb-3 pr-3">Logical Asset</th>
                   <th className="pb-3 pr-3">Risk & Exposure</th>
@@ -689,7 +689,7 @@ export const Roadmap: React.FC = () => {
                 {summary.top_risky_assets.map((asset: TopRiskyAsset) => (
                   <tr
                     key={asset.asset_id}
-                    className="hover:bg-slate-800/30 transition-colors print:hover:bg-transparent"
+                    className="hover:bg-surfaceHover/30 transition-colors print:hover:bg-transparent"
                   >
                     <td className="py-3.5 pr-3 font-mono font-bold text-white print:text-slate-900">
                       <div className="text-sm truncate max-w-[220px]" title={asset.primary_identifier || asset.algorithm}>
@@ -705,7 +705,7 @@ export const Roadmap: React.FC = () => {
                               ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
                               : String(asset.severity).toUpperCase() === 'HIGH'
                               ? 'bg-amber-950/70 text-amber-300 border border-amber-800/60'
-                              : 'bg-slate-800 text-slate-300 border border-slate-700'
+                              : 'bg-surfaceHover text-slate-300 border border-borderMid'
                           }`}
                         >
                           {asset.severity}
@@ -721,19 +721,19 @@ export const Roadmap: React.FC = () => {
                     <td className="py-3.5 pr-3 text-slate-300 text-xs">
                       <div className="flex flex-wrap gap-1">
                         {(asset.usage_types || []).map((u: string) => (
-                          <span key={u} className="text-[9px] uppercase px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">{u.replace(/_/g, ' ')}</span>
+                          <span key={u} className="text-[9px] uppercase px-1.5 py-0.5 bg-surfaceHover rounded border border-borderMid">{u.replace(/_/g, ' ')}</span>
                         ))}
                       </div>
                     </td>
                     <td className="py-3.5 pr-3">
-                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700">
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surfaceHover text-slate-200 border border-borderMid">
                         {asset.mosca_status}
                       </span>
                     </td>
                     <td className="py-3.5 text-left print:hidden">
                       <Link
                         to={`/assets/${encodeURIComponent(asset.asset_id)}${scanId ? `?scanId=${scanId}` : ''}`}
-                        className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline text-xs bg-slate-950/50 px-2 py-1 rounded border border-cyan-900/50"
+                        className="inline-flex items-center gap-1 text-primary hover:text-primary/80 hover:underline text-xs bg-background/50 px-2 py-1 rounded border border-cyan-900/50"
                       >
                         <span>Inspect</span>
                         <ExternalLink className="w-3 h-3" />
@@ -748,9 +748,9 @@ export const Roadmap: React.FC = () => {
       )}
 
       {/* 7. Dependencies & Assumptions Section */}
-      <div className="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm print:break-inside-avoid">
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-          <Info className="w-5 h-5 text-cyan-400" />
+      <div className="p-6 rounded-2xl bg-background/80 border border-border space-y-4 print:border-amber-500/50 print:bg-amber-50/50 print:shadow-sm print:break-inside-avoid">
+        <div className="flex items-center gap-2 border-b border-border pb-3">
+          <Info className="w-5 h-5 text-primary" />
           <h2 className="text-sm font-bold text-white uppercase tracking-wider print:text-slate-900">
             Roadmap Dependencies &amp; Architectural Assumptions
           </h2>

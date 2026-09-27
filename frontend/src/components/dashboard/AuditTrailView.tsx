@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   History,
   CheckCircle2,
@@ -35,7 +35,7 @@ export const AuditTrailView: React.FC<Props> = ({
       <div className="glass-card p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <History className="w-5 h-5 text-cyan-400" />
+            <History className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-bold text-slate-100">Immutable Audit Trail & Compliance Events</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -48,7 +48,7 @@ export const AuditTrailView: React.FC<Props> = ({
             <Lock className="w-3 h-3" />
             Tamper-Resistant Log Stream
           </span>
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-surfaceHover text-slate-300 border border-borderMid">
             {data.total_events} Events Recorded
           </span>
         </div>
@@ -62,7 +62,7 @@ export const AuditTrailView: React.FC<Props> = ({
           placeholder="Filter audit events by actor, type, action..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-slate-900/90 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+          className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-surface/90 border border-border text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
         />
       </div>
 
@@ -70,7 +70,7 @@ export const AuditTrailView: React.FC<Props> = ({
       <div className="glass-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+            <thead className="bg-background/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-border">
               <tr>
                 <th className="py-3 px-4">Event Type</th>
                 <th className="py-3 px-4">Actor</th>
@@ -94,7 +94,7 @@ export const AuditTrailView: React.FC<Props> = ({
                 return (
                   <tr key={evt.id} className="hover:bg-slate-850/50 transition-colors">
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-cyan-950 text-primary/80 border border-cyan-800">
                         {evt.event_type}
                       </span>
                     </td>

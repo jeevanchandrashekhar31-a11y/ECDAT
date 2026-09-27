@@ -40,10 +40,38 @@ function emitScanAudit({ action, status = AUDIT_STATUSES.SUCCESS, scanId, target
 }
 
 const router = express.Router();
+const os = require('os');
 
 // Root directory of ECDAT project
 const REPO_ROOT = path.resolve(__dirname, '../../../');
-const ARTIFACTS_DIR = path.resolve(REPO_ROOT, 'artifacts');
+// Use SCAN_ARTIFACTS_DIR env var (set in .env/docker) or fall back to OS temp dir.
+// Scan uploads are temporary working dirs — results go to Neon after scan completes.
+const ARTIFACTS_DIR = process.env.SCAN_ARTIFACTS_DIR
+  ? path.resolve(process.env.SCAN_ARTIFACTS_DIR)
+  : path.join(os.tmpdir(), 'ecdat-scans');
+
+// --------------------------------------------------------------------------
+// Active Scan Registry — maps uploadSessionId → { pid?, kill(), uploadDir }
+// Used by POST /scan/abort to stop a running scan process and clean up.
+// --------------------------------------------------------------------------
+const activeScanSessions = new Map();
+
+/**
+ * Register a running scan session.
+ * @param {string} sessionId
+ * @param {{ kill: () => void, uploadDir: string }} entry
+ */
+function registerScan(sessionId, entry) {
+  activeScanSessions.set(sessionId, entry);
+}
+
+/**
+ * Deregister a scan session (call when scan completes or errors).
+ * @param {string} sessionId
+ */
+function deregisterScan(sessionId) {
+  activeScanSessions.delete(sessionId);
+}
 
 // Cache for the latest merged CBOM
 let cachedMergedCbom = null;
@@ -100,7 +128,7 @@ function runPythonCommand(args, timeoutMs = 15000) {
 /**
  * Runs git clone asynchronously with timeout, quota controls, and strict argument security
  */
-async function _runGitClone(repoUrl, targetDir, timeoutMs = 60000) {
+async function _runGitClone(repoUrl, targetDir, timeoutMs = 180000) {
   return executeHardenedGitClone(repoUrl, targetDir, { timeoutMs });
 }
 
@@ -165,6 +193,20 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
   let scanLabel = req.body?.scan_label;
   let gitCloneHandle = null;
 
+  // Active scan child process reference (set when subprocess starts)
+  let activeChildProcess = null;
+  // Register this session so /scan/abort can kill it
+  registerScan(uploadSessionId, {
+    uploadDir,
+    kill: () => {
+      if (activeChildProcess) {
+        try { activeChildProcess.kill('SIGKILL'); } catch { }
+      }
+    },
+  });
+  // Send session ID in response headers immediately so frontend can reference it
+  res.setHeader('X-Scan-Session-Id', uploadSessionId);
+
   emitScanAudit({
     action: AUDIT_ACTIONS.SCAN_STARTED,
     status: AUDIT_STATUSES.SUCCESS,
@@ -198,7 +240,11 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     });
 
     const isGitMode = Boolean(explicitGitField || candidateGitUrl);
-    const gitRepoUrl = explicitGitField ? String(explicitGitField).trim() : (candidateGitUrl ? candidateGitUrl.trim() : null);
+    // Extract only the URL portion — stops at first whitespace so any trailing UI text
+    // (e.g. " review after phase 1/") doesn't reach git clone as a malformed URL
+    const rawGitUrl = explicitGitField ? String(explicitGitField).trim() : (candidateGitUrl ? candidateGitUrl.trim() : null);
+    const gitRepoUrl = rawGitUrl ? rawGitUrl.split(/\s+/)[0] : null; // First whitespace-separated token only
+
 
     // A. Git Repository Clone Mode
     if (isGitMode && gitRepoUrl) {
@@ -219,7 +265,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       scanLabel = scanLabel || `Git Repo: ${repoName}`;
       try {
         gitCloneHandle = await executeHardenedGitClone(gitRepoUrl, targetDir, {
-          timeoutMs: 60000,
+          timeoutMs: 180000,
           branch: req.body?.branch,
         });
       } catch (cloneErr) {
@@ -315,34 +361,57 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       });
     }
 
-    const tempOut = path.resolve(REPO_ROOT, `artifacts/temp_static_${Date.now()}.json`);
+    // DUAL-ENGINE SCANNING
+    // Engine 1: Node.js source_scanner (primary - JS/TS/Py/Go/Java)
+    // Engine 2: Python static scanner (supplemental - C/C++)
+    const { scanSourceDirectory } = require("../binary/source_scanner");
+    let nodeScanResult;
+    try {
+      nodeScanResult = scanSourceDirectory(targetDir, {
+        maxFiles: (req.body && req.body.max_files) ? parseInt(req.body.max_files) : 10000,
+        projectName: scanLabel || path.basename(targetDir),
+      });
+    } catch (nodeScanErr) {
+      return res.status(500).json({ success: false, error: "Node.js source scanner failed: " + nodeScanErr.message });
+    }
+
+    // Python scanner - supplemental, non-fatal
+    let pythonComponents = [];
+    const tempStaticTs = Date.now();
+    const tempOut = path.resolve(REPO_ROOT, "artifacts/temp_static_" + tempStaticTs + ".json");
     if (!fs.existsSync(path.dirname(tempOut))) {
       fs.mkdirSync(path.dirname(tempOut), { recursive: true });
     }
-
-    const supportedExts = '.c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.ts,.tsx,.py,.java';
     try {
       await runPythonCommand(
-        ['-m', 'scanners.static.main', targetDir, '-o', tempOut, '--include-ext', supportedExts, '--fail-on', 'none'],
-        180000
+        ["-m", "scanners.static.main", targetDir, "-o", tempOut, "--include-ext", ".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.ts,.tsx,.py,.java", "--fail-on", "none"],
+        120000
       );
-    } catch (scannerErr) {
-      return res.status(400).json({
-        success: false,
-        error: `Static scanner failed: ${scannerErr.message}`
+      const pyData = loadJsonSafe(tempOut);
+      if (pyData && pyData.components && pyData.components.length > 0) {
+        pythonComponents = pyData.components;
+      }
+    } catch (_pyErr) { /* supplemental - non-fatal */ }
+    finally { try { fs.unlinkSync(tempOut); } catch {} }
+
+    // Merge results - Node.js primary, Python adds unique bomRefs
+    const nodeRefs = new Set(nodeScanResult.cbom.components.map(c => c.bomRef));
+    const mergedComponents = [
+      ...nodeScanResult.cbom.components,
+      ...pythonComponents.filter(c => !nodeRefs.has(c.bomRef)),
+    ];
+    const cbomData = Object.assign({}, nodeScanResult.cbom, { components: mergedComponents });
+
+    if (mergedComponents.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Scan complete. No cryptographic API usage detected in " + nodeScanResult.stats.totalFiles + " files. Upload source code for findings.",
+        scan_source: "live_scanner", scan_id: null,
+        metrics: { total_assets: 0, files_scanned: nodeScanResult.stats.totalFiles },
+        cbom: cbomData, top_risky_assets: [], recommendations: [],
       });
     }
 
-    const cbomData = loadJsonSafe(tempOut);
-    if (!cbomData) {
-      return res.status(500).json({
-        success: false,
-        error: 'Static scanner completed but no output CBOM was generated.'
-      });
-    }
-
-    // Clean up temporary output file
-    try { fs.unlinkSync(tempOut); } catch {}
 
     // Ingest into risk engine
     const scanRecord = await ingestCbom(cbomData, {
@@ -380,6 +449,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     if (gitCloneHandle && typeof gitCloneHandle.cleanup === 'function') {
       gitCloneHandle.cleanup();
     }
+    deregisterScan(uploadSessionId);
   }
 });
 
@@ -610,7 +680,7 @@ router.post('/scan/binary', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     try {
       await runPythonCommand(
         ['-m', 'scanners.binary_container.main', target, '--target-type', targetType, '-o', tempOut, '--timeout', '45'],
-        60000
+        120000
       );
     } catch (scannerErr) {
       return res.status(400).json({
@@ -868,6 +938,70 @@ router.get('/cbom/pqc-report', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+
+// --------------------------------------------------------------------------
+// 9. POST /cbom/scan-source  — Real source-code scanner
+// --------------------------------------------------------------------------
+router.post('/cbom/scan-source', async (req, res, next) => {
+  try {
+    const { scanSourceDirectory } = require('../binary/source_scanner');
+    const { scan_path, project_name, policy_profile, deployment_context, threat_horizon } = req.body || {};
+    if (!scan_path || typeof scan_path !== 'string') {
+      return res.status(400).json({ error: 'ValidationError', message: 'scan_path (string) is required.' });
+    }
+    const resolvedPath = path.resolve(scan_path);
+    const isAllowed = resolvedPath.startsWith(REPO_ROOT);
+    if (!isAllowed) {
+      return res.status(403).json({ error: 'Forbidden', code: 'PATH_CONFINEMENT_VIOLATION', message: 'scan_path must be within the project root.' });
+    }
+    const tenantId = req.tenantContext?.tenantId || 'default-tenant';
+    emitScanAudit({ action: AUDIT_ACTIONS.SCAN_STARTED, status: AUDIT_STATUSES.SUCCESS, scanId: 'source-scan', targetName: resolvedPath, req });
+    const { cbom, stats } = scanSourceDirectory(resolvedPath, { projectName: project_name || path.basename(resolvedPath), maxFiles: 5000 });
+    if (cbom.components.length === 0) {
+      return res.status(200).json({ message: 'Scan completed. No cryptographic API usage detected.', stats, scan_path: resolvedPath });
+    }
+    const scanResult = await ingestCbom(cbom, {
+      tenantId,
+      policyProfile: policy_profile || 'ecdat_enterprise_baseline',
+      deploymentContext: deployment_context || 'internet_facing',
+      threatHorizon: threat_horizon || 'baseline_2033',
+      targetName: project_name || path.basename(resolvedPath),
+    });
+    emitScanAudit({ action: AUDIT_ACTIONS.SCAN_COMPLETED, status: AUDIT_STATUSES.SUCCESS, scanId: scanResult.id, targetName: resolvedPath, req, details: stats });
+    return res.status(201).json({ scan_id: scanResult.id, message: `Source scan complete. Found ${stats.totalComponents} unique crypto components across ${stats.totalFiles} files.`, stats, scan_path: resolvedPath });
+  } catch (err) { next(err); }
+});
+// --------------------------------------------------------------------------
+// POST /scan/abort  — Stop a running scan session
+// --------------------------------------------------------------------------
+router.post('/scan/abort', async (req, res) => {
+  const { scan_session_id } = req.body || {};
+  if (scan_session_id && activeScanSessions.has(scan_session_id)) {
+    const entry = activeScanSessions.get(scan_session_id);
+    try {
+      entry.kill();
+    } catch { /* process already gone */ }
+    // Clean up upload dir
+    if (entry.uploadDir) {
+      try { require('fs').rmSync(entry.uploadDir, { recursive: true, force: true }); } catch { }
+    }
+    deregisterScan(scan_session_id);
+    return res.json({ success: true, message: `Scan ${scan_session_id} aborted.` });
+  }
+  // If no specific session — abort ALL active scans (user-initiated global stop)
+  if (activeScanSessions.size > 0) {
+    for (const [sid, entry] of activeScanSessions) {
+      try { entry.kill(); } catch { }
+      if (entry.uploadDir) {
+        try { require('fs').rmSync(entry.uploadDir, { recursive: true, force: true }); } catch { }
+      }
+    }
+    activeScanSessions.clear();
+    return res.json({ success: true, message: 'All active scans aborted.' });
+  }
+  return res.status(404).json({ success: false, message: 'No active scan session found to abort.' });
 });
 
 module.exports = router;

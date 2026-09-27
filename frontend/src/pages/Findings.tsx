@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   Shield,
@@ -154,7 +154,7 @@ export const Findings: React.FC = () => {
       case 'medium':
         return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40';
       case 'low':
-        return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
+        return 'bg-primary/20 text-primary/80 border-primary/40';
       default:
         return 'bg-slate-500/20 text-slate-300 border-slate-500/40';
     }
@@ -172,21 +172,21 @@ export const Findings: React.FC = () => {
       case 'SAFE':
         return 'bg-emerald-950/80 text-emerald-400 border-emerald-600';
       default:
-        return 'bg-slate-900 text-slate-400 border-slate-700';
+        return 'bg-surface text-slate-400 border-borderMid';
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-              <Shield className="text-cyan-400" size={22} />
+              <Shield className="text-primary" size={22} />
               <span>Cryptographic Findings</span>
             </h1>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 font-mono">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary/80 border border-primary/30 font-mono">
               {totalFindings} Found
             </span>
           </div>
@@ -199,35 +199,35 @@ export const Findings: React.FC = () => {
           <button
             onClick={() => fetchFindings()}
             disabled={loading}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
+            className="p-2 rounded-xl bg-surface hover:bg-surfaceHover text-slate-300 border border-border transition-colors"
             title="Refresh findings"
           >
-            <RefreshCw size={15} className={loading ? 'animate-spin text-cyan-400' : ''} />
+            <RefreshCw size={15} className={loading ? 'animate-spin text-primary' : ''} />
           </button>
         </div>
       </div>
 
       {scanMessage && (
-        <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-xs text-cyan-300 flex items-center gap-2">
-          <CheckCircle size={15} className="text-cyan-400 shrink-0" />
+        <div className="p-3 rounded-xl bg-cyan-950/40 border border-primary/30 text-xs text-primary/80 flex items-center gap-2">
+          <CheckCircle size={15} className="text-primary shrink-0" />
           <span>{scanMessage}</span>
         </div>
       )}
 
       {/* Filter Bar */}
-      <div className="glass-card p-4 rounded-xl border border-slate-800/80 bg-slate-900/50 space-y-3">
+      <div className="glass-card p-4 rounded-xl border border-border/80 bg-surface/50 space-y-3">
         <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 hover:text-cyan-400 transition-colors"
+            className="flex items-center gap-2 hover:text-primary transition-colors"
           >
-            <Filter size={14} className={showFilters ? "text-cyan-400" : "text-slate-400"} />
+            <Filter size={14} className={showFilters ? "text-primary" : "text-slate-400"} />
             <span>{showFilters ? "Hide Filters & Search" : "Show Filters & Search"}</span>
           </button>
         </div>
 
         {showFilters && (
-          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-800">
+          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border">
             {/* Search Box */}
             <div className="relative flex-1 min-w-[200px]">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
@@ -236,18 +236,18 @@ export const Findings: React.FC = () => {
                 placeholder="Search algorithm, explanation..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-background border border-border text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
               />
             </div>
 
             {/* Severity Filter */}
             <div className="flex items-center gap-1.5 text-xs text-slate-400">
-              <Filter size={13} className="text-cyan-400" />
+              <Filter size={13} className="text-primary" />
               <span>Severity:</span>
               <select
                 value={severityFilter}
                 onChange={(e) => setSeverityFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
               >
                 <option value="ALL">All Severities</option>
                 <option value="critical">Critical</option>
@@ -263,8 +263,8 @@ export const Findings: React.FC = () => {
 
       {/* REAL LOADING STATE */}
       {loading && findings.length === 0 && (
-        <div className="glass-card p-12 rounded-2xl border border-slate-800 bg-slate-900/60 flex flex-col items-center justify-center text-center">
-          <Loader2 size={32} className="text-cyan-400 animate-spin mb-3" />
+        <div className="glass-card p-12 rounded-2xl border border-border bg-surface/60 flex flex-col items-center justify-center text-center">
+          <Loader2 size={32} className="text-primary animate-spin mb-3" />
           <h3 className="text-sm font-bold text-white mb-1">Loading Findings</h3>
           <p className="text-xs text-slate-400 max-w-sm">
             Querying authoritative backend findings and verifying cryptographic risk classification...
@@ -281,7 +281,7 @@ export const Findings: React.FC = () => {
           </div>
           <p className="text-xs text-rose-300 font-medium">{errorDetails.message}</p>
           {errorDetails.code && (
-            <div className="text-2xs font-mono bg-slate-950 p-2.5 rounded-lg border border-rose-900 text-rose-300">
+            <div className="text-2xs font-mono bg-background p-2.5 rounded-lg border border-rose-900 text-rose-300">
               Code: {errorDetails.code}
             </div>
           )}
@@ -296,8 +296,8 @@ export const Findings: React.FC = () => {
 
       {/* REAL EMPTY STATE (Genuinely empty tenant before scan) */}
       {!loading && !errorDetails && filteredFindings.length === 0 && (
-        <div className="glass-card p-12 rounded-2xl border border-slate-800 bg-slate-900/60 text-center space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center mx-auto">
+        <div className="glass-card p-12 rounded-2xl border border-border bg-surface/60 text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center mx-auto">
             <Shield size={24} />
           </div>
           <div className="max-w-md mx-auto">
@@ -311,11 +311,11 @@ export const Findings: React.FC = () => {
 
       {/* FINDINGS TABLE */}
       {!loading && !errorDetails && filteredFindings.length > 0 && (
-        <div className="glass-card rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl">
+        <div className="glass-card rounded-2xl border border-border bg-surface/60 overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 text-2xs uppercase tracking-wider font-semibold">
+                <tr className="bg-background/80 border-b border-border text-slate-400 text-2xs uppercase tracking-wider font-semibold">
                   <th className="py-3 px-4">Finding ID</th>
                   <th className="py-3 px-4">Severity</th>
                   <th className="py-3 px-4">Algorithm &amp; Key Size</th>
@@ -329,7 +329,7 @@ export const Findings: React.FC = () => {
                   <tr
                     key={finding.id}
                     onClick={() => setSelectedFinding(finding)}
-                    className="hover:bg-slate-800/40 cursor-pointer transition-colors group"
+                    className="hover:bg-surfaceHover/40 cursor-pointer transition-colors group"
                   >
                     <td className="py-3 px-4 font-mono text-slate-300 text-[11px] truncate max-w-[120px]" title={finding.id}>
                       {finding.id}
@@ -341,10 +341,10 @@ export const Findings: React.FC = () => {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5 font-mono font-bold text-slate-100">
-                        <Cpu size={14} className="text-cyan-400 shrink-0" />
+                        <Cpu size={14} className="text-primary shrink-0" />
                         <span>{finding.algorithm}</span>
                         {finding.key_size && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-surfaceHover text-primary border border-borderMid">
                             {finding.key_size}b
                           </span>
                         )}
@@ -376,7 +376,7 @@ export const Findings: React.FC = () => {
                           e.stopPropagation();
                           setSelectedFinding(finding);
                         }}
-                        className="inline-flex items-center gap-1 text-2xs text-cyan-400 hover:text-cyan-300 font-semibold"
+                        className="inline-flex items-center gap-1 text-2xs text-primary hover:text-primary/80 font-semibold"
                       >
                         <span>Details</span>
                         <ChevronRight size={13} />
@@ -392,10 +392,10 @@ export const Findings: React.FC = () => {
 
       {/* DETAIL DRAWER / MODAL: CBOM & PQC ASSESSMENT */}
       {selectedFinding && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl bg-slate-900 border-l border-slate-800 h-full overflow-y-auto p-6 flex flex-col shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-surface border-l border-border h-full overflow-y-auto p-6 flex flex-col shadow-2xl">
             {/* Header */}
-            <div className="flex items-start justify-between pb-4 mb-4 border-b border-slate-800">
+            <div className="flex items-start justify-between pb-4 mb-4 border-b border-border">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`px-2 py-0.5 rounded-full text-2xs font-bold border ${getSeverityBadgeClass(selectedFinding.severity)}`}>
@@ -406,10 +406,10 @@ export const Findings: React.FC = () => {
                   </span>
                 </div>
                 <h2 className="text-lg font-bold text-white font-mono flex items-center gap-2">
-                  <Cpu size={18} className="text-cyan-400" />
+                  <Cpu size={18} className="text-primary" />
                   <span>{selectedFinding.algorithm}</span>
                 </h2>
-                <p className="text-xs text-slate-400 mb-1">Finding ID: <code className="text-cyan-300 font-mono">{selectedFinding.id}</code></p>
+                <p className="text-xs text-slate-400 mb-1">Finding ID: <code className="text-primary/80 font-mono">{selectedFinding.id}</code></p>
                 {selectedFinding.cached && (
                   <div className="flex items-center gap-2 mt-2 bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs py-1.5 px-3 rounded-lg w-max">
                     <span className="font-semibold text-[11px]">Result from cached analysis</span>
@@ -433,19 +433,19 @@ export const Findings: React.FC = () => {
 
               <button
                 onClick={() => setSelectedFinding(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-surfaceHover"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex border-b border-slate-800 mb-6 text-xs font-semibold">
+            <div className="flex border-b border-border mb-6 text-xs font-semibold">
               <button
                 onClick={() => setActiveDetailTab('overview')}
                 className={`pb-2.5 px-4 transition-colors border-b-2 ${
                   activeDetailTab === 'overview'
-                    ? 'border-cyan-400 text-cyan-300'
+                    ? 'border-cyan-400 text-primary/80'
                     : 'border-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -455,7 +455,7 @@ export const Findings: React.FC = () => {
                 onClick={() => setActiveDetailTab('cbom')}
                 className={`pb-2.5 px-4 transition-colors border-b-2 flex items-center gap-1.5 ${
                   activeDetailTab === 'cbom'
-                    ? 'border-cyan-400 text-cyan-300'
+                    ? 'border-cyan-400 text-primary/80'
                     : 'border-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -466,7 +466,7 @@ export const Findings: React.FC = () => {
                 onClick={() => setActiveDetailTab('pqc')}
                 className={`pb-2.5 px-4 transition-colors border-b-2 flex items-center gap-1.5 ${
                   activeDetailTab === 'pqc'
-                    ? 'border-cyan-400 text-cyan-300'
+                    ? 'border-cyan-400 text-primary/80'
                     : 'border-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -478,7 +478,7 @@ export const Findings: React.FC = () => {
             {/* TAB 1: OVERVIEW */}
             {activeDetailTab === 'overview' && (
               <div className="space-y-6 flex-1 text-xs">
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                <div className="bg-background p-4 rounded-xl border border-border space-y-2">
                   <span className="text-slate-500 uppercase tracking-wider font-semibold text-2xs block">Explanation &amp; Threat Context</span>
                   <p className="text-slate-300 leading-relaxed font-sans">
                     {selectedFinding.explanation || 'Cryptographic primitive analyzed against standard policy guidelines.'}
@@ -486,25 +486,25 @@ export const Findings: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="bg-background p-3 rounded-xl border border-border">
                     <span className="text-slate-500 block mb-1">Location &amp; Line</span>
                     <span className="text-slate-200 font-mono break-all">
                       {selectedFinding.location || 'N/A'}{selectedFinding.line_number ? `:${selectedFinding.line_number}` : ''}
                     </span>
                   </div>
-                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="bg-background p-3 rounded-xl border border-border">
                     <span className="text-slate-500 block mb-1">Key Size</span>
-                    <span className="text-cyan-300 font-mono font-bold">
+                    <span className="text-primary/80 font-mono font-bold">
                       {selectedFinding.key_size !== undefined && selectedFinding.key_size !== null ? `${selectedFinding.key_size} bits` : 'Unbounded / Unknown'}
                     </span>
                   </div>
-                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="bg-background p-3 rounded-xl border border-border">
                     <span className="text-slate-500 block mb-1">Classical Vulnerability</span>
                     <span className="text-amber-300 font-mono font-bold">
                       {selectedFinding.classical_risk || 'LOW'}
                     </span>
                   </div>
-                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="bg-background p-3 rounded-xl border border-border">
                     <span className="text-slate-500 block mb-1">Quantum Relevance</span>
                     <span className="text-violet-300 font-mono font-bold">
                       {selectedFinding.quantum_relevance || 'CRITICAL'}
@@ -513,19 +513,19 @@ export const Findings: React.FC = () => {
                 </div>
 
                 {selectedFinding.recommendation_target && (
-                  <div className="p-4 rounded-xl bg-cyan-950/30 border border-cyan-500/30 space-y-1.5">
-                    <span className="text-cyan-400 font-bold flex items-center gap-1.5">
+                  <div className="p-4 rounded-xl bg-cyan-950/30 border border-primary/30 space-y-1.5">
+                    <span className="text-primary font-bold flex items-center gap-1.5">
                       <Wrench size={14} />
                       <span>Recommended Migration Target</span>
                     </span>
                     <p className="text-slate-300">
-                      Migrate to <strong className="text-cyan-300 font-mono">{selectedFinding.recommendation_target}</strong> {selectedFinding.pqc_migration && selectedFinding.pqc_migration !== selectedFinding.recommendation_target ? `(${selectedFinding.pqc_migration})` : ''}.
+                      Migrate to <strong className="text-primary/80 font-mono">{selectedFinding.recommendation_target}</strong> {selectedFinding.pqc_migration && selectedFinding.pqc_migration !== selectedFinding.recommendation_target ? `(${selectedFinding.pqc_migration})` : ''}.
                     </p>
                   </div>
                 )}
                 
                 {selectedFinding.status === 'DISMISSED_FALSE_POSITIVE' && (
-                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-1.5">
+                  <div className="p-4 rounded-xl bg-surface border border-borderMid space-y-1.5">
                     <span className="text-slate-400 font-bold flex items-center gap-1.5 text-xs">
                       <XCircle size={14} />
                       <span>Dismissed as False Positive</span>
@@ -541,12 +541,12 @@ export const Findings: React.FC = () => {
             {/* TAB 2: CBOM VIEW */}
             {activeDetailTab === 'cbom' && (
               <div className="space-y-4 flex-1 text-xs">
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400">
+                <div className="p-3 rounded-xl bg-background border border-border text-slate-400">
                   <p className="font-semibold text-slate-200 mb-1">CycloneDX 1.6 Cryptographic Properties</p>
                   <p>Raw cryptographic Bill of Materials descriptor compliant with CycloneDX 1.6 CBOM schema.</p>
                 </div>
 
-                <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-2xs text-cyan-300 overflow-x-auto max-h-96">
+                <div className="bg-background rounded-xl border border-border p-4 font-mono text-2xs text-primary/80 overflow-x-auto max-h-96">
                   <pre>{JSON.stringify({
                     bomFormat: 'CycloneDX',
                     specVersion: '1.6',
@@ -588,15 +588,15 @@ export const Findings: React.FC = () => {
                     Mosca Inequality: If <strong>X (Shelf Life) + Y (Migration Time) &gt; Z (CRQC Horizon)</strong>, cryptographic data is compromised retroactively by "Harvest Now, Decrypt Later" adversaries.
                   </p>
                   <div className="grid grid-cols-3 gap-2 pt-2 text-center font-mono">
-                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+                    <div className="p-2 rounded-lg bg-background border border-border">
                       <span className="text-slate-500 text-2xs block">Margin</span>
                       <span className="text-rose-400 font-bold">{selectedFinding.mosca_margin_years ?? -5} yrs</span>
                     </div>
-                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+                    <div className="p-2 rounded-lg bg-background border border-border">
                       <span className="text-slate-500 text-2xs block">Mosca Status</span>
                       <span className="text-amber-300 font-bold">{selectedFinding.mosca_status || 'AT_RISK'}</span>
                     </div>
-                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+                    <div className="p-2 rounded-lg bg-background border border-border">
                       <span className="text-slate-500 text-2xs block">CI/CD Gate</span>
                       <span className={selectedFinding.cicd_pass ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
                         {selectedFinding.cicd_pass ? 'PASSED' : 'BLOCKED'}
@@ -605,10 +605,10 @@ export const Findings: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                <div className="bg-background p-4 rounded-xl border border-border space-y-2">
                   <h4 className="font-bold text-white">NIST FIPS 203/204 Replacement Target</h4>
                   <p className="text-slate-400">
-                    Target: <strong className="text-cyan-300 font-mono">{selectedFinding.recommendation_target || 'N/A'}</strong>
+                    Target: <strong className="text-primary/80 font-mono">{selectedFinding.recommendation_target || 'N/A'}</strong>
                   </p>
                   {(!selectedFinding.pqc_migration || selectedFinding.pqc_migration !== selectedFinding.recommendation_target) && (
                     <p className="text-slate-400">
@@ -620,10 +620,10 @@ export const Findings: React.FC = () => {
             )}
 
             {/* Bottom Actions */}
-            <div className="pt-4 mt-6 border-t border-slate-800 flex items-center justify-between gap-3">
+            <div className="pt-4 mt-6 border-t border-border flex items-center justify-between gap-3">
               <button
                 onClick={() => setSelectedFinding(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs"
+                className="px-4 py-2 rounded-xl bg-surfaceHover hover:bg-surfaceMid text-slate-300 font-semibold text-xs"
               >
                 Close Drawer
               </button>
@@ -664,15 +664,15 @@ export const Findings: React.FC = () => {
 
       {/* Dismissal Reason Modal */}
       {showDismissModal && (
-        <div className="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface border border-borderMid rounded-2xl w-full max-w-md p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-white mb-2">Dismiss Finding</h3>
             <p className="text-xs text-slate-400 mb-4">Please provide a reason for dismissing this AI-flagged finding.</p>
             <textarea
               value={dismissReason}
               onChange={(e) => setDismissReason(e.target.value)}
               placeholder="e.g. This is a false positive because..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 min-h-[100px] mb-4"
+              className="w-full bg-background border border-border rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 min-h-[100px] mb-4"
             />
             <div className="flex justify-end gap-3">
               <button
@@ -680,7 +680,7 @@ export const Findings: React.FC = () => {
                   setShowDismissModal(false);
                   setDismissReason('');
                 }}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs"
+                className="px-4 py-2 rounded-xl bg-surfaceHover hover:bg-surfaceMid text-slate-300 font-semibold text-xs"
               >
                 Cancel
               </button>

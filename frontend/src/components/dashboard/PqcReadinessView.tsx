@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Atom,
   ExternalLink,
@@ -49,11 +49,11 @@ export const PqcReadinessView: React.FC<Props> = ({
         </div>
 
         {/* NIST Standards Alignment Pills */}
-        <div className="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="mt-6 pt-5 border-t border-border/80 grid grid-cols-1 sm:grid-cols-3 gap-3">
           {data.nist_standards_alignment.map((std) => (
             <div
               key={std.standard}
-              className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between"
+              className="p-3 rounded-xl bg-background/60 border border-border flex items-center justify-between"
             >
               <div>
                 <span className="text-xs font-bold text-slate-200 block">{std.standard}</span>
@@ -64,8 +64,8 @@ export const PqcReadinessView: React.FC<Props> = ({
                   std.status === 'ADOPTING'
                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
                     : std.status === 'PLANNED'
-                    ? 'bg-cyan-950 text-cyan-300 border border-cyan-700'
-                    : 'bg-slate-800 text-slate-300 border border-slate-700'
+                    ? 'bg-cyan-950 text-primary/80 border border-cyan-700'
+                    : 'bg-surfaceHover text-slate-300 border border-borderMid'
                 }`}
               >
                 {std.status}
@@ -161,7 +161,7 @@ export const PqcReadinessView: React.FC<Props> = ({
 
       {/* Mosca Timeline Table */}
       <div className="glass-card overflow-hidden">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+        <div className="p-5 border-b border-border flex items-center justify-between">
           <div>
             <h4 className="text-sm font-semibold text-slate-200">
               Mosca's Theorem Timeline (X + Y &gt; Z Deficit Analysis)
@@ -177,7 +177,7 @@ export const PqcReadinessView: React.FC<Props> = ({
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+            <thead className="bg-background/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-border">
               <tr>
                 <th className="py-3 px-4">Finding ID / Asset</th>
                 <th className="py-3 px-4">Algorithm</th>
@@ -195,7 +195,7 @@ export const PqcReadinessView: React.FC<Props> = ({
                 return (
                   <tr key={row.finding_id || idx} className="hover:bg-slate-850/50 transition-colors">
                     <td className="py-3 px-4">
-                      <span className="font-mono text-cyan-400 font-semibold block">{row.finding_id}</span>
+                      <span className="font-mono text-primary font-semibold block">{row.finding_id}</span>
                       <span className="text-[10px] text-slate-500">{row.asset_id}</span>
                     </td>
                     <td className="py-3 px-4 font-semibold text-slate-200">{row.algorithm}</td>
@@ -237,7 +237,7 @@ export const PqcReadinessView: React.FC<Props> = ({
                             [row.finding_id]
                           )
                         }
-                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 border border-slate-700 text-xs inline-flex items-center gap-1 transition-colors"
+                        className="px-2.5 py-1 rounded bg-surfaceHover hover:bg-surfaceMid text-primary hover:text-primary/80 border border-borderMid text-xs inline-flex items-center gap-1 transition-colors"
                       >
                         <span>Evidence</span>
                         <ExternalLink className="w-3 h-3" />

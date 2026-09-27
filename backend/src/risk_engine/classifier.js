@@ -209,7 +209,7 @@ function classifyFinding(input) {
     assetType,
     dataSensitivity,
     businessCriticality,
-    threatHorizon: input.threatHorizon || "baseline_2033",
+    scenario: input.threatHorizon || "baseline_2033",
     quantumRelevance,
     isIntegrityOnly,
     customX: input.customX,

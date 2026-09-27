@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   AppWindow,
   Search,
@@ -43,7 +43,7 @@ export const ApplicationInventoryView: React.FC<Props> = ({
     if (t.includes('database')) return <Database className="w-4 h-4 text-emerald-400" />;
     if (t.includes('network') || t.includes('endpoint'))
       return <Network className="w-4 h-4 text-purple-400" />;
-    return <Server className="w-4 h-4 text-cyan-400" />;
+    return <Server className="w-4 h-4 text-primary" />;
   };
 
   return (
@@ -52,7 +52,7 @@ export const ApplicationInventoryView: React.FC<Props> = ({
       <div className="glass-card p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <AppWindow className="w-5 h-5 text-cyan-400" />
+            <AppWindow className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-bold text-slate-100">Application Inventory & Cryptographic Exposure</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -61,7 +61,7 @@ export const ApplicationInventoryView: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-surfaceHover text-slate-300 border border-borderMid">
             {data?.total_applications ?? applications.length} Applications Tracked
           </span>
         </div>
@@ -75,7 +75,7 @@ export const ApplicationInventoryView: React.FC<Props> = ({
           placeholder="Filter applications by name, type, owner..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-slate-900/90 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+          className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-surface/90 border border-border text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
         />
       </div>
 
@@ -113,7 +113,7 @@ export const ApplicationInventoryView: React.FC<Props> = ({
             return (
               <div
                 key={app.id}
-                className="glass-card p-5 flex flex-col justify-between hover:border-slate-700/90 transition-all group min-w-0"
+                className="glass-card p-5 flex flex-col justify-between hover:border-borderMid/90 transition-all group min-w-0"
               >
                 <div>
                   {/* Header row */}
@@ -121,7 +121,7 @@ export const ApplicationInventoryView: React.FC<Props> = ({
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="shrink-0">{getAppIcon(appType)}</div>
                       <div className="min-w-0">
-                        <h4 className="font-semibold text-slate-100 text-sm group-hover:text-cyan-300 transition-colors truncate" title={appName}>
+                        <h4 className="font-semibold text-slate-100 text-sm group-hover:text-primary/80 transition-colors truncate" title={appName}>
                           {appName}
                         </h4>
                         <span className="text-[10px] font-mono text-slate-500 block truncate" title={app.id}>{app.id}</span>
@@ -153,19 +153,19 @@ export const ApplicationInventoryView: React.FC<Props> = ({
 
                   {/* Metadata tags */}
                   <div className="flex flex-wrap gap-1.5 mb-3 text-[11px]">
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
+                    <span className="px-2 py-0.5 rounded bg-surfaceHover text-slate-300 font-mono">
                       {appType}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono">
+                    <span className="px-2 py-0.5 rounded bg-surfaceHover text-primary/80 font-mono">
                       {appSensitivity}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                    <span className="px-2 py-0.5 rounded bg-surfaceHover text-slate-400">
                       Priority: {appCriticality}
                     </span>
                   </div>
 
                   {/* Blast Radius & Risk Horizons */}
-                  <div className="grid grid-cols-2 gap-2 py-2 mb-3 text-xs border-y border-slate-800/70 bg-slate-950/40 rounded-lg px-2.5">
+                  <div className="grid grid-cols-2 gap-2 py-2 mb-3 text-xs border-y border-border/70 bg-background/40 rounded-lg px-2.5">
                     <div>
                       <span className="text-[10px] text-slate-500 block uppercase font-mono">
                         Blast Radius
@@ -196,7 +196,7 @@ export const ApplicationInventoryView: React.FC<Props> = ({
                 </div>
 
                 {/* Action row with clickable evidence button */}
-                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                <div className="pt-3 border-t border-border/80 flex items-center justify-between">
                   <button
                     onClick={() =>
                       onOpenEvidence(
@@ -205,7 +205,7 @@ export const ApplicationInventoryView: React.FC<Props> = ({
                         appEvidenceIds
                       )
                     }
-                    className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold inline-flex items-center gap-1 transition-colors"
+                    className="text-xs text-primary hover:text-primary/80 font-semibold inline-flex items-center gap-1 transition-colors"
                   >
                     <span className="underline decoration-cyan-600/60">
                       {appEvidenceIds.length} Crypto Findings
@@ -221,7 +221,7 @@ export const ApplicationInventoryView: React.FC<Props> = ({
                         appEvidenceIds
                       )
                     }
-                    className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors"
+                    className="px-2.5 py-1 rounded bg-surfaceHover hover:bg-surfaceMid text-slate-200 text-xs font-medium border border-borderMid transition-colors"
                   >
                     Inspect Evidence
                   </button>

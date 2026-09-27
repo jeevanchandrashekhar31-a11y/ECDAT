@@ -401,7 +401,20 @@ function requireApiKey(req, res, next) {
   try {
     const { defaultTokenService } = require("../identity/token_service");
     const payload = defaultTokenService.verifyToken(providedKey, "access");
-    req.auth = { authenticated: true, role: payload.roles[0] || "viewer", roles: payload.roles, user: payload };
+    req.auth = {
+      authenticated: true,
+      role: payload.roles?.[0] || "viewer",
+      roles: payload.roles || ["viewer"],
+      user: payload,
+      // Propagate evaluation/mode flags from JWT so guards can check them
+      isEvaluation: payload.isEvaluation === true || payload.mode === "evaluation",
+      mode: payload.mode || (payload.isEvaluation ? "evaluation" : "jwt"),
+      tenantId: payload.tenantId,
+      userId: payload.sub,
+      username: payload.email || payload.sub,
+      email: payload.email,
+      displayName: payload.name,
+    };
     req.user = payload;
     return next();
   } catch {

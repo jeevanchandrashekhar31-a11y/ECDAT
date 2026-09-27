@@ -48,8 +48,10 @@ class TokenService {
     );
     this.refreshTokenTtlSec = options.refreshTokenTtlSec || DEFAULT_REFRESH_TOKEN_TTL_SEC;
 
-    // Revocation blacklist: Map of jti -> { revokedAt, reason }
-    this.revokedTokens = new Map();
+    // Revocation blacklist: Redis-backed with in-memory fallback
+    // When Redis is available, revocations survive server restarts
+    this.revokedTokens = new Map(); // In-memory fallback
+    this._redisBlacklist = null; // Lazy-loaded Redis client
 
     // Registry of issued tokens for ownership verification: jti -> { jti, userId, tenantId, tokenType, issuedAt, expiresAt }
     this.tokenRegistry = new Map();
@@ -60,6 +62,15 @@ class TokenService {
     // Refresh token family store for Refresh Token Rotation (RTR):
     // familyId -> { currentJti, isCompromised, usedJtis: Set<string>, userId }
     this.tokenFamilies = new Map();
+
+    // Lazy initialize Redis blacklist when available
+    setTimeout(() => {
+      try {
+        const { tokenBlacklist } = require("../cache/redis_client");
+        this._redisBlacklist = tokenBlacklist;
+      } catch { /* Redis not available */ }
+    }, 1000);
+
   }
 
   /**
@@ -324,14 +335,15 @@ class TokenService {
   }
 
   /**
-   * Revokes a token by JTI.
+   * Revokes a token by JTI. Writes to Redis for cross-restart persistence.
    */
   revokeToken(jti, reason = "Explicit revocation") {
     if (!jti) return;
-    this.revokedTokens.set(jti, {
-      revokedAt: new Date().toISOString(),
-      reason,
-    });
+    this.revokedTokens.set(jti, { revokedAt: new Date().toISOString(), reason });
+    // Also write to Redis blacklist (TTL = access token lifetime)
+    if (this._redisBlacklist) {
+      this._redisBlacklist.add(jti, this.accessTokenTtlSec).catch(() => {});
+    }
   }
 
   /**
@@ -363,6 +375,18 @@ class TokenService {
 
   isTokenRevoked(jti) {
     return this.revokedTokens.has(jti);
+  }
+
+  /**
+   * Async version — checks Redis first (handles revocations from other server instances).
+   * Use this in middleware when Redis is available.
+   */
+  async isTokenRevokedAsync(jti) {
+    if (this.revokedTokens.has(jti)) return true;
+    if (this._redisBlacklist) {
+      try { return await this._redisBlacklist.has(jti); } catch { /* ignore */ }
+    }
+    return false;
   }
 
   getTokenRecord(jti) {

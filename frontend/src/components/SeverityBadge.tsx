@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { AlertOctagon, AlertTriangle, Info, CheckCircle2, ShieldAlert, Clock, Zap, CheckCircle } from 'lucide-react';
 import { SeverityLevel, MoscaStatus } from '../types';
 
@@ -35,9 +35,9 @@ export const SeverityBadge: React.FC<SeverityBadgeProps> = ({ severity, size = '
     case 'medium':
       return (
         <span
-          className={`inline-flex items-center gap-1.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 rounded-md bg-primary/15 text-primary/80 border border-primary/30 ${sizeClasses}`}
         >
-          <ShieldAlert size={iconSize} className="text-cyan-400 shrink-0" aria-hidden="true" />
+          <ShieldAlert size={iconSize} className="text-primary shrink-0" aria-hidden="true" />
           <span>Medium</span>
         </span>
       );
@@ -54,7 +54,7 @@ export const SeverityBadge: React.FC<SeverityBadgeProps> = ({ severity, size = '
     default:
       return (
         <span
-          className={`inline-flex items-center gap-1.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700/60 ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 rounded-md bg-surfaceHover text-slate-300 border border-borderMid/60 ${sizeClasses}`}
         >
           <CheckCircle2 size={iconSize} className="text-slate-400 shrink-0" aria-hidden="true" />
           <span>Info</span>

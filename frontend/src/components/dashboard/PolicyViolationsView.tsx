@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   FileWarning,
   ShieldAlert,
@@ -27,7 +27,7 @@ export const PolicyViolationsView: React.FC<Props> = ({
             <h3 className="text-lg font-bold text-slate-100">Cryptographic Policy Violations & CI/CD Compliance</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Active enforcement rules defined under policy profile <span className="font-mono text-cyan-300 font-semibold">{data.active_profile}</span>.
+            Active enforcement rules defined under policy profile <span className="font-mono text-primary/80 font-semibold">{data.active_profile}</span>.
           </p>
         </div>
 
@@ -61,7 +61,7 @@ export const PolicyViolationsView: React.FC<Props> = ({
           return (
             <div
               key={violation.rule_id}
-              className="glass-card p-5 hover:border-slate-700 transition-all group min-w-0"
+              className="glass-card p-5 hover:border-borderMid transition-all group min-w-0"
             >
               <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -71,7 +71,7 @@ export const PolicyViolationsView: React.FC<Props> = ({
                     />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="font-bold text-slate-100 text-sm group-hover:text-cyan-300 transition-colors truncate" title={violation.rule_name}>
+                    <h4 className="font-bold text-slate-100 text-sm group-hover:text-primary/80 transition-colors truncate" title={violation.rule_name}>
                       {violation.rule_name}
                     </h4>
                     <span className="text-[10px] font-mono text-slate-400 block truncate" title={violation.rule_id}>{violation.rule_id}</span>
@@ -92,7 +92,7 @@ export const PolicyViolationsView: React.FC<Props> = ({
                     className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold ${
                       isBlocker
                         ? 'bg-rose-950 text-rose-300 border border-rose-700'
-                        : 'bg-slate-800 text-slate-300 border border-slate-700'
+                        : 'bg-surfaceHover text-slate-300 border border-borderMid'
                     }`}
                   >
                     {violation.threshold}
@@ -103,7 +103,7 @@ export const PolicyViolationsView: React.FC<Props> = ({
               <p className="text-xs text-slate-300 my-2">{violation.description}</p>
 
               {/* Action row with clickable evidence link */}
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+              <div className="pt-3 border-t border-border/80 flex items-center justify-between text-xs">
                 <button
                   onClick={() =>
                     onOpenEvidence(
@@ -112,7 +112,7 @@ export const PolicyViolationsView: React.FC<Props> = ({
                       evidenceList
                     )
                   }
-                  className="text-cyan-400 hover:text-cyan-300 font-semibold inline-flex items-center gap-1 transition-colors"
+                  className="text-primary hover:text-primary/80 font-semibold inline-flex items-center gap-1 transition-colors"
                 >
                   <span className="underline decoration-cyan-600/50">
                     {violation.affected_count} Failing Occurrences
@@ -128,7 +128,7 @@ export const PolicyViolationsView: React.FC<Props> = ({
                       evidenceList
                     )
                   }
-                  className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium border border-slate-700 transition-colors"
+                  className="px-3 py-1 rounded bg-surfaceHover hover:bg-surfaceMid text-slate-200 font-medium border border-borderMid transition-colors"
                 >
                   Inspect Evidence
                 </button>

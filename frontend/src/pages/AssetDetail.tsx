@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams, useOutletContext } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -106,11 +106,11 @@ export const AssetDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-6 w-36 bg-slate-800 animate-pulse rounded"></div>
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 h-44 animate-pulse"></div>
+        <div className="h-6 w-36 bg-surfaceHover animate-pulse rounded"></div>
+        <div className="bg-surface/60 border border-border rounded-xl p-6 h-44 animate-pulse"></div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 h-64 animate-pulse"></div>
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 h-64 animate-pulse"></div>
+          <div className="bg-surface/60 border border-border rounded-xl p-6 h-64 animate-pulse"></div>
+          <div className="bg-surface/60 border border-border rounded-xl p-6 h-64 animate-pulse"></div>
         </div>
       </div>
     );
@@ -126,8 +126,8 @@ export const AssetDetail: React.FC = () => {
           <ArrowLeft className="w-4 h-4" />
           Back to Asset Inventory
         </Link>
-        <div className="p-8 rounded-xl bg-slate-900/60 border border-slate-800 text-center space-y-4">
-          <AlertTriangle className="w-12 h-12 text-cyan-400 mx-auto" />
+        <div className="p-8 rounded-xl bg-surface/60 border border-border text-center space-y-4">
+          <AlertTriangle className="w-12 h-12 text-primary mx-auto" />
           <h2 className="text-xl font-semibold text-white">
             {error && error.includes('No scan data available')
               ? 'No Scan Data Available'
@@ -157,7 +157,7 @@ export const AssetDetail: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <Link
           to="/assets"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-cyan-400 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-primary transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Cryptographic Asset Inventory
@@ -171,18 +171,18 @@ export const AssetDetail: React.FC = () => {
       </div>
 
       {/* 2. Asset Hero Card & Explainable Story */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800/80 rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 border border-border/80 rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
 
         <div className="space-y-6 relative z-10">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono px-2.5 py-1 bg-cyan-950/60 border border-cyan-800/50 text-cyan-400 rounded-md uppercase tracking-wider font-semibold">
+                <span className="text-xs font-mono px-2.5 py-1 bg-cyan-950/60 border border-cyan-800/50 text-primary rounded-md uppercase tracking-wider font-semibold">
                   {asset.asset_type.replace(/_/g, ' ')}
                 </span>
                 {asset.policy_profile && (
-                  <span className="text-xs font-mono px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md border border-slate-700">
+                  <span className="text-xs font-mono px-2.5 py-1 bg-surfaceHover text-slate-300 rounded-md border border-borderMid">
                     Policy: {asset.policy_profile}
                   </span>
                 )}
@@ -194,7 +194,7 @@ export const AssetDetail: React.FC = () => {
                 <button
                   onClick={() => copyToClipboard(asset.primary_identifier)}
                   title="Copy identifier"
-                  className="p-1.5 text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-700/80 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-white bg-surfaceHover/60 hover:bg-surfaceMid/80 rounded-lg transition-colors"
                 >
                   {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                 </button>
@@ -233,13 +233,13 @@ export const AssetDetail: React.FC = () => {
           </div>
 
           {/* Explainable Executive Narrative Story */}
-          <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cyan-400">
+          <div className="p-4 rounded-xl bg-background/70 border border-border/80 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
               <Sparkles className="w-4 h-4" />
               <span>Explainable Asset Risk Story</span>
             </div>
             <p className="text-xs md:text-sm text-slate-200 leading-relaxed font-sans">
-              Asset <span className="font-mono text-cyan-300 font-semibold">{asset.primary_identifier}</span> is
+              Asset <span className="font-mono text-primary/80 font-semibold">{asset.primary_identifier}</span> is
               classified as a <strong className="text-white capitalize">{asset.asset_type.replace(/_/g, ' ')}</strong>{' '}
               containing{' '}
               <strong className="text-white">{asset.evidence?.length || 0} cryptographic primitive(s)</strong>.
@@ -261,7 +261,7 @@ export const AssetDetail: React.FC = () => {
           </div>
 
           {/* Quick Telemetry Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-800/60">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2 border-t border-border/60">
             <div>
               <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Data Sensitivity</p>
               <p className="text-sm font-semibold text-slate-200 capitalize mt-0.5">
@@ -276,7 +276,7 @@ export const AssetDetail: React.FC = () => {
             </div>
             <div>
               <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Discovered Primitives</p>
-              <p className="text-sm font-semibold text-cyan-400 font-mono mt-0.5">
+              <p className="text-sm font-semibold text-primary font-mono mt-0.5">
                 {asset.evidence?.length || 0} Component{asset.evidence?.length === 1 ? '' : 's'}
               </p>
             </div>
@@ -286,7 +286,7 @@ export const AssetDetail: React.FC = () => {
 
       {/* 3. Interactive Mosca Visualization Timeline & What-If Modeler */}
       {asset.mosca && (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 shadow-xl">
+        <div className="bg-surface/60 border border-border rounded-2xl p-4 shadow-xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex flex-col">
@@ -296,14 +296,14 @@ export const AssetDetail: React.FC = () => {
             </div>
             <button
               onClick={() => setShowMoscaDetails(!showMoscaDetails)}
-              className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+              className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
             >
               {showMoscaDetails ? 'Hide Mosca Calculus Details' : 'View Detailed Mosca Calculus'}
             </button>
           </div>
           
           {showMoscaDetails && (
-            <div className="mt-6 pt-6 border-t border-slate-800">
+            <div className="mt-6 pt-6 border-t border-border">
               <MoscaTimeline
                 initialX={asset.mosca.shelf_life_X}
                 initialY={asset.mosca.migration_time_Y}
@@ -324,19 +324,19 @@ export const AssetDetail: React.FC = () => {
         {/* Left Column: Inventory Evidence & Findings List (7 cols) */}
         <div className="lg:col-span-7 space-y-8">
           {/* Categorized Crypto Inventory Section */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div className="bg-surface/80 border border-border rounded-2xl p-6 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
               <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-cyan-400" />
+                <Layers className="w-5 h-5 text-primary" />
                 <h3 className="text-base font-bold text-white">Cryptographic Inventory Evidence</h3>
               </div>
 
               {/* Sub-Category Filter Tabs (Certificates / Protocols / Code) */}
-              <div className="flex items-center p-0.5 bg-slate-950 border border-slate-800 rounded-lg text-xs">
+              <div className="flex items-center p-0.5 bg-background border border-border rounded-lg text-xs">
                 <button
                   onClick={() => setInventoryTab('all')}
                   className={`px-2.5 py-1 rounded-md transition-colors ${
-                    inventoryTab === 'all' ? 'bg-slate-800 text-white font-semibold' : 'text-slate-400 hover:text-white'
+                    inventoryTab === 'all' ? 'bg-surfaceHover text-white font-semibold' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   All ({asset.evidence?.length || 0})
@@ -345,7 +345,7 @@ export const AssetDetail: React.FC = () => {
                   onClick={() => setInventoryTab('certs')}
                   className={`px-2.5 py-1 rounded-md transition-colors ${
                     inventoryTab === 'certs'
-                      ? 'bg-slate-800 text-white font-semibold'
+                      ? 'bg-surfaceHover text-white font-semibold'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -355,7 +355,7 @@ export const AssetDetail: React.FC = () => {
                   onClick={() => setInventoryTab('protocols')}
                   className={`px-2.5 py-1 rounded-md transition-colors ${
                     inventoryTab === 'protocols'
-                      ? 'bg-slate-800 text-white font-semibold'
+                      ? 'bg-surfaceHover text-white font-semibold'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -365,7 +365,7 @@ export const AssetDetail: React.FC = () => {
                   onClick={() => setInventoryTab('code')}
                   className={`px-2.5 py-1 rounded-md transition-colors ${
                     inventoryTab === 'code'
-                      ? 'bg-slate-800 text-white font-semibold'
+                      ? 'bg-surfaceHover text-white font-semibold'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -378,7 +378,7 @@ export const AssetDetail: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px]">
+                    <tr className="border-b border-border text-slate-400 uppercase font-mono text-[11px]">
                       <th className="pb-3 pr-3">Algorithm &amp; Key Size</th>
                       <th className="pb-3 pr-3">Category</th>
                       <th className="pb-3 pr-3">Location / Target</th>
@@ -387,12 +387,12 @@ export const AssetDetail: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 font-sans">
                     {filteredEvidence.map((item, idx) => (
-                      <tr key={item.finding_id || idx} className="hover:bg-slate-800/30 transition-colors">
+                      <tr key={item.finding_id || idx} className="hover:bg-surfaceHover/30 transition-colors">
                         <td className="py-3.5 pr-3">
                           <div className="font-mono font-bold text-white flex items-center gap-2">
                             <span>{item.algorithm}</span>
                             {item.key_size !== undefined && item.key_size !== null && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-surfaceHover text-primary border border-borderMid">
                                 {item.key_size} bit
                               </span>
                             )}
@@ -435,15 +435,15 @@ export const AssetDetail: React.FC = () => {
 
           {/* Detailed Findings & Standards Violations List */}
           {asset.risks && asset.risks.length > 0 && (
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
-              <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <div className="bg-surface/80 border border-border rounded-2xl p-6 shadow-xl space-y-5">
+              <div className="flex items-center gap-2 border-b border-border pb-3">
                 <Shield className="w-5 h-5 text-rose-400" />
                 <h3 className="text-base font-bold text-white">Findings, Risk Assessments &amp; Standards</h3>
               </div>
 
               <div className="space-y-4">
                 {asset.risks.map((risk, index) => (
-                  <div key={index} className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3">
+                  <div key={index} className="p-4 rounded-xl bg-background/60 border border-border/80 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <SeverityBadge severity={risk.severity} />
@@ -462,7 +462,7 @@ export const AssetDetail: React.FC = () => {
                         {((risk.applied_rules && risk.applied_rules.length > 0) || (risk.policy_violations && risk.policy_violations.length > 0)) && (
                           <button
                             onClick={() => setShowPolicyDetails(!showPolicyDetails)}
-                            className="text-[11px] text-cyan-400 hover:text-cyan-300 font-medium"
+                            className="text-[11px] text-primary hover:text-primary/80 font-medium"
                           >
                             {showPolicyDetails ? 'Hide Policy Matrix' : 'View Policy Matrix'}
                           </button>
@@ -477,7 +477,7 @@ export const AssetDetail: React.FC = () => {
                               {risk.applied_rules.map((rule, rIdx) => (
                                 <span
                                   key={rIdx}
-                                  className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800"
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface text-slate-300 border border-border"
                                 >
                                   {rule}
                                 </span>
@@ -510,8 +510,8 @@ export const AssetDetail: React.FC = () => {
 
         {/* Right Column: Migration Roadmap & PQC Targets (5 cols) */}
         <div className="lg:col-span-5 space-y-8">
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5 sticky top-24">
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+          <div className="bg-surface/80 border border-border rounded-2xl p-6 shadow-xl space-y-5 sticky top-24">
+            <div className="flex items-center gap-2 border-b border-border pb-3">
               <Cpu className="w-5 h-5 text-purple-400" />
               <h3 className="text-base font-bold text-white">PQC Remediation Roadmap</h3>
             </div>
@@ -542,7 +542,7 @@ export const AssetDetail: React.FC = () => {
                     {/* Classical vs PQC dual tracks */}
                     <div className="space-y-3">
                       {rec.classical_remediation && (
-                        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+                        <div className="p-3.5 rounded-xl bg-background/70 border border-border space-y-1">
                           <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                             Phase 1: Classical Hardening
                           </p>
@@ -551,7 +551,7 @@ export const AssetDetail: React.FC = () => {
                       )}
 
                       {rec.hybrid_transition_recommended && (
-                        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+                        <div className="p-3.5 rounded-xl bg-background/70 border border-border space-y-1">
                           <p className="text-[11px] font-semibold text-fuchsia-400 uppercase tracking-wider">
                             Phase 2: Hybrid Transition
                           </p>
@@ -562,8 +562,8 @@ export const AssetDetail: React.FC = () => {
                       )}
 
                       {rec.pqc_migration && (
-                        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
-                          <p className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider">
+                        <div className="p-3.5 rounded-xl bg-background/70 border border-border space-y-1">
+                          <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">
                             {rec.hybrid_transition_recommended ? 'Phase 3: Native PQC Enforcement' : 'Phase 2: Post-Quantum Migration'}
                           </p>
                           <p className="text-xs text-slate-200">{rec.pqc_migration}</p>
@@ -573,23 +573,23 @@ export const AssetDetail: React.FC = () => {
 
                     {/* Migration Characteristics Matrix */}
                     <div className="grid grid-cols-2 gap-2.5 text-xs">
-                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80">
+                      <div className="p-2.5 rounded-lg bg-background/50 border border-border/80">
                         <span className="text-slate-500 block text-[11px]">Complexity:</span>
                         <span className="font-semibold text-slate-300 capitalize">
                           {rec.migration_complexity || 'Medium'}
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80">
+                      <div className="p-2.5 rounded-lg bg-background/50 border border-border/80">
                         <span className="text-slate-500 block text-[11px]">Latency Impact:</span>
                         <span className="font-semibold text-slate-300 capitalize">{rec.latency_impact || 'Low'}</span>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80">
+                      <div className="p-2.5 rounded-lg bg-background/50 border border-border/80">
                         <span className="text-slate-500 block text-[11px]">Bandwidth Impact:</span>
                         <span className="font-semibold text-slate-300 capitalize">
                           {rec.bandwidth_impact || 'Medium'}
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80">
+                      <div className="p-2.5 rounded-lg bg-background/50 border border-border/80">
                         <span className="text-slate-500 block text-[11px]">Cost Category:</span>
                         <span className="font-semibold text-slate-300 capitalize">
                           {rec.cost_category || 'Operational'}
@@ -605,7 +605,7 @@ export const AssetDetail: React.FC = () => {
                     )}
 
                     {rec.references && rec.references.length > 0 && (
-                      <div className="space-y-1.5 pt-2 border-t border-slate-800">
+                      <div className="space-y-1.5 pt-2 border-t border-border">
                         <span className="text-xs font-medium text-slate-400 flex items-center gap-1">
                           <BookOpen className="w-3.5 h-3.5 text-slate-400" />
                           Compliance Standards &amp; RFCs:
@@ -614,7 +614,7 @@ export const AssetDetail: React.FC = () => {
                           {rec.references.map((refStr, rIdx) => (
                             <span
                               key={rIdx}
-                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"
+                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-surfaceHover text-slate-300 border border-borderMid"
                             >
                               {refStr}
                             </span>
@@ -626,7 +626,7 @@ export const AssetDetail: React.FC = () => {
                 ))}
               </div>
             ) : asset.at_quantum_risk || asset.highest_severity === 'Critical' || asset.highest_severity === 'High' ? (
-              <div className="p-6 rounded-xl bg-slate-950/40 text-center space-y-2 border border-rose-900/50">
+              <div className="p-6 rounded-xl bg-background/40 text-center space-y-2 border border-rose-900/50">
                 <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto" />
                 <p className="text-sm font-medium text-white">Remediation Plan Unavailable</p>
                 <p className="text-xs text-slate-400">
@@ -634,7 +634,7 @@ export const AssetDetail: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="p-6 rounded-xl bg-slate-950/40 text-center space-y-2">
+              <div className="p-6 rounded-xl bg-background/40 text-center space-y-2">
                 <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
                 <p className="text-sm font-medium text-white">No Immediate Remediation Required</p>
                 <p className="text-xs text-slate-400">

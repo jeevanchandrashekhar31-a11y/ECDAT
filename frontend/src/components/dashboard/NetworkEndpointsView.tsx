@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Globe,
   Lock,
@@ -24,7 +24,7 @@ export const NetworkEndpointsView: React.FC<Props> = ({
       <div className="glass-card p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-cyan-400" />
+            <Globe className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-bold text-slate-100">Network Endpoint Cryptography & TLS Posture</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -32,7 +32,7 @@ export const NetworkEndpointsView: React.FC<Props> = ({
           </p>
         </div>
 
-        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-surfaceHover text-slate-300 border border-borderMid">
           {data.total_endpoints} Endpoints Monitored
         </span>
       </div>
@@ -46,17 +46,17 @@ export const NetworkEndpointsView: React.FC<Props> = ({
           return (
             <div
               key={ep.id}
-              className="glass-card p-5 flex flex-col justify-between hover:border-slate-700 transition-all group min-w-0"
+              className="glass-card p-5 flex flex-col justify-between hover:border-borderMid transition-all group min-w-0"
             >
               <div>
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="p-2 rounded-lg bg-slate-800 text-cyan-400 shrink-0">
+                    <div className="p-2 rounded-lg bg-surfaceHover text-primary shrink-0">
                       <Radio className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-bold text-slate-100 text-sm group-hover:text-cyan-300 transition-colors truncate" title={`${ep.host}:${ep.port}`}>
+                      <h4 className="font-bold text-slate-100 text-sm group-hover:text-primary/80 transition-colors truncate" title={`${ep.host}:${ep.port}`}>
                         {ep.host}:{ep.port}
                       </h4>
                       <span className="text-[10px] font-mono text-slate-500 block truncate" title={ep.protocol}>{ep.protocol}</span>
@@ -75,7 +75,7 @@ export const NetworkEndpointsView: React.FC<Props> = ({
                 </div>
 
                 {/* Cipher suite stats */}
-                <div className="grid grid-cols-2 gap-2 my-3 p-2.5 rounded-lg bg-slate-950/50 border border-slate-850 text-xs font-mono">
+                <div className="grid grid-cols-2 gap-2 my-3 p-2.5 rounded-lg bg-background/50 border border-slate-850 text-xs font-mono">
                   <div>
                     <span className="text-[10px] text-slate-500 block uppercase">Cipher Suites</span>
                     <span className="text-slate-200 font-bold">{ep.cipher_suites_count} offered</span>
@@ -125,7 +125,7 @@ export const NetworkEndpointsView: React.FC<Props> = ({
                       className={`px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 ${
                         ep.hybrid_supported
                           ? 'bg-violet-950 text-violet-300 border border-violet-700'
-                          : 'bg-slate-800 text-slate-400 border border-slate-700'
+                          : 'bg-surfaceHover text-slate-400 border border-borderMid'
                       }`}
                     >
                       <Zap className="w-2.5 h-2.5" />
@@ -142,7 +142,7 @@ export const NetworkEndpointsView: React.FC<Props> = ({
               </div>
 
               {/* Action */}
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+              <div className="pt-3 border-t border-border/80 flex items-center justify-between">
                 <span className="text-[11px] text-slate-400">
                   {ep.weak_ciphers_detected > 0 ? 'Requires remediation' : 'Baseline compliant'}
                 </span>
@@ -155,7 +155,7 @@ export const NetworkEndpointsView: React.FC<Props> = ({
                       relatedEvidenceIds
                     )
                   }
-                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 text-xs font-medium border border-slate-700 inline-flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1 rounded bg-surfaceHover hover:bg-surfaceMid text-primary hover:text-primary/80 text-xs font-medium border border-borderMid inline-flex items-center gap-1 transition-colors"
                 >
                   <span>Evidence</span>
                   <ExternalLink className="w-3 h-3" />

@@ -21,7 +21,16 @@ function startServer() {
     process.exit(1);
   }
 
-  // 2. Initialize default local admin only if explicitly configured via environment variable
+  // 2. Initialize Redis (optional — falls back to in-memory gracefully)
+  try {
+    const { initRedis } = require("./cache/redis_client");
+    initRedis();
+  } catch (err) {
+    console.warn("Notice: Redis initialization skipped:", err.message);
+  }
+
+  // 3. Initialize default local admin only if explicitly configured via environment variable
+
   try {
     const { defaultLocalAuthManager } = require("./identity/password_auth");
     const initialAdminPass = process.env.INITIAL_ADMIN_PASSWORD;

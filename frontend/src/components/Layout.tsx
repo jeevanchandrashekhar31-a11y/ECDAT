@@ -191,401 +191,256 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   };
 
+
+  // Unified nav item class
+  const navCls = (isActive: boolean) =>
+    isActive ? 'nav-item-active' : 'nav-item';
+
   return (
-    <div className="flex h-screen print:h-auto bg-background text-slate-100 font-sans selection:bg-primary/20 selection:text-primary">
-      {/* Sidebar Navigation */}
-      <aside className="w-64 glass-panel m-4 flex flex-col z-20 overflow-hidden shrink-0 print:hidden">
-        {/* Branding */}
-        <div className="p-6 border-b border-border/50">
+    <div className="flex h-screen bg-background overflow-hidden print:h-auto" style={{ padding: '10px', gap: '10px' }}>
+
+      {/* ━━━━━━ Floating Sidebar ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <aside
+        className="w-[242px] shrink-0 flex flex-col rounded-3xl z-20 print:hidden overflow-hidden"
+        style={{
+          background: 'rgba(6,13,28,0.85)',
+          backdropFilter: 'blur(32px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(32px) saturate(200%)',
+          border: '1px solid rgba(255,255,255,0.065)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.04) inset',
+        }}
+      >
+        {/* Brand */}
+        <div className="px-4 pt-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary to-secondary shadow-lg shadow-primary/20 text-white flex-shrink-0">
-              <Shield size={24} className="animate-float" />
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 animate-float"
+              style={{
+                background: 'linear-gradient(135deg, #22D3EE 0%, #6366F1 100%)',
+                boxShadow: '0 4px 16px rgba(34,211,238,0.35), 0 1px 0 rgba(255,255,255,0.25) inset',
+              }}
+            >
+              <Shield size={17} className="text-slate-950" strokeWidth={2.5} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-display font-bold tracking-tight text-white m-0 leading-none">
-                  ECDAT
-                </h1>
-                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-primary/20 border border-primary/30 text-primary font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[15px] font-display font-bold text-white leading-none">ECDAT</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-widest"
+                  style={{ background: 'rgba(34,211,238,0.12)', border: '1px solid rgba(34,211,238,0.22)', color: '#22D3EE' }}>
                   PQC
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1 font-medium tracking-wide">Enterprise Crypto Discovery</p>
+              <p className="text-[10px] mt-0.5 font-medium" style={{ color: '#2A3E5A' }}>Enterprise Crypto Discovery</p>
             </div>
           </div>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="p-4 space-y-1.5 flex-1 text-xs">
-          {/* Prominent Evaluation Entry Badge/Button */}
+        {/* Nav */}
+        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+          {/* Eval CTA */}
           {!currentUser ? (
-            <div className="mb-3 p-2 rounded-xl bg-gradient-to-r from-amber-500/15 via-cyan-500/15 to-indigo-500/15 border border-amber-500/30 text-center">
-              <NavLink
-                to="/login"
-                className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-cyan-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 hover:brightness-110 transition-all"
-              >
-                <ShieldCheck size={15} />
-                <span>Enter Evaluation Environment</span>
+            <div className="mb-3 p-1 rounded-2xl" style={{ background: 'rgba(34,211,238,0.05)', border: '1px solid rgba(34,211,238,0.1)' }}>
+              <NavLink to="/login"
+                className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-slate-950 transition-all hover:brightness-110"
+                style={{ background: 'linear-gradient(90deg, #22D3EE, #6366F1)' }}>
+                <ShieldCheck size={12} /> Enter Evaluation
               </NavLink>
             </div>
           ) : currentUser.isEvaluation ? (
-            <div className="mb-3 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between text-2xs text-emerald-300 font-semibold">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                Evaluation Active
-              </span>
+            <div className="mb-3 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-semibold"
+              style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.15)' }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#10B981' }} />
+              <span style={{ color: '#34D399' }}>Evaluation Active</span>
             </div>
           ) : null}
 
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
-                isActive
-                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(56,189,248,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-surfaceHover/50'
-              }`
-            }
-          >
-            <LayoutDashboard size={17} />
-            <span>Executive Dashboard</span>
+          <p className="section-label pt-1 pb-2">Core</p>
+          <NavLink to="/" end className={({ isActive }) => navCls(isActive)}><LayoutDashboard size={14} /><span>Executive Dashboard</span></NavLink>
+          <NavLink to="/assets" className={({ isActive }) => navCls(isActive)}><Layers size={14} /><span>Cryptographic Assets</span></NavLink>
+          <NavLink to="/findings" className={({ isActive }) => navCls(isActive)}><AlertCircle size={14} /><span>Findings</span></NavLink>
+
+          <p className="section-label pt-4 pb-2">Governance</p>
+          <NavLink to="/remediation" className={({ isActive }) => navCls(isActive)}><Wrench size={14} /><span>Remediation</span></NavLink>
+          <NavLink to="/roadmap" className={({ isActive }) => navCls(isActive)}><Milestone size={14} /><span>Migration Roadmap</span></NavLink>
+
+          <p className="section-label pt-4 pb-2">Intelligence</p>
+          <NavLink to="/graph" className={({ isActive }) => navCls(isActive)}><Network size={14} /><span>Crypto Graph</span></NavLink>
+          <NavLink to="/reports" className={({ isActive }) => navCls(isActive)}><FileText size={14} /><span>Compliance Reports</span></NavLink>
+          <NavLink to="/login" className={({ isActive }) => navCls(isActive)}>
+            <Key size={14} />
+            <span>{currentUser?.isEvaluation ? 'Eval Options' : currentUser ? 'Account' : 'Sign In'}</span>
           </NavLink>
 
-          <NavLink
-            to="/assets"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
-                isActive
-                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(56,189,248,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-surfaceHover/50'
-              }`
-            }
-          >
-            <Layers size={17} />
-            <span>Cryptographic Assets</span>
-          </NavLink>
-
-          <NavLink
-            to="/findings"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
-                isActive
-                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(56,189,248,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-surfaceHover/50'
-              }`
-            }
-          >
-            <AlertCircle size={17} />
-            <span>Findings</span>
-          </NavLink>
-
-          <NavLink
-            to="/remediation"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
-                isActive
-                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(56,189,248,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-surfaceHover/50'
-              }`
-            }
-          >
-            <Wrench size={17} />
-            <span>Remediation</span>
-          </NavLink>
-
-          <NavLink
-            to="/roadmap"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
-                isActive
-                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(56,189,248,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-surfaceHover/50'
-              }`
-            }
-          >
-            <Milestone size={17} />
-            <span>Migration Roadmap</span>
-          </NavLink>
-
-          <NavLink
-            to="/graph"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
-                isActive
-                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`
-            }
-          >
-            <Network size={17} />
-            <span>Crypto Graph</span>
-          </NavLink>
-
-          <NavLink
-            to="/reports"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
-                isActive
-                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`
-            }
-          >
-            <FileText size={17} />
-            <span>Compliance Reports</span>
-          </NavLink>
-
-          <NavLink
-            to="/login"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all ${
-                isActive
-                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`
-            }
-          >
-            <Key size={17} />
-            <span>{currentUser?.isEvaluation ? 'Evaluation Options' : (currentUser ? 'Account Options' : 'Enter Evaluation / Sign In')}</span>
-          </NavLink>
-
-          <div className="pt-4 mt-4 border-t border-slate-800/80">
+          {/* Upload CTA */}
+          <div className="pt-3 mt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
             <button
               onClick={() => setUploadModalOpen(true)}
-              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold transition-all shadow-sm"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold"
+              style={{ background: 'linear-gradient(135deg,rgba(34,211,238,0.08),rgba(99,102,241,0.08))', border: '1px solid rgba(34,211,238,0.14)', color: '#22D3EE', transition: 'all 0.2s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg,rgba(34,211,238,0.15),rgba(99,102,241,0.15))'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg,rgba(34,211,238,0.08),rgba(99,102,241,0.08))'; }}
             >
-              <Upload size={16} />
-              <span>New Scan / Upload</span>
+              <Upload size={12} /> New Scan / Upload
             </button>
           </div>
         </nav>
 
-        {/* Sidebar Footer Info */}
-        <div className="p-4 border-t border-slate-800/80 text-xs">
-          <div className="glass-card p-3 bg-slate-950/60">
-            <div className="flex items-center gap-2 text-slate-400 mb-1">
-              <ShieldCheck size={14} className="text-cyan-400" />
-              <span className="font-semibold text-slate-200">CycloneDX 1.6</span>
+        {/* Sidebar footer */}
+        <div className="px-2.5 pb-3">
+          <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(34,211,238,0.025)', border: '1px solid rgba(34,211,238,0.06)' }}>
+            <div className="flex items-center gap-2 mb-0.5">
+              <ShieldCheck size={11} style={{ color: '#22D3EE' }} />
+              <span className="text-xs font-semibold text-white">CycloneDX 1.6</span>
             </div>
-            <p className="text-[11px] text-slate-400 leading-tight">
-              Rule-based cryptographic inventory with Mosca calculus.
-            </p>
+            <p className="text-[9px] leading-snug" style={{ color: '#2A3E5A' }}>Mosca calculus · NIST PQC migration</p>
           </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Background glow effects */}
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/10 blur-[120px] pointer-events-none" />
+      {/* ━━━━━━ Main Panel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div
+        className="flex-1 flex flex-col min-w-0 rounded-3xl overflow-hidden relative"
+        style={{
+          background: 'rgba(5,12,25,0.65)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.055)',
+          boxShadow: '0 4px 32px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.04) inset',
+        }}
+      >
+        {/* Ambient glows */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
+          <div className="absolute -top-40 -left-20 w-80 h-80 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(34,211,238,0.05) 0%, transparent 70%)', animation: 'pulse 5s ease-in-out infinite' }} />
+          <div className="absolute -bottom-40 -right-20 w-80 h-80 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(129,140,248,0.05) 0%, transparent 70%)', animation: 'float 7s ease-in-out infinite' }} />
+          <div className="absolute inset-0 bg-dots opacity-20 rounded-3xl" />
+        </div>
 
-        {/* Evaluation Environment Persistent Banner */}
+        {/* Evaluation banner */}
         {currentUser?.isEvaluation && (
-          <div className="bg-gradient-to-r from-indigo-950 via-cyan-950/60 to-indigo-950 border-b border-indigo-500/40 px-6 py-2 flex items-center justify-center text-xs text-indigo-200">
-            <span className="font-semibold">
-              Evaluation Environment · Synthetic data · No production systems connected
-            </span>
+          <div className="relative z-10 px-6 py-1.5 flex items-center justify-center gap-2 text-xs font-medium"
+            style={{ background: 'linear-gradient(90deg,rgba(99,102,241,0.1),rgba(34,211,238,0.07),rgba(99,102,241,0.1))', borderBottom: '1px solid rgba(99,102,241,0.15)', color: 'rgba(165,180,252,0.8)' }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#818CF8' }} />
+            Evaluation Environment · Synthetic data · No production systems connected
           </div>
         )}
 
-        {/* Top Header */}
-        <header className="h-16 glass-panel rounded-none border-t-0 border-x-0 border-b border-border/50 flex items-center justify-between px-6 z-10 sticky top-0">
-          {/* Active Scan Selector */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Active Scan:</span>
+        {/* Header */}
+        <header className="relative z-10 h-[52px] flex items-center justify-between px-5 shrink-0"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(5,12,25,0.4)' }}>
+          {/* Scan selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block" style={{ color: '#2A3E5A' }}>Scan:</span>
             <div className="relative">
-              <Zap className="w-3.5 h-3.5 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+              <Zap className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 z-10" style={{ color: '#F59E0B' }} />
               <select
-                className="pl-9 pr-8 py-2 bg-slate-800/50 border border-slate-700/50 text-slate-200 text-xs font-semibold rounded-lg appearance-none cursor-pointer hover:bg-slate-800/80 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                className="pl-6 pr-5 py-1.5 text-xs font-semibold rounded-lg appearance-none cursor-pointer focus:outline-none"
+                style={{ background: 'rgba(5,12,25,0.9)', border: '1px solid rgba(255,255,255,0.07)', color: '#8BA0B8', transition: 'all 0.2s' }}
                 value={selectedScanId || 'all'}
                 onChange={(e) => handleScanChange(e.target.value)}
               >
-                <option value="all">⚡ All Scans (Consolidated Enterprise Portfolio)</option>
+                <option value="all">⚡ All Scans — Consolidated</option>
                 {scans.map((s) => {
                   const assetCount = s.metrics?.total_assets ?? 0;
-                  const dateStr = s.created_at ? new Date(s.created_at).toLocaleDateString() : '';
+                  // Safe date parsing — handles ISO string, epoch ms, or missing
+                  let dateStr = '';
+                  if (s.created_at) {
+                    const d = new Date(typeof s.created_at === 'number' ? s.created_at : s.created_at);
+                    dateStr = isNaN(d.getTime()) ? '' : d.toLocaleDateString();
+                  }
                   const typeLabel = s.scanner_type ? `[${s.scanner_type.toUpperCase()}] ` : '';
-                  return (
-                    <option key={s.id} value={s.id}>
-                      {typeLabel}{s.name || s.id} — {assetCount.toLocaleString()} assets {dateStr ? `(${dateStr})` : ''}
-                    </option>
-                  );
+                  return <option key={s.id} value={s.id}>{typeLabel}{s.name || s.id} — {assetCount.toLocaleString()} assets {dateStr ? `(${dateStr})` : ''}</option>;
                 })}
               </select>
-              <ChevronDown
-                size={14}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-            </div>
 
-            <button
-              onClick={checkHealthAndScans}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-              title="Refresh telemetry"
-            >
-              <RefreshCw size={14} />
+              <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#2A3E5A' }} />
+            </div>
+            <button onClick={checkHealthAndScans} className="p-1.5 rounded-lg transition-colors" style={{ color: '#2A3E5A' }}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#22D3EE'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#2A3E5A'}
+              title="Refresh">
+              <RefreshCw size={11} />
             </button>
           </div>
 
-          {/* Right Header Actions */}
-          <div className="flex items-center gap-3">
-
-            {/* Persona Switcher / User Session */}
+          {/* Right */}
+          <div className="flex items-center gap-2">
             {currentUser?.isEvaluation ? (
               <div className="relative">
-                <button
-                  onClick={() => setPersonaDropdownOpen(!personaDropdownOpen)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25 cursor-pointer"
-                >
-                  <ShieldCheck size={13} className="text-emerald-400" />
-                  <span>{currentUser.displayName} ▾</span>
+                <button onClick={() => setPersonaDropdownOpen(!personaDropdownOpen)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.16)', color: '#34D399' }}>
+                  <ShieldCheck size={11} /><span>{currentUser.displayName}</span>
+                  <ChevronDown size={10} className={`transition-transform duration-200 ${personaDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
-                {/* Dropdown */}
                 {personaDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl z-50 py-1">
-                  <div className="px-3 py-2 border-b border-slate-800 text-2xs uppercase tracking-wider text-slate-500 font-bold">
-                    Evaluation Environment ▾
+                  <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl py-1.5 z-50"
+                    style={{ background: '#050C19', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
+                    <div className="px-3 py-2 text-[10px] uppercase tracking-widest font-bold" style={{ color: '#2A3E5A', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Switch Persona</div>
+                    {[
+                      { label: 'Security Analyst', fn: async () => { await api.switchEvaluationPersona('analyst'); window.location.reload(); } },
+                      { label: 'Security Approver', fn: async () => { const c = window.prompt('Approver Passcode:'); if (c) { try { await api.switchEvaluationPersona('approver', c); window.location.reload(); } catch (e: any) { alert(e.message); } } } },
+                      { label: 'Executive Viewer', fn: async () => { const c = window.prompt('Executive Passcode:'); if (c) { try { await api.switchEvaluationPersona('executive', c); window.location.reload(); } catch (e: any) { alert(e.message); } } } },
+                    ].map(({ label, fn }) => (
+                      <button key={label} onClick={fn} className="w-full text-left px-4 py-2.5 text-xs transition-all" style={{ color: '#8BA0B8' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(34,211,238,0.05)'; (e.currentTarget as HTMLButtonElement).style.color = '#22D3EE'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = ''; (e.currentTarget as HTMLButtonElement).style.color = '#8BA0B8'; }}>
+                        {label}
+                      </button>
+                    ))}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', margin: '4px 0' }} />
+                    <button onClick={async () => { if (window.confirm('Reset Evaluation?')) { await api.resetEvaluationTenant(); window.location.reload(); } }}
+                      className="w-full text-left px-4 py-2.5 text-xs font-semibold" style={{ color: '#F59E0B' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245,158,11,0.05)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = ''}>Reset Evaluation</button>
+                    <button onClick={() => { authManager.clearSession(); window.location.href = '/login'; }}
+                      className="w-full text-left px-4 py-2.5 text-xs font-semibold" style={{ color: '#FB7185' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(244,63,94,0.05)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = ''}>Exit Evaluation</button>
                   </div>
-                  <button
-                    onClick={async () => {
-                      await api.switchEvaluationPersona('analyst');
-                      window.location.reload();
-                    }}
-                    className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-cyan-400"
-                  >
-                    Security Analyst
-                  </button>
-                  <button
-                    onClick={async () => {
-                      const code = window.prompt("Enter Approver Passcode:");
-                      if (code) {
-                        try {
-                          await api.switchEvaluationPersona('approver', code);
-                          window.location.reload();
-                        } catch (e: any) { alert(e.message || "Failed"); }
-                      }
-                    }}
-                    className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-cyan-400"
-                  >
-                    Security Approver
-                  </button>
-                  <button
-                    onClick={async () => {
-                      const code = window.prompt("Enter Executive Passcode:");
-                      if (code) {
-                        try {
-                          await api.switchEvaluationPersona('executive', code);
-                          window.location.reload();
-                        } catch (e: any) { alert(e.message || "Failed"); }
-                      }
-                    }}
-                    className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-cyan-400"
-                  >
-                    Executive Viewer
-                  </button>
-                  <div className="border-t border-slate-800 my-1"></div>
-                  <div className="px-4 py-2 text-xs text-indigo-400 hover:bg-slate-800 font-semibold cursor-pointer">
-                    Evaluation Guide
-                  </div>
-                  <button
-                    onClick={async () => {
-                      if (window.confirm("Reset Evaluation Environment?\n\nThis will restore the evaluation environment to its clean starting state.\n\nProduction data is not affected.")) {
-                        await api.resetEvaluationTenant();
-                        window.location.reload();
-                      }
-                    }}
-                    className="w-full text-left px-4 py-2 text-xs text-amber-400 hover:bg-slate-800 font-semibold"
-                  >
-                    Reset Evaluation
-                  </button>
-                  <button
-                    onClick={async () => {
-                      authManager.clearSession();
-                      window.location.href = '/login';
-                    }}
-                    className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:bg-slate-800 font-semibold"
-                  >
-                    Exit Evaluation
-                  </button>
-                </div>
                 )}
               </div>
             ) : (
-              <NavLink
-                to="/login"
-                className={({ isActive }) =>
-                  `inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                    isActive
-                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-                      : currentUser
-                      ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25'
-                      : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 hover:bg-indigo-500/30 font-bold shadow-sm'
-                  }`
-                }
-              >
-                {currentUser ? (
-                  <>
-                    <UserCheck size={13} />
-                    <span>{currentUser.username}</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck size={13} className="text-indigo-400" />
-                    <span>Enter Evaluation</span>
-                  </>
-                )}
+              <NavLink to="/login"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#8BA0B8' }}>
+                {currentUser ? <><UserCheck size={11} /><span>{currentUser.username}</span></> : <><ShieldCheck size={11} /><span>Sign In</span></>}
               </NavLink>
             )}
-
-            {/* Core Status */}
             <StatusIndicator online={engineOnline} version={engineVersion} />
           </div>
         </header>
 
-        {/* Security Alert Interceptor Banner */}
+        {/* Security alert */}
         {securityAlert && location.pathname !== '/login' && (
-          <div className="bg-rose-950/90 border-b border-rose-500/60 px-6 py-2.5 flex items-center justify-between text-xs text-rose-200 animate-in slide-in-from-top duration-200">
-            <div className="flex items-center gap-2.5">
-              <div className="p-1 rounded-md bg-rose-900/60 text-rose-400 border border-rose-700/50">
-                <AlertTriangle size={15} />
-              </div>
-              <span className="font-bold text-white tracking-wide">
-                Security Defense Alert ({securityAlert.status}):
-              </span>
-              <span className="text-rose-300">{securityAlert.message}</span>
+          <div className="relative z-10 px-5 py-2 flex items-center justify-between text-xs"
+            style={{ background: 'rgba(244,63,94,0.07)', borderBottom: '1px solid rgba(244,63,94,0.15)', color: '#FCA5A5' }}>
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={12} style={{ color: '#F43F5E' }} />
+              <span className="font-bold text-white">Security Alert ({securityAlert.status}):</span>
+              <span>{securityAlert.message}</span>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate('/login')}
-                className="px-3 py-1 rounded bg-rose-900/80 hover:bg-rose-800 text-rose-100 font-semibold text-2xs transition-colors border border-rose-700"
-              >
-                Authenticate Now
-              </button>
-              <button
-                onClick={() => setSecurityAlert(null)}
-                className="p-1 text-rose-400 hover:text-white transition-colors"
-                title="Dismiss alert"
-              >
-                <X size={14} />
-              </button>
+              <button onClick={() => navigate('/login')} className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                style={{ background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.25)' }}>Authenticate</button>
+              <button onClick={() => setSecurityAlert(null)} style={{ color: '#2A3E5A' }}><X size={12} /></button>
             </div>
           </div>
         )}
 
-        {/* Routed Page Content */}
-        <main className="flex-1 p-6 overflow-y-auto print:overflow-visible print:h-auto">
+        {/* Page Content — key triggers spring re-entry on every route change */}
+        <main
+          key={location.pathname}
+          className="flex-1 overflow-y-auto relative z-10 animate-page-in print:overflow-visible"
+          style={{ padding: '0' }}
+        >
           {children || <Outlet context={{ selectedScanId, scans, onUploadSuccess: handleUploadSuccess }} />}
         </main>
       </div>
 
-      {/* 3. Ingest Modal */}
-      <CbomUploadModal
-        isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        onSuccess={handleUploadSuccess}
-      />
+      {/* Upload Modal */}
+      <CbomUploadModal isOpen={uploadModalOpen} onClose={() => setUploadModalOpen(false)} onSuccess={handleUploadSuccess} />
     </div>
   );
 };

@@ -177,4 +177,40 @@ router.post("/evidence-bundle", (req, res) => {
   }
 });
 
+/**
+ * GET /api/v1/compliance/reports  (alias for /standards)
+ * Returns compliance standards summary — used by the Reports page.
+ */
+router.get("/reports", (req, res) => {
+  try {
+    const mapper = getDefaultComplianceMapper();
+    const catalog = mapper.getCatalog();
+    const standards = (catalog.standards || []).map((s) => ({
+      id: s.id || s.name,
+      name: s.name,
+      version: s.version || "1.0",
+      controls_total: (s.controls || []).length,
+      controls_supported: (s.controls || []).filter(c => c.support_level === "SUPPORTED CONTROL").length,
+      controls_partial: (s.controls || []).filter(c => c.support_level === "PARTIAL SUPPORT").length,
+      controls_gap: (s.controls || []).filter(c => c.support_level === "NOT SUPPORTED").length,
+    }));
+    return res.json({ success: true, total: standards.length, reports: standards, standards });
+  } catch (err) {
+    return res.status(500).json({ error: "Compliance reports failed", message: err.message });
+  }
+});
+
+/**
+ * GET /api/v1/compliance  (root listing)
+ */
+router.get("/", (req, res) => {
+  try {
+    const mapper = getDefaultComplianceMapper();
+    const catalog = mapper.getCatalog();
+    return res.json({ success: true, standards: catalog.standards || [], total: (catalog.standards || []).length });
+  } catch (err) {
+    return res.status(500).json({ error: "Compliance listing failed", message: err.message });
+  }
+});
+
 module.exports = router;

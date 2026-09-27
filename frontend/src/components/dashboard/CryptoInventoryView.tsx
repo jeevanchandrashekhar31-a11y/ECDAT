@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   Layers,
   Search,
@@ -53,7 +53,7 @@ export const CryptoInventoryView: React.FC<Props> = ({
       <div className="glass-card p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-cyan-400" />
+            <Layers className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-bold text-slate-100">Cryptographic Inventory (CBOM)</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -70,7 +70,7 @@ export const CryptoInventoryView: React.FC<Props> = ({
                 allCompEvidenceIds
               )
             }
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-950/80 border border-cyan-700/60 text-cyan-300 hover:bg-cyan-900/80 transition-colors inline-flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-950/80 border border-cyan-700/60 text-primary/80 hover:bg-cyan-900/80 transition-colors inline-flex items-center gap-1.5"
           >
             <span>Evidence for All ({data.total_components})</span>
             <ExternalLink className="w-3.5 h-3.5" />
@@ -87,7 +87,7 @@ export const CryptoInventoryView: React.FC<Props> = ({
             placeholder="Search algorithms, files, components..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-slate-900/90 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+            className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-surface/90 border border-border text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
           />
         </div>
 
@@ -98,7 +98,7 @@ export const CryptoInventoryView: React.FC<Props> = ({
             className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
               selectedPrimitive === 'ALL'
                 ? 'bg-cyan-950 border border-cyan-700 text-cyan-200'
-                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                : 'bg-surface border border-border text-slate-400 hover:text-slate-200'
             }`}
           >
             All Primitives
@@ -110,7 +110,7 @@ export const CryptoInventoryView: React.FC<Props> = ({
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 selectedPrimitive === prim
                   ? 'bg-cyan-950 border border-cyan-700 text-cyan-200'
-                  : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                  : 'bg-surface border border-border text-slate-400 hover:text-slate-200'
               }`}
             >
               {prim}
@@ -123,7 +123,7 @@ export const CryptoInventoryView: React.FC<Props> = ({
       <div className="glass-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+            <thead className="bg-background/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-border">
               <tr>
                 <th className="py-3 px-4">Component & Algorithm</th>
                 <th className="py-3 px-4">Key Size</th>
@@ -151,7 +151,7 @@ export const CryptoInventoryView: React.FC<Props> = ({
                     >
                       <td className="py-3 px-4">
                         <div className="font-semibold text-slate-100 flex items-center gap-1.5">
-                          <KeyRound className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                          <KeyRound className="w-3.5 h-3.5 text-primary shrink-0" />
                           <span>{comp.name}</span>
                         </div>
                         <span className="font-mono text-[10px] text-slate-500">{comp.id}</span>
@@ -160,7 +160,7 @@ export const CryptoInventoryView: React.FC<Props> = ({
                         {comp.key_size ? `${comp.key_size} bit` : 'N/A'}
                       </td>
                       <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px] font-medium border border-slate-700">
+                        <span className="px-2 py-0.5 rounded bg-surfaceHover text-slate-300 text-[11px] font-medium border border-borderMid">
                           {comp.primitive}
                         </span>
                       </td>
@@ -216,7 +216,7 @@ export const CryptoInventoryView: React.FC<Props> = ({
                             <FileCode className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                             <span className="truncate">{comp.location}</span>
                             {comp.line_number && (
-                              <span className="text-cyan-400">:{comp.line_number}</span>
+                              <span className="text-primary">:{comp.line_number}</span>
                             )}
                           </div>
                         ) : (
@@ -232,7 +232,7 @@ export const CryptoInventoryView: React.FC<Props> = ({
                               [evId]
                             )
                           }
-                          className="px-2.5 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 border border-slate-700 text-xs inline-flex items-center gap-1 transition-colors"
+                          className="px-2.5 py-1 rounded bg-surfaceHover/80 hover:bg-surfaceMid text-primary hover:text-primary/80 border border-borderMid text-xs inline-flex items-center gap-1 transition-colors"
                         >
                           <span>Evidence</span>
                           <ExternalLink className="w-3 h-3" />

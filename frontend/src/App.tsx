@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+﻿import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
@@ -39,13 +39,13 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-          <div className="max-w-lg w-full bg-slate-900 border border-rose-500/30 rounded-2xl p-6 shadow-2xl">
+        <div className="min-h-screen bg-background text-slate-100 flex items-center justify-center p-6">
+          <div className="max-w-lg w-full bg-surface border border-rose-500/30 rounded-2xl p-6 shadow-2xl">
             <h2 className="text-xl font-bold text-rose-400 mb-2">ECDAT UI Initialization Notice</h2>
             <p className="text-sm text-slate-400 mb-4">
               An unexpected render issue occurred while initializing the view.
             </p>
-            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-mono text-rose-300 mb-4 overflow-x-auto">
+            <div className="bg-background p-3 rounded-lg border border-border text-xs font-mono text-rose-300 mb-4 overflow-x-auto">
               {this.state.error?.message || 'Unknown Error'}
             </div>
             <button

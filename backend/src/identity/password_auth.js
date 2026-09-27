@@ -206,8 +206,78 @@ class LocalAuthManager {
     this.lockoutDurationMs = lockoutDurationMs;
     this.auditLogger = auditLogger;
 
-    // In-memory store: username -> userRecord
+    // In-memory store: username -> userRecord (sync-authoritative)
     this.users = new Map();
+
+    // PostgreSQL write-through: load persisted users on startup (fire-and-forget)
+    // This restores registered users across process restarts without blocking.
+    this._pgReady = false;
+    this._loadFromPostgres();
+  }
+
+  /** Asynchronously loads persisted users from Postgres into the in-memory Map. */
+  _loadFromPostgres() {
+    try {
+      const { db, isDbConnected } = require("../db/connection");
+      isDbConnected().then((ok) => {
+        if (!ok) return;
+        this._pgReady = true;
+        return db("users").select("*").catch(() => []);
+      }).then((rows) => {
+        if (!rows || !Array.isArray(rows)) return;
+        for (const row of rows) {
+          if (!this.users.has(row.username)) {
+            this.users.set(row.username, {
+              userId: row.user_id,
+              username: row.username,
+              email: row.email,
+              passwordHash: row.password_hash,
+              roles: row.roles || ["viewer"],
+              tenantId: row.tenant_id,
+              failedAttempts: row.failed_attempts || 0,
+              lockedUntil: row.locked_until ? new Date(row.locked_until) : null,
+              mfaEnabled: row.mfa_enabled || false,
+              mfaSecret: row.mfa_secret || null,
+              backupCodeHashes: row.backup_code_hashes || [],
+              createdAt: row.created_at,
+              lastLoginAt: row.last_login_at,
+            });
+          }
+        }
+      }).catch(() => {});
+    } catch { /* DB module not available — in-memory only */ }
+  }
+
+  /** Fire-and-forget async write to Postgres (does not block or throw). */
+  _pgPersistUser(record) {
+    if (!this._pgReady) return;
+    try {
+      const { db } = require("../db/connection");
+      db("users").insert({
+        user_id: record.userId,
+        username: record.username,
+        email: record.email,
+        password_hash: record.passwordHash,
+        roles: record.roles,
+        tenant_id: record.tenantId,
+        failed_attempts: 0,
+        mfa_enabled: false,
+        backup_code_hashes: [],
+        is_active: true,
+      }).onConflict("username").ignore().catch(() => {});
+    } catch { /* ignore */ }
+  }
+
+  /** Fire-and-forget update of lockout state in Postgres. */
+  _pgUpdateLockout(username, failedAttempts, lockedUntil) {
+    if (!this._pgReady) return;
+    try {
+      const { db } = require("../db/connection");
+      db("users").where({ username }).update({
+        failed_attempts: failedAttempts,
+        locked_until: lockedUntil,
+      }).catch(() => {});
+    } catch { /* ignore */ }
   }
 
   /**
@@ -256,6 +326,8 @@ class LocalAuthManager {
     };
 
     this.users.set(normUser, userRecord);
+    // Write-through to Postgres (non-blocking — Map remains authoritative)
+    this._pgPersistUser(userRecord);
     return {
       userId: userRecord.userId,
       username: userRecord.username,

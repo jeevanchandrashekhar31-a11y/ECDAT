@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   Binary,
   Search,
@@ -36,7 +36,7 @@ export const AlgorithmsView: React.FC<Props> = ({
       <div className="glass-card p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Binary className="w-5 h-5 text-cyan-400" />
+            <Binary className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-bold text-slate-100">Cryptographic Algorithm Catalog</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -44,7 +44,7 @@ export const AlgorithmsView: React.FC<Props> = ({
           </p>
         </div>
 
-        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-surfaceHover text-slate-300 border border-borderMid">
           {data.total_distinct_algorithms} Distinct Algorithms
         </span>
       </div>
@@ -57,7 +57,7 @@ export const AlgorithmsView: React.FC<Props> = ({
           placeholder="Filter algorithms, primitives, migration targets..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-slate-900/90 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+          className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-surface/90 border border-border text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
         />
       </div>
 
@@ -73,13 +73,13 @@ export const AlgorithmsView: React.FC<Props> = ({
           return (
             <div
               key={algo.name}
-              className="glass-card p-5 flex flex-col justify-between hover:border-slate-700 transition-all group min-w-0"
+              className="glass-card p-5 flex flex-col justify-between hover:border-borderMid transition-all group min-w-0"
             >
               <div>
                 {/* Header row */}
                 <div className="flex items-start justify-between mb-2">
                   <div className="min-w-0 pr-2">
-                    <h4 className="font-bold text-slate-100 text-base group-hover:text-cyan-300 transition-colors truncate" title={algo.name}>
+                    <h4 className="font-bold text-slate-100 text-base group-hover:text-primary/80 transition-colors truncate" title={algo.name}>
                       {algo.name}
                     </h4>
                     <span className="text-[11px] font-mono text-slate-400 block truncate" title={algo.primitive}>{algo.primitive}</span>
@@ -93,7 +93,7 @@ export const AlgorithmsView: React.FC<Props> = ({
                         evidenceIds
                       )
                     }
-                    className="px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-950/80 border border-cyan-700/60 text-cyan-300 hover:bg-cyan-900 transition-colors cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-950/80 border border-cyan-700/60 text-primary/80 hover:bg-cyan-900 transition-colors cursor-pointer"
                     title="Click to view occurrences"
                   >
                     {algo.count} {algo.count === 1 ? 'call' : 'calls'}
@@ -102,7 +102,7 @@ export const AlgorithmsView: React.FC<Props> = ({
 
                 {/* Risk tags */}
                 <div className="space-y-1.5 my-3 text-xs">
-                  <div className="flex items-center justify-between bg-slate-950/40 p-2 rounded-lg border border-slate-850">
+                  <div className="flex items-center justify-between bg-background/40 p-2 rounded-lg border border-slate-850">
                     <span className="text-slate-400 font-mono text-[11px]">Classical Risk:</span>
                     <span
                       className={`font-semibold text-[11px] ${
@@ -117,7 +117,7 @@ export const AlgorithmsView: React.FC<Props> = ({
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between bg-slate-950/40 p-2 rounded-lg border border-slate-850">
+                  <div className="flex items-center justify-between bg-background/40 p-2 rounded-lg border border-slate-850">
                     <span className="text-slate-400 font-mono text-[11px]">Quantum Risk:</span>
                     <span
                       className={`font-semibold text-[11px] truncate max-w-[170px] ${
@@ -130,7 +130,7 @@ export const AlgorithmsView: React.FC<Props> = ({
                 </div>
 
                 {/* Target Replacement */}
-                <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 text-xs mb-3">
+                <div className="p-2.5 rounded-lg bg-background/70 border border-border text-xs mb-3">
                   <span className="text-[10px] text-slate-500 block uppercase font-mono mb-0.5">
                     NIST Target Migration
                   </span>
@@ -142,7 +142,7 @@ export const AlgorithmsView: React.FC<Props> = ({
               </div>
 
               {/* Footer Evidence Link */}
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+              <div className="pt-3 border-t border-border/80 flex items-center justify-between">
                 <span className="text-[11px] text-slate-400 font-mono">
                   {algo.evidence_occurrences.length} call sites
                 </span>
@@ -155,7 +155,7 @@ export const AlgorithmsView: React.FC<Props> = ({
                       evidenceIds
                     )
                   }
-                  className="text-xs text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1"
+                  className="text-xs text-primary hover:text-primary/80 font-medium inline-flex items-center gap-1"
                 >
                   <span>Inspect Evidence</span>
                   <ExternalLink className="w-3 h-3" />

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+﻿import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   AppWindow,
   Server,
@@ -44,11 +44,11 @@ const getTierMeta = (tier: GraphTier) => {
   switch (tier) {
     case 'Application':
       return {
-        color: 'text-cyan-400',
+        color: 'text-primary',
         bg: 'bg-cyan-950/80',
         border: 'border-cyan-700/70',
         icon: AppWindow,
-        ring: 'ring-cyan-500/30',
+        ring: 'ring-primary/30',
       };
     case 'Service':
       return {
@@ -104,7 +104,7 @@ const getSeverityBadge = (sev: SeverityLevel) => {
     case 'Low':
       return 'text-sky-400 border-sky-500/60 bg-sky-950/70';
     default:
-      return 'text-slate-400 border-slate-700 bg-slate-850';
+      return 'text-slate-400 border-borderMid bg-slate-850';
   }
 };
 
@@ -445,28 +445,28 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
   const selectedNode = selectedNodeId ? nodeMap.get(selectedNodeId) : null;
 
   return (
-    <div className="relative w-full h-[720px] rounded-2xl bg-slate-950 border border-slate-800/90 overflow-hidden shadow-2xl flex flex-col">
+    <div className="relative w-full h-[720px] rounded-2xl bg-background border border-border/90 overflow-hidden shadow-2xl flex flex-col">
       {/* Canvas Controls Header */}
-      <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-surface/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-border text-xs">
         <span className="text-slate-400 font-mono">Zoom: {Math.round(zoom * 100)}%</span>
         <div className="h-3 w-px bg-slate-700" />
         <button
           onClick={() => setZoom((z) => Math.min(2.2, z * 1.05))}
-          className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+          className="p-1 rounded text-slate-300 hover:text-white hover:bg-surfaceHover transition-colors"
           title="Zoom In"
         >
           <ZoomIn className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => setZoom((z) => Math.max(0.02, z * 0.95))}
-          className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+          className="p-1 rounded text-slate-300 hover:text-white hover:bg-surfaceHover transition-colors"
           title="Zoom Out"
         >
           <ZoomOut className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={resetView}
-          className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+          className="p-1 rounded text-slate-300 hover:text-white hover:bg-surfaceHover transition-colors"
           title="Fit to Screen"
         >
           <Maximize2 className="w-3.5 h-3.5" />
@@ -474,7 +474,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
       </div>
 
       {/* Tier Column Headers Floating Strip */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] font-mono">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-surface/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-border text-[11px] font-mono">
         <span className="text-slate-500 mr-1">Pipeline Tiers:</span>
         {TIER_ORDER.map((tier, idx) => (
           <React.Fragment key={tier}>
@@ -486,8 +486,8 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
 
       {/* Empty State Overlay when no nodes exist */}
       {nodes.length === 0 && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-950/95 z-30">
-          <div className="w-16 h-16 rounded-2xl bg-cyan-950/50 border border-cyan-800/50 flex items-center justify-center mb-4 text-cyan-400">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-background/95 z-30">
+          <div className="w-16 h-16 rounded-2xl bg-cyan-950/50 border border-cyan-800/50 flex items-center justify-center mb-4 text-primary">
             <Network className="w-8 h-8" />
           </div>
           <h3 className="text-lg font-bold text-slate-100 mb-1">No Cryptographic Relationships Discovered</h3>
@@ -618,10 +618,10 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
 
       {/* Selected Node Details Drawer */}
       {selectedNode && (
-        <div className="absolute right-0 top-0 bottom-0 w-96 bg-slate-900/95 backdrop-blur-xl border-l border-slate-800 p-6 overflow-y-auto shadow-2xl z-30 animate-in slide-in-from-right-4 duration-200">
+        <div className="absolute right-0 top-0 bottom-0 w-96 bg-surface/95 backdrop-blur-xl border-l border-border p-6 overflow-y-auto shadow-2xl z-30 animate-in slide-in-from-right-4 duration-200">
           <div className="flex items-start justify-between mb-4 gap-4">
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] uppercase tracking-wider font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 font-semibold">
+              <span className="text-[10px] uppercase tracking-wider font-mono px-2 py-0.5 rounded bg-surfaceHover text-primary font-semibold">
                 {selectedNode.tier} Tier
               </span>
               <h3 className="text-lg font-bold text-slate-100 mt-1 break-words">
@@ -631,14 +631,14 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
             </div>
             <button
               onClick={() => setSelectedNodeId(null)}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors shrink-0"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-surfaceHover transition-colors shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Node Metadata Strip */}
-          <div className="space-y-2 py-3 border-y border-slate-800 text-xs">
+          <div className="space-y-2 py-3 border-y border-border text-xs">
             <div className="flex justify-between">
               <span className="text-slate-400">Severity:</span>
               <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${getSeverityBadge(selectedNode.severity)}`}>
@@ -655,7 +655,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Exposure:</span>
-              <span className="text-cyan-400 font-mono font-medium">{selectedNode.exposure}</span>
+              <span className="text-primary font-mono font-medium">{selectedNode.exposure}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">PQC Readiness:</span>
@@ -673,10 +673,10 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
           <div className="mt-5">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                <Lock className="w-3.5 h-3.5 text-primary" />
                 <span>Linked Cryptographic Evidence</span>
               </h4>
-              <span className="text-xs font-mono text-cyan-400 font-bold">
+              <span className="text-xs font-mono text-primary font-bold">
                 {(selectedNode.evidence_items || []).length} records
               </span>
             </div>
@@ -690,10 +690,10 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
                   return (
                     <div
                       key={evId}
-                      className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs hover:border-slate-700 transition-colors"
+                      className="p-3 rounded-xl bg-background/80 border border-border text-xs hover:border-borderMid transition-colors"
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-mono text-cyan-400 font-semibold">{evId}</span>
+                        <span className="font-mono text-primary font-semibold">{evId}</span>
                         {ev && (
                           <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${getSeverityBadge(ev.severity)}`}>
                             {ev.severity}
@@ -706,7 +706,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
                         </div>
                       )}
                       {ev?.evidence_context && (
-                        <pre className="text-[10px] font-mono bg-slate-900 p-1.5 rounded mt-1.5 text-cyan-200 overflow-x-auto truncate">
+                        <pre className="text-[10px] font-mono bg-surface p-1.5 rounded mt-1.5 text-cyan-200 overflow-x-auto truncate">
                           <code>{ev.evidence_context}</code>
                         </pre>
                       )}
@@ -726,7 +726,7 @@ export const CryptoGraphCanvas: React.FC<CryptoGraphCanvasProps> = ({
                     selectedNode.evidence_items || []
                   )
                 }
-                className="w-full mt-4 py-2 px-3 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full mt-4 py-2 px-3 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 text-primary/80 border border-cyan-700/60 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
               >
                 <span>Inspect in Evidence Drawer</span>
                 <ExternalLink className="w-3.5 h-3.5" />

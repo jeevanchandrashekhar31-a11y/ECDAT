@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   Filter,
@@ -131,7 +131,7 @@ export const CryptoGraph: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            <span className="text-[11px] font-mono uppercase tracking-widest text-cyan-400 font-semibold">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-primary font-semibold">
               Interactive Cryptographic Topology
             </span>
           </div>
@@ -147,14 +147,14 @@ export const CryptoGraph: React.FC = () => {
           <button
             onClick={() => fetchGraph()}
             disabled={loading}
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-slate-100 border border-slate-700 transition-colors"
+            className="p-2 rounded-lg bg-surfaceHover/80 hover:bg-surfaceMid text-slate-300 hover:text-slate-100 border border-borderMid transition-colors"
             title="Refresh Graph"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-primary' : ''}`} />
           </button>
           <button
             onClick={handleResetFilters}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 inline-flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-surfaceHover hover:bg-surfaceMid text-slate-300 border border-borderMid inline-flex items-center gap-1.5 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset Filters</span>
@@ -164,12 +164,12 @@ export const CryptoGraph: React.FC = () => {
 
       {/* Filter Toolbar (Severity, Owner, Environment, Algorithm, PQC Readiness, Exposure) */}
       <div className="glass-card p-4 space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-800/70 pb-2.5">
+        <div className="flex items-center justify-between border-b border-border/70 pb-2.5">
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-cyan-400 transition-colors"
+            className="flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-primary transition-colors"
           >
-            <Filter className={`w-4 h-4 ${showFilters ? 'text-cyan-400' : 'text-slate-400'}`} />
+            <Filter className={`w-4 h-4 ${showFilters ? 'text-primary' : 'text-slate-400'}`} />
             <span>{showFilters ? 'Hide Advanced Filters' : 'Topology & Blast Radius Filters'}</span>
           </button>
           <span className="text-[11px] text-slate-500 font-mono">
@@ -178,7 +178,7 @@ export const CryptoGraph: React.FC = () => {
         </div>
 
         {showFilters && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs pb-2 border-b border-slate-800/50">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs pb-2 border-b border-border/50">
           {/* Severity */}
           <div>
             <label htmlFor="filter-severity" className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
@@ -188,7 +188,7 @@ export const CryptoGraph: React.FC = () => {
               id="filter-severity"
               value={severity}
               onChange={(e) => setSeverity(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
+              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
             >
               <option value="ALL">All Severities</option>
               {metadata.severities.map((s) => (
@@ -208,7 +208,7 @@ export const CryptoGraph: React.FC = () => {
               id="filter-owner"
               value={owner}
               onChange={(e) => setOwner(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
+              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
             >
               <option value="ALL">All Owners</option>
               {metadata.owners.map((o) => (
@@ -228,7 +228,7 @@ export const CryptoGraph: React.FC = () => {
               id="filter-environment"
               value={environment}
               onChange={(e) => setEnvironment(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
+              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
             >
               <option value="ALL">All Environments</option>
               {metadata.environments.map((env) => (
@@ -248,7 +248,7 @@ export const CryptoGraph: React.FC = () => {
               id="filter-algorithm"
               value={algorithm}
               onChange={(e) => setAlgorithm(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
+              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
             >
               <option value="ALL">All Algorithms</option>
               {metadata.algorithms.map((algo) => (
@@ -268,7 +268,7 @@ export const CryptoGraph: React.FC = () => {
               id="filter-pqc-readiness"
               value={pqcReadiness}
               onChange={(e) => setPqcReadiness(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
+              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
             >
               <option value="ALL">All Horizons</option>
               {metadata.pqc_statuses.map((pqc) => (
@@ -288,7 +288,7 @@ export const CryptoGraph: React.FC = () => {
               id="filter-exposure"
               value={exposure}
               onChange={(e) => setExposure(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
+              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
             >
               <option value="ALL">All Exposures</option>
               {metadata.exposures.map((exp) => (
@@ -302,7 +302,7 @@ export const CryptoGraph: React.FC = () => {
         )}
 
         {/* Blast Radius Simulator Control */}
-        <div className="flex items-center gap-4 bg-slate-900/50 p-3 rounded-lg border border-slate-800">
+        <div className="flex items-center gap-4 bg-surface/50 p-3 rounded-lg border border-border">
           <div className="flex-1 max-w-sm">
             <label htmlFor="blast-radius-slider" className="text-xs font-semibold text-rose-400 flex justify-between mb-2">
               <span>Simulated Quantum Arrival Year</span>
@@ -345,7 +345,7 @@ export const CryptoGraph: React.FC = () => {
             placeholder="Search nodes by label, service name, algorithm, or asset identifier..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-slate-900 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+            className="w-full pl-9 pr-3 py-1.5 rounded-lg text-xs bg-surface border border-border text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
           />
         </div>
       </div>
@@ -353,7 +353,7 @@ export const CryptoGraph: React.FC = () => {
       {/* Main Canvas Area */}
       {loading && !graphData ? (
         <div className="glass-card p-16 flex flex-col items-center justify-center text-center">
-          <Loader2 className="w-10 h-10 text-cyan-400 animate-spin mb-3" />
+          <Loader2 className="w-10 h-10 text-primary animate-spin mb-3" />
           <p className="text-sm font-semibold text-slate-200">
             Synthesizing Cryptographic Relationship Topology...
           </p>

@@ -893,6 +893,8 @@ async function handleDemoLogin(req, res) {
     customClaims: {
       tenantId: "evaluation-tenant",
       isPlatformAdmin: false,
+      isEvaluation: true,
+      mode: "evaluation",
     },
   });
 
@@ -1923,6 +1925,25 @@ router.get("/me", (req, res) => {
     user: req.user || { userId: "api-admin", roles: ["admin"] },
   });
 });
+
+// Alias: /session -> /me (frontend compatibility)
+router.get("/session", (req, res) => {
+  if (!req.auth || !req.auth.authenticated) {
+    return res.status(401).json({ error: "Unauthenticated", code: "AUTHENTICATION_REQUIRED" });
+  }
+  return res.json({
+    authenticated: true,
+    mode: req.auth.mode || "api_key",
+    role: req.auth.role,
+    roles: req.auth.roles || [req.auth.role],
+    user: req.user || { userId: "api-admin", roles: ["admin"] },
+    tenantId: req.tenantContext?.tenantId || req.auth?.tenantId,
+    isEvaluation: req.auth?.mode === "evaluation" || req.auth?.isEvaluation,
+    displayName: req.user?.displayName || req.auth?.displayName || req.auth?.role,
+  });
+});
+
+
 
 /**
  * POST /api/v1/auth/secrets/rotate

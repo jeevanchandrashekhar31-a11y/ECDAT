@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Activity,
   ExternalLink,
@@ -23,7 +23,7 @@ export const RuntimeObservationsView: React.FC<Props> = ({
       <div className="glass-card p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-cyan-400" />
+            <Activity className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-bold text-slate-100">Live Dynamic Runtime Observations</h3>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -47,11 +47,11 @@ export const RuntimeObservationsView: React.FC<Props> = ({
           return (
             <div
               key={obs.id}
-              className="glass-card p-5 hover:border-slate-700 transition-all group"
+              className="glass-card p-5 hover:border-borderMid transition-all group"
             >
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-primary/80 border border-cyan-800">
                     {obs.observation_type}
                   </span>
                   <h4 className="font-semibold text-slate-100 text-sm">
@@ -75,14 +75,14 @@ export const RuntimeObservationsView: React.FC<Props> = ({
 
               {/* Monospace Evidence Snippet */}
               {obs.evidence_snippet && (
-                <div className="bg-slate-950/90 rounded-lg p-3 border border-slate-800/80 font-mono text-xs text-cyan-200 mb-3 flex items-center justify-between">
+                <div className="bg-background/90 rounded-lg p-3 border border-border/80 font-mono text-xs text-cyan-200 mb-3 flex items-center justify-between">
                   <span className="truncate">{obs.evidence_snippet}</span>
                   <span className="text-[10px] text-slate-500 uppercase shrink-0 ml-2">Trace telemetry</span>
                 </div>
               )}
 
               {/* Action row */}
-              <div className="flex items-center justify-between pt-2 text-xs border-t border-slate-800/60">
+              <div className="flex items-center justify-between pt-2 text-xs border-t border-border/60">
                 <span className="text-slate-500 font-mono text-[11px]">Obs ID: {obs.id}</span>
 
                 <button
@@ -93,7 +93,7 @@ export const RuntimeObservationsView: React.FC<Props> = ({
                       relatedEvidenceIds.length > 0 ? relatedEvidenceIds : Object.keys(evidenceLookup).slice(0, 1)
                     )
                   }
-                  className="text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1 transition-colors"
+                  className="text-primary hover:text-primary/80 font-medium inline-flex items-center gap-1 transition-colors"
                 >
                   <span>Inspect Linked Finding</span>
                   <ExternalLink className="w-3 h-3" />

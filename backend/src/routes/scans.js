@@ -7,6 +7,7 @@ const {
   deleteScanById,
 } = require("../services/cbom_ingestion");
 const { requireRole } = require("../middleware/auth");
+const { rejectIfTenantForbidden } = require("../middleware/tenant_guard");
 
 const router = express.Router();
 
@@ -49,6 +50,7 @@ router.delete("/", requireRole(["platform administrator", "security administrato
 router.get("/:scanId", async (req, res, next) => {
   try {
     const scan = await getScanById(req.params.scanId, req.tenantContext);
+    if (rejectIfTenantForbidden(scan, res)) return;
     if (!scan) {
       return res.status(404).json({
         error: "NotFound",

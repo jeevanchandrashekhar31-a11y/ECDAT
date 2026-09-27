@@ -39,3 +39,12 @@ artifacts/SHA256SUMS.sig
 artifacts/SHA512SUMS
 security_evidence/
 ecdat_clean_package.zip
+
+# Temp scan session directories (auto-generated, go to Neon after scan)
+artifacts/uploads/*
+!artifacts/uploads/.gitkeep
+artifacts/temp_*.json
+
+# Large generated files that don't belong in source
+network_scan_audit.jsonl
+examples/real_target/

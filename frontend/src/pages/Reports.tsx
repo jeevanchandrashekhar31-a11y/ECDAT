@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useSearchParams, useOutletContext } from 'react-router-dom';
 import {
   FileText,
@@ -109,7 +109,7 @@ export const Reports: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl md:text-3xl font-bold text-white font-mono tracking-tight flex items-center gap-3">
-            <FileText className="w-8 h-8 text-cyan-400" />
+            <FileText className="w-8 h-8 text-primary" />
             Compliance Reports &amp; CBOM Exports
           </h1>
           <p className="text-sm text-slate-400">
@@ -127,7 +127,7 @@ export const Reports: React.FC = () => {
             value={activeScanId}
             disabled={loading}
             onChange={(e) => handleScanChange(e.target.value)}
-            className="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-500 font-mono disabled:opacity-50"
+            className="bg-surface border border-borderMid text-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-500 font-mono disabled:opacity-50"
           >
             <option value="latest">Latest Scan (Active)</option>
             {scans.map((s) => (
@@ -145,7 +145,7 @@ export const Reports: React.FC = () => {
           <h2 className="text-sm font-semibold text-white">Available Exports</h2>
           <button
             onClick={() => setShowAdvancedExports(!showAdvancedExports)}
-            className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+            className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
           >
             {showAdvancedExports ? 'Hide Advanced Data Exports' : 'Show Advanced Data Exports'}
           </button>
@@ -153,7 +153,7 @@ export const Reports: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Card 1: Executive Summary JSON (Always Visible) */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-colors md:col-span-1">
+          <div className="bg-surface/80 border border-border rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-borderMid transition-colors md:col-span-1">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="p-2 bg-amber-950/60 text-amber-400 rounded-lg border border-amber-800/40">
@@ -171,12 +171,12 @@ export const Reports: React.FC = () => {
                 </p>
               </div>
             </div>
-            <div className="pt-4 mt-2 border-t border-slate-800/80 flex items-center justify-between">
+            <div className="pt-4 mt-2 border-t border-border/80 flex items-center justify-between">
               <span className="text-xs text-slate-500 font-mono">Format: JSON</span>
               <button
                 onClick={() => handleDownload('summary')}
                 disabled={downloading === 'summary'}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-lg transition-colors border border-slate-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surfaceHover hover:bg-surfaceMid text-slate-200 font-semibold text-xs rounded-lg transition-colors border border-borderMid disabled:opacity-50"
               >
                 {downloading === 'summary' ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -194,13 +194,13 @@ export const Reports: React.FC = () => {
           {showAdvancedExports && (
             <>
               {/* Card 2: Risk-Annotated CycloneDX 1.6 */}
-              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-colors">
+              <div className="bg-surface/80 border border-border rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-borderMid transition-colors">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="p-2 bg-cyan-950/60 text-cyan-400 rounded-lg border border-cyan-800/40">
+                    <div className="p-2 bg-cyan-950/60 text-primary rounded-lg border border-cyan-800/40">
                       <Shield className="w-5 h-5" />
                     </div>
-                    <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/50">
+                    <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded bg-cyan-950 text-primary/80 border border-cyan-800/50">
                       CycloneDX 1.6
                     </span>
                   </div>
@@ -212,7 +212,7 @@ export const Reports: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <div className="pt-4 mt-2 border-t border-slate-800/80 flex items-center justify-between">
+                <div className="pt-4 mt-2 border-t border-border/80 flex items-center justify-between">
                   <span className="text-xs text-slate-500 font-mono">Format: JSON</span>
                   <button
                     onClick={() => handleDownload('annotated')}
@@ -232,7 +232,7 @@ export const Reports: React.FC = () => {
               </div>
 
               {/* Card 3: Raw Immutable Source CBOM */}
-              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-colors">
+              <div className="bg-surface/80 border border-border rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-borderMid transition-colors">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="p-2 bg-purple-950/60 text-purple-400 rounded-lg border border-purple-800/40">
@@ -250,12 +250,12 @@ export const Reports: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <div className="pt-4 mt-2 border-t border-slate-800/80 flex items-center justify-between">
+                <div className="pt-4 mt-2 border-t border-border/80 flex items-center justify-between">
                   <span className="text-xs text-slate-500 font-mono">Format: JSON</span>
                   <button
                     onClick={() => handleDownload('raw')}
                     disabled={downloading === 'raw'}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-lg transition-colors border border-slate-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surfaceHover hover:bg-surfaceMid text-slate-200 font-semibold text-xs rounded-lg transition-colors border border-borderMid disabled:opacity-50"
                   >
                     {downloading === 'raw' ? (
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -275,14 +275,14 @@ export const Reports: React.FC = () => {
 
       {/* HTML Report Embedded Viewer */}
       <div
-        className={`bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl transition-all duration-300 flex flex-col ${
-          isFullscreen ? 'fixed inset-0 z-50 bg-slate-950 p-6 rounded-none border-0' : 'p-6'
+        className={`bg-surface/90 border border-border rounded-2xl shadow-2xl transition-all duration-300 flex flex-col ${
+          isFullscreen ? 'fixed inset-0 z-50 bg-background p-6 rounded-none border-0' : 'p-6'
         }`}
       >
         {/* Viewer Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-cyan-950/60 border border-cyan-800/40 text-cyan-400">
+            <div className="p-2 rounded-lg bg-cyan-950/60 border border-cyan-800/40 text-primary">
               <FileText className="w-5 h-5" />
             </div>
             <div>
@@ -296,7 +296,7 @@ export const Reports: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap">
             {/* Height Toggle (when not in fullscreen) */}
             {!isFullscreen && (
-              <div className="flex items-center bg-slate-800/90 rounded-lg p-0.5 border border-slate-700/80 mr-1 text-xs">
+              <div className="flex items-center bg-surfaceHover/90 rounded-lg p-0.5 border border-borderMid/80 mr-1 text-xs">
                 <button
                   type="button"
                   onClick={() => setPreviewHeight('compact')}
@@ -339,7 +339,7 @@ export const Reports: React.FC = () => {
             <button
               onClick={() => setIframeKey((prev) => prev + 1)}
               title="Reload preview"
-              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700/60"
+              className="p-2 text-slate-400 hover:text-white bg-surfaceHover hover:bg-surfaceMid rounded-lg transition-colors border border-borderMid/60"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -348,7 +348,7 @@ export const Reports: React.FC = () => {
               target="_blank"
               rel="noopener noreferrer"
               title="Open full report in new tab"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-surfaceHover hover:bg-surfaceMid rounded-lg transition-colors border border-borderMid"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>Open in Tab</span>
@@ -361,7 +361,7 @@ export const Reports: React.FC = () => {
                 }
               }}
               title="Print report"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-surfaceHover hover:bg-surfaceMid rounded-lg transition-colors border border-borderMid"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print / PDF</span>
@@ -369,7 +369,7 @@ export const Reports: React.FC = () => {
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700/60"
+              className="p-2 text-slate-400 hover:text-white bg-surfaceHover hover:bg-surfaceMid rounded-lg transition-colors border border-borderMid/60"
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
@@ -378,7 +378,7 @@ export const Reports: React.FC = () => {
 
         {/* Embedded Iframe Container */}
         <div
-          className={`mt-4 rounded-xl overflow-hidden border border-slate-800/80 bg-slate-950 w-full shadow-inner ${
+          className={`mt-4 rounded-xl overflow-hidden border border-border/80 bg-background w-full shadow-inner ${
             isFullscreen ? 'flex-1 min-h-0' : ''
           }`}
           style={{
@@ -397,7 +397,7 @@ export const Reports: React.FC = () => {
             key={iframeKey}
             src={htmlReportUrl}
             title="Executive Cryptographic Report"
-            className="w-full h-full border-0 bg-slate-950 block"
+            className="w-full h-full border-0 bg-background block"
             sandbox="allow-same-origin allow-modals allow-scripts allow-popups"
           />
         </div>

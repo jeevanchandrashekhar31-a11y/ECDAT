@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Wrench,
@@ -249,7 +249,7 @@ export const Remediation: React.FC = () => {
       case 'APPROVED':
         return 'bg-violet-500/20 text-violet-300 border-violet-500/40';
       case 'APPLIED':
-        return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
+        return 'bg-primary/20 text-primary/80 border-primary/40';
       case 'VERIFIED':
         return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold';
       case 'REJECTED':
@@ -280,14 +280,14 @@ export const Remediation: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-              <Wrench className="text-cyan-400" size={22} />
+              <Wrench className="text-primary" size={22} />
               <span>Cryptographic Remediation &amp; Governance</span>
             </h1>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 font-mono">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary/80 border border-primary/30 font-mono">
               Four-Eyes Enforced
             </span>
           </div>
@@ -298,9 +298,9 @@ export const Remediation: React.FC = () => {
 
         <div className="flex items-center gap-2.5">
           {/* Active persona is managed globally in the header now */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface border border-border text-xs">
             <span className="text-slate-400 text-2xs px-2 font-medium">Active Persona:</span>
-            <span className="text-cyan-400 font-bold px-2 py-1 text-2xs uppercase tracking-wider">{authManager.getSession().role || 'Analyst'}</span>
+            <span className="text-primary font-bold px-2 py-1 text-2xs uppercase tracking-wider">{authManager.getSession().role || 'Analyst'}</span>
           </div>
 
           <button
@@ -353,8 +353,8 @@ export const Remediation: React.FC = () => {
 
       {/* REAL LOADING STATE */}
       {loading && approvals.length === 0 && (
-        <div className="glass-card p-12 rounded-2xl border border-slate-800 bg-slate-900/60 flex flex-col items-center justify-center text-center">
-          <Loader2 size={32} className="text-cyan-400 animate-spin mb-3" />
+        <div className="glass-card p-12 rounded-2xl border border-border bg-surface/60 flex flex-col items-center justify-center text-center">
+          <Loader2 size={32} className="text-primary animate-spin mb-3" />
           <h3 className="text-sm font-bold text-white mb-1">Loading Remediation Proposals</h3>
           <p className="text-xs text-slate-400 max-w-sm">
             Verifying cryptographic state hashes, approval chains, and governance policies...
@@ -381,8 +381,8 @@ export const Remediation: React.FC = () => {
 
       {/* REAL EMPTY STATE */}
       {!loading && !listError && approvals.length === 0 && (
-        <div className="glass-card p-12 rounded-2xl border border-slate-800 bg-slate-900/60 text-center space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center mx-auto">
+        <div className="glass-card p-12 rounded-2xl border border-border bg-surface/60 text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center mx-auto">
             <Wrench size={24} />
           </div>
           <div className="max-w-md mx-auto">
@@ -411,7 +411,7 @@ export const Remediation: React.FC = () => {
           <div className="lg:col-span-5 space-y-3">
             <div className="flex items-center justify-between text-xs text-slate-400 pb-1">
               <span className="font-semibold uppercase tracking-wider text-2xs">Active Approval Plans ({approvals.length})</span>
-              <button onClick={() => fetchApprovals()} className="hover:text-cyan-400">
+              <button onClick={() => fetchApprovals()} className="hover:text-primary">
                 <RefreshCw size={12} />
               </button>
             </div>
@@ -425,8 +425,8 @@ export const Remediation: React.FC = () => {
                     onClick={() => setSelectedApprovalId(appr.approval_id)}
                     className={`p-4 rounded-xl border transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-slate-800/80 border-cyan-500/50 shadow-lg shadow-cyan-500/5'
-                        : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
+                        ? 'bg-surfaceHover/80 border-cyan-500/50 shadow-lg shadow-cyan-500/5'
+                        : 'bg-surface/60 border-border/80 hover:bg-slate-850 hover:border-borderMid'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
@@ -441,7 +441,7 @@ export const Remediation: React.FC = () => {
                     <h3 className="text-xs font-bold text-white mb-1 leading-snug">{appr.title}</h3>
                     <p className="text-slate-400 text-2xs line-clamp-2 mb-3">{appr.description || 'No description provided.'}</p>
 
-                    <div className="flex items-center justify-between text-2xs text-slate-400 pt-2 border-t border-slate-800/60">
+                    <div className="flex items-center justify-between text-2xs text-slate-400 pt-2 border-t border-border/60">
                       <span>Proposer: <strong className="text-slate-300">{appr.proposer?.username}</strong></span>
                       <span className="capitalize">{appr.environment}</span>
                     </div>
@@ -454,9 +454,9 @@ export const Remediation: React.FC = () => {
           {/* Right Column: Active Lifecycle Stepper & Inspector */}
           {selectedApproval && (
             <div className="lg:col-span-7 space-y-6">
-              <div className="glass-card p-6 rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl space-y-6">
+              <div className="glass-card p-6 rounded-2xl border border-border bg-surface/60 shadow-xl space-y-6">
                 {/* Proposal Header */}
-                <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-800">
+                <div className="flex items-start justify-between gap-4 pb-4 border-b border-border">
                   <div>
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className={`px-2.5 py-0.5 rounded text-xs font-mono font-bold border ${getStateBadgeClass(selectedApproval.state)}`}>
@@ -468,7 +468,7 @@ export const Remediation: React.FC = () => {
                     <p className="text-xs text-slate-400 mt-1">{selectedApproval.description}</p>
                   </div>
 
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-2xs font-mono text-cyan-300">
+                  <span className="px-2.5 py-1 rounded-lg bg-background border border-border text-2xs font-mono text-primary/80">
                     {selectedApproval.target_standard || 'NIST FIPS 203'}
                   </span>
                 </div>
@@ -510,8 +510,8 @@ export const Remediation: React.FC = () => {
                           key={s.step}
                           className={`p-2 rounded-lg border transition-all ${
                             isComplete
-                              ? 'bg-cyan-950/60 border-cyan-500/60 text-cyan-300 font-bold'
-                              : 'bg-slate-950/40 border-slate-800 text-slate-500'
+                              ? 'bg-cyan-950/60 border-cyan-500/60 text-primary/80 font-bold'
+                              : 'bg-background/40 border-border text-slate-500'
                           } ${isCurrent ? 'ring-1 ring-cyan-400' : ''}`}
                         >
                           <span>{s.label}</span>
@@ -522,14 +522,14 @@ export const Remediation: React.FC = () => {
                 </div>
 
                 {/* INTERACTIVE LIFECYCLE ACTION PANEL */}
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-4">
+                <div className="p-4 rounded-xl bg-background border border-border space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <Lock size={14} className="text-cyan-400" />
+                      <Lock size={14} className="text-primary" />
                       <span>Next Governance Transition Action</span>
                     </span>
                     <span className="text-2xs text-slate-400">
-                      Active: <strong className="text-cyan-300 font-mono">{activePersona}</strong>
+                      Active: <strong className="text-primary/80 font-mono">{activePersona}</strong>
                     </span>
                   </div>
 
@@ -617,7 +617,7 @@ export const Remediation: React.FC = () => {
                         <CheckCircle size={16} />
                         <span>VERIFIED RESULT: Cryptographic Remediation Assured</span>
                       </div>
-                      <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-2xs font-mono text-emerald-300 space-y-1">
+                      <div className="bg-background p-3 rounded-lg border border-border text-2xs font-mono text-emerald-300 space-y-1">
                         <div>Status: PASSED</div>
                         <div>Target Standard: {selectedApproval.target_standard}</div>
                         <div>Verifier: {selectedApproval.verifier?.username || 'Security Automation'}</div>
@@ -631,10 +631,10 @@ export const Remediation: React.FC = () => {
                 {selectedApproval.patch_diff && (
                   <div>
                     <h4 className="text-2xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
-                      <Code2 size={13} className="text-cyan-400" />
+                      <Code2 size={13} className="text-primary" />
                       <span>Proposed Cryptographic Diff</span>
                     </h4>
-                    <div className="bg-slate-950 rounded-xl border border-slate-800 p-3 font-mono text-2xs text-cyan-300 overflow-x-auto max-h-48">
+                    <div className="bg-background rounded-xl border border-border p-3 font-mono text-2xs text-primary/80 overflow-x-auto max-h-48">
                       <pre>{selectedApproval.patch_diff}</pre>
                     </div>
                   </div>
@@ -643,14 +643,14 @@ export const Remediation: React.FC = () => {
                 {/* Tamper-Resistant Audit Trail History */}
                 <div>
                   <h4 className="text-2xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
-                    <History size={13} className="text-cyan-400" />
+                    <History size={13} className="text-primary" />
                     <span>Cryptographic State Chain Ledger</span>
                   </h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {selectedApproval.audit_history?.map((evt, idx) => (
-                      <div key={idx} className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-2xs flex items-center justify-between gap-2 font-mono">
+                      <div key={idx} className="p-2.5 rounded-lg bg-background border border-border text-2xs flex items-center justify-between gap-2 font-mono">
                         <div>
-                          <span className="text-cyan-300 font-bold">{evt.to_state}</span>
+                          <span className="text-primary/80 font-bold">{evt.to_state}</span>
                           <span className="text-slate-500 ml-2">by {evt.actor} ({evt.role})</span>
                           <p className="text-slate-400 text-3xs font-sans mt-0.5">{evt.comments}</p>
                         </div>
@@ -669,11 +669,11 @@ export const Remediation: React.FC = () => {
 
       {/* PROPOSE REMEDIATION MODAL */}
       {proposeModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-surface border border-border rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Wrench size={16} className="text-cyan-400" />
+                <Wrench size={16} className="text-primary" />
                 <span>Propose Cryptographic Remediation</span>
               </h3>
               <button
@@ -692,7 +692,7 @@ export const Remediation: React.FC = () => {
                   value={proposeTitle}
                   onChange={(e) => setProposeTitle(e.target.value)}
                   required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
+                  className="w-full bg-background border border-border rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
                 />
               </div>
 
@@ -702,7 +702,7 @@ export const Remediation: React.FC = () => {
                   <select
                     value={proposeCategory}
                     onChange={(e) => setProposeCategory(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
                   >
                     <option value="algorithm migration">Algorithm Migration</option>
                     <option value="key rotation">Key Rotation</option>
@@ -715,7 +715,7 @@ export const Remediation: React.FC = () => {
                   <select
                     value={proposeEnv}
                     onChange={(e) => setProposeEnv(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
                   >
                     <option value="production">Production</option>
                     <option value="staging">Staging</option>
@@ -731,7 +731,7 @@ export const Remediation: React.FC = () => {
                     type="text"
                     value={proposeTargetStandard}
                     onChange={(e) => setProposeTargetStandard(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
                   />
                 </div>
                 <div>
@@ -741,7 +741,7 @@ export const Remediation: React.FC = () => {
                     value={proposeFindingId}
                     onChange={(e) => setProposeFindingId(e.target.value)}
                     placeholder="e.g. fnd_..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
                   />
                 </div>
               </div>
@@ -753,7 +753,7 @@ export const Remediation: React.FC = () => {
                   value={proposeAsset}
                   onChange={(e) => setProposeAsset(e.target.value)}
                   placeholder="e.g. src/auth/token_signer.c"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+                  className="w-full bg-background border border-border rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
                 />
               </div>
 
@@ -763,7 +763,7 @@ export const Remediation: React.FC = () => {
                   value={proposePatchDiff}
                   onChange={(e) => setProposePatchDiff(e.target.value)}
                   rows={4}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 font-mono text-2xs text-cyan-300 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-background border border-border rounded-xl p-2.5 font-mono text-2xs text-primary/80 focus:outline-none focus:border-cyan-500"
                 />
               </div>
 
@@ -774,7 +774,7 @@ export const Remediation: React.FC = () => {
                     type="text"
                     value={proposeTestPlan}
                     onChange={(e) => setProposeTestPlan(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
                 <div>
@@ -783,16 +783,16 @@ export const Remediation: React.FC = () => {
                     type="text"
                     value={proposeRollbackPlan}
                     onChange={(e) => setProposeRollbackPlan(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+              <div className="pt-3 border-t border-border flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setProposeModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+                  className="px-4 py-2 rounded-xl bg-surfaceHover hover:bg-surfaceMid text-slate-300 font-semibold"
                 >
                   Cancel
                 </button>

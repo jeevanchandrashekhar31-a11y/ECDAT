@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import {
   Search,
@@ -171,7 +171,7 @@ export const Assets: React.FC = () => {
   const getAssetTypeIcon = (type: string) => {
     const t = type.toLowerCase();
     if (t.includes('network') || t.includes('protocol') || t.includes('tls') || t.includes('ssh')) {
-      return <Network size={14} className="text-cyan-400" />;
+      return <Network size={14} className="text-primary" />;
     }
     if (t.includes('cert') || t.includes('x509')) {
       return <Lock size={14} className="text-violet-400" />;
@@ -186,14 +186,14 @@ export const Assets: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* 1. Header & Tab Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/70">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/70">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-              <Layers className="text-cyan-400" size={22} />
+              <Layers className="text-primary" size={22} />
               <span>Cryptographic Inventory &amp; Finding Explorer</span>
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-primary/15 text-primary/80 border border-primary/30">
               {activeTab === 'assets' ? `${totalAssets} Assets` : `${totalFindings} Findings`}
             </span>
           </div>
@@ -203,7 +203,7 @@ export const Assets: React.FC = () => {
         </div>
 
         {/* View Toggle (Asset Grouping vs Direct Finding Explorer) */}
-        <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl shrink-0">
+        <div className="flex items-center p-1 bg-surface border border-border rounded-xl shrink-0">
           <button
             onClick={() => {
               setActiveTab('assets');
@@ -236,12 +236,12 @@ export const Assets: React.FC = () => {
       </div>
 
       {/* Active Scan Context Banner */}
-      <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+      <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-2.5 rounded-xl bg-surface/80 border border-border text-xs">
         <div className="flex items-center gap-2">
           <span className="text-slate-400 font-medium">Viewing Inventory:</span>
           {selectedScanId && selectedScanId !== 'all' ? (
-            <span className="font-mono text-cyan-300 font-semibold flex items-center gap-1.5">
-              <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 text-2xs uppercase">
+            <span className="font-mono text-primary/80 font-semibold flex items-center gap-1.5">
+              <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-primary border border-cyan-800 text-2xs uppercase">
                 {scans.find((s) => s.id === selectedScanId)?.scanner_type || 'Scan'}
               </span>
               {scans.find((s) => s.id === selectedScanId)?.name || selectedScanId}
@@ -258,7 +258,7 @@ export const Assets: React.FC = () => {
         {selectedScanId && selectedScanId !== 'all' && (
           <Link
             to="/assets"
-            className="text-2xs text-cyan-400 hover:underline flex items-center gap-1"
+            className="text-2xs text-primary hover:underline flex items-center gap-1"
           >
             <span>Switch to Consolidated View (All Scans)</span>
           </Link>
@@ -272,7 +272,7 @@ export const Assets: React.FC = () => {
             <p className="text-[11px] font-medium text-slate-400">Total Scanned Assets</p>
             <p className="text-lg font-bold text-white font-mono">{totalAssets}</p>
           </div>
-          <Shield size={20} className="text-cyan-400/80" />
+          <Shield size={20} className="text-primary/80" />
         </div>
 
         <div className="glass-card p-3 flex items-center justify-between">
@@ -297,14 +297,14 @@ export const Assets: React.FC = () => {
         <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 hover:text-cyan-400 transition-colors"
+            className="flex items-center gap-2 hover:text-primary transition-colors"
           >
-            <Filter size={14} className={showFilters ? "text-cyan-400" : "text-slate-400"} />
+            <Filter size={14} className={showFilters ? "text-primary" : "text-slate-400"} />
             <span>{showFilters ? "Hide Filters & Search" : "Show Filters & Search"}</span>
           </button>
           <button
             onClick={handleResetFilters}
-            className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-cyan-400 transition-colors"
+            className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-primary transition-colors"
           >
             <RotateCcw size={12} />
             <span>Reset All</span>
@@ -312,7 +312,7 @@ export const Assets: React.FC = () => {
         </div>
 
         {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2.5 text-xs pt-3 border-t border-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2.5 text-xs pt-3 border-t border-border">
             {/* Search Input */}
             <div className="relative xl:col-span-2">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
@@ -321,7 +321,7 @@ export const Assets: React.FC = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search identifier, algorithm, file..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
               />
             </div>
 
@@ -333,7 +333,7 @@ export const Assets: React.FC = () => {
               setPage(1);
               setFindingsPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+            className="bg-background border border-border rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
           >
             <option value="">All Severities</option>
             <option value="Critical">Critical</option>
@@ -351,7 +351,7 @@ export const Assets: React.FC = () => {
               setPage(1);
               setFindingsPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+            className="bg-background border border-border rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
           >
             <option value="">All Mosca Statuses</option>
             <option value="CRITICAL_URGENT">Critical Urgent (X+Y &gt; Z)</option>
@@ -368,7 +368,7 @@ export const Assets: React.FC = () => {
               setPage(1);
               setFindingsPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+            className="bg-background border border-border rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
           >
             <option value="">All Types</option>
             <option value="network">Network Protocol / Session</option>
@@ -386,7 +386,7 @@ export const Assets: React.FC = () => {
               setPage(1);
               setFindingsPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+            className="bg-background border border-border rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
           >
             <option value="">All Sources</option>
             <option value="static">Static AST / Code</option>
@@ -401,7 +401,7 @@ export const Assets: React.FC = () => {
               setCriticalityFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+            className="bg-background border border-border rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
           >
             <option value="">All Criticalities</option>
             <option value="mission_critical">Mission Critical</option>
@@ -417,7 +417,7 @@ export const Assets: React.FC = () => {
               setSortBy(e.target.value);
               setPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+            className="bg-background border border-border rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
           >
             <option value="risk">Sort: Risk &amp; Urgency</option>
             <option value="name_asc">Sort: Identifier (A-Z)</option>
@@ -448,7 +448,7 @@ export const Assets: React.FC = () => {
               <p className="text-xs mt-1 text-slate-500">Try broadening your search query or reset active filters.</p>
               <button
                 onClick={handleResetFilters}
-                className="mt-4 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold transition-colors"
+                className="mt-4 px-3 py-1.5 rounded-lg bg-surfaceHover hover:bg-surfaceMid text-primary text-xs font-semibold transition-colors"
               >
                 Reset Active Filters
               </button>
@@ -457,7 +457,7 @@ export const Assets: React.FC = () => {
             <>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-900/90 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-800 font-mono">
+                  <thead className="bg-surface/90 text-slate-400 uppercase tracking-wider text-[11px] border-b border-border font-mono">
                     <tr>
                       <th className="py-3.5 px-4">Logical Asset</th>
                       <th className="py-3.5 px-3">Risk & Exposure</th>
@@ -468,17 +468,17 @@ export const Assets: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-200 font-sans">
                     {assets.map((asset) => (
-                      <tr key={`${asset.asset_id}-${selectedScanId || 'all'}`} className="hover:bg-slate-800/40 transition-colors">
+                      <tr key={`${asset.asset_id}-${selectedScanId || 'all'}`} className="hover:bg-surfaceHover/40 transition-colors">
                         {/* Asset Identifier & Type */}
                         <td className="py-3.5 px-4 max-w-xs">
                           <div className="flex items-center gap-2">
-                            <span className="p-1.5 rounded bg-slate-900 border border-slate-800 shrink-0">
+                            <span className="p-1.5 rounded bg-surface border border-border shrink-0">
                               {getAssetTypeIcon(asset.asset_type)}
                             </span>
                             <div className="min-w-0">
                               <Link
                                 to={`/assets/${encodeURIComponent(asset.asset_id)}${selectedScanId && selectedScanId !== 'all' ? `?scanId=${selectedScanId}` : ''}`}
-                                className="font-mono font-bold text-slate-100 hover:text-cyan-400 truncate block transition-colors"
+                                className="font-mono font-bold text-slate-100 hover:text-primary truncate block transition-colors"
                                 title={asset.primary_identifier}
                               >
                                 {asset.primary_identifier || asset.asset_id}
@@ -507,14 +507,14 @@ export const Assets: React.FC = () => {
                         <td className="py-3.5 px-3">
                           <div className="flex items-center gap-1.5 text-xs text-slate-300">
                             <Layers className="w-3.5 h-3.5 text-slate-500" />
-                            <span className="font-mono font-bold text-cyan-300">{asset.findings_count || 1}</span> Occurrence{(asset.findings_count || 1) !== 1 && 's'}
+                            <span className="font-mono font-bold text-primary/80">{asset.findings_count || 1}</span> Occurrence{(asset.findings_count || 1) !== 1 && 's'}
                           </div>
                           <div className="flex flex-wrap gap-1 mt-1.5 max-w-[200px]">
                             {(asset.usage_types || []).slice(0, 2).map((u, i) => (
-                              <span key={`u-${i}`} className="text-[9px] uppercase px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">{u.replace(/_/g, ' ')}</span>
+                              <span key={`u-${i}`} className="text-[9px] uppercase px-1.5 py-0.5 bg-surfaceHover rounded border border-borderMid">{u.replace(/_/g, ' ')}</span>
                             ))}
                             {(asset.evidence_types || []).slice(0, 2).map((e, i) => (
-                              <span key={`e-${i}`} className="text-[9px] uppercase px-1.5 py-0.5 bg-slate-900 rounded border border-slate-800 text-slate-400">{e.replace(/_/g, ' ')}</span>
+                              <span key={`e-${i}`} className="text-[9px] uppercase px-1.5 py-0.5 bg-surface rounded border border-border text-slate-400">{e.replace(/_/g, ' ')}</span>
                             ))}
                           </div>
                         </td>
@@ -523,7 +523,7 @@ export const Assets: React.FC = () => {
                         <td className="py-3.5 px-4 text-right">
                           <Link
                             to={`/assets/${encodeURIComponent(asset.asset_id)}${selectedScanId && selectedScanId !== 'all' ? `?scanId=${selectedScanId}` : ''}`}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-colors"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary/80 border border-primary/30 text-xs font-semibold transition-colors"
                           >
                             <span>Inspect</span>
                             <ExternalLink size={12} />
@@ -536,7 +536,7 @@ export const Assets: React.FC = () => {
               </div>
 
               {/* Pagination Bar */}
-              <div className="p-3 border-t border-slate-800/80 bg-slate-900/60 flex items-center justify-between text-xs text-slate-400">
+              <div className="p-3 border-t border-border/80 bg-surface/60 flex items-center justify-between text-xs text-slate-400">
                 <div className="flex items-center gap-2">
                   <span>Items per page:</span>
                   <select
@@ -545,7 +545,7 @@ export const Assets: React.FC = () => {
                       setPageSize(Number(e.target.value));
                       setPage(1);
                     }}
-                    className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none"
+                    className="bg-background border border-border rounded px-2 py-1 text-slate-200 focus:outline-none"
                   >
                     <option value={10}>10</option>
                     <option value={25}>25</option>
@@ -562,7 +562,7 @@ export const Assets: React.FC = () => {
                   <button
                     disabled={page <= 1}
                     onClick={() => setPage(page - 1)}
-                    className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition-colors"
+                    className="p-1.5 rounded bg-surfaceHover hover:bg-surfaceMid disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition-colors"
                     title="Previous page"
                   >
                     <ChevronLeft size={16} />
@@ -573,7 +573,7 @@ export const Assets: React.FC = () => {
                   <button
                     disabled={page >= totalPages}
                     onClick={() => setPage(page + 1)}
-                    className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition-colors"
+                    className="p-1.5 rounded bg-surfaceHover hover:bg-surfaceMid disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition-colors"
                     title="Next page"
                   >
                     <ChevronRight size={16} />
@@ -589,7 +589,7 @@ export const Assets: React.FC = () => {
             <p className="text-sm font-semibold text-slate-300">No individual findings match the current filter</p>
             <button
               onClick={handleResetFilters}
-              className="mt-4 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold transition-colors"
+              className="mt-4 px-3 py-1.5 rounded-lg bg-surfaceHover hover:bg-surfaceMid text-primary text-xs font-semibold transition-colors"
             >
               Reset Active Filters
             </button>
@@ -598,7 +598,7 @@ export const Assets: React.FC = () => {
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900/90 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-800 font-mono">
+                <thead className="bg-surface/90 text-slate-400 uppercase tracking-wider text-[11px] border-b border-border font-mono">
                   <tr>
                     <th className="py-3.5 px-4">Algorithm &amp; Key Size</th>
                     <th className="py-3.5 px-3">Location / Context</th>
@@ -608,12 +608,12 @@ export const Assets: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-200 font-sans">
                   {findings.map((f) => (
-                    <tr key={`${f.id}-${selectedScanId || 'all'}`} className="hover:bg-slate-800/40 transition-colors">
+                    <tr key={`${f.id}-${selectedScanId || 'all'}`} className="hover:bg-surfaceHover/40 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2 font-mono">
                           <span className="font-bold text-white">{f.algorithm}</span>
                           {f.key_size && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-surfaceHover text-primary border border-borderMid">
                               {f.key_size}b
                             </span>
                           )}
@@ -636,7 +636,7 @@ export const Assets: React.FC = () => {
                       <td className="py-3.5 px-4 text-right">
                         <Link
                           to={`/assets/${encodeURIComponent(f.asset_id)}${selectedScanId && selectedScanId !== 'all' ? `?scanId=${selectedScanId}` : ''}`}
-                          className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline font-semibold"
+                          className="inline-flex items-center gap-1 text-primary hover:text-primary/80 hover:underline font-semibold"
                         >
                           <span>Inspect</span>
                           <ExternalLink size={12} />
@@ -649,7 +649,7 @@ export const Assets: React.FC = () => {
             </div>
 
             {/* Findings Pagination */}
-            <div className="p-3 border-t border-slate-800/80 bg-slate-900/60 flex items-center justify-between text-xs text-slate-400">
+            <div className="p-3 border-t border-border/80 bg-surface/60 flex items-center justify-between text-xs text-slate-400">
               <span className="text-slate-500">
                 Showing {(findingsPage - 1) * pageSize + 1} - {Math.min(findingsPage * pageSize, totalFindings)} of{' '}
                 {totalFindings} findings
@@ -659,7 +659,7 @@ export const Assets: React.FC = () => {
                 <button
                   disabled={findingsPage <= 1}
                   onClick={() => setFindingsPage(findingsPage - 1)}
-                  className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition-colors"
+                  className="p-1.5 rounded bg-surfaceHover hover:bg-surfaceMid disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition-colors"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -669,7 +669,7 @@ export const Assets: React.FC = () => {
                 <button
                   disabled={findingsPage >= findingsTotalPages}
                   onClick={() => setFindingsPage(findingsPage + 1)}
-                  className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition-colors"
+                  className="p-1.5 rounded bg-surfaceHover hover:bg-surfaceMid disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition-colors"
                 >
                   <ChevronRight size={16} />
                 </button>
