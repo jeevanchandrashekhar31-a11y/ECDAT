@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link, useOutletContext } from 'react-router-dom';
 import {
   Milestone,
@@ -541,7 +541,35 @@ export const Roadmap: React.FC = () => {
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                       Current Cryptographic State
                     </p>
-                    <p className="text-xs font-mono text-slate-200 print:text-slate-800">{rec.current_state}</p>
+                    {/* Parse "RC4 file used for a internal service" → show algorithm + context cleanly */}
+                    <p className="text-xs font-mono text-slate-200 print:text-slate-800">
+                      {(() => {
+                        const raw = (rec.current_state || '').trim();
+                        // Normalize known garbled versions
+                        const normalised = raw
+                          .replace(/\bTLS 1\.10\b/gi, 'TLS 1.1')
+                          .replace(/\ba internal service\b/gi, 'an internal service');
+                        // If the string contains " file used for" it's a generic template — extract algorithm name
+                        if (/\bfile used for\b/i.test(normalised)) {
+                          const algoMatch = normalised.match(/^(\S+)\s+file used for/i);
+                          const algo = algoMatch ? algoMatch[1] : normalised.split(' ')[0];
+                          return (
+                            <span>
+                              <span className="text-rose-400 font-bold">{algo}</span>
+                              <span className="text-slate-400"> — deprecated algorithm detected in scanned source</span>
+                            </span>
+                          );
+                        }
+                        return normalised || `${rec.algorithm || 'Unknown'} — detected in scan`;
+                      })()}
+                    </p>
+                    {/* Show algorithm explicitly if available */}
+                    {rec.algorithm && (
+                      <p className="text-[10px] text-slate-500 font-mono mt-1">
+                        Algorithm: <span className="text-amber-400">{rec.algorithm}</span>
+                        {rec.key_size ? ` · Key: ${rec.key_size}-bit` : ''}
+                      </p>
+                    )}
                   </div>
 
                   {/* Phase 1: Classical Remediation */}
@@ -693,7 +721,7 @@ export const Roadmap: React.FC = () => {
                   >
                     <td className="py-3.5 pr-3 font-mono font-bold text-white print:text-slate-900">
                       <div className="text-sm truncate max-w-[220px]" title={asset.primary_identifier || asset.algorithm}>
-                        {asset.primary_identifier || asset.algorithm}
+                        {(asset.primary_identifier || asset.algorithm || '').replace(/\bTLS 1\.10\b/gi, 'TLS 1.1')}
                       </div>
                       <div className="text-[10px] text-slate-500 font-sans mt-0.5">{asset.asset_type.replace(/_/g, ' ')}</div>
                     </td>
