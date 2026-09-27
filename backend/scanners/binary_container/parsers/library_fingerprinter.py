@@ -12,7 +12,7 @@ from typing import List, Dict, Any, Optional, Set
 
 from scanners.binary_container.parsers.base import CryptoIndicator, SymbolMetadata
 
-DEFAULT_RULES_PATH = Path(__file__).resolve().parents[3] / "rules" / "crypto_library_fingerprints.json"
+DEFAULT_RULES_PATH = Path(__file__).resolve().parents[4] / "rules" / "crypto_library_fingerprints.json"
 
 
 @dataclass

@@ -317,9 +317,9 @@ class SafeElfParser:
                             break
 
         # 6. Extract Bounded Strings
-        crypto_strings: List[str] = []
+        all_strings: List[str] = []
         if options.extract_strings:
-            _, crypto_strings = extract_bounded_strings(
+            all_strings, _ = extract_bounded_strings(
                 data,
                 max_bytes=options.max_bytes_to_scan,
                 max_strings=options.max_strings,
@@ -330,7 +330,7 @@ class SafeElfParser:
         crypto_indicators = detect_crypto_indicators(
             imported_libraries=imported_libraries,
             symbols=symbols,
-            strings=crypto_strings,
+            strings=all_strings,
         )
         
         from scanners.binary_container.parsers.string_scanner import detect_binary_constants
@@ -350,7 +350,7 @@ class SafeElfParser:
             imported_libraries=imported_libraries,
             symbols=symbols,
             sections=sections,
-            strings=crypto_strings,
+            strings=all_strings,
             certificates=[],
             crypto_library_indicators=crypto_indicators,
             parsing_warnings=warnings,
