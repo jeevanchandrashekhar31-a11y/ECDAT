@@ -43,7 +43,7 @@ services:
         sync: false            # Your Vercel frontend URL e.g. https://ecdat.vercel.app
 
       - key: PYTHONPATH
-        value: .
+        value: ..          # Repo root — contains scanners/ package (rootDir is backend/)
 
       - key: SCAN_ARTIFACTS_DIR
         value: /tmp/ecdat-scans  # Render has ephemeral disk; scans go to /tmp then Neon
