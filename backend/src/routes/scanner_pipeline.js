@@ -96,7 +96,11 @@ function loadJsonSafe(filePath) {
 function runPythonCommand(args, timeoutMs = 60000) {
   return new Promise((resolve, reject) => {
     const pythonBin = process.platform === 'win32' ? 'python' : 'python3';
-    const child = spawn(pythonBin, args, { cwd: REPO_ROOT, shell: false });
+    const child = spawn(pythonBin, args, { 
+      cwd: REPO_ROOT, 
+      shell: false,
+      env: { ...process.env, PYTHONPATH: REPO_ROOT }
+    });
 
     let stdout = '';
     let stderr = '';
