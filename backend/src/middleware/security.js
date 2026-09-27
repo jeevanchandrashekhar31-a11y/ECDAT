@@ -45,6 +45,14 @@ function createCorsMiddleware() {
         return callback(null, true);
       }
 
+      // Automatically allow all Vercel preview environments
+      try {
+        const parsed = new URL(origin);
+        if (parsed.hostname.endsWith('.vercel.app')) {
+          return callback(null, true);
+        }
+      } catch {}
+
       // Allow local development origins only if not in production
       if (process.env.NODE_ENV !== "production") {
         try {
