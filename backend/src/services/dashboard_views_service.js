@@ -656,6 +656,7 @@ async function getEnterpriseDashboardViews(options = {}) {
     certItems = certAssets.map((ca) => {
       const meta = ca.metadata || {};
       const cert = ca.certificate || {};
+      const keySize = ca.key_size || meta.key_size || cert.key_size || null;
       const algorithm = cert.algo_family || cert.algorithm || ca.algorithm || "RSA";
       const isWeak = keySize && ((algorithm.toUpperCase().includes("RSA") && keySize < 2048) || (algorithm.toUpperCase().includes("EC") && keySize < 224));
 
@@ -703,7 +704,10 @@ async function getEnterpriseDashboardViews(options = {}) {
     expiring_soon_count: certItems.filter(
       (c) => c.renewal_state === "EXPIRING_SOON" || c.renewal_state === "CRITICAL_EXPIRING"
     ).length,
-    weak_keys_count: certItems.filter((c) => c.key_size && ((c.algorithm.toUpperCase().includes("RSA") && c.key_size < 2048) || (c.algorithm.toUpperCase().includes("EC") && c.key_size < 224))).length,
+    weak_keys_count: certItems.filter((c) => {
+      const algo = c.algorithm || c.public_key_algorithm || "RSA";
+      return c.key_size && ((algo.toUpperCase().includes("RSA") && c.key_size < 2048) || (algo.toUpperCase().includes("EC") && c.key_size < 224));
+    }).length,
     certificates: certItems,
   };
 
