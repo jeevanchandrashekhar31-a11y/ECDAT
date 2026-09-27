@@ -178,7 +178,7 @@ function getZeroExecutiveReport(policyProfile = "ecdat_enterprise_baseline", dep
  * @returns {Promise<object>} Complete executive report with 100% evidence traceability
  */
 async function generateExecutiveReport(options = {}) {
-  const requestedScanId = options.scanId && options.scanId !== "all" ? options.scanId : null;
+  const requestedScanId = options.scanId && options.scanId !== "all" && options.scanId !== "latest" ? options.scanId : null;
   const policyProfile = options.policyProfile || "ecdat_enterprise_baseline";
   const threatHorizon = options.threatHorizon || "baseline_2033";
   const deploymentContext = options.deploymentContext || "internet_facing";
