@@ -8,7 +8,7 @@ services:
     region: oregon           # or singapore for lower latency from India
     plan: free               # upgrade to starter ($7/mo) for always-on
     rootDir: backend
-    buildCommand: npm ci --production
+    buildCommand: npm ci --production && pip3 install -r ../requirements.txt
     startCommand: npm run migrate && node src/server.js
     healthCheckPath: /health
     autoDeploy: true
