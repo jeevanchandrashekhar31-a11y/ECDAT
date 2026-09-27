@@ -168,7 +168,7 @@ def main():
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
         future_to_file = {executor.submit(process_file, fpath): fpath for fpath in files_to_scan}
         for future in concurrent.futures.as_completed(future_to_file):
-            fpath = future_to_file[future]
+            fpath = future_to_file.pop(future)  # POP to allow GC of the future and its result
             try:
                 f_findings, f_errors = future.result()
                 findings.extend(f_findings)

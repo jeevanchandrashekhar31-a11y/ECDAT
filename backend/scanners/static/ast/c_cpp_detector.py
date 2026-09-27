@@ -69,15 +69,9 @@ class CCppCryptoDetector:
         # Guardrail 2: Enforce parser timeout protection
         parser = tree_sitter.Parser(self.language)
         try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(parser.parse, self.source_code)
-                tree = future.result(timeout=PARSER_TIMEOUT_SECONDS)
-                if not tree:
-                    return []
-        except concurrent.futures.TimeoutError as e:
-            raise ParserFailureError(
-                f"Parser timed out after {PARSER_TIMEOUT_SECONDS}s on {self.file_path.name}", fatal=False
-            ) from e
+            tree = parser.parse(self.source_code)
+            if not tree:
+                return []
         except Exception as e:
             if isinstance(e, (UnsupportedFormatError, ParserFailureError)):
                 raise
