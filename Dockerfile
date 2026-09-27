@@ -35,8 +35,10 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy backend source
 COPY --chown=node:node backend/ ./
 
-# Copy rules directory from repo root (required by risk engine at startup)
-COPY --chown=node:node rules/ ./rules/
+# Copy rules directory to /rules (where config.js resolves: /app/src/../../rules = /rules)
+# Must run as root before USER node
+COPY rules/ /rules/
+RUN chown -R node:node /rules
 
 # Remove dev files
 RUN rm -f .env.local .env.development
