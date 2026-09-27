@@ -16,6 +16,7 @@ import {
   purgeLocalStorageSecrets,
   attachCsrfHeader,
   setCsrfToken,
+  getCsrfToken,
   authManager,
   isSafeUrl,
 } from '../security';
@@ -44,6 +45,19 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const method = (options.method || 'GET').toUpperCase();
 
   // 1. Double Submit Cookie CSRF Defense (mutating requests)
+  if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+    if (!getCsrfToken()) {
+      try {
+        const csrfRes = await fetch(`${API_BASE}/api/v1/auth/csrf-token`, { credentials: 'include' });
+        const csrfData = await csrfRes.json();
+        if (csrfData && csrfData.csrfToken) {
+          setCsrfToken(csrfData.csrfToken);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
   attachCsrfHeader(headers, method);
 
   // 2. Strict API Authorization & Multi-Tenancy headers (Bearer token from in-memory store)
