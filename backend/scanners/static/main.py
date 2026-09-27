@@ -41,7 +41,7 @@ def main():
         help="Comma-separated list of directories to exclude",
     )
     parser.add_argument("--max-file-size-mb", type=int, default=5, help="Maximum file size to scan in MB")
-    parser.add_argument("--max-files", type=int, default=10000, help="Maximum eligible files to scan (1-10000)")
+    parser.add_argument("--max-files", type=int, default=10000000, help="Maximum eligible files to scan (1-10000000)")
     parser.add_argument("--max-depth", type=int, default=25, help="Maximum directory traversal depth (default: 25)")
     parser.add_argument(
         "--rules", default="rules/static_rules.json", help="Path to external rules JSON (Placeholder for future)"
