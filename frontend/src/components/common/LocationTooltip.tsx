@@ -5,14 +5,12 @@ import { FileCode } from 'lucide-react';
 interface LocationTooltipProps {
   location: string | undefined | null;
   lineNumber?: number | string | null;
-  maxWidth?: string;
   className?: string;
 }
 
 export function LocationTooltip({ 
   location, 
   lineNumber, 
-  maxWidth = 'max-w-[180px]',
   className = ''
 }: LocationTooltipProps) {
   const [isOpen, setIsOpen] = useState(false);

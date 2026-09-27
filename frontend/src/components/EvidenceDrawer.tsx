@@ -249,7 +249,6 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                   <LocationTooltip 
                     location={item.location} 
                     lineNumber={item.line_number}
-                    maxWidth="max-w-[280px]"
                   />
                 </div>
 

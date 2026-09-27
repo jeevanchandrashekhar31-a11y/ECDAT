@@ -405,7 +405,6 @@ export const AssetDetail: React.FC = () => {
                           <LocationTooltip 
                             location={item.location} 
                             lineNumber={item.line_number}
-                            maxWidth="max-w-[180px]"
                             className="text-slate-300"
                           />
                         </td>

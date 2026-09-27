@@ -215,7 +215,6 @@ export const CryptoInventoryView: React.FC<Props> = ({
                           <LocationTooltip 
                             location={comp.location} 
                             lineNumber={comp.line_number}
-                            maxWidth="max-w-xs"
                           />
                         ) : (
                           'Network / Dynamic'
