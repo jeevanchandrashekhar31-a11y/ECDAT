@@ -50,7 +50,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [securityAlert, setSecurityAlert] = useState<{ status: number; message: string } | null>(null);
   
   // Hidden wipe mechanism
-  const [wipeClicks, setWipeClicks] = useState(0);
+  // const [wipeClicks, setWipeClicks] = useState(0);
 
   const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
 
