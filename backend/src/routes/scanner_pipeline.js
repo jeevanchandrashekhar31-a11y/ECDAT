@@ -175,7 +175,7 @@ function runPythonCommand(args, timeoutMs = 60000) {
 /**
  * Runs git clone asynchronously with timeout, quota controls, and strict argument security
  */
-async function _runGitClone(repoUrl, targetDir, timeoutMs = 180000) {
+async function _runGitClone(repoUrl, targetDir, timeoutMs = 3600000) {
   return executeHardenedGitClone(repoUrl, targetDir, { timeoutMs });
 }
 
@@ -191,7 +191,7 @@ async function extractZipArchive(zipFilePath, targetDir) {
     '--max-entry-mb', '100',
     '--max-files', '10000000',
     '--allow-nested',
-  ], 180000);
+  ], 3600000);
 }
 
 /**
@@ -331,7 +331,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       scanLabel = scanLabel || `Git Repo: ${repoName}`;
       try {
         gitCloneHandle = await executeHardenedGitClone(gitRepoUrl, targetDir, {
-          timeoutMs: 180000,
+          timeoutMs: 3600000,
           branch: req.body?.branch,
         });
       } catch (cloneErr) {
@@ -434,7 +434,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     let nodeScanResult;
     try {
       nodeScanResult = scanSourceDirectory(targetDir, {
-        maxFiles: (req.body && req.body.max_files) ? parseInt(req.body.max_files) : 10000,
+        maxFiles: (req.body && req.body.max_files) ? parseInt(req.body.max_files) : 10000000,
         projectName: scanLabel || path.basename(targetDir),
       });
     } catch (nodeScanErr) {
@@ -451,7 +451,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     try {
       await runPythonCommand(
         [path.join(REPO_ROOT, 'scanners', 'static', 'main.py'), targetDir, "-o", tempOut, "--include-ext", ".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.ts,.tsx,.py,.java,.json,.yml,.yaml,.properties,.ini,.xml,.env", "--fail-on", "none"],
-        120000
+        3600000
       );
       const pyData = loadJsonSafe(tempOut);
       if (pyData && pyData.components && pyData.components.length > 0) {

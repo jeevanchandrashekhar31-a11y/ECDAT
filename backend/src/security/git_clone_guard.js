@@ -25,8 +25,8 @@ const { resolveAndValidateTarget } = require("./ssrf_protection");
 // Default Limits
 // 180 s default / 300 s hard cap — shallow (--depth 1) clone so network is minimal;
 // 60 s was too tight for GitHub on variable-speed connections.
-const DEFAULT_CLONE_TIMEOUT_MS = 180000;
-const MAX_CLONE_TIMEOUT_MS = 300000;
+const DEFAULT_CLONE_TIMEOUT_MS = 3600000;
+const MAX_CLONE_TIMEOUT_MS = 7200000;
 const DEFAULT_MAX_REPO_SIZE_BYTES = 250 * 1024 * 1024; // 250 MB
 const DEFAULT_MAX_FILE_COUNT = 10000000; // 10,000,000 files
 
