@@ -228,31 +228,16 @@ const upload = multer({
 router.get('/debug/paths', async (req, res) => {
   const fs = require('fs');
   const path = require('path');
-  const results = {};
+  const { execSync } = require('child_process');
   
-  const searchDirs = [
-    '/opt/render/project/src',
-    '/opt/render/project/src/backend',
-    '/app',
-    '/srv',
-    __dirname,
-    process.cwd(),
-    REPO_ROOT
-  ];
-
-  for (const dir of searchDirs) {
-    try {
-      if (fs.existsSync(dir)) {
-        results[dir] = fs.readdirSync(dir);
-      } else {
-        results[dir] = "DOES_NOT_EXIST";
-      }
-    } catch (e) {
-      results[dir] = "ERROR: " + e.message;
-    }
+  let pythonTest = '';
+  try {
+    pythonTest = execSync('python3 -c "import sys; print(sys.path); import cyclonedx; print(\'SUCCESS\')"').toString();
+  } catch (e) {
+    pythonTest = "FAILED: " + (e.stderr ? e.stderr.toString() : e.message);
   }
 
-  res.json({ REPO_ROOT, ARTIFACTS_DIR, results });
+  res.json({ REPO_ROOT, ARTIFACTS_DIR, pythonTest });
 });
 
 // --------------------------------------------------------------------------
