@@ -10,9 +10,16 @@ FROM node:20-alpine AS base
 WORKDIR /app
 
 # Install Python for scanner pipeline + curl for healthcheck
-RUN apk add --no-cache python3 py3-pip git curl openssl \
-    && pip3 install --no-cache-dir semgrep --break-system-packages 2>/dev/null || \
+RUN apk add --no-cache python3 py3-pip git curl openssl
+
+# Copy requirements first to cache python dependencies layer
+COPY requirements.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt --break-system-packages 2>/dev/null || \
+    pip3 install --no-cache-dir -r requirements.txt 2>/dev/null || echo "requirements install skipped"
+
+RUN pip3 install --no-cache-dir semgrep --break-system-packages 2>/dev/null || \
        pip3 install --no-cache-dir semgrep 2>/dev/null || echo "semgrep install skipped"
+
 
 # Read-only filesystem support: create writable dirs as root before switching
 RUN mkdir -p /app/artifacts /tmp && chown -R node:node /app /tmp
