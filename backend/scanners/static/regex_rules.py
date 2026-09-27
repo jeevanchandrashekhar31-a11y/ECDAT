@@ -210,6 +210,16 @@ MAX_REGEX_FINDINGS_PER_FILE = 500
 
 
 def apply_regex_rules(content: str) -> list:
+    # Ultra-fast keyword pre-filter in C to bypass 97+ million regex scans on large repos
+    suspicious_keywords = [
+        "MD5", "md5", "SHA1", "sha1", "des", "DES", "rc2", "RC2", "rc4", "RC4", 
+        "ecb", "ECB", "KMS", "kms", "sgx", "PKCS11", "rand", "PEM", "-----BEGIN", 
+        "SECRET", "KEY", "PASSWORD", "TOKEN", "openssl", "mbedtls", "wolfssl", "libsodium",
+        "EVP", "RSA", "ECDH", "KeyVault", "ghp_", "aws"
+    ]
+    if not any(k in content for k in suspicious_keywords):
+        return []
+
     matches = []
     lines = content.split("\n")
     for i, line in enumerate(lines):

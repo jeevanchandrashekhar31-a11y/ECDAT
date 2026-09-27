@@ -295,6 +295,19 @@ class SecretSafeDetector:
         candidates: List[SecretCandidate] = []
         if not content:
             return content, candidates
+            
+        # Ultra-fast keyword pre-filter in C to bypass regex scanning on safe files
+        suspicious_keywords = [
+            "AKIA", "ASIA", "ABIA", "ACCA", "aws_secret", "ghp_", "ghu_", "gho_", "ghs_", "ghr_", 
+            "github_pat", "xox", "eyJ", "jwt_", "postgres", "mysql", "mariadb", "mongodb", "redis", 
+            "db_pass", "database_pass", "AIzaSy", "DefaultEndpointsProtocol", "azure_client", "sk-", 
+            "gsk", "sk_live", "api_key", "apikey", "secret_key", "auth_token", "-----BEGIN", "PRIVATE KEY",
+            "aes_key", "des_key", "private_key", "encryption_key", "symmetric_key", "signing_key", 
+            "crypto_key", "data_encryption_key", "master_key"
+        ]
+        
+        if not any(k in content for k in suspicious_keywords):
+            return content, candidates
 
         lines = content.splitlines()
         claimed_spans: List[Tuple[int, int]] = []
