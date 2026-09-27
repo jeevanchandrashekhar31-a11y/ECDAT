@@ -316,12 +316,18 @@ class ArchiveSecurityGuard:
                     )
 
                 # Phase 2: Extraction Loop with Streaming Verification
+                import concurrent.futures
+                import threading
+                
                 running_bytes = 0
-                for info in infolist:
+                running_bytes_lock = threading.Lock()
+                
+                def extract_member(info):
+                    nonlocal running_bytes
                     if info.is_dir():
                         dir_target = self._validate_path_containment(info.filename, extract_to, is_dir=True)
                         dir_target.mkdir(parents=True, exist_ok=True)
-                        continue
+                        return None
 
                     target_path = self._validate_path_containment(info.filename, extract_to, is_dir=False)
                     self._check_nested_extension(target_path, info.filename)
@@ -338,8 +344,12 @@ class ArchiveSecurityGuard:
                                     self._check_magic_bytes_for_nested(chunk, info.filename)
                                     first_chunk = False
 
-                                bytes_written += len(chunk)
-                                running_bytes += len(chunk)
+                                chunk_len = len(chunk)
+                                bytes_written += chunk_len
+                                
+                                with running_bytes_lock:
+                                    running_bytes += chunk_len
+                                    current_total = running_bytes
 
                                 if bytes_written > self.max_entry_size:
                                     target_path.unlink(missing_ok=True)
@@ -347,15 +357,22 @@ class ArchiveSecurityGuard:
                                         f"Decompressed size of entry '{info.filename}' exceeded entry limit during extraction."
                                     )
 
-                                if running_bytes > self.max_total_bytes:
+                                if current_total > self.max_total_bytes:
                                     target_path.unlink(missing_ok=True)
                                     raise DecompressionBombError(
                                         "Global uncompressed byte budget exceeded during extraction."
                                     )
 
                                 target.write(chunk)
+                    return target_path
 
-                    extracted_files.append(target_path)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, os.cpu_count() or 1)) as executor:
+                    future_to_info = {executor.submit(extract_member, info): info for info in infolist}
+                    for future in concurrent.futures.as_completed(future_to_info):
+                        res = future.result()
+                        if res:
+                            extracted_files.append(res)
+
 
         except (zipfile.BadZipFile, zlib.error, struct.error, EOFError) as e:
             raise MalformedArchiveError(f"Corrupt or malformed ZIP archive: {e}")
