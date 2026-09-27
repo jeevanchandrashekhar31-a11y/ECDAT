@@ -9,7 +9,7 @@
 ## 1. Executive Summary & Core Metrics
 
 - **Corpus Standard**: `Phase 30 Golden Corpus`
-- **Evaluation Timestamp**: `2026-09-20T13:56:46.585217+00:00`
+- **Evaluation Timestamp**: `2026-09-27T17:05:32.755887+00:00`
 - **Golden Corpus Size**: **`40` files** (109 ground truth expected primitives)
 - **Total Evaluated Categories**: **`16` Standardized Classes**
 - **Golden Corpus Precision**: **`98.2%`**
@@ -33,9 +33,9 @@
 
 | Resource Metric | Empirical Measurement | Unit |
 |---|---|---|
-| **Scan Wall Time** | `0.2171s` | Seconds |
-| **Peak Process Working Set (RAM)** | `43.53 MB` | Megabytes |
-| **Scanning Throughput** | `184.28 files/s` | Files per Second |
+| **Scan Wall Time** | `0.453s` | Seconds |
+| **Peak Process Working Set (RAM)** | `43.78 MB` | Megabytes |
+| **Scanning Throughput** | `88.29 files/s` | Files per Second |
 
 ---
 

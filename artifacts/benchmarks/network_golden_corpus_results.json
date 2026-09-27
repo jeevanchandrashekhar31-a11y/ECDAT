@@ -1,5 +1,5 @@
 {
-  "evaluation_timestamp": "2026-09-20T13:59:06.402129+00:00",
+  "evaluation_timestamp": "2026-09-27T17:05:47.446875+00:00",
   "corpus_standard": "Phase 30 Network Golden Corpus",
   "total_endpoints": 9,
   "total_expected_findings": 6,
@@ -13,10 +13,10 @@
     "true_negatives": 3
   },
   "performance": {
-    "scan_time_seconds": 7.157,
-    "wall_time_seconds": 7.1568,
-    "peak_memory_mb": 53.61,
-    "throughput_endpoints_per_second": 1.26
+    "scan_time_seconds": 8.6693,
+    "wall_time_seconds": 8.6691,
+    "peak_memory_mb": 54.02,
+    "throughput_endpoints_per_second": 1.04
   },
   "category_breakdown": {
     "01_certificate_expiration": {

@@ -35,7 +35,7 @@ export const Policies: React.FC = () => {
   const togglePolicy = async (id: string, currentAction: string) => {
     try {
       setUpdating(id);
-      const newAction = currentAction === 'fail' ? 'warn' : 'fail';
+      const newAction = currentAction.toUpperCase() === 'FAIL' || currentAction.toUpperCase() === 'BLOCK' ? 'WARN' : 'FAIL';
       const res = await api.togglePolicyRule(id, newAction);
       if (res.success && res.rules) {
         setPolicies(res.rules);
@@ -88,7 +88,7 @@ export const Policies: React.FC = () => {
                     {policy.name}
                   </h3>
                   <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
-                    policy.action === 'fail' || policy.action === 'block' ? 'bg-rose-950/70 text-rose-400 border border-rose-800' : 'bg-amber-950/70 text-amber-400 border border-amber-800'
+                    policy.action.toUpperCase() === 'FAIL' || policy.action.toUpperCase() === 'BLOCK' ? 'bg-rose-950/70 text-rose-400 border border-rose-800' : 'bg-amber-950/70 text-amber-400 border border-amber-800'
                   }`}>
                     Action: {policy.action}
                   </span>
@@ -106,15 +106,15 @@ export const Policies: React.FC = () => {
 
               <div className="flex items-center gap-4 border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-6">
                 <div className="flex flex-col items-center gap-1 mr-2">
-                  <span className={`text-xs font-semibold ${policy.action === 'fail' ? 'text-rose-400' : 'text-amber-400'}`}>
-                    {policy.action === 'fail' ? 'Fail Build' : 'Warn Only'}
+                  <span className={`text-xs font-semibold ${policy.action.toUpperCase() === 'FAIL' || policy.action.toUpperCase() === 'BLOCK' ? 'text-rose-400' : 'text-amber-400'}`}>
+                    {policy.action.toUpperCase() === 'FAIL' || policy.action.toUpperCase() === 'BLOCK' ? 'Fail Build' : 'Warn Only'}
                   </span>
                   <button 
                     onClick={() => togglePolicy(policy.id, policy.action)}
                     disabled={updating === policy.id}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${policy.action === 'fail' ? 'bg-rose-500' : 'bg-amber-500'}`}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${policy.action.toUpperCase() === 'FAIL' || policy.action.toUpperCase() === 'BLOCK' ? 'bg-rose-500' : 'bg-amber-500'}`}
                   >
-                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${policy.action === 'fail' ? 'translate-x-4' : 'translate-x-1'}`} />
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${policy.action.toUpperCase() === 'FAIL' || policy.action.toUpperCase() === 'BLOCK' ? 'translate-x-4' : 'translate-x-1'}`} />
                   </button>
                 </div>
                 <button className="p-2 text-slate-400 hover:text-white bg-surfaceHover rounded-lg transition-colors">

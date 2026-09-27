@@ -9,7 +9,7 @@
 ## 1. Executive Summary & Core Metrics
 
 - **Corpus Standard**: `Phase 30 Network Golden Corpus`
-- **Evaluation Timestamp**: `2026-09-20T13:59:06.402129+00:00`
+- **Evaluation Timestamp**: `2026-09-27T17:05:47.446875+00:00`
 - **Golden Corpus Size**: **`9` endpoints** (6 ground truth expected anomalies)
 - **Total Evaluated Categories**: **`6` Standardized Classes**
 - **Network Golden Corpus Precision**: **`100.0%`**
@@ -33,9 +33,9 @@
 
 | Resource Metric | Empirical Measurement | Unit |
 |---|---|---|
-| **Scan Wall Time** | `7.157s` | Seconds |
-| **Peak Process Working Set (RAM)** | `53.61 MB` | Megabytes |
-| **Scanning Throughput** | `1.26 endpoints/s` | Endpoints per Second |
+| **Scan Wall Time** | `8.6693s` | Seconds |
+| **Peak Process Working Set (RAM)** | `54.02 MB` | Megabytes |
+| **Scanning Throughput** | `1.04 endpoints/s` | Endpoints per Second |
 
 ---
 

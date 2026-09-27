@@ -44,6 +44,38 @@ router.delete("/", requireRole(["platform administrator", "security administrato
 });
 
 /**
+ * DELETE /api/v1/scans/system/purge-synthetic
+ * Permanently deletes all mock/synthetic data from the database.
+ */
+router.delete("/system/purge-synthetic", requireRole(["platform administrator", "security administrator"]), async (req, res, next) => {
+  try {
+    const isPlatformAdmin = req.tenantContext?.isPlatformAdmin || false;
+    const callerTenant = req.tenantContext?.tenantId || "default-tenant";
+
+    const { db } = require("../db/connection");
+    let q = db("assets").select("scan_id").where("is_synthetic", true).groupBy("scan_id");
+    
+    if (!isPlatformAdmin && callerTenant) {
+      q = q.join("scans", "assets.scan_id", "scans.id").where("scans.tenant_id", callerTenant);
+    }
+
+    const syntheticScans = await q;
+    const scanIds = syntheticScans.map(s => s.scan_id).filter(Boolean);
+
+    if (scanIds.length > 0) {
+      await db("scans").whereIn("id", scanIds).del();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully purged ${scanIds.length} synthetic mock scans.`,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * GET /api/v1/scans/:scanId
  * Returns metadata, summary metrics, and status for a specific scan.
  */

@@ -261,6 +261,18 @@ export const api = {
     };
   },
 
+  deleteScan: async (scanId: string): Promise<{ success: boolean; message: string }> => {
+    return request<{ success: boolean; message: string }>(`/api/v1/scans/${encodeURIComponent(scanId)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  purgeSyntheticScans: async (): Promise<{ success: boolean; message: string }> => {
+    return request<{ success: boolean; message: string }>('/api/v1/scans/system/purge-synthetic', {
+      method: 'DELETE',
+    });
+  },
+
   getScanById: async (scanId: string): Promise<ScanItem> => {
     return request<ScanItem>(`/api/v1/scans/${encodeURIComponent(scanId)}`);
   },

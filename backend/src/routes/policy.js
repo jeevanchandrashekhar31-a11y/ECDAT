@@ -302,7 +302,9 @@ router.post("/rules/:ruleId/toggle", (req, res) => {
     }
 
     // 2. Modify policy
-    policy.rules[ruleIndex].action = action || (policy.rules[ruleIndex].action === 'fail' ? 'warn' : 'fail');
+    const currentAction = String(policy.rules[ruleIndex].action).toUpperCase();
+    const providedAction = action ? String(action).toUpperCase() : null;
+    policy.rules[ruleIndex].action = providedAction || (currentAction === 'FAIL' || currentAction === 'BLOCK' ? 'WARN' : 'FAIL');
     const newVersion = policy.version.split('-')[0] + '-patch.' + Date.now();
     policy.version = newVersion;
     policy.id = policy.id + "-" + Date.now(); // Ensure unique ID

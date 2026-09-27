@@ -373,9 +373,16 @@ export const Reports: React.FC = () => {
             </a>
             <button
               onClick={() => {
-                const iframe = document.getElementById('report-iframe') as HTMLIFrameElement;
-                if (iframe?.contentWindow) {
-                  iframe.contentWindow.print();
+                const newWin = window.open('', '_blank');
+                if (newWin) {
+                  newWin.document.write(reportHtml);
+                  newWin.document.close();
+                  newWin.focus();
+                  setTimeout(() => {
+                    newWin.print();
+                  }, 500);
+                } else {
+                  alert('Please allow popups to print the report.');
                 }
               }}
               title="Print report"

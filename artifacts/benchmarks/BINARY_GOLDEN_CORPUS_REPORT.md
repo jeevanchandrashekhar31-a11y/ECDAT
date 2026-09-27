@@ -5,7 +5,7 @@
 This report documents the accuracy and performance benchmark of the ECDAT Binary & Container Scanner
 against ground-truth ELF binary fixtures defined in `manifest.json`.
 
-- **Timestamp**: `2026-09-20T14:03:22.391122+00:00`
+- **Timestamp**: `2026-09-27T17:05:25.432989+00:00`
 - **Corpus Standard**: `Phase 30 Binary Golden Corpus`
 - **Total Binary Targets Evaluated**: `4`
 - **Precision**: **100.0%** (Target: ≥90.0%)
@@ -19,10 +19,10 @@ against ground-truth ELF binary fixtures defined in `manifest.json`.
 
 | Metric | Value |
 | :--- | :--- |
-| Total Scan Time | 0.1016 s |
-| Wall Clock Time | 0.1016 s |
-| Peak Memory Utilization | 125.71 MB |
-| Throughput | 39.36 binaries/sec |
+| Total Scan Time | 0.1238 s |
+| Wall Clock Time | 0.1239 s |
+| Peak Memory Utilization | 125.89 MB |
+| Throughput | 32.31 binaries/sec |
 
 ## Category Breakdown
 
