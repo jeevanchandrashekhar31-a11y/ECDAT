@@ -2,6 +2,8 @@ const { getRules } = require("./rules_loader");
 const { annotateCbom } = require("./cbom_annotator");
 const { Severities, MoscaStatus } = require("./types");
 const { prioritizeEnterpriseRisk } = require("./prioritizer");
+const { runPqcPipelineOnArray } = require("./pqc_pipeline");
+
 
 /**
  * Generates an executive summary JSON document tailored for frontends and audit reports.
@@ -219,7 +221,8 @@ function generateSummary(cbomData, options = {}) {
       mosca_status_counts: moscaStatusCounts,
       overall_cicd_pass: overallCicdPass,
     },
-    top_risky_assets: topRiskyAssets,
+    // Run all 4 PQC processing pipeline modules on every risky asset
+    top_risky_assets: runPqcPipelineOnArray(topRiskyAssets, { threatHorizon }),
     mosca_analysis_table: moscaAnalysisTable,
     recommendations: Array.from(recommendationMap.values()),
     policy_violations: policyViolations,
