@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import {
   Shield,
@@ -16,7 +16,7 @@ import {
   Play,
   Sliders,
   RefreshCw,
-
+  Zap,
   Loader2,
   AlertTriangle,
   CheckCircle2,
@@ -97,6 +97,24 @@ export const Dashboard: React.FC = () => {
   const [networkTarget, setNetworkTarget] = useState<string>('');
   const [runningAction, setRunningAction] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [seedingDemo, setSeedingDemo] = useState(false);
+
+  // Load demo / evaluation seed data
+  const handleSeedDemo = async () => {
+    setSeedingDemo(true);
+    setActionFeedback(null);
+    try {
+      const res = await api.seedEvaluationTenant();
+      const scanId = res?.scan_id;
+      setActionFeedback({ message: `✓ Demo dataset loaded!${scanId ? ` Scan ID: ${scanId}` : ''} — Refreshing dashboard...`, type: 'success' });
+      if (scanId && outlet.onUploadSuccess) outlet.onUploadSuccess(scanId);
+      setTimeout(() => fetchDashboardData(scanId), 800);
+    } catch (err: unknown) {
+      setActionFeedback({ message: `Failed to seed demo data: ${(err as Error).message}`, type: 'error' });
+    } finally {
+      setSeedingDemo(false);
+    }
+  };
 
   const activeRequestId = useRef(0);
 
@@ -391,6 +409,33 @@ export const Dashboard: React.FC = () => {
               className="px-3 py-2 rounded-lg text-xs bg-surfaceHover hover:bg-surfaceMid text-slate-300 border border-borderMid transition-colors inline-flex items-center gap-1"
             >
               <span>Full Pipeline Center</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+          </div>
+
+          {/* Demo data seed row */}
+          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border/60">
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-slate-400">
+                <span className="font-semibold text-slate-300">No data yet?</span> Load a pre-built synthetic dataset to explore all dashboard views and features instantly.
+              </p>
+            </div>
+            <button
+              onClick={handleSeedDemo}
+              disabled={seedingDemo}
+              className="px-4 py-2 rounded-lg text-xs font-bold bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-700/60 inline-flex items-center gap-1.5 transition-colors disabled:opacity-50 shrink-0"
+            >
+              {seedingDemo ? (
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Loading Demo...</span></>
+              ) : (
+                <><Zap className="w-3.5 h-3.5" /><span>Load Demo Dataset</span></>
+              )}
+            </button>
+            <Link
+              to="/reports"
+              className="px-3 py-2 rounded-lg text-xs bg-surfaceHover hover:bg-surfaceMid text-slate-300 border border-borderMid transition-colors inline-flex items-center gap-1"
+            >
+              <span>Reports &amp; Exports</span>
               <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
