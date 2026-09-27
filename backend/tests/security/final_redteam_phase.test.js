@@ -119,7 +119,7 @@ test("Phase 37: Final Red-Team Assessment — Active Exploitation Defense", asyn
       // Vector 6: Session Theft
       await t.test("Vector 06: Session Theft — Forged/tampered session cookie rejected", async () => {
         const res = await fetch(`${baseUrl}/api/v1/auth/me`, {
-          headers: { Cookie: "ecdat_session=forged_untrusted_session_token_12345" // gitguardian:ignore },
+          headers: { Cookie: "ecdat_session=forged_untrusted_session_token_12345" /* gitguardian:ignore */ },
         });
         assert.ok([401, 403].includes(res.status), `Expected 401/403, got ${res.status}`);
       });
