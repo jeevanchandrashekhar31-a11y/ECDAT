@@ -526,30 +526,6 @@ ECDAT/
 
 ---
 
-## 🌐 Deployment Guide
-
-### Cloud Platform Comparison
-
-| Platform | Cost | Best For | Setup Time |
-|---|---|---|---|
-| **Railway.app** ⭐ | Free (500h/mo) | SIH demo, quick pilots | ~10 mins |
-| **Render.com** | Free | Teams, prototypes | ~15 mins |
-| **Fly.io** | Free (3 VMs) | Global edge deployment | ~20 mins |
-| **AWS ECS Fargate** | Free tier (12mo) | Enterprise evaluation | ~45 mins |
-| **Google Cloud Run** | Free (2M req/mo) | Serverless production | ~30 mins |
-| **Azure Container Apps** | Free tier | India govt evaluators (CERT-In DCs) | ~30 mins |
-
-### Recommended SIH Stack
-```
-┌─────────────────────────────────────────────┐
-│  Frontend → Vercel (CDN, auto-deploy)        │
-│  Backend  → Railway (Docker + env vars)      │
-│  Database → Neon PostgreSQL (already wired)  │
-│  Cache    → Railway Redis plugin             │
-│  Domain   → ecdat.yourdomain.com             │
-└─────────────────────────────────────────────┘
-```
-
 ### Environment Variables Reference
 
 | Variable | Required | Description |
