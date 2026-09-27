@@ -1,0 +1,49 @@
+# render.yaml — Render.com deployment configuration for ECDAT Backend
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: ecdat-backend
+    runtime: node
+    region: oregon           # or singapore for lower latency from India
+    plan: free               # upgrade to starter ($7/mo) for always-on
+    rootDir: backend
+    buildCommand: npm ci --production
+    startCommand: npm run migrate && node src/server.js
+    healthCheckPath: /health
+    autoDeploy: true
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 10000           # Render assigns PORT automatically; this is the fallback
+
+      - key: AUTH_MODE
+        value: demo            # Change to 'production' when you have real users
+
+      - key: DATA_STORE_MODE
+        value: postgres
+
+      - key: REQUIRE_DATABASE_HEALTH
+        value: "true"
+
+      # ── Set these in the Render dashboard under Environment ──────────────────
+      - key: DATABASE_URL
+        sync: false            # SECRET — paste your Neon connection string in dashboard
+
+      - key: JWT_SECRET
+        sync: false            # SECRET — generate: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
+      - key: DATA_ENCRYPTION_KEY
+        sync: false            # SECRET — 32-char hex key
+
+      - key: ALLOWED_ORIGINS
+        sync: false            # Your Vercel frontend URL e.g. https://ecdat.vercel.app
+
+      - key: PYTHONPATH
+        value: .
+
+      - key: SCAN_ARTIFACTS_DIR
+        value: /tmp/ecdat-scans  # Render has ephemeral disk; scans go to /tmp then Neon
