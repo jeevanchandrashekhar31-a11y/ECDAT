@@ -235,7 +235,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       });
       const uniqueComponents = Array.from(uniqueComponentsMap.values());
 
-      const chunkSize = 150;
+      const chunkSize = 2500;
       
       for (let i = 0; i < uniqueAssets.length; i += chunkSize) {
         await trx("assets").insert(uniqueAssets.slice(i, i + chunkSize)).onConflict(['scan_id', 'id']).merge();
