@@ -96,15 +96,19 @@ def main():
     findings = []
     scan_errors = []
 
-    for fpath in files_to_scan:
+    import concurrent.futures
+    import os
+
+    def process_file(fpath):
+        local_findings = []
+        file_errors = []
         try:
             with open(fpath, "rb") as f:
                 source_code = f.read()
             content = source_code.decode("utf-8", errors="replace")
         except (PermissionError, OSError) as pe:
-            discovery.skipped_stats["unreadable"] += 1
-            scan_errors.append(PermissionFailureError(f"Cannot read file: {fpath}", {"file": str(fpath)}, fatal=False))
-            continue
+            file_errors.append(PermissionFailureError(f"Cannot read file: {fpath}", {"file": str(fpath)}, fatal=False))
+            return local_findings, file_errors
 
         ext = fpath.suffix.lower()
         ast_findings = []
@@ -113,16 +117,13 @@ def main():
             try:
                 ast_findings = adapter.extract_findings(source_code, fpath, discovery.root_dir)
             except Exception as e:
-                scan_errors.append(
-                    ParserFailureError(f"AST parsing failed for {fpath}: {e}", {"file": str(fpath)}, fatal=False)
-                )
+                file_errors.append(ParserFailureError(f"AST parsing failed for {fpath}: {e}", {"file": str(fpath)}, fatal=False))
 
         raw_matches = apply_regex_rules(content)
         regex_findings = []
         for match in raw_matches:
             sanitized_evidence = redact_secrets(match["evidence"])
             rel_path = str(fpath.relative_to(discovery.root_dir))
-
             finding = StaticFinding(
                 file_path=rel_path,
                 line_number=match["line_number"],
@@ -135,36 +136,45 @@ def main():
             )
             regex_findings.append(finding)
 
-        # Deduplication: Key by (file_path, line_number)
         final_file_findings = {}
-
-        # AST takes precedence
         for f in ast_findings:
-            key = f"{f.file_path}:{f.line_number}"
-            key_algo = f"{key}:{f.algorithm}"
+            key_algo = f"{f.file_path}:{f.line_number}:{f.algorithm}"
             final_file_findings[key_algo] = f
 
         for f in regex_findings:
             key_algo = f"{f.file_path}:{f.line_number}:{f.algorithm}"
             if key_algo not in final_file_findings:
-                # Basic superseding check (e.g. AST found specific function, regex found base algo name)
                 final_file_findings[key_algo] = f
 
-        # Secret-safe candidate detection
-        from scanners.static.secret_detector import SecretSafeDetector
+        try:
+            from scanners.static.secret_detector import SecretSafeDetector
+            _, secret_candidates = SecretSafeDetector.detect_and_redact(
+                content, file_path=str(fpath.relative_to(discovery.root_dir))
+            )
+            secret_findings = SecretSafeDetector.create_static_findings(secret_candidates)
+            for sf in secret_findings:
+                key_algo = f"{sf.file_path}:{sf.line_number}:{sf.algorithm}"
+                if key_algo not in final_file_findings:
+                    final_file_findings[key_algo] = sf
+        except Exception:
+            pass
 
-        _, secret_candidates = SecretSafeDetector.detect_and_redact(
-            content, file_path=str(fpath.relative_to(discovery.root_dir))
-        )
-        secret_findings = SecretSafeDetector.create_static_findings(secret_candidates)
-        for sf in secret_findings:
-            key_algo = f"{sf.file_path}:{sf.line_number}:{sf.algorithm}"
-            if key_algo not in final_file_findings:
-                final_file_findings[key_algo] = sf
+        local_findings.extend(list(final_file_findings.values())[:500])
+        return local_findings, file_errors
 
-        # Cap findings per file to 500 to prevent memory blowup on generated-code explosions
-        file_results = list(final_file_findings.values())[:500]
-        findings.extend(file_results)
+    concurrency = max(1, os.cpu_count() or 1)
+    print(f"Starting parallel scan with {concurrency} workers...")
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
+        future_to_file = {executor.submit(process_file, fpath): fpath for fpath in files_to_scan}
+        for future in concurrent.futures.as_completed(future_to_file):
+            fpath = future_to_file[future]
+            try:
+                f_findings, f_errors = future.result()
+                findings.extend(f_findings)
+                scan_errors.extend(f_errors)
+            except Exception as e:
+                scan_errors.append(ParserFailureError(f"Worker crashed on {fpath}: {e}", {"file": str(fpath)}, fatal=False))
 
     print(f"Found {len(findings)} potential cryptographic usage sites.")
 
