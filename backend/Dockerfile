@@ -5,8 +5,7 @@
 # node:20.19.4-alpine3.21 — pinned digest (update quarterly)
 FROM node:20-alpine AS base
 
-# Security: non-root user (tests expect USER node; keep alias for compat)
-RUN addgroup -g 1001 -S ecdat && adduser -u 1001 -S node -G ecdat
+
 
 WORKDIR /app
 
@@ -16,7 +15,7 @@ RUN apk add --no-cache python3 py3-pip git curl openssl \
        pip3 install --no-cache-dir semgrep 2>/dev/null || echo "semgrep install skipped"
 
 # Read-only filesystem support: create writable dirs as root before switching
-RUN mkdir -p /app/artifacts /tmp && chown -R node:ecdat /app /tmp
+RUN mkdir -p /app/artifacts /tmp && chown -R node:node /app /tmp
 
 # ---- Dependencies ----
 FROM base AS deps
@@ -35,7 +34,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy app source (owned by non-root node user)
-COPY --chown=node:ecdat . .
+COPY --chown=node:node . .
 
 # Remove dev files
 RUN rm -f .env.local .env.development
