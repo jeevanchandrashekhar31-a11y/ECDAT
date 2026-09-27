@@ -388,7 +388,96 @@ def code_finding_to_cbom(finding: CodeCryptoFinding) -> Bom:
     return bom
 
 
-def binary_finding_to_cbom(finding: BinaryContainerFinding) -> Bom:
+def code_findings_to_cbom(findings: List[CodeCryptoFinding]) -> Bom:
+    """Highly optimized O(N) builder that directly generates a single merged Bom from findings, 
+    avoiding the creation of millions of temporary Bom/Component objects that cause OOMs on large scans."""
+    bom = Bom()
+    file_comps = {}
+    algo_comps = {}
+    algo_locs = {}
+    
+    for finding in findings:
+        # File Component
+        file_ref = f"code:file@{finding.file_path}"
+        if file_ref not in file_comps:
+            target_comp = Component(type=ComponentType.FILE, name=finding.file_path, bom_ref=file_ref)
+            target_comp.properties.add(Property(name="ecdat:scanner", value="static_scanner"))
+            target_comp.properties.add(Property(name="ecdat:file", value=finding.file_path))
+            file_comps[file_ref] = target_comp
+            bom.components.add(target_comp)
+        else:
+            target_comp = file_comps[file_ref]
+            
+        # Crypto Component
+        algo_name = finding.algorithm or "unknown"
+        key_size_str = str(finding.key_size) if (finding.key_size is not None and finding.key_size != 0) else None
+        
+        if finding.finding_type == "hardcoded_key":
+            related_props = RelatedCryptoMaterialProperties(type=RelatedCryptoMaterialType.PRIVATE_KEY)
+            crypto_props = CryptoProperties(
+                asset_type=CryptoAssetType.RELATED_CRYPTO_MATERIAL, related_crypto_material_properties=related_props
+            )
+            comp_name = f"Hardcoded {algo_name} Key" if algo_name != "unknown" else "Hardcoded Key"
+        else:
+            algo_props = AlgorithmProperties(
+                parameter_set_identifier=key_size_str, nist_quantum_security_level=0
+            )
+            crypto_props = CryptoProperties(asset_type=CryptoAssetType.ALGORITHM, algorithm_properties=algo_props)
+            comp_name = f"{algo_name}-{key_size_str}" if key_size_str else algo_name
+
+        if finding.bom_ref not in algo_comps:
+            evidence = ComponentEvidence(occurrences=[Occurrence(location=finding.file_path, line=finding.line)])
+            comp = Component(
+                type=ComponentType.CRYPTOGRAPHIC_ASSET,
+                name=comp_name,
+                bom_ref=finding.bom_ref,
+                crypto_properties=crypto_props,
+                evidence=evidence,
+            )
+            comp.properties.add(Property(name="ecdat:confidence", value=finding.confidence))
+            if finding.library:
+                comp.properties.add(Property(name="ecdat:library", value=finding.library))
+            if getattr(finding, "detection_method", None):
+                comp.properties.add(Property(name="ecdat:detection_method", value=finding.detection_method))
+            if getattr(finding, "needs_human_review", None):
+                comp.properties.add(Property(name="ecdat:needs_human_review", value=str(finding.needs_human_review).lower()))
+            if getattr(finding, "reason", None):
+                comp.properties.add(Property(name="ecdat:reason", value=finding.reason))
+            if getattr(finding, "fingerprint", None):
+                comp.properties.add(Property(name="ecdat:fingerprint", value=finding.fingerprint))
+            comp.properties.add(Property(name="ecdat:scanner", value="static_scanner"))
+            comp.properties.add(Property(name="ecdat:scanner_version", value="1.0.0"))
+            comp.properties.add(Property(name="ecdat:file", value=finding.file_path))
+            comp.properties.add(Property(name="ecdat:algorithm", value=algo_name))
+            comp.properties.add(Property(name="ecdat:key_size", value=key_size_str or "unknown"))
+            clf_code_res = CryptoClassifier.classify(algo_name, key_size=finding.key_size)
+            comp.properties.add(Property(name="ecdat:quantumClassification", value=clf_code_res.classification))
+            comp.properties.add(Property(name="ecdat:timestamp", value=datetime.now(timezone.utc).isoformat()))
+            comp.properties.add(Property(name="ecdat:source", value=getattr(finding, "detection_method", "source_code")))
+            comp.properties.add(Property(name="ecdat:evidence_nature", value="observed"))
+            
+            algo_comps[finding.bom_ref] = comp
+            algo_locs[finding.bom_ref] = {(finding.file_path, finding.line)}
+            bom.components.add(comp)
+            bom.register_dependency(target_comp, [comp])
+        else:
+            comp = algo_comps[finding.bom_ref]
+            loc_key = (finding.file_path, finding.line)
+            locs = algo_locs[finding.bom_ref]
+            if loc_key not in locs:
+                new_occ = Occurrence(location=finding.file_path, line=finding.line)
+                if hasattr(comp.evidence.occurrences, "add"):
+                    comp.evidence.occurrences.add(new_occ)
+                else:
+                    comp.evidence.occurrences.append(new_occ)
+                locs.add(loc_key)
+                
+            bom.register_dependency(target_comp, [comp])
+            
+    _attach_provenance_metadata(bom, "static_scanner")
+    return bom
+
+
     bom = Bom()
 
     comp = Component(

@@ -221,33 +221,31 @@ def main():
                     except (PermissionError, OSError):
                         pass
 
-    cboms = []
-
-    for finding in findings:
-        normalized_path = str(finding.file_path).replace("\\", "/")
-        key_size_str = f":{finding.key_size}" if getattr(finding, "key_size", None) else ""
-        ccf = CodeCryptoFinding(
-            bom_ref=f"code:{normalized_path}:{finding.algorithm}{key_size_str}",
-            file_path=normalized_path,
-            language="Unknown",
-            line=finding.line_number,
-            algorithm=finding.algorithm,
-            finding_type=finding.finding_type,
-            confidence=finding.confidence,
-            analysis_source=finding.analysis_source,
-            needs_human_review=finding.needs_human_review,
-            reason=finding.reason,
-            fingerprint=getattr(finding, "fingerprint", None),
-            secret_type=getattr(finding, "secret_type", None),
-        )
-
-        cboms.append(code_finding_to_cbom(ccf))
-
-    out_dir = Path(args.output).parent
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    if cboms:
-        merged_bom = merge_cboms(cboms)
+    if findings:
+        # Batch construct the CBOM using O(N) memory-optimized function 
+        # (avoiding 12GB memory spikes on 150k findings)
+        from scanners.cbom_mapping import code_findings_to_cbom
+        ccf_findings = []
+        for finding in findings:
+            normalized_path = str(finding.file_path).replace("\\", "/")
+            key_size_str = f":{finding.key_size}" if getattr(finding, "key_size", None) else ""
+            ccf = CodeCryptoFinding(
+                bom_ref=f"code:{normalized_path}:{finding.algorithm}{key_size_str}",
+                file_path=normalized_path,
+                language="Unknown",
+                line=finding.line_number,
+                algorithm=finding.algorithm,
+                finding_type=finding.finding_type,
+                confidence=finding.confidence,
+                analysis_source=finding.analysis_source,
+                needs_human_review=finding.needs_human_review,
+                reason=finding.reason,
+                fingerprint=getattr(finding, "fingerprint", None),
+                secret_type=getattr(finding, "secret_type", None),
+            )
+            ccf_findings.append(ccf)
+            
+        merged_bom = code_findings_to_cbom(ccf_findings)
         json_output = serialize_cbom(merged_bom)
         Path(args.output).write_text(json_output, encoding="utf-8")
         print(f"Wrote CBOM to {args.output}")
