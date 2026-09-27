@@ -17,6 +17,12 @@ import {
   Layers,
   Sparkles,
   Info,
+  Zap,
+  TrendingDown,
+  Calendar,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { DashboardSummary, TopRiskyAsset } from '../types';
@@ -292,6 +298,25 @@ export const Roadmap: React.FC = () => {
     'Zero secret literal policy: private keys must remain inside HSM or KMS envelopes and never appear in source code or telemetry.',
   ];
 
+  // ── Derived KPIs ──────────────────────────────────────────────────────────
+  const totalCritical = enrichedRecommendations.filter(r => r.priority === 'critical').length;
+  const quickWins = enrichedRecommendations.filter(r =>
+    (r.migration_complexity || '').toLowerCase() === 'low' && r.priority === 'critical'
+  ).length;
+  const hybridRecs = enrichedRecommendations.filter(r => r.hybrid_transition_recommended).length;
+  const q_year = 2033; // baseline
+  const current_year = new Date().getFullYear();
+  const years_left = q_year - current_year;
+
+  // Step counts for phase badges
+  const stepCounts = useMemo(() => {
+    const counts: Record<number, number> = {};
+    enrichedRecommendations.forEach(r => {
+      counts[r.sequenceStep] = (counts[r.sequenceStep] || 0) + 1;
+    });
+    return counts;
+  }, [enrichedRecommendations]);
+
   return (
     <div className="space-y-8 animate-fade-in print:text-slate-900 print:bg-white print:p-0">
       {/* 1. Header & Actions */}
@@ -452,6 +477,87 @@ export const Roadmap: React.FC = () => {
         </div>
       </div>
 
+      {/* 3b. Summary KPI Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 print:hidden">
+        <div className="p-4 rounded-xl bg-rose-950/30 border border-rose-800/40 space-y-1">
+          <div className="flex items-center gap-2 text-rose-400">
+            <AlertTriangle className="w-4 h-4" />
+            <span className="text-[11px] uppercase font-mono tracking-wider">Critical Actions</span>
+          </div>
+          <div className="text-3xl font-black text-white">{totalCritical}</div>
+          <div className="text-[10px] text-slate-500">Require immediate action</div>
+        </div>
+        <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/40 space-y-1">
+          <div className="flex items-center gap-2 text-emerald-400">
+            <Zap className="w-4 h-4" />
+            <span className="text-[11px] uppercase font-mono tracking-wider">Quick Wins</span>
+          </div>
+          <div className="text-3xl font-black text-white">{quickWins}</div>
+          <div className="text-[10px] text-slate-500">Critical + Low complexity</div>
+        </div>
+        <div className="p-4 rounded-xl bg-cyan-950/30 border border-cyan-800/40 space-y-1">
+          <div className="flex items-center gap-2 text-primary">
+            <Cpu className="w-4 h-4" />
+            <span className="text-[11px] uppercase font-mono tracking-wider">Hybrid PQC Recs</span>
+          </div>
+          <div className="text-3xl font-black text-white">{hybridRecs}</div>
+          <div className="text-[10px] text-slate-500">Dual-track migration paths</div>
+        </div>
+        <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-800/40 space-y-1">
+          <div className="flex items-center gap-2 text-amber-400">
+            <Clock className="w-4 h-4" />
+            <span className="text-[11px] uppercase font-mono tracking-wider">Q-Day Horizon</span>
+          </div>
+          <div className="text-3xl font-black text-white">{years_left}y</div>
+          <div className="text-[10px] text-slate-500">Until baseline 2033 scenario</div>
+        </div>
+      </div>
+
+      {/* 3c. Gantt-style visual timeline */}
+      <div className="p-5 rounded-2xl bg-surface/70 border border-border space-y-4 print:hidden">
+        <div className="flex items-center gap-2 mb-1">
+          <Calendar className="w-4 h-4 text-primary" />
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Migration Timeline — Baseline 2033 Scenario</span>
+        </div>
+        <div className="relative">
+          {/* Year ruler */}
+          <div className="flex text-[10px] font-mono text-slate-500 mb-2 pl-[140px]">
+            {['2025','2026','2027','2028','2029','2030','2031','2032','2033'].map(y => (
+              <div key={y} className="flex-1 text-center">{y}</div>
+            ))}
+          </div>
+          {/* Current year marker */}
+          <div
+            className="absolute top-6 bottom-0 w-px bg-cyan-500/60 z-10"
+            style={{ left: `calc(140px + ${((current_year - 2025) / 8) * (100 - 140/7)}%)` }}
+          />
+          {[
+            { label: 'Phase 1: Remove Broken', color: 'bg-rose-600', start: 0, width: 15 },
+            { label: 'Phase 2: Upgrade TLS', color: 'bg-amber-500', start: 5, width: 25 },
+            { label: 'Phase 3: Identify SNDL', color: 'bg-cyan-600', start: 15, width: 30 },
+            { label: 'Phase 4: Pilot Hybrid PQC', color: 'bg-purple-600', start: 35, width: 35 },
+            { label: 'Phase 5: Full PQC Deploy', color: 'bg-emerald-600', start: 62, width: 38 },
+          ].map((phase, i) => (
+            <div key={i} className="flex items-center gap-3 mb-2">
+              <div className="w-[132px] text-[10px] text-slate-400 text-right truncate pr-2 shrink-0">{phase.label}</div>
+              <div className="flex-1 relative h-5 bg-slate-800/60 rounded">
+                <div
+                  className={`absolute h-full rounded ${phase.color} opacity-80`}
+                  style={{ left: `${phase.start}%`, width: `${phase.width}%` }}
+                />
+                {i === 4 && (
+                  <div className="absolute right-1 top-0.5 text-[9px] font-mono text-white/70">Q-Day 2033</div>
+                )}
+              </div>
+              <div className="text-[10px] font-mono text-slate-500 w-8 shrink-0">
+                {stepCounts[i + 1] ? `${stepCounts[i + 1]}×` : '—'}
+              </div>
+            </div>
+          ))}
+          <div className="mt-1 ml-[140px] text-[9px] text-cyan-400/70 font-mono">▲ Today ({current_year})</div>
+        </div>
+      </div>
+
       {/* 4. Filter Controls for Recommendations */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-surface/60 border border-border/80 print:hidden">
         <div className="flex items-center gap-2">
@@ -526,11 +632,27 @@ export const Roadmap: React.FC = () => {
                     </h3>
                   </div>
 
-                  <div className="text-right text-xs text-slate-400 font-mono">
-                    Complexity:{' '}
-                    <strong className="text-slate-200 capitalize print:text-slate-800">
-                      {rec.migration_complexity || 'Medium'}
-                    </strong>
+                  <div className="flex flex-col items-end gap-1.5">
+                    {/* Complexity badge */}
+                    <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
+                      (rec.migration_complexity || '').toLowerCase() === 'low'
+                        ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60'
+                        : (rec.migration_complexity || '').toLowerCase() === 'high'
+                        ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
+                        : 'bg-slate-800 text-slate-300 border border-slate-700'
+                    }`}>
+                      {(rec.migration_complexity || 'medium').toLowerCase()} complexity
+                    </span>
+                    {/* Quick win badge */}
+                    {(rec.migration_complexity || '').toLowerCase() === 'low' && rec.priority === 'critical' && (
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold bg-amber-950/70 text-amber-300 border border-amber-800/60 flex items-center gap-1">
+                        <Zap className="w-2.5 h-2.5" /> Quick Win
+                      </span>
+                    )}
+                    {/* Mosca countdown */}
+                    <span className="text-[10px] font-mono text-slate-500">
+                      Q-Day in <span className="text-amber-400 font-bold">{years_left}y</span>
+                    </span>
                   </div>
                 </div>
 
@@ -593,11 +715,23 @@ export const Roadmap: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-2 border-t border-border/60 print:hidden">
+                <div className="flex items-center justify-between pt-2 border-t border-border/60 print:hidden">
+                  {/* Affected assets count — links to assets page filtered by algorithm */}
+                  {rec.algorithm && (
+                    <Link
+                      to={`/assets?algorithm=${encodeURIComponent(rec.algorithm)}${scanId ? `&scanId=${scanId}` : ''}`}
+                      className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-primary transition-colors"
+                    >
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      <span>View affected assets</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  )}
                   <button
                     onClick={() => toggleTechnicalDetails(rec.id)}
-                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 ml-auto"
                   >
+                    {showTechnicalDetails[rec.id] ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                     {showTechnicalDetails[rec.id] ? 'Hide Technical Details' : 'Show Technical Details'}
                   </button>
                 </div>
@@ -754,7 +888,15 @@ export const Roadmap: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3.5 pr-3">
-                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surfaceHover text-slate-200 border border-borderMid">
+                      <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
+                        asset.mosca_status === 'CRITICAL_URGENT'
+                          ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
+                          : asset.mosca_status === 'AT_RISK'
+                          ? 'bg-amber-950/70 text-amber-300 border border-amber-800/60'
+                          : asset.mosca_status === 'WATCH'
+                          ? 'bg-cyan-950/70 text-cyan-300 border border-cyan-800/60'
+                          : 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60'
+                      }`}>
                         {asset.mosca_status}
                       </span>
                     </td>
