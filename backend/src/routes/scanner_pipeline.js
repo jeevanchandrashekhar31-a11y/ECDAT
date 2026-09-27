@@ -42,8 +42,32 @@ function emitScanAudit({ action, status = AUDIT_STATUSES.SUCCESS, scanId, target
 const router = express.Router();
 const os = require('os');
 
-// Root directory of ECDAT project
-const REPO_ROOT = path.resolve(__dirname, '../../../');
+// Root directory of ECDAT project — scanners/ lives here.
+// On Render (Docker), PYTHONPATH env var is set to the repo root via render.yaml or startCommand.
+// Fallback: traverse up from this file's location.
+const REPO_ROOT = (() => {
+  // Prefer explicit env var (most reliable on Render)
+  if (process.env.PYTHONPATH && process.env.PYTHONPATH !== '.') {
+    const candidate = path.resolve(process.env.PYTHONPATH);
+    if (require('fs').existsSync(path.join(candidate, 'scanners'))) {
+      return candidate;
+    }
+  }
+  // Fallback: __dirname/../../../ (works locally and most CI environments)
+  const fromDir = path.resolve(__dirname, '../../../');
+  if (require('fs').existsSync(path.join(fromDir, 'scanners'))) {
+    return fromDir;
+  }
+  // Last resort: walk up from __dirname until we find scanners/
+  let dir = __dirname;
+  for (let i = 0; i < 10; i++) {
+    if (require('fs').existsSync(path.join(dir, 'scanners'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return path.resolve(__dirname, '../../../');
+})();
 // Use SCAN_ARTIFACTS_DIR env var (set in .env/docker) or fall back to OS temp dir.
 // Scan uploads are temporary working dirs — results go to Neon after scan completes.
 const ARTIFACTS_DIR = process.env.SCAN_ARTIFACTS_DIR
