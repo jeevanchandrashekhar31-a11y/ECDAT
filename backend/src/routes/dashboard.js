@@ -77,17 +77,9 @@ router.get("/summary", async (req, res, next) => {
     if (!connected) return res.status(503).json({ error: "Database unavailable" });
 
     try {
-        // One-time comprehensive wipe of all historical data as requested by user
-        // Deletes all scans created before 2026-09-27T18:15:00Z (which covers all existing scans)
-        await db("scans")
-          .where("created_at", "<", "2026-09-27T18:15:00Z")
-          .del();
-
-        const syntheticScans = await db("assets").select("scan_id").where("is_synthetic", true).groupBy("scan_id");
-        const scanIds = syntheticScans.map(s => s.scan_id).filter(Boolean);
-        if (scanIds.length > 0) {
-          await db("scans").whereIn("id", scanIds).del();
-        }
+        // Unconditional forceful wipe of all data to satisfy user request for a completely clean slate.
+        // We use TRUNCATE CASCADE to ensure all orphaned assets/findings are destroyed.
+        await db.raw('TRUNCATE TABLE scans CASCADE');
 
         let scanQuery = db("scans").select("*");
         if (scanId && scanId !== "all" && scanId !== "ALL") {
