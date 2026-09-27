@@ -7,8 +7,7 @@ import {
   Clock,
   Play,
   Loader2,
-  ExternalLink,
-  Trash2
+  ExternalLink
 } from 'lucide-react';
 
 export const Scans: React.FC = () => {
@@ -31,10 +30,6 @@ export const Scans: React.FC = () => {
       setLoading(false);
     }
   }, [outlet.scans]);
-
-  const viewScanDetails = (scanId: string) => {
-    navigate(`/?scanId=${scanId}`);
-  };
 
   const viewScanDetails = (scanId: string) => {
     navigate(`/?scanId=${scanId}`);
