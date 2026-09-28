@@ -187,8 +187,8 @@ async function extractZipArchive(zipFilePath, targetDir) {
   await runPythonCommand([
     path.join(REPO_ROOT, 'scanners', 'common', 'archive_guard.py'),
     'extract', zipFilePath, targetDir,
-    '--max-size-mb', '500',
-    '--max-entry-mb', '100',
+    '--max-size-mb', '2000',
+    '--max-entry-mb', '500',
     '--max-files', '10000000',
     '--allow-nested',
   ], 3600000);
@@ -225,8 +225,11 @@ function _parseNetworkTarget(inputTarget, defaultPort = 443) {
 const multer = require('multer');
 
 // Configure bounded upload storage supporting archives and multiple source files up to 150MB
+// Uses diskStorage to prevent RangeError array buffer allocation failures on Render
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, require('os').tmpdir())
+  }),
   limits: { fileSize: 150 * 1024 * 1024, files: 250 }
 });
 
@@ -385,9 +388,11 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
         }
 
         try {
-          validateZipBufferSafety(zipFile.buffer);
+          const buffer = fs.readFileSync(zipFile.path);
+          validateZipBufferSafety(buffer);
         } catch (guardErr) {
           try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+          try { fs.unlinkSync(zipFile.path); } catch {}
           return res.status(400).json({
             success: false,
             error: `Archive security rejection: ${guardErr.message}`
@@ -395,7 +400,8 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
         }
 
         const tempZipPath = path.resolve(ARTIFACTS_DIR, 'uploads', `${uploadSessionId}.zip`);
-        fs.writeFileSync(tempZipPath, zipFile.buffer);
+        fs.copyFileSync(zipFile.path, tempZipPath);
+        try { fs.unlinkSync(zipFile.path); } catch {}
         try {
           await extractZipArchive(tempZipPath, uploadDir);
         } catch (extractErr) {
@@ -411,10 +417,11 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
         }
         scanLabel = scanLabel || `Uploaded ZIP: ${zipFile.originalname}`;
       } else {
-        // Multi-file upload: write files safely
+        // Multi-file upload: move files from tmp to uploadDir safely
         for (const file of req.files) {
           const safeName = path.basename(file.originalname);
-          fs.writeFileSync(path.join(uploadDir, safeName), file.buffer);
+          fs.copyFileSync(file.path, path.join(uploadDir, safeName));
+          try { fs.unlinkSync(file.path); } catch {}
         }
         scanLabel = scanLabel || `Uploaded Project (${req.files.length} files)`;
       }
@@ -482,10 +489,10 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     finally { try { fs.unlinkSync(tempOut); } catch {} }
 
     // Merge results - Node.js primary, Python adds unique bomRefs
-    const nodeRefs = new Set(nodeScanResult.cbom.components.map(c => c.bomRef));
+    const nodeRefs = new Set(nodeScanResult.cbom.components.map(c => c.bomRef || c['bom-ref']));
     const mergedComponents = [
       ...nodeScanResult.cbom.components,
-      ...pythonComponents.filter(c => !nodeRefs.has(c.bomRef)),
+      ...pythonComponents.filter(c => !nodeRefs.has(c.bomRef || c['bom-ref'])),
     ];
     const cbomData = Object.assign({}, nodeScanResult.cbom, { components: mergedComponents });
 
