@@ -414,7 +414,10 @@ async function scanSourceDirectory(scanPath, options = {}) {
   }
 
   const maxFiles = options.maxFiles || 5000;
-  const allFindings = [];
+  const components = [];
+  const componentMap = new Map();
+  const languages = new Set();
+  let totalFindingsRaw = 0;
   let totalFiles = 0;
 
   for (const fileInfo of walkDir(scanPath)) {
@@ -426,19 +429,88 @@ async function scanSourceDirectory(scanPath, options = {}) {
     }
 
     const findings = extractFromFile(fileInfo.filePath, fileInfo.patterns, fileInfo.lang);
-    allFindings.push(...findings);
+    if (findings.length > 0) languages.add(fileInfo.lang);
+    totalFindingsRaw += findings.length;
+
+    for (const f of findings) {
+      const key = `${f.algorithm}|${f.library}|${f.keySize || ""}`;
+      
+      if (!componentMap.has(key)) {
+        const bomRef = `${key.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}-${components.length}`;
+        const component = {
+          type: "cryptographic-asset",
+          name: f.algorithm,
+          bomRef,
+          version: f.keySize ? `${f.keySize}-bit` : undefined,
+          properties: [
+            { name: "ecdat:library", value: f.library },
+            { name: "ecdat:language", value: f.lang },
+            { name: "ecdat:sourceFile", value: path.relative(scanPath, f.filePath) },
+            { name: "ecdat:lineNumber", value: String(f.lineNumber) },
+            { name: "ecdat:evidence", value: f.evidence },
+          ].filter(Boolean),
+          cryptoProperties: {
+            assetType: "algorithm",
+            algorithmProperties: {
+              primitive: inferPrimitive(f.algorithm),
+              ...(f.keySize ? { parameterSetIdentifier: String(f.keySize) } : {}),
+            },
+          },
+          evidence: {
+            occurrences: [{
+              location: path.relative(scanPath, f.filePath),
+              line: f.lineNumber,
+              symbol: f.rawMatch,
+            }],
+          },
+        };
+        componentMap.set(key, component);
+        components.push(component);
+      } else {
+        const existingComponent = componentMap.get(key);
+        if (existingComponent.evidence.occurrences.length < 1000) {
+          existingComponent.evidence.occurrences.push({
+            location: path.relative(scanPath, f.filePath),
+            line: f.lineNumber,
+            symbol: f.rawMatch,
+          });
+        }
+      }
+    }
   }
 
-  const cbom = buildCbom(scanPath, allFindings, { ...options, totalFiles });
+  const cbom = {
+    bomFormat: "CycloneDX",
+    specVersion: "1.6",
+    serialNumber: `urn:uuid:${crypto.randomUUID()}`,
+    version: 1,
+    metadata: {
+      timestamp: new Date().toISOString(),
+      tools: [{ vendor: "ECDAT", name: "Source Code Scanner", version: "2.0.0" }],
+      component: {
+        type: "application",
+        name: options.projectName || path.basename(scanPath),
+        description: `Source code scan of ${scanPath}`,
+      },
+    },
+    components,
+    _scanMeta: {
+      scanId: `scan_src_${crypto.randomUUID()}`,
+      scanPath,
+      totalFilesScanned: totalFiles,
+      totalFindingsRaw,
+      languages: Array.from(languages),
+    },
+  };
 
   return {
     cbom,
     stats: {
       totalFiles,
-      totalFindingsRaw: allFindings.length,
-      totalComponents: cbom.components.length,
-      languages: cbom._scanMeta.languages,
-      pqcComponents: cbom.components.filter((c) =>
+      totalFindingsRaw,
+      totalComponents: components.length,
+      languages: Array.from(languages),
+      pqcComponents: components.filter((c) =>
         c.properties?.some((p) => p.name === "ecdat:isPQC" && p.value === "true")
       ).length,
     },
