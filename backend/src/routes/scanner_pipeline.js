@@ -245,7 +245,7 @@ const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, require('os').tmpdir())
   }),
-  limits: { fileSize: 150 * 1024 * 1024, files: 250 }
+  limits: { fileSize: 1000 * 1024 * 1024, files: 250 }
 });
 
 router.get('/debug/paths', async (req, res) => {
@@ -274,6 +274,8 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
   const uploadSessionId = `scan_${Date.now()}`;
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('X-Scan-Session-Id', uploadSessionId);
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader('Cache-Control', 'no-cache');
   res.flushHeaders();
   
   const keepAliveInterval = setInterval(() => {
@@ -474,7 +476,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     const { scanSourceDirectory } = require("../binary/source_scanner");
     let nodeScanResult;
     try {
-      nodeScanResult = scanSourceDirectory(targetDir, {
+      nodeScanResult = await scanSourceDirectory(targetDir, {
         maxFiles: (req.body && req.body.max_files) ? parseInt(req.body.max_files) : 10000000,
         projectName: scanLabel || path.basename(targetDir),
       });
@@ -1084,7 +1086,7 @@ router.post('/cbom/scan-source', async (req, res, next) => {
     }
     const tenantId = req.tenantContext?.tenantId || 'default-tenant';
     emitScanAudit({ action: AUDIT_ACTIONS.SCAN_STARTED, status: AUDIT_STATUSES.SUCCESS, scanId: 'source-scan', targetName: resolvedPath, req });
-    const { cbom, stats } = scanSourceDirectory(resolvedPath, { projectName: project_name || path.basename(resolvedPath), maxFiles: 5000 });
+    const { cbom, stats } = await scanSourceDirectory(resolvedPath, { projectName: project_name || path.basename(resolvedPath), maxFiles: 5000 });
     if (cbom.components.length === 0) {
       return res.status(200).json({ message: 'Scan completed. No cryptographic API usage detected.', stats, scan_path: resolvedPath });
     }

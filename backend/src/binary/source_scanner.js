@@ -338,7 +338,7 @@ function buildCbom(scanPath, allFindings, options = {}) {
     } else {
       const existingComponent = componentMap.get(key);
       // Cap occurrences to prevent unbounded memory growth on massive repos
-      if (existingComponent.evidence.occurrences.length < 50000) {
+      if (existingComponent.evidence.occurrences.length < 1000) {
         existingComponent.evidence.occurrences.push({
           location: path.relative(scanPath, f.filePath),
           line: f.lineNumber,
@@ -403,7 +403,7 @@ function inferPrimitive(algorithm) {
  * @param {number} [options.maxFiles=5000] - Cap file count to avoid runaway scans
  * @returns {{ cbom: object, stats: object }}
  */
-function scanSourceDirectory(scanPath, options = {}) {
+async function scanSourceDirectory(scanPath, options = {}) {
   if (!fs.existsSync(scanPath)) {
     throw new Error(`Scan path does not exist: ${scanPath}`);
   }
@@ -420,6 +420,11 @@ function scanSourceDirectory(scanPath, options = {}) {
   for (const fileInfo of walkDir(scanPath)) {
     if (totalFiles >= maxFiles) break;
     totalFiles++;
+    
+    if (totalFiles % 100 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+
     const findings = extractFromFile(fileInfo.filePath, fileInfo.patterns, fileInfo.lang);
     allFindings.push(...findings);
   }

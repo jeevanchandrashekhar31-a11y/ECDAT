@@ -238,7 +238,7 @@ class ApprovalWorkflowEngine {
       try {
         const path = require("path");
         const { scanSourceDirectory } = require("../binary/source_scanner");
-        const { cbom, stats } = scanSourceDirectory(path.resolve(patchTargetPath), { maxFiles: 2000 });
+        const { cbom, stats } = await scanSourceDirectory(path.resolve(patchTargetPath), { maxFiles: 2000 });
         rescanStats = stats;
         scanId = `rescan_${crypto.randomUUID().substring(0, 8)}`;
 
