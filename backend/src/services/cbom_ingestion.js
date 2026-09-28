@@ -44,6 +44,14 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       }).catch(() => {});
     }
 
+    // Ensure coverage_stats column exists
+    const hasCoverageCol = await trx.schema.hasColumn("scans", "coverage_stats").catch(() => false);
+    if (!hasCoverageCol) {
+      await trx.schema.alterTable("scans", (table) => {
+        table.jsonb("coverage_stats").nullable();
+      }).catch(() => {});
+    }
+
     // 1. Delete prior record if re-running scan with same ID (prevents duplicates)
     await trx("scans").where({ id: scanRecord.id }).del();
 
