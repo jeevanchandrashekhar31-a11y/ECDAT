@@ -429,7 +429,7 @@ class NodeCiScanner {
   _discoverFiles(dir, fileList = []) {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     const exts = [".js", ".ts", ".py", ".c", ".cpp", ".cs", ".go", ".rs", ".json", ".yaml", ".yml"];
-    const exclude = [".git", "node_modules", "vendor", "dist", "build", ".venv", "__pycache__"];
+    const exclude = [".git", "node_modules", "dist", "build", ".venv", "__pycache__"];
 
     for (const ent of entries) {
       if (exclude.includes(ent.name)) continue;

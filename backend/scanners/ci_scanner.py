@@ -100,7 +100,7 @@ except Exception:
 DEFAULT_EXCLUDE_DIRS = {
     ".git",
     "node_modules",
-    "vendor",
+    
     "dist",
     "build",
     ".venv",
