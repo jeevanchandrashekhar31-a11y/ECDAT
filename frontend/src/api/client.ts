@@ -384,10 +384,11 @@ export const api = {
       if (options.threat_horizon) formData.append('threat_horizon', options.threat_horizon);
       if (options.business_criticality) formData.append('business_criticality', options.business_criticality);
 
-      return request('/scan/static', {
+      const response = await request<{ job_id?: string; [key: string]: any }>('/scan/static', {
         method: 'POST',
         body: formData,
       });
+      return api.pollJobIfQueued(response);
     }
 
     // JSON payload for Git URL or optional path
@@ -403,11 +404,38 @@ export const api = {
     if (gitUrl) payload.github_url = gitUrl;
     if (targetDir) payload.target_dir = targetDir;
 
-    return request('/scan/static', {
+    const response = await request<{ job_id?: string; [key: string]: any }>('/scan/static', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    return api.pollJobIfQueued(response);
+  },
+
+  pollJobIfQueued: async (response: any): Promise<any> => {
+    if (response.job_id) {
+      // It's a queued background job, poll until completion
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      const jobId = response.job_id;
+      
+      while (true) {
+        await delay(3000);
+        const statusRes = await request<{ success: boolean; job: any }>(`/scan/status/${jobId}`);
+        if (!statusRes.success || !statusRes.job) {
+          throw new Error('Lost track of scan job.');
+        }
+        
+        const job = statusRes.job;
+        if (job.status === 'completed') {
+          return job.result;
+        } else if (job.status === 'failed') {
+          throw new Error(job.error || 'Static scan job failed.');
+        }
+        // If status is 'processing', keep looping
+      }
+    }
+    // If not queued (e.g. fast path, error), just return it directly
+    return response;
   },
 
   triggerNetworkScan: async (
