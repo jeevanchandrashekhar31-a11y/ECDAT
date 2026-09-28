@@ -16,6 +16,7 @@ const {
 } = require('../security/archive_guard');
 const { RATE_LIMITS, concurrencyQuotaMiddleware } = require('../security/resource_governance');
 const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require('../audit');
+const { createJob, updateJob, getJob } = require('../services/async_queue');
 
 function emitScanAudit({ action, status = AUDIT_STATUSES.SUCCESS, scanId, targetName, req, reason, details = {} }) {
   try {
@@ -491,86 +492,126 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       });
     }
 
-    // Use Python static scanner
-    const tempOut = path.resolve(ARTIFACTS_DIR, `temp_static_${Date.now()}.json`);
-    if (!fs.existsSync(path.dirname(tempOut))) {
-      fs.mkdirSync(path.dirname(tempOut), { recursive: true });
-    }
+    // -----------------------------------------------------
+    // ASYNC JOB START
+    // -----------------------------------------------------
+    const jobId = uploadSessionId;
+    createJob(jobId, 'static_scan', { scanLabel });
 
-    let cbomData = null;
-    try {
-      const maxFiles = (req.body && req.body.max_files) ? parseInt(req.body.max_files) : 150000;
-      await runPythonCommand(
-        [
-          path.join(REPO_ROOT, 'scanners', 'static', 'main.py'),
-          targetDir,
-          '-o', tempOut,
-          '--max-files', String(maxFiles)
-        ],
-        900000 // 15 minutes timeout
-      );
-    } catch (scannerErr) {
-      return res.status(400).json({
-        success: false,
-        error: `Python static scanner failed: ${scannerErr.message}`
-      });
-    } finally {
-      if (isGitMode) {
-        try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
-      } else if (req.files) {
-        if (targetDir.endsWith('.zip')) {
-          try { fs.unlinkSync(targetDir); } catch {}
-        }
-        try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
-      }
-    }
-
-    cbomData = loadJsonSafe(tempOut);
-    if (!cbomData) {
-      return res.status(500).json({
-        success: false,
-        error: 'Static scanner completed but no output CBOM was generated.'
-      });
-    }
-    try { fs.unlinkSync(tempOut); } catch {}
-
-    if (!cbomData.components || cbomData.components.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: "Scan complete. No cryptographic API usage detected.",
-        scan_source: "live_scanner", scan_id: null,
-        metrics: { total_assets: 0, files_scanned: 0 },
-        cbom: cbomData, top_risky_assets: [], recommendations: [],
-      });
-    }
-
-
-    // Ingest into risk engine
-    let scanRecord;
-    try {
-      scanRecord = await ingestCbom(cbomData, {
-        scannerType: 'static',
-        scanName: scanLabel,
-        policyProfile: req.body?.policy_profile || 'ecdat_enterprise_baseline',
-        threatHorizon: req.body?.threatHorizon || req.body?.threat_horizon || 'baseline_2033',
-        deploymentContext: req.body?.deploymentContext || req.body?.deployment_context || 'internet_facing',
-        tenantContext: req.tenantContext
-      });
-    } catch (ingestErr) {
-      console.error("INGESTION_ERROR_STACK:", ingestErr.stack);
-      return res.status(500).json({ success: false, error: "CBOM Ingestion failed: " + ingestErr.message, stack: ingestErr.stack });
-    }
-
-    res.status(200).json({
+    // Respond immediately to the frontend
+    res.status(202).json({
       success: true,
-      message: 'Static cryptographic scan completed and evaluated',
+      message: 'Static cryptographic scan queued successfully.',
       scan_source: 'live_scanner',
-      scan_id: scanRecord.id,
-      metrics: scanRecord.metrics,
-      cbom: scanRecord.annotated_bom || cbomData,
-      top_risky_assets: scanRecord.top_risky_assets || [],
-      recommendations: scanRecord.recommendations || []
+      job_id: jobId
     });
+
+    // Run the heavy static scanning out-of-band
+    (async () => {
+      try {
+        const tempOut = path.resolve(ARTIFACTS_DIR, `temp_static_${Date.now()}.json`);
+        if (!fs.existsSync(path.dirname(tempOut))) {
+          fs.mkdirSync(path.dirname(tempOut), { recursive: true });
+        }
+    
+        let cbomData = null;
+        try {
+          updateJob(jobId, { message: 'Running cryptographic discovery...' });
+          const maxFiles = (req.body && req.body.max_files) ? parseInt(req.body.max_files) : 150000;
+          await runPythonCommand(
+            [
+              path.join(REPO_ROOT, 'scanners', 'static', 'main.py'),
+              targetDir,
+              '-o', tempOut,
+              '--max-files', String(maxFiles)
+            ],
+            900000 // 15 minutes timeout
+          );
+        } catch (scannerErr) {
+          updateJob(jobId, { status: 'failed', error: `Python static scanner failed: ${scannerErr.message}` });
+          return;
+        } finally {
+          if (isGitMode) {
+            try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+          } else if (req.files) {
+            if (targetDir.endsWith('.zip')) {
+              try { fs.unlinkSync(targetDir); } catch {}
+            }
+            try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+          }
+        }
+    
+        updateJob(jobId, { message: 'Generating CBOM...' });
+        cbomData = loadJsonSafe(tempOut);
+        if (!cbomData) {
+          updateJob(jobId, { status: 'failed', error: 'Static scanner completed but no output CBOM was generated.' });
+          return;
+        }
+        try { fs.unlinkSync(tempOut); } catch {}
+    
+        if (!cbomData.components || cbomData.components.length === 0) {
+          updateJob(jobId, { 
+            status: 'completed',
+            message: "Scan complete. No cryptographic API usage detected.",
+            result: {
+              scan_source: "live_scanner", scan_id: null,
+              metrics: { total_assets: 0, files_scanned: 0 },
+              cbom: cbomData, top_risky_assets: [], recommendations: [],
+            }
+          });
+          return;
+        }
+    
+        // Ingest into risk engine
+        updateJob(jobId, { message: 'Persisting to Neon...' });
+        let scanRecord;
+        try {
+          scanRecord = await ingestCbom(cbomData, {
+            scannerType: 'static',
+            scanName: scanLabel,
+            policyProfile: req.body?.policy_profile || 'ecdat_enterprise_baseline',
+            threatHorizon: req.body?.threatHorizon || req.body?.threat_horizon || 'baseline_2033',
+            deploymentContext: req.body?.deploymentContext || req.body?.deployment_context || 'internet_facing',
+            tenantContext: req.tenantContext
+          });
+        } catch (ingestErr) {
+          console.error("INGESTION_ERROR_STACK:", ingestErr.stack);
+          updateJob(jobId, { status: 'failed', error: "CBOM Ingestion failed: " + ingestErr.message });
+          return;
+        }
+    
+        updateJob(jobId, { 
+          status: 'completed',
+          message: 'Static cryptographic scan completed and evaluated',
+          result: {
+            scan_source: 'live_scanner',
+            scan_id: scanRecord.id,
+            metrics: scanRecord.metrics,
+            cbom: scanRecord.annotated_bom || cbomData,
+            top_risky_assets: scanRecord.top_risky_assets || [],
+            recommendations: scanRecord.recommendations || []
+          }
+        });
+      } catch (err) {
+        emitScanAudit({
+          action: AUDIT_ACTIONS.SCAN_FAILED,
+          status: AUDIT_STATUSES.FAILURE,
+          scanId: uploadSessionId,
+          targetName: scanLabel || 'static_scan',
+          req,
+          reason: err.message || 'Static scan failed',
+          details: { error: err.message },
+        });
+        updateJob(jobId, { status: 'failed', error: err.message });
+      } finally {
+        // Guaranteed cleanup after scan completes or fails
+        if (gitCloneHandle && typeof gitCloneHandle.cleanup === 'function') {
+          gitCloneHandle.cleanup();
+        }
+        deregisterScan(uploadSessionId);
+      }
+    })(); // Execute the async function in background
+
   } catch (err) {
     emitScanAudit({
       action: AUDIT_ACTIONS.SCAN_FAILED,
@@ -582,13 +623,18 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       details: { error: err.message },
     });
     return res.status(500).json({ error: "Debug", stack: err.stack, message: err.message });
-  } finally {
-    // Guaranteed cleanup after scan completes or fails
-    if (gitCloneHandle && typeof gitCloneHandle.cleanup === 'function') {
-      gitCloneHandle.cleanup();
-    }
-    deregisterScan(uploadSessionId);
   }
+});
+
+// --------------------------------------------------------------------------
+// 1.5. GET /scan/status/:jobId
+// --------------------------------------------------------------------------
+router.get('/scan/status/:jobId', (req, res) => {
+  const job = getJob(req.params.jobId);
+  if (!job) {
+    return res.status(404).json({ success: false, error: 'Job not found or expired.' });
+  }
+  res.status(200).json({ success: true, job });
 });
 
 // --------------------------------------------------------------------------
