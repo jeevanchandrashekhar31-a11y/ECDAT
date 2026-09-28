@@ -732,7 +732,7 @@ router.post('/scan/network', concurrencyQuotaMiddleware(), RATE_LIMITS.networkSc
       reason: err.message || 'Network scan failed',
       details: { error: err.message },
     });
-    next(err);
+    return res.status(500).json({ success: false, error: "Network scanner processing error: " + err.message, stack: err.stack });
   }
 });
 
