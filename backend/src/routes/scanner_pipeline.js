@@ -256,10 +256,11 @@ router.get('/debug/paths', async (req, res) => {
 // 1. POST /scan/static
 // --------------------------------------------------------------------------
 router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmission.middleware(), upload.any(), async (req, res, _next) => {
-  // Prevent Render's 100-second reverse proxy timeout by streaming whitespace.
-  // The JSON.parse() on the client side gracefully ignores leading whitespace.
+  const uploadSessionId = `scan_${Date.now()}`;
   res.setHeader('Content-Type', 'application/json');
+  res.setHeader('X-Scan-Session-Id', uploadSessionId);
   res.flushHeaders();
+  
   const keepAliveInterval = setInterval(() => {
     res.write(' ');
   }, 15000);
@@ -277,7 +278,6 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     return this;
   };
 
-  const uploadSessionId = `scan_${Date.now()}`;
   const uploadDir = path.resolve(ARTIFACTS_DIR, 'uploads', uploadSessionId);
   let targetDir = null;
   let scanLabel = req.body?.scan_label;
@@ -294,8 +294,6 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       }
     },
   });
-  // Send session ID in response headers immediately so frontend can reference it
-  res.setHeader('X-Scan-Session-Id', uploadSessionId);
 
   emitScanAudit({
     action: AUDIT_ACTIONS.SCAN_STARTED,
