@@ -1,6 +1,6 @@
 const express = require("express");
 const { buildCryptoRelationshipGraph } = require("../services/crypto_graph_service");
-const { calculateMosca } = require("../risk_engine");
+
 
 const router = express.Router();
 
@@ -82,17 +82,8 @@ router.get("/", async (req, res, next) => {
               customZ: hypotheticalZ,
             });
         }
-        // Use the existing Mosca calculation wrapped!
-        const moscaResult = calculateMosca({
-            assetType,
-            dataSensitivity,
-            businessCriticality,
-            quantumRelevance: quantumRelevance.toUpperCase().includes("SHOR") ? "shor_vulnerable" : "not_applicable",
-            isIntegrityOnly,
-            customX,
-            customY,
-            customZ: hypotheticalZ,
-        });
+        // Removed Mosca recalculation, use one source of truth from node
+        const moscaResult = { status: node.mosca_status || 'SAFE' };
         
         if (moscaResult.status === "CRITICAL_URGENT" || moscaResult.status === "AT_RISK") {
           projection.push({

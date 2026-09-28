@@ -1,0 +1,141 @@
+{
+  "version": "1.0",
+  "algorithms": [
+    {
+      "id": "algo-aes",
+      "category": "symmetric",
+      "name": "AES",
+      "risk": { "classical_break": false, "quantum_break": true },
+      "patterns": {
+        "c": [
+          {"re": "\\b(?:AES_encrypt|AES_set_encrypt_key|EVP_aes_(128|192|256)_(cbc|ecb|gcm|ctr)|CALG_AES(?:_128|_192|_256)?)\\b", "extract": {"algorithm": "AES", "lib": "OpenSSL/WinCrypt", "keySize": "$1", "mode": "$2"}}
+        ],
+        "java": [
+          {"re": "\\bCipher\\.getInstance\\([\"']AES(?:/([A-Za-z0-9]+)/([A-Za-z0-9]+))?[\"']\\)", "extract": {"algorithm": "AES", "lib": "JCA", "mode": "$1"}}
+        ],
+        "python": [
+          {"re": "\\b(?:Crypto\\.Cipher\\.AES\\.new|cryptography\\.hazmat\\.primitives\\.ciphers\\.algorithms\\.AES)\\b", "extract": {"algorithm": "AES", "lib": "pyca/cryptography"}}
+        ],
+        "javascript": [
+          {"re": "\\bcrypto\\.createCipheriv\\([\"']aes-(128|192|256)-(cbc|gcm|ctr)[\"']\\)", "extract": {"algorithm": "AES", "lib": "Node.js Crypto", "keySize": "$1", "mode": "$2"}}
+        ],
+        "go": [
+          {"re": "\\baes\\.NewCipher\\b", "extract": {"algorithm": "AES", "lib": "crypto/aes"}}
+        ],
+        "csharp": [
+          {"re": "\\bSystem\\.Security\\.Cryptography\\.Aes\\.Create\\b", "extract": {"algorithm": "AES", "lib": "System.Security.Cryptography"}}
+        ],
+        "rust": [
+          {"re": "\\baes_gcm::(?:Aes128Gcm|Aes256Gcm)\\b", "extract": {"algorithm": "AES", "lib": "aes-gcm"}}
+        ]
+      }
+    },
+    {
+      "id": "algo-des",
+      "category": "symmetric",
+      "name": "DES",
+      "risk": { "classical_break": true, "quantum_break": true },
+      "patterns": {
+        "c": [{"re": "\\b(?:DES_ecb_encrypt|EVP_des_ede3_cbc|CALG_DES|CALG_3DES)\\b", "extract": {"algorithm": "DES", "lib": "OpenSSL/WinCrypt"}}],
+        "java": [{"re": "\\bCipher\\.getInstance\\([\"'](?:DES|DESede)(?:/.*)?[\"']\\)", "extract": {"algorithm": "DES", "lib": "JCA"}}],
+        "python": [{"re": "\\b(?:Crypto\\.Cipher\\.DES\\.new)\\b", "extract": {"algorithm": "DES", "lib": "PyCrypto"}}],
+        "javascript": [{"re": "\\bcrypto\\.createCipheriv\\([\"']des.*[\"']\\)", "extract": {"algorithm": "DES", "lib": "Node.js Crypto"}}],
+        "go": [{"re": "\\bdes\\.NewCipher\\b", "extract": {"algorithm": "DES", "lib": "crypto/des"}}],
+        "csharp": [{"re": "\\bSystem\\.Security\\.Cryptography\\.(?:DES|TripleDES)\\.Create\\b", "extract": {"algorithm": "DES", "lib": "System.Security.Cryptography"}}]
+      }
+    },
+    {
+      "id": "algo-md5",
+      "category": "hash",
+      "name": "MD5",
+      "risk": { "classical_break": true, "quantum_break": false },
+      "patterns": {
+        "c": [{"re": "\\b(?:MD5_Init|EVP_md5|CALG_MD5)\\b", "extract": {"algorithm": "MD5", "lib": "OpenSSL/WinCrypt"}}],
+        "java": [{"re": "\\bMessageDigest\\.getInstance\\([\"']MD5[\"']\\)", "extract": {"algorithm": "MD5", "lib": "JCA"}}],
+        "python": [{"re": "\\bhashlib\\.md5\\b", "extract": {"algorithm": "MD5", "lib": "hashlib"}}],
+        "javascript": [{"re": "\\bcrypto\\.createHash\\([\"']md5[\"']\\)", "extract": {"algorithm": "MD5", "lib": "Node.js Crypto"}}],
+        "go": [{"re": "\\bmd5\\.New\\b", "extract": {"algorithm": "MD5", "lib": "crypto/md5"}}],
+        "csharp": [{"re": "\\bSystem\\.Security\\.Cryptography\\.MD5\\.Create\\b", "extract": {"algorithm": "MD5", "lib": "System.Security.Cryptography"}}],
+        "rust": [{"re": "\\bmd5::Md5\\b", "extract": {"algorithm": "MD5", "lib": "md5"}}]
+      }
+    },
+    {
+      "id": "algo-sha1",
+      "category": "hash",
+      "name": "SHA-1",
+      "risk": { "classical_break": true, "quantum_break": false },
+      "patterns": {
+        "c": [{"re": "\\b(?:SHA1_Init|EVP_sha1|CALG_SHA1)\\b", "extract": {"algorithm": "SHA-1", "lib": "OpenSSL/WinCrypt"}}],
+        "java": [{"re": "\\bMessageDigest\\.getInstance\\([\"']SHA-1[\"']\\)", "extract": {"algorithm": "SHA-1", "lib": "JCA"}}],
+        "python": [{"re": "\\bhashlib\\.sha1\\b", "extract": {"algorithm": "SHA-1", "lib": "hashlib"}}],
+        "javascript": [{"re": "\\bcrypto\\.createHash\\([\"']sha1[\"']\\)", "extract": {"algorithm": "SHA-1", "lib": "Node.js Crypto"}}],
+        "go": [{"re": "\\bsha1\\.New\\b", "extract": {"algorithm": "SHA-1", "lib": "crypto/sha1"}}],
+        "csharp": [{"re": "\\bSystem\\.Security\\.Cryptography\\.SHA1\\.Create\\b", "extract": {"algorithm": "SHA-1", "lib": "System.Security.Cryptography"}}]
+      }
+    },
+    {
+      "id": "algo-sha256",
+      "category": "hash",
+      "name": "SHA-256",
+      "risk": { "classical_break": false, "quantum_break": false },
+      "patterns": {
+        "c": [{"re": "\\b(?:SHA256_Init|EVP_sha256|CALG_SHA_256)\\b", "extract": {"algorithm": "SHA-256", "lib": "OpenSSL/WinCrypt"}}],
+        "java": [{"re": "\\bMessageDigest\\.getInstance\\([\"']SHA-256[\"']\\)", "extract": {"algorithm": "SHA-256", "lib": "JCA"}}],
+        "python": [{"re": "\\bhashlib\\.sha256\\b", "extract": {"algorithm": "SHA-256", "lib": "hashlib"}}],
+        "javascript": [{"re": "\\bcrypto\\.createHash\\([\"']sha256[\"']\\)", "extract": {"algorithm": "SHA-256", "lib": "Node.js Crypto"}}],
+        "go": [{"re": "\\bsha256\\.New\\b", "extract": {"algorithm": "SHA-256", "lib": "crypto/sha256"}}],
+        "csharp": [{"re": "\\bSystem\\.Security\\.Cryptography\\.SHA256\\.Create\\b", "extract": {"algorithm": "SHA-256", "lib": "System.Security.Cryptography"}}],
+        "rust": [{"re": "\\bsha2::Sha256\\b", "extract": {"algorithm": "SHA-256", "lib": "sha2"}}]
+      }
+    },
+    {
+      "id": "algo-rsa",
+      "category": "asymmetric",
+      "name": "RSA",
+      "risk": { "classical_break": false, "quantum_break": true },
+      "patterns": {
+        "c": [{"re": "\\b(?:RSA_generate_key|EVP_PKEY_RSA|CALG_RSA_SIGN|CALG_RSA_KEYX)\\b", "extract": {"algorithm": "RSA", "lib": "OpenSSL/WinCrypt"}}],
+        "java": [{"re": "\\b(?:KeyPairGenerator|KeyFactory)\\.getInstance\\([\"']RSA[\"']\\)", "extract": {"algorithm": "RSA", "lib": "JCA"}}],
+        "python": [{"re": "\\brsa\\.generate_private_key\\b", "extract": {"algorithm": "RSA", "lib": "pyca/cryptography"}}],
+        "javascript": [{"re": "\\bcrypto\\.generateKeyPair\\([\"']rsa[\"']\\)", "extract": {"algorithm": "RSA", "lib": "Node.js Crypto"}}],
+        "go": [{"re": "\\brsa\\.GenerateKey\\b", "extract": {"algorithm": "RSA", "lib": "crypto/rsa"}}],
+        "csharp": [{"re": "\\b(?:new RSACryptoServiceProvider|RSA\\.Create)\\b", "extract": {"algorithm": "RSA", "lib": "System.Security.Cryptography"}}],
+        "rust": [{"re": "\\brsa::(?:RsaPrivateKey|RsaPublicKey)\\b", "extract": {"algorithm": "RSA", "lib": "rsa"}}]
+      }
+    },
+    {
+      "id": "algo-ecc",
+      "category": "asymmetric",
+      "name": "ECC",
+      "risk": { "classical_break": false, "quantum_break": true },
+      "patterns": {
+        "c": [{"re": "\\b(?:EC_KEY_new|EVP_PKEY_EC)\\b", "extract": {"algorithm": "ECC", "lib": "OpenSSL"}}],
+        "java": [{"re": "\\b(?:KeyPairGenerator|KeyFactory)\\.getInstance\\([\"'](?:EC|ECDSA)[\"']\\)", "extract": {"algorithm": "ECC", "lib": "JCA"}}],
+        "python": [{"re": "\\bec\\.generate_private_key\\b", "extract": {"algorithm": "ECC", "lib": "pyca/cryptography"}}],
+        "javascript": [{"re": "\\bcrypto\\.createECDH\\b", "extract": {"algorithm": "ECC", "lib": "Node.js Crypto"}}],
+        "go": [{"re": "\\becdsa\\.GenerateKey\\b", "extract": {"algorithm": "ECC", "lib": "crypto/ecdsa"}}],
+        "csharp": [{"re": "\\b(?:new ECDsaCng|ECDsa\\.Create)\\b", "extract": {"algorithm": "ECC", "lib": "System.Security.Cryptography"}}]
+      }
+    },
+    {
+      "id": "algo-mldsa",
+      "category": "pqc",
+      "name": "ML-DSA",
+      "risk": { "classical_break": false, "quantum_break": false },
+      "patterns": {
+        "c": [{"re": "\\b(?:OQS_SIG_mldsa|crypto_sign_mldsa)\\b", "extract": {"algorithm": "ML-DSA", "lib": "liboqs", "isPQC": true}}],
+        "java": [{"re": "\\b(?:MLDSA|Dilithium)KeyPairGenerator\\b", "extract": {"algorithm": "ML-DSA", "lib": "BouncyCastle", "isPQC": true}}]
+      }
+    },
+    {
+      "id": "algo-mlkem",
+      "category": "pqc",
+      "name": "ML-KEM",
+      "risk": { "classical_break": false, "quantum_break": false },
+      "patterns": {
+        "c": [{"re": "\\b(?:OQS_KEM_mlkem|crypto_kem_mlkem)\\b", "extract": {"algorithm": "ML-KEM", "lib": "liboqs", "isPQC": true}}],
+        "java": [{"re": "\\b(?:MLKEM|Kyber)KeyPairGenerator\\b", "extract": {"algorithm": "ML-KEM", "lib": "BouncyCastle", "isPQC": true}}]
+      }
+    }
+  ]
+}

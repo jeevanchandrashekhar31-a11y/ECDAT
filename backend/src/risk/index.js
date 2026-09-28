@@ -5,7 +5,7 @@
  */
 
 const { classifyFinding } = require("../risk_engine/classifier");
-const { calculateMosca } = require("../risk_engine/mosca_calculator");
+
 const { buildExplanation } = require("../risk_engine/explainability");
 const {
   RiskAssessment,
@@ -23,7 +23,7 @@ const {
  */
 function assessRisk(finding, policyProfile = "standard", customParams = {}) {
   const classified = classifyFinding(finding, policyProfile);
-  const mosca = calculateMosca(finding, customParams);
+  const mosca = classified.mosca || { status: "SAFE" };
   const explanation = buildExplanation({
     canonicalAlgorithm: classified.algorithm || finding.algorithm,
     severity: classified.severity,
@@ -74,6 +74,6 @@ function assessRisk(finding, policyProfile = "standard", customParams = {}) {
 module.exports = {
   assessRisk,
   classifyFinding,
-  calculateMosca,
+
   buildExplanation,
 };

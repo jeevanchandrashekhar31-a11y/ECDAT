@@ -1,7 +1,7 @@
 const express = require("express");
 const { getScanById, getLatestScan, SCAN_TENANT_FORBIDDEN } = require("../services/cbom_ingestion");
 const { db, isDbConnected } = require("../db/connection");
-const { getRules, calculateMosca } = require("../risk_engine");
+const { getRules } = require("../risk_engine");
 const { getEnterpriseDashboardViews } = require("../services/dashboard_views_service");
 
 const router = express.Router();
@@ -152,16 +152,7 @@ router.get("/summary", async (req, res, next) => {
             let mStatus = meta.mosca_status || (a.at_quantum_risk ? "AT_RISK" : "SAFE");
             let mMargin = meta.mosca_margin_years ?? (mStatus === "AT_RISK" ? 1.0 : 0.0);
 
-            if (requestedThreatHorizon && requestedThreatHorizon !== scanRow.threat_horizon) {
-              const recalc = calculateMosca({
-                assetType: a.asset_type,
-                dataSensitivity: a.data_sensitivity,
-                businessCriticality: a.business_criticality,
-                threat_horizon: requestedThreatHorizon,
-              });
-              mStatus = recalc.status;
-              mMargin = recalc.mosca_margin_years;
-            }
+            // Removed recalculation, reading one source of truth
 
             return {
               asset_id: a.asset_id || a.id,

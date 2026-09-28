@@ -20,7 +20,7 @@
 const crypto = require("crypto");
 const { db, isDbConnected } = require("../db/connection");
 const { getScanById, getLatestScan } = require("./cbom_ingestion");
-const { getRules, calculateMosca } = require("../risk_engine");
+const { getRules } = require("../risk_engine");
 const { normalizeAlgorithm } = require("../risk_engine/normalizer");
 const { QuantumRelevance } = require("../risk_engine/types");
 const { globalCertInventory } = require("../domain/certificate_inventory");

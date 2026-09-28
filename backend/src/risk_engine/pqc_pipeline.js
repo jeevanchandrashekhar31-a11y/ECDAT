@@ -13,7 +13,7 @@
 
 'use strict';
 
-// ─────────────────────────────────────────────────────────────────────────────
+const { calculateMosca } = require('./mosca_calculator');
 // MODULE 1: ENVIRONMENT & CONTEXT FILTERING
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -506,95 +506,29 @@ const THREAT_HORIZONS = {
  * }}
  */
 function applyDynamicMoscaMath(finding, options = {}) {
-  const dataSensitivity = (finding.data_sensitivity || finding.dataSensitivity || 'internal').toLowerCase();
-  const assetType = (finding.asset_type || finding.assetType || 'default').toLowerCase();
-  const threatHorizonKey = options.threatHorizon || finding.threat_horizon || finding.threatHorizon || 'baseline';
-  const algoFamily = resolveAlgoFamily(finding.algorithm || finding.canonicalAlgorithm || '', assetType);
-
-  // Non-quantum-vulnerable assets (symmetric, hash) → X = 0, no urgency escalation
-  const isQuantumVulnerable = algoFamily === 'ASYMMETRIC_SIGNATURE' || algoFamily === 'KEY_EXCHANGE_KEM' || algoFamily === 'NETWORK_LAYER';
+  // Use the one source of truth for Mosca Math
+  const result = calculateMosca({
+    assetType: finding.asset_type || finding.assetType,
+    dataSensitivity: finding.data_sensitivity || finding.dataSensitivity,
+    businessCriticality: finding.business_criticality || finding.businessCriticality,
+    scenario: options.threatHorizon || finding.threat_horizon || finding.threatHorizon,
+    customX: options.customX,
+    customY: options.customY,
+    customZ: options.customZ
+  });
   
-  // X: Data shelf life
-  let X;
-  if (options.customX !== undefined && options.customX !== null) {
-    X = Number(options.customX);
-  } else if (!isQuantumVulnerable) {
-    X = 0; // Symmetric/hash algorithms are not subject to HNDL
-  } else {
-    X = SENSITIVITY_SHELF_LIFE[dataSensitivity] ?? SENSITIVITY_SHELF_LIFE.internal;
-  }
-
-  // Y: Migration time
-  let Y;
-  if (options.customY !== undefined && options.customY !== null) {
-    Y = Number(options.customY);
-  } else {
-    const normalizedType = Object.keys(ASSET_MIGRATION_TIME).find((k) => assetType.includes(k)) || 'default';
-    Y = ASSET_MIGRATION_TIME[normalizedType];
-  }
-
-  // Z: Quantum threat horizon
-  let Z;
-  if (options.customZ !== undefined && options.customZ !== null) {
-    Z = Number(options.customZ);
-  } else {
-    const horizonNorm = threatHorizonKey.toLowerCase().replace(/[_\s]/g, '');
-    Z = THREAT_HORIZONS[horizonNorm] ?? THREAT_HORIZONS.baseline;
-  }
-
-  const moscaTotal = parseFloat((X + Y).toFixed(2));
-  const moscaMargin = parseFloat((moscaTotal - Z).toFixed(2));
-
-  // Determine urgency based on margin
-  let urgency;
-  let why_now;
-  let severity_escalated = false;
-  let escalated_to = null;
-
-  if (!isQuantumVulnerable) {
-    urgency = 'SAFE';
-    why_now =
-      `Algorithm family (${algoFamily}) is not vulnerable to Shor's algorithm. ` +
-      'Grover speedup applies only quadratically; no urgent migration required at current key sizes.';
-  } else if (moscaMargin > 2.5) {
-    urgency = 'CRITICAL_URGENT';
-    severity_escalated = true;
-    escalated_to = 'Critical';
-    why_now =
-      `CRITICAL: (X + Y = ${moscaTotal} yrs) exceeds quantum threat horizon Z = ${Z} yrs by ${moscaMargin} yrs. ` +
-      `Data classified '${dataSensitivity}' must remain protected for ${X} years, but migration will take ${Y} years — ` +
-      `the combined window has already surpassed CRQC arrival estimates. Immediate migration required.`;
-  } else if (moscaMargin > 0) {
-    urgency = 'AT_RISK';
-    severity_escalated = true;
-    escalated_to = 'High';
-    why_now =
-      `AT RISK: Combined shelf-life and migration duration (${moscaTotal} yrs) exceeds quantum threat horizon Z (${Z} yrs) ` +
-      `by ${moscaMargin} yrs. Migration must begin within the next 6-12 months to avoid falling behind CRQC timeline.`;
-  } else if (moscaMargin > -2.0) {
-    urgency = 'WATCH';
-    why_now =
-      `WATCH: Mosca margin (${Math.abs(moscaMargin)} yrs buffer) is within the 2-year policy warning zone. ` +
-      `Migration planning and vendor evaluation should begin now before the window closes.`;
-  } else {
-    urgency = 'SAFE';
-    why_now =
-      `SAFE: ${Math.abs(moscaMargin)} years of quantum safety margin remaining. ` +
-      `Schedule migration within the next 3-5 years as part of standard cryptographic agility programme.`;
-  }
-
   return {
-    x_shelf_life_years: X,
-    y_migration_years: Y,
-    z_threat_horizon_years: Z,
-    mosca_total: moscaTotal,
-    mosca_margin: moscaMargin,
-    urgency,
-    why_now,
-    severity_escalated,
-    escalated_to,
-    is_quantum_vulnerable: isQuantumVulnerable,
-    algo_family: algoFamily,
+    x_shelf_life_years: result.x_shelf_life_years,
+    y_migration_years: result.y_migration_years,
+    z_threat_horizon_years: result.z_quantum_threat_years,
+    mosca_total: result.mosca_total_years,
+    mosca_margin: result.mosca_margin_years,
+    urgency: result.status,
+    why_now: `Evaluated by Mosca Calculator (One source of truth). Status: ${result.status}`,
+    severity_escalated: result.status === 'CRITICAL_URGENT' || result.status === 'AT_RISK',
+    escalated_to: result.status === 'CRITICAL_URGENT' ? 'Critical' : (result.status === 'AT_RISK' ? 'High' : null),
+    is_quantum_vulnerable: result.x_shelf_life_years > 0,
+    algo_family: resolveAlgoFamily(finding.algorithm || '', finding.asset_type || finding.assetType)
   };
 }
 
