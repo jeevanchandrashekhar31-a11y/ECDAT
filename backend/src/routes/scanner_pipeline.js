@@ -187,7 +187,7 @@ async function extractZipArchive(zipFilePath, targetDir) {
   
   // Use async spawn so the event loop stays alive (keep-alive heartbeats can fire)
   const { spawn } = require('child_process');
-  const EXTRACT_TIMEOUT_MS = 120000; // 2 min max for extraction
+  const EXTRACT_TIMEOUT_MS = 300000; // 5 min max for extraction
 
   const runAsync = (cmd, args) => new Promise((resolve, reject) => {
     const child = spawn(cmd, args, { stdio: 'ignore' });
@@ -296,23 +296,10 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
   res.setHeader('Cache-Control', 'no-cache');
   res.flushHeaders();
   
-  const keepAliveInterval = setInterval(() => {
-    res.write(' ');
-  }, 15000);
-
-  // Wrap res.json/res.send to automatically clear the interval and correctly append the payload
-  const originalJson = res.json.bind(res);
-  res.json = function (body) {
-    clearInterval(keepAliveInterval);
-    res.write(JSON.stringify(body));
-    res.end();
-  };
-  const originalStatus = res.status.bind(res);
-  res.status = function (statusCode) {
-    res.statusCode = statusCode;
-    return this;
-  };
-
+  // Keep-alive timer removed: res.write(' ') forces a 200 OK status code prematurely,
+  // causing backend errors to be silently swallowed by the frontend.
+  // We rely on Render's proxy timeout limit and fast async extraction instead.
+  
   const uploadDir = path.resolve(ARTIFACTS_DIR, 'uploads', uploadSessionId);
   let targetDir = null;
   let scanLabel = req.body?.scan_label;

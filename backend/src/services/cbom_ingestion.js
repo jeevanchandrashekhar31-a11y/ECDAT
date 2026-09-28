@@ -113,7 +113,6 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
           tenant_id: scanRecord.tenantId || "default-tenant",
           asset_type: String(f.asset_type || "network_session").slice(0, 50),
           data_sensitivity: String(f.data_sensitivity || "internal").slice(0, 50),
-          business_criticality: String(f.business_criticality || "medium").slice(0, 50),
           highest_severity: String(f.severity || "Informational").slice(0, 50),
           at_quantum_risk:
             f.mosca?.status === "AT_RISK" ||
