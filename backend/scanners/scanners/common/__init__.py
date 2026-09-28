@@ -1,3 +1,0 @@
-"""
-ECDAT Common Utilities Package.
-"""
