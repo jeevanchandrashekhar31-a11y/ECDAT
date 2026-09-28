@@ -187,7 +187,7 @@ async function extractZipArchive(zipFilePath, targetDir) {
   
   // Use async spawn so the event loop stays alive (keep-alive heartbeats can fire)
   const { spawn } = require('child_process');
-  const EXTRACT_TIMEOUT_MS = 30000; // 30s max for extraction
+  const EXTRACT_TIMEOUT_MS = 120000; // 2 min max for extraction
 
   const runAsync = (cmd, args) => new Promise((resolve, reject) => {
     const child = spawn(cmd, args, { stdio: 'ignore' });
@@ -215,13 +215,13 @@ async function extractZipArchive(zipFilePath, targetDir) {
     // Ignore error and fall back to Python
   }
 
-  // 2. Fallback to Python archive_guard — cap at 5000 files to avoid extracting all 61k
+  // 2. Fallback to Python archive_guard
   await runPythonCommand([
     path.join(REPO_ROOT, 'scanners', 'common', 'archive_guard.py'),
     'extract', zipFilePath, targetDir,
     '--max-size-mb', '2000',
     '--max-entry-mb', '500',
-    '--max-files', '5000',
+    '--max-files', '150000',
     '--allow-nested',
   ], EXTRACT_TIMEOUT_MS);
 }
@@ -494,14 +494,12 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     const { scanSourceDirectory } = require("../binary/source_scanner");
     let nodeScanResult;
     try {
-    // For ZIP uploads on cloud free-tier: cap at 3000 files to finish in < 5s.
-      // For git clones and local dirs: allow up to 50k files.
-      // User can always override via max_files body param.
+      // Allow up to 150,000 files to fully process massive archives like Juliet Test Suite
       const isZipUpload = req.files && req.files.length > 0;
-      const defaultMaxFiles = isZipUpload ? 3000 : 50000;
+      const defaultMaxFiles = isZipUpload ? 150000 : 150000;
       const maxFiles = (req.body && req.body.max_files) ? parseInt(req.body.max_files) : defaultMaxFiles;
 
-      const SCAN_TIMEOUT_MS = 55000; // 55s hard limit — stays under Render's 100s proxy kill
+      const SCAN_TIMEOUT_MS = 300000; // 5 minute hard limit. Keep-alive prevents proxy timeouts.
       const timeoutSentinel = new Promise((_, reject) =>
         setTimeout(() => reject(new Error(`SCAN_TIMEOUT: Scan exceeded ${SCAN_TIMEOUT_MS / 1000}s. The archive has too many files for the free-tier instance. Try a smaller project or use a Git URL instead.`)), SCAN_TIMEOUT_MS)
       );
