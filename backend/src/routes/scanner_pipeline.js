@@ -518,31 +518,9 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       return res.status(500).json({ success: false, error: "Node.js source scanner failed: " + nodeScanErr.message });
     }
 
-    // Python scanner - supplemental, non-fatal
-    let pythonComponents = [];
-    const tempStaticTs = Date.now();
-    const tempOut = path.resolve(ARTIFACTS_DIR, "temp_static_" + tempStaticTs + ".json");
-    if (!fs.existsSync(path.dirname(tempOut))) {
-      fs.mkdirSync(path.dirname(tempOut), { recursive: true });
-    }
-    try {
-      await runPythonCommand(
-        [path.join(REPO_ROOT, 'scanners', 'static', 'main.py'), targetDir, "-o", tempOut, "--include-ext", ".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.ts,.tsx,.py,.java,.json,.yml,.yaml,.properties,.ini,.xml,.env", "--max-files", "5000", "--fail-on", "none"],
-        3600000
-      );
-      const pyData = loadJsonSafe(tempOut);
-      if (pyData && pyData.components && pyData.components.length > 0) {
-        pythonComponents = pyData.components;
-      }
-    } catch (_pyErr) { /* supplemental - non-fatal */ }
-    finally { try { fs.unlinkSync(tempOut); } catch {} }
-
-    // Merge results - Node.js primary, Python adds unique bomRefs
-    const nodeRefs = new Set(nodeScanResult.cbom.components.map(c => c.bomRef || c['bom-ref']));
-    const mergedComponents = [
-      ...nodeScanResult.cbom.components,
-      ...pythonComponents.filter(c => !nodeRefs.has(c.bomRef || c['bom-ref'])),
-    ];
+    // Python scanner fallback removed to massively speed up scan times and prevent timeouts.
+    // Node.js scanner now robustly handles all C/C++ regexes.
+    const mergedComponents = [...nodeScanResult.cbom.components];
     const cbomData = Object.assign({}, nodeScanResult.cbom, { components: mergedComponents });
 
     if (mergedComponents.length === 0) {
