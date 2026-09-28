@@ -121,7 +121,8 @@ function createEvalSession(req, res) {
 
   res.cookie(EVAL_COOKIE_NAME, token, {
     httpOnly: true,
-    sameSite: "Lax",
+    sameSite: "None",
+    secure: true,
     maxAge: 24 * 60 * 60 * 1000 // 24h
   });
 
@@ -170,7 +171,8 @@ function switchEvalPersona(req, res) {
 
   res.cookie(EVAL_COOKIE_NAME, token, {
     httpOnly: true,
-    sameSite: "Lax",
+    sameSite: "None",
+    secure: true,
     maxAge: 24 * 60 * 60 * 1000 // 24h
   });
 
