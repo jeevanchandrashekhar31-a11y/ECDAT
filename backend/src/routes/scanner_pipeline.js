@@ -293,12 +293,26 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('X-Scan-Session-Id', uploadSessionId);
   res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader('X-Accel-Buffering', 'no'); // tell Nginx to stream immediately
   res.setHeader('Cache-Control', 'no-cache');
   res.flushHeaders();
   
-  // Keep-alive timer removed: res.write(' ') forces a 200 OK status code prematurely,
-  // causing backend errors to be silently swallowed by the frontend.
-  // We rely on Render's proxy timeout limit and fast async extraction instead.
+  const keepAliveInterval = setInterval(() => {
+    res.write(' '); 
+  }, 15000);
+
+  // Wrap res.json/res.send to automatically clear the interval and correctly append the payload
+  const originalJson = res.json.bind(res);
+  res.json = function (body) {
+    clearInterval(keepAliveInterval);
+    res.write(JSON.stringify(body));
+    res.end();
+  };
+  const originalStatus = res.status.bind(res);
+  res.status = function (statusCode) {
+    res.statusCode = statusCode;
+    return this;
+  };
   
   const uploadDir = path.resolve(ARTIFACTS_DIR, 'uploads', uploadSessionId);
   let targetDir = null;
