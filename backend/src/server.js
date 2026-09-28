@@ -49,9 +49,9 @@ function startServer() {
   }
 
   // 3. Start HTTP Server
-  const server = app.listen(config.PORT, () => {
+  const server = app.listen(config.PORT, "0.0.0.0", () => {
     console.log(
-      `✓ ECDAT API Server listening on http://localhost:${config.PORT}`,
+      `✓ ECDAT API Server listening on http://0.0.0.0:${config.PORT}`,
     );
     console.log(`✓ Health check: http://localhost:${config.PORT}/health`);
     console.log(`✓ API v1 Base:  http://localhost:${config.PORT}/api/v1\n`);
