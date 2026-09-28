@@ -65,21 +65,21 @@ function generateSummary(cbomData, options = {}) {
   const policyViolations = [];
 
   for (const item of classifiedResults) {
-    // 1. Severity count & Confidence matrix
     const sevKey = (item.risk_severity || item.severity || "informational").toLowerCase();
     const confKey = (item.risk_confidence || "high").toLowerCase();
+    const count = item.occurrences_count || 1;
 
     if (severityCounts[sevKey] !== undefined) {
-      severityCounts[sevKey]++;
+      severityCounts[sevKey] += count;
     }
     if (confidenceCounts[confKey] !== undefined) {
-      confidenceCounts[confKey]++;
+      confidenceCounts[confKey] += count;
     }
     if (confidenceMatrix[sevKey] && confidenceMatrix[sevKey][confKey] !== undefined) {
-      confidenceMatrix[sevKey][confKey]++;
+      confidenceMatrix[sevKey][confKey] += count;
     }
     if (item.is_uncertain_detection) {
-      uncertainDetectionsCount++;
+      uncertainDetectionsCount += count;
     }
 
     // 2. Mosca count
@@ -211,7 +211,7 @@ function generateSummary(cbomData, options = {}) {
     },
     metrics: {
       total_assets: allAssets.length,
-      total_findings: classifiedResults.length,
+      total_findings: cbomData._scanMeta?.totalFindingsRaw || classifiedResults.reduce((sum, item) => sum + (item.occurrences_count || 1), 0),
       assets_at_quantum_risk:
         moscaStatusCounts[MoscaStatus.AT_RISK] +
         moscaStatusCounts[MoscaStatus.CRITICAL_URGENT],

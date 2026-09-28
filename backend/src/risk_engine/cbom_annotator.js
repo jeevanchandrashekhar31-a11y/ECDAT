@@ -262,6 +262,7 @@ function annotateCbom(cbomData, options = {}) {
     classification.is_synthetic = Boolean(comp.properties?.find(p => p.name === 'ecdat:is_synthetic')?.value === 'true');
     classification.source = "scanner";
     classification.usage_status = details.usageStatus;
+    classification.occurrences_count = Math.max(1, (comp.evidence?.occurrences?.length || 1));
 
     classifiedResults.push(classification);
 

@@ -298,7 +298,7 @@ function extractFromFile(filePath, patterns, lang) {
 function buildCbom(scanPath, allFindings, options = {}) {
   const scanId = `scan_src_${crypto.randomUUID()}`;
   const components = [];
-  const seen = new Set();
+  const componentMap = new Map();
 
   for (const f of allFindings) {
     const key = `${f.algorithm}|${f.library}|${f.keySize || ""}`;
@@ -332,9 +332,19 @@ function buildCbom(scanPath, allFindings, options = {}) {
       },
     };
 
-    if (!seen.has(key)) {
-      seen.add(key);
+    if (!componentMap.has(key)) {
+      componentMap.set(key, component);
       components.push(component);
+    } else {
+      const existingComponent = componentMap.get(key);
+      // Cap occurrences to prevent unbounded memory growth on massive repos
+      if (existingComponent.evidence.occurrences.length < 50000) {
+        existingComponent.evidence.occurrences.push({
+          location: path.relative(scanPath, f.filePath),
+          line: f.lineNumber,
+          symbol: f.rawMatch,
+        });
+      }
     }
   }
 
