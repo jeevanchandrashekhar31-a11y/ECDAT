@@ -501,14 +501,20 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
 
 
     // Ingest into risk engine
-    const scanRecord = await ingestCbom(cbomData, {
-      scannerType: 'static',
-      scanName: scanLabel,
-      policyProfile: req.body?.policy_profile || 'ecdat_enterprise_baseline',
-      threatHorizon: req.body?.threatHorizon || req.body?.threat_horizon || 'baseline_2033',
-      deploymentContext: req.body?.deploymentContext || req.body?.deployment_context || 'internet_facing',
-      tenantContext: req.tenantContext
-    });
+    let scanRecord;
+    try {
+      scanRecord = await ingestCbom(cbomData, {
+        scannerType: 'static',
+        scanName: scanLabel,
+        policyProfile: req.body?.policy_profile || 'ecdat_enterprise_baseline',
+        threatHorizon: req.body?.threatHorizon || req.body?.threat_horizon || 'baseline_2033',
+        deploymentContext: req.body?.deploymentContext || req.body?.deployment_context || 'internet_facing',
+        tenantContext: req.tenantContext
+      });
+    } catch (ingestErr) {
+      console.error("INGESTION_ERROR_STACK:", ingestErr.stack);
+      return res.status(500).json({ success: false, error: "CBOM Ingestion failed: " + ingestErr.message, stack: ingestErr.stack });
+    }
 
     res.status(200).json({
       success: true,

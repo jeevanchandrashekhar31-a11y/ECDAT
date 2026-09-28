@@ -9,8 +9,8 @@
  * 5. Private-key detection, rejection or redaction (never persisted)
  */
 
-const MAX_COMPONENTS_LIMIT = parseInt(process.env.MAX_CBOM_COMPONENTS, 10) || 50000;
-const MAX_CBOM_BYTES = 50 * 1024 * 1024;
+const MAX_COMPONENTS_LIMIT = parseInt(process.env.MAX_CBOM_COMPONENTS, 10) || 500000;
+const MAX_CBOM_BYTES = parseInt(process.env.MAX_CBOM_BYTES, 10) || 200 * 1024 * 1024; // 200 MB
 const MAX_NESTING_DEPTH = 64;
 const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
