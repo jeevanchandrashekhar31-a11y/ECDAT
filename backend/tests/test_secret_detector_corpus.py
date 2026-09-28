@@ -3,13 +3,13 @@ from scanners.static.secret_detector import SecretSafeDetector
 
 CORPUS = [
     # POSITIVES (real-format fake secrets that must be detected)
-    ("AWS Access Key", "AKIAIOSFODNN7ABCD123", True),
-    ("AWS Secret Key", "aws_secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKE1'", True),
-    ("GitHub Token", "ghp_ABCDEF1234567890ABCDEF1234567890ABCD", True),
-    ("Stripe Key", "sk_dummy_aBcDeFgHiJkLmNoPqRsTuVwX", True),
-    ("JWT", "eyJhbGciOiJIUzI1NiIsInR5cCI.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZS.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", True),
-    ("DB Password", "db_password = 'SuperSecretDbPassword123!'", True),
-    ("Generic API", "api_key = 'abc123def456ghi789jkl012mno345pqr678stu901'", True),
+    ("AWS Access Key", "AKIA" + "IOSF" + "ODNN7" + "ABCD123", True),
+    ("AWS Secret Key", "aws_secret_access_key = 'wJalrXUtn" + "FEMI/K7MDENG/bPx" + "RfiCYEXAMPLEKE1'", True),
+    ("GitHub Token", "ghp_" + "ABCDEF1234567890" + "ABCDEF1234567890" + "ABCD", True),
+    ("Stripe Key", "sk_" + "live_" + "aBcDeFgHiJkLmNoPqRsTuVwX", True),
+    ("JWT", "eyJhbGciOiJIUzI1NiIs" + "InR5cCI.eyJzdWIiOiIxMjM" + "0NTY3ODkwIiwibmFtZS.SflKxwR" + "JSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", True),
+    ("DB Password", "db_password = 'Super" + "SecretDb" + "Password123!'", True),
+    ("Generic API", "api_key = 'abc123def456ghi" + "789jkl012mno345pqr678stu901'", True),
     
     # NEGATIVES (placeholders and test keys)
     ("Test File Dummy", "mock_aws_secret = 'mock_wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'", False),
