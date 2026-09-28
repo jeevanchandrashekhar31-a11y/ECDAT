@@ -476,11 +476,28 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     const { scanSourceDirectory } = require("../binary/source_scanner");
     let nodeScanResult;
     try {
-      nodeScanResult = await scanSourceDirectory(targetDir, {
-        maxFiles: (req.body && req.body.max_files) ? parseInt(req.body.max_files) : 10000000,
-        projectName: scanLabel || path.basename(targetDir),
-      });
+    // For ZIP uploads on cloud free-tier: cap at 3000 files to finish in < 5s.
+      // For git clones and local dirs: allow up to 50k files.
+      // User can always override via max_files body param.
+      const isZipUpload = req.files && req.files.length > 0;
+      const defaultMaxFiles = isZipUpload ? 3000 : 50000;
+      const maxFiles = (req.body && req.body.max_files) ? parseInt(req.body.max_files) : defaultMaxFiles;
+
+      const SCAN_TIMEOUT_MS = 55000; // 55s hard limit — stays under Render's 100s proxy kill
+      const timeoutSentinel = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`SCAN_TIMEOUT: Scan exceeded ${SCAN_TIMEOUT_MS / 1000}s. The archive has too many files for the free-tier instance. Try a smaller project or use a Git URL instead.`)), SCAN_TIMEOUT_MS)
+      );
+      nodeScanResult = await Promise.race([
+        scanSourceDirectory(targetDir, {
+          maxFiles,
+          projectName: scanLabel || path.basename(targetDir),
+        }),
+        timeoutSentinel,
+      ]);
     } catch (nodeScanErr) {
+      if (nodeScanErr.message && nodeScanErr.message.startsWith('SCAN_TIMEOUT')) {
+        return res.status(408).json({ success: false, error: nodeScanErr.message });
+      }
       return res.status(500).json({ success: false, error: "Node.js source scanner failed: " + nodeScanErr.message });
     }
 
