@@ -1,0 +1,1 @@
+{"classification": "LIKELY_CUSTOM_CRYPTO", "confidence": 0.95, "explanation": "The code snippet contains a custom, hand-rolled XOR encryption loop iterating over plaintext and a key.", "status": "LLM_FLAGGED_UNVERIFIED"}

@@ -7,10 +7,12 @@ try:
     from sslyze import (
         Scanner,
         ServerNetworkLocation,
+        ServerNetworkConfiguration,
         ServerScanRequest,
         ScanCommand,
         ScanCommandAttemptStatusEnum,
     )
+    from sslyze.connection_helpers.opportunistic_tls_helpers import ProtocolWithOpportunisticTlsEnum
     HAVE_SSLYZE = True
 except ImportError:
     class ScanCommand(str, Enum):
@@ -48,9 +50,19 @@ from scanners.network.target_validation import NormalizedTarget
 logger = logging.getLogger(__name__)
 
 
+from scanners.network.plugins.raw_pqc_prober import probe_tls13_group, PqcGroup
+import threading
+
+class ScanProfile(str, Enum):
+    QUICK = "QUICK"
+    DEEP = "DEEP"
+
 class TlsScanner:
+    def __init__(self, profile: ScanProfile = ScanProfile.QUICK):
+        self.profile = profile
+        
     def scan(
-        self, targets: List[NormalizedTarget], max_concurrency: int, timeout: int = 15
+        self, targets: List[NormalizedTarget], max_concurrency: int = 10, timeout: int = 15
     ) -> List[NetworkCryptoFinding]:
         findings = []
         scan_requests = []
@@ -66,6 +78,9 @@ class TlsScanner:
                 resolved_endpoint=f"{t.resolved_ip}:{t.port}" if t.resolved_ip else None,
             )
 
+            finding.pqc_groups_accepted = []
+            finding.vuln_checks = {}
+
             if not t.resolved_ip:
                 finding.scan_status = "failed"
                 finding.error_reason = "No resolved IP available."
@@ -74,17 +89,48 @@ class TlsScanner:
 
             if ServerNetworkLocation and ServerScanRequest and ScanCommand:
                 location = ServerNetworkLocation(hostname=t.hostname, port=t.port, ip_address=t.resolved_ip)
-                request = ServerScanRequest(
-                    server_location=location,
-                    scan_commands={
-                        ScanCommand.CERTIFICATE_INFO,
+                cmds = {ScanCommand.CERTIFICATE_INFO, ScanCommand.TLS_1_2_CIPHER_SUITES, ScanCommand.TLS_1_3_CIPHER_SUITES}
+                if self.profile == ScanProfile.DEEP:
+                    cmds.update({
                         ScanCommand.SSL_2_0_CIPHER_SUITES,
                         ScanCommand.SSL_3_0_CIPHER_SUITES,
                         ScanCommand.TLS_1_0_CIPHER_SUITES,
                         ScanCommand.TLS_1_1_CIPHER_SUITES,
-                        ScanCommand.TLS_1_2_CIPHER_SUITES,
-                        ScanCommand.TLS_1_3_CIPHER_SUITES,
-                    },
+                        ScanCommand.ROBOT,
+                        ScanCommand.TLS_FALLBACK_SCSV,
+                        ScanCommand.HEARTBLEED,
+                    } if hasattr(ScanCommand, "ROBOT") else {
+                        ScanCommand.SSL_2_0_CIPHER_SUITES,
+                        ScanCommand.SSL_3_0_CIPHER_SUITES,
+                        ScanCommand.TLS_1_0_CIPHER_SUITES,
+                        ScanCommand.TLS_1_1_CIPHER_SUITES,
+                    })
+                    
+                
+                starttls_enum = None
+                if t.port in (25, 587, 2525):
+                    starttls_enum = ProtocolWithOpportunisticTlsEnum.SMTP
+                elif t.port == 143:
+                    starttls_enum = ProtocolWithOpportunisticTlsEnum.IMAP
+                elif t.port == 110:
+                    starttls_enum = ProtocolWithOpportunisticTlsEnum.POP3
+                elif t.port == 21:
+                    starttls_enum = ProtocolWithOpportunisticTlsEnum.FTP
+                elif t.port == 5432:
+                    starttls_enum = ProtocolWithOpportunisticTlsEnum.POSTGRES
+                
+                network_config = None
+                if starttls_enum:
+                    network_config = ServerNetworkConfiguration(
+                        tls_server_name_indication=t.hostname,
+                        tls_opportunistic_encryption=starttls_enum,
+                        network_timeout=timeout
+                    )
+                    
+                request = ServerScanRequest(
+                    server_location=location,
+                    network_configuration=network_config,
+                    scan_commands=cmds,
                 )
                 scan_requests.append(request)
             target_map[f"{t.hostname}:{t.port}"] = finding
@@ -92,8 +138,7 @@ class TlsScanner:
         if not scan_requests:
             return findings
 
-        is_mocked = getattr(Scanner, "__name__", "") == "FakeScanner" or "test" in getattr(Scanner, "__module__", "")
-        if not is_mocked:
+        if not HAVE_SSLYZE:
             for t in targets:
                 findings.append(self._scan_direct_ssl(t, timeout=timeout))
             return findings
@@ -166,7 +211,6 @@ class TlsScanner:
                         try:
                             from cryptography.hazmat.backends import default_backend
                             from cryptography import x509
-                            from scanners.network.cert_parser import parse_cert
                             cert_obj = x509.load_der_x509_certificate(legacy_cert_der, default_backend())
                             cert_dict = parse_cert(cert_obj)
                             finding.cert_chain.append(cert_dict)
@@ -177,6 +221,24 @@ class TlsScanner:
                         except Exception as e:
                             import logging
                             logging.warning(f"Failed to parse legacy cert for {loc.hostname}: {e}")
+
+            if loc_ip and "TLSv1.3" in finding.tls_versions:
+                from concurrent.futures import ThreadPoolExecutor
+                def _check_group(grp):
+                    if probe_tls13_group(loc_ip, loc.port, grp, timeout=2.0):
+                        return grp.name
+                    return None
+                    
+                candidate_groups = [
+                    PqcGroup.X25519, PqcGroup.SECP256R1, PqcGroup.SECP384R1,
+                    PqcGroup.X25519_MLKEM768, PqcGroup.SECP256R1_MLKEM768, 
+                    PqcGroup.SECP384R1_MLKEM1024, PqcGroup.MLKEM768, 
+                    PqcGroup.MLKEM1024, PqcGroup.X25519_KYBER768_DRAFT00
+                ]
+                
+                with ThreadPoolExecutor(max_workers=len(candidate_groups)) as executor:
+                    results = executor.map(_check_group, candidate_groups)
+                    finding.pqc_groups_accepted = [r for r in results if r]
 
             enrich_finding_intelligence(finding)
             findings.append(finding)

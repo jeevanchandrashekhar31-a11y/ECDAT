@@ -8,8 +8,10 @@ const {
 } = require("./middleware/security");
 const { notFoundHandler, errorHandler } = require("./middleware/error_handler");
 const { apiKeyAuthMiddleware } = require("./middleware/auth");
+const { evalAuthMiddleware, hideProductionFeatures } = require("./middleware/mode_policy");
 
 // Route modules
+const evalRoutes = require("./routes/eval");
 const healthRoutes = require("./routes/health");
 const cbomRoutes = require("./routes/cbom");
 const scansRoutes = require("./routes/scans");
@@ -71,6 +73,11 @@ app.use(csrfProtectionMiddleware);
 // 3. Root and Top-Level Health Routes (Public Liveness/Readiness Probes)
 app.use("/health", healthRoutes);
 
+// 3.5 Eval Auth Bypass & Feature Hiding (intercepts before strict auth)
+app.use("/api/v1/eval", evalRoutes);
+app.use(evalAuthMiddleware);
+app.use(hideProductionFeatures);
+
 // 4. API-Key Authentication Middleware (protects write routes, scanner routes, and optional read protection)
 app.use(apiKeyAuthMiddleware);
 app.use(tenantIsolationMiddleware);
@@ -85,6 +92,7 @@ app.use("/telemetry", telemetryRoutes);
 
 // 6. API v1 Router
 const apiV1 = express.Router();
+apiV1.get("/mode", (req, res) => res.json({ mode: config.ECDAT_MODE }));
 apiV1.use("/health", healthRoutes);
 apiV1.use("/auth", authRoutes);
 apiV1.use("/tenancy", tenancyRoutes);

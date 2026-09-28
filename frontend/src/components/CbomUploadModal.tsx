@@ -430,7 +430,19 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               {scanType === 'network' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-slate-400 font-medium mb-1">Target URL or Hostname</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-slate-400 font-medium">Target URL or Hostname</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScanTarget('https://expired.badssl.com/');
+                          if (!scanLabel) setScanLabel('badssl.com');
+                        }}
+                        className="text-[10px] px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-400 hover:bg-emerald-800/60 border border-emerald-800/50"
+                      >
+                        Try sample host (badssl.com)
+                      </button>
+                    </div>
                     <div className="relative flex items-center">
                       <Globe className="w-4 h-4 text-emerald-400 absolute left-3 pointer-events-none" />
                       <input
@@ -577,7 +589,19 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
                         placeholder="e.g. https://github.com/org/repo.git"
                         className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500 font-mono text-xs"
                       />
-                      <p className="text-[11px] text-slate-500">ECDAT will shallow-clone and discover AST cryptographic call sites.</p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-[11px] text-slate-500">ECDAT will shallow-clone and discover AST cryptographic call sites.</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setScanGitUrl('https://github.com/OWASP-Benchmark/BenchmarkJava.git');
+                            if (!scanLabel) setScanLabel('OWASP Benchmark');
+                          }}
+                          className="text-[10px] px-2 py-0.5 rounded bg-cyan-900/40 text-cyan-400 hover:bg-cyan-800/60 border border-cyan-800/50"
+                        >
+                          Try sample repo
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

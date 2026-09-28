@@ -1,0 +1,48 @@
+{
+  "packages": [
+    {
+      "name": "cryptography",
+      "ecosystem": "PyPI",
+      "versions": ">=43.0.0",
+      "capabilities": {
+        "fips_validated": false,
+        "pqc_support": false,
+        "deprecated_algorithms": ["MD5", "SHA1", "RC4"]
+      },
+      "source_url": "https://cryptography.io/en/latest/"
+    },
+    {
+      "name": "bouncycastle",
+      "ecosystem": "Maven",
+      "versions": ">=1.79",
+      "capabilities": {
+        "fips_validated": true,
+        "pqc_support": true,
+        "deprecated_algorithms": []
+      },
+      "source_url": "https://www.bouncycastle.org/java.html"
+    },
+    {
+      "name": "openssl",
+      "ecosystem": "C/C++",
+      "versions": ">=3.5",
+      "capabilities": {
+        "fips_validated": true,
+        "pqc_support": true,
+        "deprecated_algorithms": []
+      },
+      "source_url": "https://www.openssl.org/"
+    },
+    {
+      "name": "golang.org/x/crypto",
+      "ecosystem": "Go",
+      "versions": ">=1.24",
+      "capabilities": {
+        "fips_validated": false,
+        "pqc_support": true,
+        "deprecated_algorithms": []
+      },
+      "source_url": "https://pkg.go.dev/golang.org/x/crypto"
+    }
+  ]
+}

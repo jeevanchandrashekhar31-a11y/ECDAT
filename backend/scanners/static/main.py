@@ -138,11 +138,11 @@ def main():
 
         final_file_findings = {}
         for f in ast_findings:
-            key_algo = f"{f.file_path}:{f.line_number}:{f.algorithm}"
+            key_algo = f"{f.file_path}:{f.line_number}:{f.algorithm}:{f.rule_id}"
             final_file_findings[key_algo] = f
 
         for f in regex_findings:
-            key_algo = f"{f.file_path}:{f.line_number}:{f.algorithm}"
+            key_algo = f"{f.file_path}:{f.line_number}:{f.algorithm}:{f.rule_id}"
             if key_algo not in final_file_findings:
                 final_file_findings[key_algo] = f
 
@@ -153,13 +153,16 @@ def main():
             )
             secret_findings = SecretSafeDetector.create_static_findings(secret_candidates)
             for sf in secret_findings:
-                key_algo = f"{sf.file_path}:{sf.line_number}:{sf.algorithm}"
+                key_algo = f"{sf.file_path}:{sf.line_number}:{sf.algorithm}:{sf.rule_id}"
                 if key_algo not in final_file_findings:
                     final_file_findings[key_algo] = sf
         except Exception:
             pass
 
-        local_findings.extend(list(final_file_findings.values())[:500])
+        final_findings = list(final_file_findings.values())
+        if len(final_findings) > 500:
+            file_errors.append(ParserFailureError(f"Truncation notice: >500 findings found in {fpath}. Returning all, but coverage report will flag this.", {"file": str(fpath)}, fatal=False))
+        local_findings.extend(final_findings)
         return local_findings, file_errors
 
     concurrency = max(1, os.cpu_count() or 1)

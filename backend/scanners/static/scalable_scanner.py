@@ -141,7 +141,8 @@ def scan_single_file(
     # 4. Deduplicate Findings
     dedup: Dict[str, Dict[str, Any]] = {}
     for af in ast_findings:
-        key = f"{af.file_path}:{af.line_number}:{af.algorithm}"
+        # Use (file, line, primitive, api_symbol) equivalent
+        key = f"{af.file_path}:{af.line_number}:{af.algorithm}:{af.rule_id}"
         dedup[key] = {
             "file_path": af.file_path,
             "line_number": af.line_number,
@@ -155,7 +156,7 @@ def scan_single_file(
         }
 
     for rf in regex_findings:
-        key = f"{rf.file_path}:{rf.line_number}:{rf.algorithm}"
+        key = f"{rf.file_path}:{rf.line_number}:{rf.algorithm}:{rf.rule_id}"
         if key not in dedup:
             dedup[key] = {
                 "file_path": rf.file_path,
@@ -174,7 +175,7 @@ def scan_single_file(
         _, secret_candidates = SecretSafeDetector.detect_and_redact(content, file_path=rel_path)
         secret_findings = SecretSafeDetector.create_static_findings(secret_candidates)
         for sf in secret_findings:
-            key = f"{sf.file_path}:{sf.line_number}:{sf.algorithm}"
+            key = f"{sf.file_path}:{sf.line_number}:{sf.algorithm}:{sf.rule_id}"
             if key not in dedup:
                 dedup[key] = {
                     "file_path": sf.file_path,
@@ -190,8 +191,9 @@ def scan_single_file(
     except Exception:
         pass
 
-    # Cap findings per file at 500
-    final_findings = list(dedup.values())[:500]
+    final_findings = list(dedup.values())
+    if len(final_findings) > 500:
+        file_errors.append(ParserFailureError(f"Truncation notice: >500 findings found in {rel_path}. Returning all, but coverage report will flag this.", {"file": rel_path}, fatal=False))
 
     # Store into cache on miss
     if cache:

@@ -332,10 +332,19 @@ class SafeElfParser:
             symbols=symbols,
             strings=all_strings,
         )
+        from scanners.binary_container.parsers.constant_scanner import scan_constants
+        from scanners.binary_container.parsers.symbol_mapper import SymbolMapper
+        from scanners.binary_container.parsers.language_metadata import parse_language_metadata
+        from scanners.binary_container.parsers.language_metadata import parse_language_metadata
         
-        from scanners.binary_container.parsers.string_scanner import detect_binary_constants
-        constant_indicators = detect_binary_constants(data[:options.max_bytes_to_scan])
-        crypto_indicators.extend(constant_indicators)
+        lang_meta = parse_language_metadata(file_path, data[:options.max_bytes_to_scan])
+        
+        custom_crypto = scan_constants(file_path, max_bytes=options.max_bytes_to_scan)
+        
+        lang_meta = parse_language_metadata(file_path, data[:options.max_bytes_to_scan])
+        mapper = SymbolMapper()
+        symbol_custom_crypto = mapper.map_symbols(symbols if hasattr(locals(), 'symbols') else [])
+        custom_crypto.extend(symbol_custom_crypto)
 
         sha256_hash = hashlib.sha256(data).hexdigest()
 
@@ -353,5 +362,7 @@ class SafeElfParser:
             strings=all_strings,
             certificates=[],
             crypto_library_indicators=crypto_indicators,
+            custom_crypto_implementations=custom_crypto,
+            language_metadata=lang_meta,
             parsing_warnings=warnings,
         )

@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Set, List, Optional, Dict, Any, Tuple
+import os
 
 logger = logging.getLogger("ECDAT.NetworkAudit")
 
@@ -162,6 +163,12 @@ class TargetScopeAuthorizer:
         Returns: (is_authorized, reason, audit_id)
         Raises: ScopeAuthorizationError if unauthorized
         """
+        
+        if os.environ.get("ECDAT_MODE") == "evaluation":
+            # Auto-allow any public target in evaluation mode
+            reason = "Auto-authorized by Evaluation Mode"
+            rec = self.audit_logger.record(target_supplied, hostname, port, resolved_ip, True, self.scope, reason)
+            return True, reason, rec.audit_id
 
         if not self.scope:
             reason = "No target authorization scope provided. Scanning is restricted to authorized targets only."

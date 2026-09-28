@@ -194,10 +194,8 @@ class LibraryFingerprinter:
         high_thresh = self.scoring.get("high_confidence_threshold", 50)
         med_thresh = self.scoring.get("medium_confidence_threshold", 30)
 
-        # High confidence requires at least 2 distinct signal categories or strong symbol presence
+        # High confidence requires at least 2 distinct signal categories
         if len(signal_categories) >= 2 and score >= high_thresh:
-            confidence = "high"
-        elif len(matched_syms) >= 2 and score >= high_thresh:
             confidence = "high"
         elif signal_categories == {"STRING"}:
             confidence = "low"
@@ -210,6 +208,28 @@ class LibraryFingerprinter:
 
         # Try to extract version hint from strings
         version_hint = self._extract_version_hint(lib_id, matched_strs)
+        
+        typical_capabilities = lib_def.get('typical_capabilities', [])
+        
+        # Load capabilities from crypto_library_capabilities.json if version_hint is found
+        if version_hint:
+            try:
+                import json
+                from pathlib import Path
+                cap_path = Path(__file__).resolve().parents[4] / 'rules' / 'crypto_library_capabilities.json'
+                if cap_path.exists():
+                    with open(cap_path, 'r', encoding='utf-8') as f:
+                        cap_data = json.load(f)
+                        for pkg in cap_data.get('packages', []):
+                            if pkg.get('name', '').lower() == lib_name.lower():
+                                # Very basic capability mapping based on the JSON
+                                if pkg.get('capabilities', {}).get('pqc_support'):
+                                    typical_capabilities.append('PQC Support')
+                                if pkg.get('capabilities', {}).get('fips_validated'):
+                                    typical_capabilities.append('FIPS 140-3')
+                                break
+            except Exception as e:
+                pass
 
         rationale_parts = []
         if matched_libs:

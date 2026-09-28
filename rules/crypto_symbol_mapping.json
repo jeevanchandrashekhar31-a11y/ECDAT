@@ -1,0 +1,67 @@
+{
+  "symbol_rules": [
+    {
+      "pattern": "^EVP_(aes|des|chacha20)_",
+      "algorithm": "$1",
+      "primitive": "symmetric_encryption",
+      "confidence": "high",
+      "library": "OpenSSL"
+    },
+    {
+      "pattern": "^EVP_(sha1|sha256|sha384|sha512|md5)_",
+      "algorithm": "$1",
+      "primitive": "hash",
+      "confidence": "high",
+      "library": "OpenSSL"
+    },
+    {
+      "pattern": "^RSA_(public_encrypt|private_decrypt)",
+      "algorithm": "RSA",
+      "primitive": "asymmetric_encryption",
+      "confidence": "high",
+      "library": "OpenSSL"
+    },
+    {
+      "pattern": "^crypto_box_",
+      "algorithm": "Curve25519-XSalsa20-Poly1305",
+      "primitive": "public_key_authenticated_encryption",
+      "confidence": "high",
+      "library": "libsodium"
+    },
+    {
+      "pattern": "^crypto_sign_",
+      "algorithm": "Ed25519",
+      "primitive": "digital_signature",
+      "confidence": "high",
+      "library": "libsodium"
+    },
+    {
+      "pattern": "^mbedtls_aes_",
+      "algorithm": "AES",
+      "primitive": "symmetric_encryption",
+      "confidence": "high",
+      "library": "mbedTLS"
+    },
+    {
+      "pattern": "^mbedtls_sha256_",
+      "algorithm": "SHA-256",
+      "primitive": "hash",
+      "confidence": "high",
+      "library": "mbedTLS"
+    },
+    {
+      "pattern": "^BCryptEncrypt",
+      "algorithm": "Unknown",
+      "primitive": "symmetric_encryption",
+      "confidence": "medium",
+      "library": "Windows CNG"
+    },
+    {
+      "pattern": "^CC_SHA256",
+      "algorithm": "SHA-256",
+      "primitive": "hash",
+      "confidence": "high",
+      "library": "Apple CommonCrypto"
+    }
+  ]
+}

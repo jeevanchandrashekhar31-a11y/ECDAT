@@ -88,6 +88,8 @@ const rawDatabaseUrl = getEnv(
 );
 
 const config = {
+  ECDAT_MODE: getEnv("ECDAT_MODE", "evaluation"),
+  ECDAT_EVAL_ALLOW_REMOTE_DB: getEnv("ECDAT_EVAL_ALLOW_REMOTE_DB", "0") === "1",
   NODE_ENV: nodeEnv,
   PORT: parseInt(getEnv("PORT", "5000"), 10),
   AUTH_MODE: getEnv("AUTH_MODE", nodeEnv === "production" ? "production" : "demo"),

@@ -230,6 +230,11 @@ function apiKeyAuthMiddleware(req, res, next) {
     return next();
   }
 
+  // 0. If eval bypass already authenticated this request, skip further checks
+  if (req.auth && req.auth.authenticated && req.auth.mode === "eval") {
+    return next();
+  }
+
   const configuredKey = config.ECDAT_API_KEY;
   const publicAuthPaths = PUBLIC_AUTH_PATHS;
 

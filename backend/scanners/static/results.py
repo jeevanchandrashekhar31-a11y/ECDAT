@@ -17,6 +17,9 @@ class StaticFinding(BaseModel):
     fingerprint: Optional[str] = None
     secret_type: Optional[str] = None
     is_synthetic: bool = False
+    evidence_tier: Optional[str] = None
+    resolution_trace: Optional[str] = None
+    reachability: Optional[str] = None
 
     def to_dict(self):
         d = {
@@ -37,4 +40,10 @@ class StaticFinding(BaseModel):
             d["fingerprint"] = self.fingerprint
         if self.secret_type:
             d["secret_type"] = self.secret_type
+        if self.evidence_tier:
+            d["evidence_tier"] = self.evidence_tier
+        if self.resolution_trace:
+            d["resolution_trace"] = self.resolution_trace
+        if self.reachability:
+            d["reachability"] = self.reachability
         return d

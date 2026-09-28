@@ -15,6 +15,7 @@ router.get("/", async (req, res) => {
     status: healthy ? "healthy" : "degraded",
     service: "ecdat-backend",
     version: config.VERSION,
+    mode: config.ECDAT_MODE,
     environment: config.NODE_ENV,
     uptime_seconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),

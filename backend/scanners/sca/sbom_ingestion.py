@@ -174,9 +174,9 @@ def validate_sbom_structure(payload: Any) -> SbomValidationResult:
                 f"Unsupported CycloneDX specVersion: expected one of {sorted(list(SUPPORTED_CYCLONEDX_VERSIONS))}, received '{detected_version}'"
             )
 
-        components = payload.get("components")
+        components = payload.get("components", [])
         if not isinstance(components, list):
-            errors.append("CycloneDX document missing required 'components' list")
+            errors.append("CycloneDX 'components' must be a list if present")
         else:
             component_count = len(components)
 

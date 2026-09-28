@@ -1,6 +1,10 @@
 const app = require("./app");
 const config = require("./config");
 const { loadAndValidateAllRules } = require("./risk_engine");
+const { validateEvalEnvironment } = require("./middleware/mode_policy");
+
+// Ensure evaluation mode restrictions are enforced early
+validateEvalEnvironment();
 
 function startServer() {
   console.log("====================================================");

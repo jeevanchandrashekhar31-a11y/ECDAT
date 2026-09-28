@@ -50,6 +50,9 @@ class NetworkCryptoFinding(BaseModel):
     quantum_vulnerabilities: List[str] = Field(default_factory=list)
     authorization_id: Optional[str] = None
     audit_id: Optional[str] = None
+    
+    pqc_groups_accepted: List[str] = Field(default_factory=list)
+    vuln_checks: Dict[str, str] = Field(default_factory=dict)
 
 
 class CodeCryptoFinding(BaseModel):
@@ -140,6 +143,7 @@ from scanners.domain.contracts import (  # noqa: E402
     QuantumRelevance,
     MoscaStatus,
     EvidenceSource,
+    CoverageReport,
 )
 from scanners.domain.canonical_model import (  # noqa: E402
     ProvenanceRecord,

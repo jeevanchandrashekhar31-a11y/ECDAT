@@ -476,35 +476,29 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       });
     }
 
-    // DUAL-ENGINE SCANNING
-    // Engine 1: Node.js source_scanner (primary - JS/TS/Py/Go/Java)
-    // Engine 2: Python static scanner (supplemental - C/C++)
-    const { scanSourceDirectory, scanSourceZip } = require("../binary/source_scanner");
-    let nodeScanResult;
+    // Use Python static scanner
+    const tempOut = path.resolve(ARTIFACTS_DIR, `temp_static_${Date.now()}.json`);
+    if (!fs.existsSync(path.dirname(tempOut))) {
+      fs.mkdirSync(path.dirname(tempOut), { recursive: true });
+    }
+
+    let cbomData = null;
     try {
-      // Allow up to 150,000 files to fully process massive archives like Juliet Test Suite
-      const isZipUpload = req.files && req.files.some(f => f.originalname?.toLowerCase().endsWith('.zip') || f.mimetype === 'application/zip' || f.mimetype === 'application/x-zip-compressed');
-      const defaultMaxFiles = isZipUpload ? 150000 : 150000;
-      const maxFiles = (req.body && req.body.max_files) ? parseInt(req.body.max_files) : defaultMaxFiles;
-
-      const SCAN_TIMEOUT_MS = 900000; // 15 minute hard limit. Keep-alive prevents proxy timeouts.
-      const timeoutSentinel = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error(`SCAN_TIMEOUT: Scan exceeded ${SCAN_TIMEOUT_MS / 1000}s. The archive has too many files for the free-tier instance. Try a smaller project or use a Git URL instead.`)), SCAN_TIMEOUT_MS)
+      const maxFiles = (req.body && req.body.max_files) ? parseInt(req.body.max_files) : 150000;
+      await runPythonCommand(
+        [
+          path.join(REPO_ROOT, 'scanners', 'static', 'main.py'),
+          targetDir,
+          '-o', tempOut,
+          '--max-files', String(maxFiles)
+        ],
+        900000 // 15 minutes timeout
       );
-      
-      const scanPromise = isZipUpload && targetDir.endsWith('.zip')
-          ? scanSourceZip(targetDir, { maxFiles, projectName: scanLabel || path.basename(targetDir) })
-          : scanSourceDirectory(targetDir, { maxFiles, projectName: scanLabel || path.basename(targetDir) });
-
-      nodeScanResult = await Promise.race([
-        scanPromise,
-        timeoutSentinel,
-      ]);
-    } catch (nodeScanErr) {
-      if (nodeScanErr.message && nodeScanErr.message.startsWith('SCAN_TIMEOUT')) {
-        return res.status(408).json({ success: false, error: nodeScanErr.message });
-      }
-      return res.status(500).json({ success: false, error: "Node.js source scanner failed: " + nodeScanErr.message });
+    } catch (scannerErr) {
+      return res.status(400).json({
+        success: false,
+        error: `Python static scanner failed: ${scannerErr.message}`
+      });
     } finally {
       if (isGitMode) {
         try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
@@ -516,17 +510,21 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       }
     }
 
-    // Python scanner fallback removed to massively speed up scan times and prevent timeouts.
-    // Node.js scanner now robustly handles all C/C++ regexes.
-    const mergedComponents = [...nodeScanResult.cbom.components];
-    const cbomData = Object.assign({}, nodeScanResult.cbom, { components: mergedComponents });
+    cbomData = loadJsonSafe(tempOut);
+    if (!cbomData) {
+      return res.status(500).json({
+        success: false,
+        error: 'Static scanner completed but no output CBOM was generated.'
+      });
+    }
+    try { fs.unlinkSync(tempOut); } catch {}
 
-    if (mergedComponents.length === 0) {
+    if (!cbomData.components || cbomData.components.length === 0) {
       return res.status(200).json({
         success: true,
-        message: "Scan complete. No cryptographic API usage detected in " + nodeScanResult.stats.totalFiles + " files. Upload source code for findings.",
+        message: "Scan complete. No cryptographic API usage detected.",
         scan_source: "live_scanner", scan_id: null,
-        metrics: { total_assets: 0, files_scanned: nodeScanResult.stats.totalFiles },
+        metrics: { total_assets: 0, files_scanned: 0 },
         cbom: cbomData, top_risky_assets: [], recommendations: [],
       });
     }

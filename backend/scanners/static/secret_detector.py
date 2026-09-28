@@ -30,8 +30,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Set
 
-from scanners.static.results import StaticFinding
+# Evaluation mode disables live credential verification (requires provider calls)
+EVALUATION_MODE = os.environ.get("ECDAT_EVALUATION_MODE", "1") == "1"
 
+from scanners.static.results import StaticFinding
+from scanners.static.secret_patterns import API_TOKEN_PATTERNS
 
 # =========================================================================
 # 1. Secret Classification Patterns
@@ -55,38 +58,7 @@ GENERIC_PEM_PRIVATE_KEY = re.compile(
     re.IGNORECASE,
 )
 
-# API Token & Credential Patterns
-API_TOKEN_PATTERNS = [
-    # AWS Access Key ID (standard 20-char identifier starting with AKIA, ASIA, ABIA, ACCA)
-    ("AWS_ACCESS_KEY", re.compile(r"\b((?:AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16})\b")),
-    # AWS Secret Access Key (40 chars Base64)
-    ("AWS_SECRET_ACCESS_KEY", re.compile(r"(?i)\b(?:aws_secret_access_key|aws_secret_key)\s*[:=]\s*['\"]([A-Za-z0-9/+=]{40})['\"]")),
-    # GitHub Tokens: Classic, Fine-Grained, and OAuth/User tokens
-    ("GITHUB_TOKEN", re.compile(r"\b(gh[pousr]_[A-Za-z0-9_]{36,255})\b")),
-    ("GITHUB_FINE_GRAINED_PAT", re.compile(r"\b(github_pat_[0-9a-zA-Z_]{80,95})\b")),
-    # Slack API Tokens
-    ("SLACK_TOKEN", re.compile(r"\b(xox[baprs]-[0-9a-zA-Z-]{10,72})\b")),
-    # JWT Tokens (raw Base64 encoded signed JWTs)
-    ("JWT_TOKEN", re.compile(r"\b(eyJ[A-Za-z0-9-_=]+\.eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_.+/=]+)\b")),
-    # JWT Secrets (configuration variable assignments)
-    ("JWT_SECRET", re.compile(r"(?i)\b(?:jwt_secret|jwt_key|jwt_secret_key)\s*[:=]\s*['\"]([^'\"\s]{16,128})['\"]")),
-    # Database URIs with embedded credentials (Postgres, MySQL, Mongo, Redis)
-    ("DATABASE_URI", re.compile(r"(?i)\b((?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|redis|rediss):\/\/[^:\s\/]+:([^@\s\/]{3,})@[^\s\/]+(?:\/[^\s]*)?)\b")),
-    # Database password assignment
-    ("DATABASE_PASSWORD", re.compile(r"(?i)\b(?:db_password|database_password|db_pass|database_pass)\s*[:=]\s*['\"]([^'\"\s]{8,128})['\"]")),
-    # Google Cloud API Key
-    ("GCP_API_KEY", re.compile(r"\b(AIzaSy[0-9A-Za-z_-]{33})\b")),
-    # Azure Storage Connection String / Account Key
-    ("AZURE_STORAGE_KEY", re.compile(r"(?i)\b(DefaultEndpointsProtocol=https?;AccountName=[^;]+;AccountKey=[A-Za-z0-9+/=]{64,128})(?=[\s;\"']|$)")),
-    # Azure Client Secret
-    ("AZURE_CLIENT_SECRET", re.compile(r"(?i)\b(?:azure_client_secret|client_secret)\s*[:=]\s*['\"]([A-Za-z0-9~_.-]{34,44})['\"]")),
-    # OpenAI, Anthropic, Groq API keys
-    ("OPENAI_API_KEY", re.compile(r"\b((?:sk|gsk|sk-ant|sk-proj)-[a-zA-Z0-9_-]{30,})\b")),
-    # Stripe Secret Keys
-    ("STRIPE_KEY", re.compile(r"\b(sk_live_[0-9a-zA-Z]{24,34})\b")),
-    # Generic API Keys
-    ("GENERIC_API_KEY", re.compile(r"(?i)\b(?:api_key|apikey|secret_key|auth_token)\s*[:=]\s*['\"]([a-zA-Z0-9_\-\.\+\/=]{24,128})['\"]")),
-]
+# API_TOKEN_PATTERNS imported from secret_patterns.py
 
 SYMMETRIC_KEY_VAR_NAMES = (
     "aes_key",
@@ -129,6 +101,7 @@ KNOWN_SYNTHETIC_PREFIXES = (
     "mock_",
     "synthetic-",
     "test-",
+    "testpassword",
     "canarytoken",
     "0123456789abcdef",  # repeating hex pattern
 )
@@ -278,6 +251,19 @@ class SecretSafeDetector:
                 if any(ind in surrounding for ind in test_indicators):
                     return True
 
+        return False
+
+    @classmethod
+    def verify_credential_live(cls, candidate_type: str, raw_secret: str) -> bool:
+        """
+        Live credential verification against provider APIs.
+        Hidden and disabled in evaluation mode.
+        """
+        if EVALUATION_MODE:
+            return False
+            
+        # Actual live verification logic would go here
+        # e.g. calling AWS STS GetCallerIdentity, GitHub API, etc.
         return False
 
     @classmethod

@@ -60,15 +60,18 @@ def _parse_binary_worker_task(file_path: str, options_dict: Dict[str, Any]) -> D
         result = parser.parse(data, file_path, options)
     else:
         # Fallback for unknown / generic binary (run bounded string scanning)
-        from scanners.binary_container.parsers.string_scanner import extract_bounded_strings, detect_binary_constants
+        from scanners.binary_container.parsers.string_scanner import extract_bounded_strings
         from scanners.binary_container.parsers.crypto_detector import detect_crypto_indicators
+        from scanners.binary_container.parsers.constant_scanner import scan_constants
+        from scanners.binary_container.parsers.symbol_mapper import SymbolMapper
+        from scanners.binary_container.parsers.language_metadata import parse_language_metadata
         import hashlib
 
         _, crypto_strings = extract_bounded_strings(data, max_bytes=options.max_bytes_to_scan)
         crypto_indicators = detect_crypto_indicators([], [], crypto_strings)
         
-        constant_indicators = detect_binary_constants(data[:options.max_bytes_to_scan])
-        crypto_indicators.extend(constant_indicators)
+        custom_crypto = scan_constants(file_path, max_bytes=options.max_bytes_to_scan)
+        custom_crypto.extend(SymbolMapper().map_symbols([]))
 
         result = BinaryMetadata(
             file_path=file_path,
@@ -84,6 +87,7 @@ def _parse_binary_worker_task(file_path: str, options_dict: Dict[str, Any]) -> D
             strings=crypto_strings,
             certificates=[],
             crypto_library_indicators=crypto_indicators,
+            custom_crypto_implementations=custom_crypto,
             parsing_warnings=["Unrecognized binary magic header; executed bounded raw string scan only."],
         )
 

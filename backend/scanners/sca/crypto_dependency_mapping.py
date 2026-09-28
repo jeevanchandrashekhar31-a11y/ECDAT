@@ -27,7 +27,7 @@ class ReachabilityLevel(str, Enum):
 
 
 DEFAULT_RULES_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "rules", "crypto_dependency_mapping.json")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "rules", "crypto_dependency_mapping.json")
 )
 
 

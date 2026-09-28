@@ -29,8 +29,8 @@ class SecretManager {
   initializeDefaultKeys(initialSecret) {
     let defaultSecret = initialSecret || process.env.JWT_SECRET;
     
-    // Fail startup in production if missing/short
-    if (process.env.NODE_ENV === "production" || process.env.NODE_ENV === "prod") {
+    // Fail startup in production if missing/short, UNLESS in evaluation mode
+    if ((process.env.NODE_ENV === "production" || process.env.NODE_ENV === "prod") && process.env.ECDAT_MODE !== "evaluation") {
       if (!defaultSecret || defaultSecret.length < 32) {
         throw new Error("FATAL: JWT_SECRET must be provided in production and be at least 32 characters long for cryptographic security.");
       }

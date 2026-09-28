@@ -65,6 +65,22 @@ class CryptoIndicator:
     description: str = ""
 
 
+@dataclass(frozen=True)
+class LanguageMetadataInfo:
+    language: str
+    version: Optional[str]
+    dependencies: Dict[str, str] = field(default_factory=dict)
+    crypto_providers: List[str] = field(default_factory=list)
+
+@dataclass(frozen=True)
+class CustomCryptoImplementation:
+    algorithm: str
+    primitive: str
+    confidence: str
+    offsets: List[int]
+    evidence_type: str
+
+
 @dataclass
 class ParserOptions:
     max_bytes_to_scan: int = 10 * 1024 * 1024  # 10MB
@@ -92,6 +108,8 @@ class BinaryMetadata:
     strings: List[str] = field(default_factory=list)
     certificates: List[CertificateMetadata] = field(default_factory=list)
     crypto_library_indicators: List[CryptoIndicator] = field(default_factory=list)
+    custom_crypto_implementations: List[CustomCryptoImplementation] = field(default_factory=list)
+    language_metadata: Optional[LanguageMetadataInfo] = None
     parsing_warnings: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -147,5 +165,21 @@ class BinaryMetadata:
                 }
                 for ci in self.crypto_library_indicators
             ],
+            "custom_crypto_implementations": [
+                {
+                    "algorithm": cci.algorithm,
+                    "primitive": cci.primitive,
+                    "confidence": cci.confidence,
+                    "offsets": cci.offsets,
+                    "evidence_type": cci.evidence_type,
+                }
+                for cci in self.custom_crypto_implementations
+            ],
+            "language_metadata": {
+                "language": self.language_metadata.language,
+                "version": self.language_metadata.version,
+                "dependencies": self.language_metadata.dependencies,
+                "crypto_providers": self.language_metadata.crypto_providers,
+            } if self.language_metadata else None,
             "parsing_warnings": self.parsing_warnings,
         }

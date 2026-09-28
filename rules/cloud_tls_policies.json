@@ -1,0 +1,163 @@
+{
+  "policies": {
+    "ELBSecurityPolicy-2016-08": {
+      "provider": "AWS",
+      "type": "ALB/NLB",
+      "min_protocol": "TLSv1.0",
+      "pqc_hybrid_support": false,
+      "ciphers": [
+        "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES128-GCM-SHA256",
+        "ECDHE-ECDSA-AES128-SHA256",
+        "ECDHE-RSA-AES128-SHA256",
+        "ECDHE-ECDSA-AES256-GCM-SHA384",
+        "ECDHE-RSA-AES256-GCM-SHA384",
+        "ECDHE-ECDSA-AES256-SHA384",
+        "ECDHE-RSA-AES256-SHA384",
+        "AES128-GCM-SHA256",
+        "AES128-SHA256",
+        "AES256-GCM-SHA384",
+        "AES256-SHA256"
+      ],
+      "source_url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html",
+      "verified_date": "2026-09-28"
+    },
+    "ELBSecurityPolicy-TLS-1-0-2015-04": {
+      "provider": "AWS",
+      "type": "ALB/NLB",
+      "min_protocol": "TLSv1.0",
+      "pqc_hybrid_support": false,
+      "ciphers": ["ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-RSA-AES128-GCM-SHA256"],
+      "source_url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html",
+      "verified_date": "2026-09-28"
+    },
+    "ELBSecurityPolicy-TLS-1-1-2017-01": {
+      "provider": "AWS",
+      "type": "ALB/NLB",
+      "min_protocol": "TLSv1.1",
+      "pqc_hybrid_support": false,
+      "ciphers": ["ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-RSA-AES128-GCM-SHA256"],
+      "source_url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html",
+      "verified_date": "2026-09-28"
+    },
+    "ELBSecurityPolicy-TLS-1-2-2017-01": {
+      "provider": "AWS",
+      "type": "ALB/NLB",
+      "min_protocol": "TLSv1.2",
+      "pqc_hybrid_support": false,
+      "ciphers": ["ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-RSA-AES128-GCM-SHA256"],
+      "source_url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html",
+      "verified_date": "2026-09-28"
+    },
+    "ELBSecurityPolicy-TLS13-1-2-2021-06": {
+      "provider": "AWS",
+      "type": "ALB/NLB",
+      "min_protocol": "TLSv1.2",
+      "pqc_hybrid_support": false,
+      "ciphers": [
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES128-GCM-SHA256",
+        "ECDHE-ECDSA-AES256-GCM-SHA384",
+        "ECDHE-RSA-AES256-GCM-SHA384"
+      ],
+      "source_url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html",
+      "verified_date": "2026-09-28"
+    },
+    "ELBSecurityPolicy-FS-1-2-2019-08": {
+      "provider": "AWS",
+      "type": "ALB/NLB",
+      "min_protocol": "TLSv1.2",
+      "pqc_hybrid_support": false,
+      "ciphers": ["ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-RSA-AES128-GCM-SHA256"],
+      "source_url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html",
+      "verified_date": "2026-09-28"
+    },
+    "AppGwSslPolicy20150501": {
+      "provider": "Azure",
+      "type": "AppGW",
+      "min_protocol": "TLSv1.0",
+      "pqc_hybrid_support": false,
+      "ciphers": ["TLS_RSA_WITH_AES_256_GCM_SHA384", "TLS_RSA_WITH_AES_128_GCM_SHA256"],
+      "source_url": "https://learn.microsoft.com/en-us/azure/application-gateway/application-gateway-ssl-policy-overview",
+      "verified_date": "2026-09-28"
+    },
+    "AppGwSslPolicy20170401": {
+      "provider": "Azure",
+      "type": "AppGW",
+      "min_protocol": "TLSv1.1",
+      "pqc_hybrid_support": false,
+      "ciphers": ["TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"],
+      "source_url": "https://learn.microsoft.com/en-us/azure/application-gateway/application-gateway-ssl-policy-overview",
+      "verified_date": "2026-09-28"
+    },
+    "AppGwSslPolicy20170401S": {
+      "provider": "Azure",
+      "type": "AppGW",
+      "min_protocol": "TLSv1.2",
+      "pqc_hybrid_support": false,
+      "ciphers": ["TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"],
+      "source_url": "https://learn.microsoft.com/en-us/azure/application-gateway/application-gateway-ssl-policy-overview",
+      "verified_date": "2026-09-28"
+    },
+    "AppGwSslPolicy20220101": {
+      "provider": "Azure",
+      "type": "AppGW",
+      "min_protocol": "TLSv1.2",
+      "pqc_hybrid_support": false,
+      "ciphers": [
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"
+      ],
+      "source_url": "https://learn.microsoft.com/en-us/azure/application-gateway/application-gateway-ssl-policy-overview",
+      "verified_date": "2026-09-28"
+    },
+    "GCP-COMPATIBLE": {
+      "provider": "GCP",
+      "type": "Cloud Load Balancing",
+      "min_protocol": "TLSv1.0",
+      "pqc_hybrid_support": false,
+      "ciphers": [
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES128-GCM-SHA256"
+      ],
+      "source_url": "https://cloud.google.com/load-balancing/docs/ssl-policies-concepts",
+      "verified_date": "2026-09-28"
+    },
+    "GCP-MODERN": {
+      "provider": "GCP",
+      "type": "Cloud Load Balancing",
+      "min_protocol": "TLSv1.2",
+      "pqc_hybrid_support": false,
+      "ciphers": [
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES128-GCM-SHA256"
+      ],
+      "source_url": "https://cloud.google.com/load-balancing/docs/ssl-policies-concepts",
+      "verified_date": "2026-09-28"
+    },
+    "GCP-RESTRICTED": {
+      "provider": "GCP",
+      "type": "Cloud Load Balancing",
+      "min_protocol": "TLSv1.2",
+      "pqc_hybrid_support": false,
+      "ciphers": [
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256"
+      ],
+      "source_url": "https://cloud.google.com/load-balancing/docs/ssl-policies-concepts",
+      "verified_date": "2026-09-28"
+    }
+  }
+}

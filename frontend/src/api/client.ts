@@ -692,7 +692,7 @@ export const api = {
       isEvaluation: boolean;
     };
   }> => {
-    return request('/api/v1/auth/evaluation/enter', {
+    return request('/api/v1/eval/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ persona, seed }),
@@ -703,7 +703,7 @@ export const api = {
     persona: string,
     passcode?: string
   ): Promise<unknown> => {
-    return request('/api/v1/auth/evaluation/persona', {
+    return request('/api/v1/eval/persona', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ persona, seed: false, passcode }),

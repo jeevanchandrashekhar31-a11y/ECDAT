@@ -397,6 +397,9 @@ def code_findings_to_cbom(findings: List[CodeCryptoFinding]) -> Bom:
     algo_locs = {}
     
     for finding in findings:
+        if finding.finding_type in ["hardcoded_secret", "synthetic_fixture"]:
+            continue
+            
         # File Component
         file_ref = f"code:file@{finding.file_path}"
         if file_ref not in file_comps:
@@ -925,7 +928,11 @@ def serialize_cbom(bom: Bom, spec_version: str = "1.6") -> str:
     _attach_provenance_metadata(bom)
 
     if spec_version == "1.6":
-        return JsonV1Dot6(bom).output_as_string(indent=2)
+        json_str = JsonV1Dot6(bom).output_as_string(indent=2)
+        is_valid, err = validate_cbom_detailed(json_str)
+        if not is_valid:
+            raise ValueError(f"CycloneDX 1.6 Export Schema Validation Failed: {err}")
+        return json_str
 
     # CycloneDX 1.7 target serialization
     json_str = JsonV1Dot7(bom).output_as_string(indent=2)
@@ -946,7 +953,11 @@ def serialize_cbom(bom: Bom, spec_version: str = "1.6") -> str:
             if resolved_family and resolved_family in CYCLONEDX_17_ALGORITHM_FAMILIES:
                 c_props["algorithmProperties"]["algorithmFamily"] = resolved_family
 
-    return json.dumps(data, indent=2)
+    final_json = json.dumps(data, indent=2)
+    is_valid, err = validate_cbom_detailed(final_json)
+    if not is_valid:
+        raise ValueError(f"CycloneDX 1.7 Export Schema Validation Failed: {err}")
+    return final_json
 
 
 def validate_cbom_json(json_str: str) -> bool:

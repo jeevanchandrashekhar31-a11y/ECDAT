@@ -344,6 +344,20 @@ class ScanResult(BaseModel):
     remediation_plan: Optional[RemediationPlan] = Field(default=None)
     summary_metrics: Dict[str, Any] = Field(default_factory=dict)
     errors: List[str] = Field(default_factory=list)
+    coverage_report: Optional["CoverageReport"] = Field(default=None)
+
+class CoverageReport(BaseModel):
+    files_discovered: int = 0
+    files_scanned: int = 0
+    files_skipped: Dict[str, int] = Field(default_factory=dict)
+    parser_success_rate: Dict[str, float] = Field(default_factory=dict)
+    parse_errors: List[str] = Field(default_factory=list)
+    truncation_notices: List[str] = Field(default_factory=list)
+    rules_loaded: int = 0
+    ecdat_version: str = "3.0"
+    rule_pack_hash: str = ""
+    
+ScanResult.model_rebuild()
 
 
 # =====================================================================

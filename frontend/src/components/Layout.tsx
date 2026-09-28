@@ -274,6 +274,22 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <NavLink to="/graph" className={({ isActive }) => navCls(isActive)}><Network size={14} /><span>Crypto Graph</span></NavLink>
           <NavLink to="/reports" className={({ isActive }) => navCls(isActive)}><FileText size={14} /><span>Compliance Reports</span></NavLink>
           <NavLink to="/scans" className={({ isActive }) => navCls(isActive)}><Clock size={14} /><span>Scan History</span></NavLink>
+
+          {currentUser?.isEvaluation && (
+            <div className="mt-4 px-2">
+              <details className="text-[10px] text-slate-500 cursor-pointer group">
+                <summary className="font-semibold text-slate-400 opacity-70 group-hover:opacity-100 transition-opacity">Production edition features (not enabled here)</summary>
+                <ul className="mt-1 ml-2 space-y-0.5 list-disc list-inside">
+                  <li>Cloud KMS/HSM Connectors (AWS/Azure/Vault)</li>
+                  <li>Ticketing / Webhooks (Jira, ServiceNow)</li>
+                  <li>eBPF Runtime Collector</li>
+                  <li>MFA, TOTP & Password Policy</li>
+                  <li>User & Tenant Administration</li>
+                  <li>LLM Verifier</li>
+                </ul>
+              </details>
+            </div>
+          )}
           <NavLink to="/login" className={({ isActive }) => navCls(isActive)}>
             <Key size={14} />
             <span>{currentUser?.isEvaluation ? 'Eval Options' : currentUser ? 'Account' : 'Sign In'}</span>
@@ -324,6 +340,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             style={{ background: 'radial-gradient(circle, rgba(129,140,248,0.05) 0%, transparent 70%)', animation: 'float 7s ease-in-out infinite' }} />
           <div className="absolute inset-0 bg-dots opacity-20 rounded-3xl" />
         </div>
+
+        {/* Evaluation Banner */}
+        {currentUser?.isEvaluation && (
+          <div className="relative z-20 w-full text-center py-1.5 px-4 text-[10px] font-bold uppercase tracking-wider bg-orange-950/40 text-orange-400 border-b border-orange-900/50">
+            <AlertCircle size={10} className="inline-block mr-1 -mt-0.5" /> EVALUATION ENVIRONMENT - synthetic/demo data, no production systems connected
+          </div>
+        )}
 
 
 

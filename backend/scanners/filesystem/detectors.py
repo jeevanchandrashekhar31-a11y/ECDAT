@@ -17,29 +17,10 @@ from typing import List, Dict, Any, Optional
 
 from scanners.filesystem.models import FilesystemCryptoAsset, FilesystemAssetType
 from scanners.binary_container.parsers.library_fingerprinter import LibraryFingerprinter
+from scanners.filesystem.config_registry import ConfigRegistry
 
-# Compiled regex patterns for TLS and Crypto configuration directives
-TLS_CONFIG_PATTERNS = [
-    (re.compile(r"ssl_protocols\s+([^;]+);", re.IGNORECASE), "nginx:ssl_protocols"),
-    (re.compile(r"ssl_ciphers\s+['\"]?([^;'\"]+)['\"]?;", re.IGNORECASE), "nginx:ssl_ciphers"),
-    (re.compile(r"SSLProtocol\s+([^\n\r]+)", re.IGNORECASE), "apache:SSLProtocol"),
-    (re.compile(r"SSLCipherSuite\s+([^\n\r]+)", re.IGNORECASE), "apache:SSLCipherSuite"),
-    (re.compile(r"ssl-default-bind-ciphers\s+([^\n\r]+)", re.IGNORECASE), "haproxy:ciphers"),
-    (re.compile(r"Ciphers\s+([^\n\r]+)", re.IGNORECASE), "sshd:Ciphers"),
-    (re.compile(r"KexAlgorithms\s+([^\n\r]+)", re.IGNORECASE), "sshd:KexAlgorithms"),
-    (re.compile(r"MACs\s+([^\n\r]+)", re.IGNORECASE), "sshd:MACs"),
-]
-
-CRYPTO_CONFIG_PATTERNS = [
-    (re.compile(r"CipherString\s*=\s*([^\n\r]+)", re.IGNORECASE), "openssl:CipherString"),
-    (re.compile(r"MinProtocol\s*=\s*([^\n\r]+)", re.IGNORECASE), "openssl:MinProtocol"),
-    (re.compile(r"jdk\.tls\.disabledAlgorithms\s*=\s*([^\n\r]+)", re.IGNORECASE), "java:disabledAlgorithms"),
-    (re.compile(r"crypto\.policy\s*=\s*([^\n\r]+)", re.IGNORECASE), "java:crypto.policy"),
-    (re.compile(r"personal-cipher-preferences\s+([^\n\r]+)", re.IGNORECASE), "gpg:cipher-preferences"),
-    (re.compile(r"personal-digest-preferences\s+([^\n\r]+)", re.IGNORECASE), "gpg:digest-preferences"),
-    (re.compile(r"ike\s*=\s*([^\n\r]+)", re.IGNORECASE), "ipsec:ike_ciphers"),
-    (re.compile(r"esp\s*=\s*([^\n\r]+)", re.IGNORECASE), "ipsec:esp_ciphers"),
-]
+# Legacy TLS and Crypto configuration patterns removed in Phase 4.4.
+# Config scanning now strictly uses structured parsing via ConfigRegistry.
 
 CLOUD_KMS_PATTERNS = [
     re.compile(r"arn:aws:kms:[a-z0-9-]+:\d{12}:key/[a-f0-9-]+", re.IGNORECASE),
@@ -56,6 +37,7 @@ class FilesystemAssetDetector:
 
     def __init__(self):
         self.fingerprinter = LibraryFingerprinter()
+        self.config_registry = ConfigRegistry()
 
     def inspect_file(
         self,
@@ -99,12 +81,7 @@ class FilesystemAssetDetector:
         if crypto_cfg_asset:
             assets.append(crypto_cfg_asset)
 
-        # 5. Detect TLS Configurations
-        tls_cfg_asset = self._detect_tls_config(
-            file_name, rel_path, str(file_path), content_sample, file_size, sha256_hash
-        )
-        if tls_cfg_asset:
-            assets.append(tls_cfg_asset)
+        
 
         # 6. Detect Cryptographic Shared Libraries
         lib_asset = self._detect_library_installation(file_name, rel_path, str(file_path), file_size, sha256_hash)
@@ -291,77 +268,33 @@ class FilesystemAssetDetector:
         file_size: int,
         sha256_hash: str,
     ) -> Optional[FilesystemCryptoAsset]:
-        is_candidate = any(
-            file_name.endswith(ext)
-            for ext in [".cnf", ".cfg", ".conf", ".ini", ".yaml", ".yml", ".json", ".properties", ".security"]
-        ) or file_name in ["openssl.cnf", "java.security", "gpg.conf", "krb5.conf", "ipsec.conf"]
+        config_findings = {}
 
-        if not is_candidate:
+        try:
+            content_str = content.decode("utf-8")
+        except UnicodeDecodeError:
+            # We don't parse configs from binary blobs
             return None
+            
+        parsed_findings = self.config_registry.route_and_parse(abs_path, content_str)
+        
+        for finding in parsed_findings:
+            key = f"{finding.scope_id}:{finding.setting}"
+            config_findings[key] = finding.effective_value
 
-        text = content.decode("utf-8", errors="ignore")
-        matched_directives: Dict[str, str] = {}
-
-        for pattern, tag in CRYPTO_CONFIG_PATTERNS:
-            match = pattern.search(text)
-            if match:
-                matched_directives[tag] = match.group(1).strip()
-
-        if not matched_directives:
-            return None
-
-        return FilesystemCryptoAsset(
-            asset_id=f"crypto_cfg:{rel_path}",
-            asset_type=FilesystemAssetType.CRYPTO_CONFIG,
-            file_path=rel_path,
-            absolute_path=abs_path,
-            file_size_bytes=file_size,
-            sha256_hash=sha256_hash,
-            confidence="high" if len(matched_directives) >= 2 else "medium",
-            description="Cryptographic configuration file",
-            metadata={"directives": matched_directives},
-        )
-
-    def _detect_tls_config(
-        self,
-        file_name: str,
-        rel_path: str,
-        abs_path: str,
-        content: bytes,
-        file_size: int,
-        sha256_hash: str,
-    ) -> Optional[FilesystemCryptoAsset]:
-        is_candidate = (
-            file_name in ["nginx.conf", "httpd.conf", "ssl.conf", "haproxy.cfg", "sshd_config"]
-            or file_name.endswith(".conf")
-            or file_name.endswith(".yaml")
-            or file_name.endswith(".yml")
-        )
-        if not is_candidate:
-            return None
-
-        text = content.decode("utf-8", errors="ignore")
-        matched_tls: Dict[str, str] = {}
-
-        for pattern, tag in TLS_CONFIG_PATTERNS:
-            match = pattern.search(text)
-            if match:
-                matched_tls[tag] = match.group(1).strip()
-
-        if not matched_tls:
-            return None
-
-        return FilesystemCryptoAsset(
-            asset_id=f"tls_cfg:{rel_path}",
-            asset_type=FilesystemAssetType.TLS_CONFIG,
-            file_path=rel_path,
-            absolute_path=abs_path,
-            file_size_bytes=file_size,
-            sha256_hash=sha256_hash,
-            confidence="high" if len(matched_tls) >= 2 else "medium",
-            description="TLS/SSL service configuration",
-            metadata={"tls_settings": matched_tls},
-        )
+        if config_findings:
+            return FilesystemCryptoAsset(
+                asset_id=f"crypto_cfg:{rel_path}",
+                asset_type=FilesystemAssetType.CRYPTO_CONFIG,
+                file_path=rel_path,
+                absolute_path=abs_path,
+                file_size_bytes=file_size,
+                sha256_hash=sha256_hash,
+                confidence="high",
+                description="Structured parsed configuration file",
+                metadata={"config_settings": config_findings},
+            )
+        return None
 
     def _detect_library_installation(
         self,
