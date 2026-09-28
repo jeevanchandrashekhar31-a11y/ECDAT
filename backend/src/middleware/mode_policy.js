@@ -112,7 +112,8 @@ function createEvalSession(req, res) {
     isEval: true,
     tenantId,
     userId,
-    persona
+    persona,
+    token_type: "access"
   };
 
   const activeKey = defaultTokenService.secretManager.getActiveKey("jwt_signing");
@@ -120,8 +121,8 @@ function createEvalSession(req, res) {
 
   res.cookie(EVAL_COOKIE_NAME, token, {
     httpOnly: true,
-    sameSite: "None",
-    secure: true,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
     maxAge: 24 * 60 * 60 * 1000 // 24h
   });
 
@@ -159,7 +160,8 @@ function switchEvalPersona(req, res) {
     isEval: true,
     tenantId: req.user.tenantId,
     userId: req.user.id, // Keep same user ID or rotate? Let's rotate user ID so four-eyes works (proposer != approver)
-    persona
+    persona,
+    token_type: "access"
   };
   
   // Rotate user ID when switching to approver so they can approve their own previous work as "another user"
@@ -170,8 +172,8 @@ function switchEvalPersona(req, res) {
 
   res.cookie(EVAL_COOKIE_NAME, token, {
     httpOnly: true,
-    sameSite: "None",
-    secure: true,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
     maxAge: 24 * 60 * 60 * 1000 // 24h
   });
 

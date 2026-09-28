@@ -108,14 +108,17 @@ def main():
             content = source_code.decode("utf-8", errors="replace")
         except (PermissionError, OSError) as pe:
             file_errors.append(PermissionFailureError(f"Cannot read file: {fpath}", {"file": str(fpath)}, fatal=False))
-            return local_findings, file_errors
+            return local_findings, file_errors, {"parser": None, "success": False}
 
         ext = fpath.suffix.lower()
         ast_findings = []
         adapter = registry.get_by_extension(ext)
+        file_telemetry = {"parser": None, "success": False}
         if adapter:
+            file_telemetry["parser"] = getattr(adapter, "lang_name", ext)
             try:
                 ast_findings = adapter.extract_findings(source_code, fpath, discovery.root_dir)
+                file_telemetry["success"] = True
             except Exception as e:
                 file_errors.append(ParserFailureError(f"AST parsing failed for {fpath}: {e}", {"file": str(fpath)}, fatal=False))
 
@@ -163,19 +166,29 @@ def main():
         if len(final_findings) > 500:
             file_errors.append(ParserFailureError(f"Truncation notice: >500 findings found in {fpath}. Returning all, but coverage report will flag this.", {"file": str(fpath)}, fatal=False))
         local_findings.extend(final_findings)
-        return local_findings, file_errors
+        return local_findings, file_errors, file_telemetry
 
     concurrency = max(1, os.cpu_count() or 1)
     print(f"Starting parallel scan with {concurrency} workers...")
+    parser_stats = {}
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
         future_to_file = {executor.submit(process_file, fpath): fpath for fpath in files_to_scan}
         for future in concurrent.futures.as_completed(future_to_file):
             fpath = future_to_file.pop(future)  # POP to allow GC of the future and its result
             try:
-                f_findings, f_errors = future.result()
+                f_findings, f_errors, f_telemetry = future.result()
                 findings.extend(f_findings)
                 scan_errors.extend(f_errors)
+                
+                if f_telemetry["parser"]:
+                    p = f_telemetry["parser"]
+                    if p not in parser_stats:
+                        parser_stats[p] = {"attempted": 0, "success": 0}
+                    parser_stats[p]["attempted"] += 1
+                    if f_telemetry["success"]:
+                        parser_stats[p]["success"] += 1
+                        
             except Exception as e:
                 scan_errors.append(ParserFailureError(f"Worker crashed on {fpath}: {e}", {"file": str(fpath)}, fatal=False))
 
@@ -256,6 +269,17 @@ def main():
         empty_json = '{\n  "bomFormat": "CycloneDX",\n  "specVersion": "1.6",\n  "components": []\n}\n'
         Path(args.output).write_text(empty_json, encoding="utf-8")
         print(f"Wrote empty CBOM to {args.output}")
+
+    # Output Coverage Data
+    coverage_path = Path(args.output).with_name("coverage.json")
+    coverage_data = {
+        "files_total": len(files_to_scan) + sum(discovery.skipped_stats.values()),
+        "files_scanned": len(files_to_scan),
+        "files_skipped": discovery.skipped_stats,
+        "parser_stats": parser_stats
+    }
+    coverage_path.write_text(json.dumps(coverage_data, indent=2), encoding="utf-8")
+    print(f"Wrote coverage report to {coverage_path}")
 
     if args.output_sarif:
         from scanners.static.sarif import generate_sarif

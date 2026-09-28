@@ -68,6 +68,7 @@ async function persistScanToPostgres(scanRecord, rawCbom) {
       low_count: scanRecord.metrics.severity_counts.low,
       info_count: scanRecord.metrics.severity_counts.informational,
       quantum_risk_count: scanRecord.metrics.assets_at_quantum_risk,
+      coverage_stats: scanRecord.coverage_stats ? JSON.stringify(scanRecord.coverage_stats) : null,
       created_at: scanRecord.created_at,
       completed_at: new Date().toISOString(),
     };
@@ -378,6 +379,7 @@ async function ingestCbom(rawInputData, options = {}) {
     top_risky_assets: summary.top_risky_assets,
     html_report: htmlReport,
     errors: scanErrors,
+    coverage_stats: options.coverageStats || null,
   };
 
   // Cache in-memory
@@ -478,6 +480,7 @@ async function getAllScans(tenantContext = null) {
         },
         overall_cicd_pass: s.cicd_pass,
       },
+      coverage_stats: s.coverage_stats ? (typeof s.coverage_stats === "string" ? JSON.parse(s.coverage_stats) : s.coverage_stats) : null,
     }));
   }
 
@@ -500,6 +503,7 @@ async function getAllScans(tenantContext = null) {
     status: "completed",
     created_at: s.created_at,
     metrics: s.metrics,
+    coverage_stats: s.coverage_stats || null,
   }));
 }
 
@@ -563,6 +567,7 @@ async function getScanById(scanId, tenantContext = null) {
         },
         overall_cicd_pass: scanRow.cicd_pass,
       },
+      coverage_stats: scanRow.coverage_stats ? (typeof scanRow.coverage_stats === "string" ? JSON.parse(scanRow.coverage_stats) : scanRow.coverage_stats) : null,
       annotated_bom: annotatedBom,
     };
   }

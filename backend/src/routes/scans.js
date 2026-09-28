@@ -93,6 +93,7 @@ router.get("/:scanId", async (req, res, next) => {
       status: scan.status || "completed",
       cicd_pass: scan.metrics?.overall_cicd_pass ?? true,
       metrics: scan.metrics,
+      coverage_stats: scan.coverage_stats || null,
       created_at: scan.created_at,
       completed_at: scan.completed_at || scan.created_at,
       links: {

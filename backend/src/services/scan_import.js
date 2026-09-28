@@ -25,8 +25,25 @@ function importScanFromFile(filePath, options = {}) {
     throw err;
   }
 
+  let coverageStats = null;
+  try {
+    const coveragePath = filePath.replace(/\.json$/, "") + "coverage.json";
+    if (!fs.existsSync(coveragePath)) {
+       const altCoveragePath = require("path").join(require("path").dirname(filePath), "coverage.json");
+       if (fs.existsSync(altCoveragePath)) {
+           const covContent = fs.readFileSync(altCoveragePath, "utf-8");
+           coverageStats = JSON.parse(covContent);
+       }
+    } else {
+        const covContent = fs.readFileSync(coveragePath, "utf-8");
+        coverageStats = JSON.parse(covContent);
+    }
+  } catch (e) {
+    // Ignore if not present or unparseable
+  }
+
   const scanName = options.scanName || `Imported File (${filePath})`;
-  return ingestCbom(parsedData, { ...options, scanName });
+  return ingestCbom(parsedData, { ...options, scanName, coverageStats });
 }
 
 /**

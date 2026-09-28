@@ -250,6 +250,12 @@ export interface ScanItem {
   status: string;
   created_at: string;
   metrics?: Partial<Metrics>;
+  coverage_stats?: {
+    files_total: number;
+    files_scanned: number;
+    files_skipped: Record<string, number>;
+    parser_stats: Record<string, { attempted: number; success: number }>;
+  };
 }
 
 export interface EvidenceFinding {

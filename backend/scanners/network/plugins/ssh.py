@@ -124,13 +124,20 @@ class SshScanner:
                             weak.append(f"deprecated_mac:{mac}")
                     finding.weak_algorithms = sorted(list(set(weak)))
 
-                    # Quantum vulnerabilities
+                    # Quantum vulnerabilities & PQC groups
                     q_vulns = []
-                    if any(
-                        "diffie-hellman" in k.lower() or "curve25519" in k.lower() or "ecdh" in k.lower()
-                        for k in caps.get("kex", [])
-                    ):
-                        q_vulns.append("shor_vulnerable_key_exchange")
+                    pqc_groups = []
+                    
+                    for k in caps.get("kex", []):
+                        kl = k.lower()
+                        if "sntrup761x25519-sha512" in kl or "mlkem768x25519-sha256" in kl:
+                            pqc_groups.append(k)
+                        elif "diffie-hellman" in kl or "curve25519" in kl or "ecdh" in kl:
+                            if "sntrup" not in kl and "mlkem" not in kl:
+                                q_vulns.append("shor_vulnerable_key_exchange")
+                                
+                    finding.pqc_groups_accepted = sorted(list(set(pqc_groups)))
+
                     if any(
                         "rsa" in hk.lower() or "ecdsa" in hk.lower() or "ed25519" in hk.lower() or "dss" in hk.lower()
                         for hk in caps.get("host_key", [])

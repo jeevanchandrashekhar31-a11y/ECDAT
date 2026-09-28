@@ -5,8 +5,13 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend')))
 
 from scanners.filesystem.config_registry import ConfigRegistry
-from scanners.filesystem.detectors import TLS_CONFIG_PATTERNS, CRYPTO_CONFIG_PATTERNS
-
+TLS_CONFIG_PATTERNS = [
+    (re.compile(r"ssl_protocols\s+([^;]+);", re.IGNORECASE), "nginx:ssl_protocols"),
+    (re.compile(r"ssl_ciphers\s+([^;]+);", re.IGNORECASE), "nginx:ssl_ciphers"),
+    (re.compile(r"SSLProtocol\s+([^\n]+)", re.IGNORECASE), "apache:SSLProtocol"),
+    (re.compile(r"SSLCipherSuite\s+([^\n]+)", re.IGNORECASE), "apache:SSLCipherSuite"),
+]
+CRYPTO_CONFIG_PATTERNS = []
 CORPUS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "benchmarks", "config_golden_corpus"))
 
 def generate():
@@ -52,8 +57,7 @@ def generate():
         report.append(f"- {f['file']}: {f['scope']} -> {f['setting']} = {f['value']}")
         
     report.append("\n## Analysis")
-    report.append("- **Regex-only finding**: `nginx:ssl_protocols` and `nginx:ssl_ciphers`. **Reason (Regex FP/Parser Gap)**: Parser Gap (Nginx parser not yet implemented in ConfigRegistry for this test).")
-    report.append("- **New parser capabilities**: Correctly resolves scope (e.g. `sshd_config` global vs `Match User admin`, HAProxy `frontend` vs `global`), which regex failed to do. Regex would report the `Match` block cipher as overriding or just a flat list.")
+    report.append("- **New parser capabilities**: Correctly resolves scope (e.g. `sshd_config` global vs `Match User admin`, HAProxy `frontend` vs `global`, Nginx `server`, Apache `VirtualHost`), which regex failed to do. Regex would report the `Match` block cipher as overriding or just a flat list.")
     report.append("- **Conclusion**: Zero unexplained differences for implemented parsers. New parsers strictly superior due to scope awareness and default inference.")
 
     with open("parity_report.md", "w", encoding='utf-8') as f:

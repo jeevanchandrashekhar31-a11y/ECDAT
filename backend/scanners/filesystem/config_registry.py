@@ -71,6 +71,9 @@ class ConfigRegistry:
                 "parser": parse_dockerfile
             }
         ]
+        self.parser_stats = {}
+        for p in self.parsers:
+            self.parser_stats[p["name"]] = {"attempted": 0, "success": 0}
 
     def stub_parser(self, file_path: str, content: str) -> List[ConfigFinding]:
         return []
@@ -79,6 +82,7 @@ class ConfigRegistry:
         filename = os.path.basename(file_path).lower()
         
         matched_parser = None
+        matched_parser_name = None
         
         # 1. Match by filename (exact or simple glob)
         for p in self.parsers:
@@ -86,9 +90,11 @@ class ConfigRegistry:
                 if pattern.startswith("*.") and filename.endswith(pattern[1:]):
                     if p["content_sniffer"](content):
                         matched_parser = p["parser"]
+                        matched_parser_name = p["name"]
                         break
                 elif filename == pattern.lower():
                     matched_parser = p["parser"]
+                    matched_parser_name = p["name"]
                     break
             if matched_parser:
                 break
@@ -98,11 +104,15 @@ class ConfigRegistry:
             for p in self.parsers:
                 if p["content_sniffer"](content):
                     matched_parser = p["parser"]
+                    matched_parser_name = p["name"]
                     break
                     
         if matched_parser:
+            self.parser_stats[matched_parser_name]["attempted"] += 1
             try:
-                return matched_parser(file_path, content)
+                findings = matched_parser(file_path, content)
+                self.parser_stats[matched_parser_name]["success"] += 1
+                return findings
             except Exception as e:
                 # Return unparsed config finding
                 return [ConfigFinding(

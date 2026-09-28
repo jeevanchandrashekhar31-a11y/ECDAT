@@ -48,7 +48,7 @@ class ProxyConfigParser:
                 continue
                 
             if line.startswith("ssl_protocols ") and not in_server:
-                global_protocols = line.replace("ssl_protocols ", "").replace(";", "").strip().split()[0]
+                global_protocols = line.replace("ssl_protocols ", "").replace(";", "").strip()
                 
             if line.startswith("ssl_ciphers ") and not in_server:
                 global_ciphers = line.replace("ssl_ciphers ", "").replace(";", "").strip()
@@ -69,8 +69,7 @@ class ProxyConfigParser:
                     if listen_args:
                         current_server_listen = listen_args[0]
                 if line.startswith("ssl_protocols "):
-                    # Take first protocol as min protocol for simplicity here
-                    server_protocols = line.replace("ssl_protocols ", "").replace(";", "").strip().split()[0]
+                    server_protocols = line.replace("ssl_protocols ", "").replace(";", "").strip()
                 if line.startswith("ssl_ciphers "):
                     server_ciphers = line.replace("ssl_ciphers ", "").replace(";", "").strip()
                     
@@ -135,9 +134,4 @@ class ProxyConfigParser:
         return findings
 
     def _resolve_apache_protocols(self, directive: str) -> str:
-        # Simplistic mapping of apache SSLProtocol string to minimum protocol
-        if "+TLSv1.3" in directive and "-all" in directive:
-            return "TLSv1.3"
-        if "all -SSLv3" in directive:
-            return "TLSv1.0"
-        return directive.split()[0]
+        return directive
