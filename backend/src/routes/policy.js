@@ -12,40 +12,46 @@ const {
 } = require("../policy");
 const { defaultAuditService, AUDIT_CATEGORIES, AUDIT_ACTIONS, AUDIT_STATUSES } = require("../audit");
 
-// Helper to extract actor strictly from verified security principal
 function getActorFromReq(req) {
-  // If user JWT is authenticated, user identity is immutable from JWT
+  // STRICT SERVER-SIDE IDENTITY EXTRACTION
+  let role = "viewer";
+  let username = null;
+  
   if (req.user) {
-    const role = req.user.role || (Array.isArray(req.user.roles) ? req.user.roles[0] : "viewer");
-    return {
-      username: req.user.username || req.user.sub || req.user.userId || "authenticated-user",
-      role: role || "viewer",
-    };
+    role = req.user.role || (Array.isArray(req.user.roles) ? req.user.roles[0] : "viewer");
+    username = req.user.username || req.user.sub || req.user.userId || "authenticated-user";
+  } else if (req.auth && req.auth.authenticated) {
+    role = req.auth.role || (Array.isArray(req.auth.roles) ? req.auth.roles[0] : "viewer");
+    username = req.auth.user?.username || req.auth.username || req.auth.keyId || "api-key-caller";
+  } else {
+    return { username: "anonymous", role: "viewer" };
   }
 
-  // If authenticated via API Key / system token
-  if (req.auth && req.auth.authenticated) {
-    const authenticatedRole = req.auth.role || (Array.isArray(req.auth.roles) ? req.auth.roles[0] : "viewer");
-    const isAdmin = authenticatedRole === "admin" || authenticatedRole === "platform administrator";
-
-    // Only an authenticated admin API key may attribute actions to a sub-actor username for four-eyes audit
-    const requestedUsername = req.headers["x-actor-username"] || req.body?.actor_username;
-    const actorUsername = (isAdmin && requestedUsername && typeof requestedUsername === "string")
-      ? requestedUsername.trim().slice(0, 100)
-      : (req.auth.user?.username || req.auth.username || req.auth.keyId || "api-key-caller");
-
-    // Role can NEVER be escalated above authenticatedRole
-    return {
-      username: actorUsername,
-      role: authenticatedRole,
-    };
+  // Delegated Attribution via signed JWT approver token
+  const approverToken = req.headers["x-approver-token"];
+  if (approverToken) {
+    try {
+      const { defaultTokenService } = require("../identity/token_service");
+      const approverPayload = defaultTokenService.verifyToken(approverToken, "access");
+      const approverUsername = approverPayload.username || approverPayload.sub;
+      
+      if (!approverUsername) {
+        throw new Error("Approver token missing identity (sub/username)");
+      }
+      if (approverUsername === username) {
+        throw new Error("Four-eyes principle violation: author and approver cannot be the same user");
+      }
+      
+      // Successfully authenticated delegated attribution
+      username = `${username} (approved by ${approverUsername})`;
+    } catch (err) {
+      const error = new Error(`Delegated attribution failed: ${err.message}`);
+      error.status = 401;
+      throw error;
+    }
   }
 
-  // Unauthenticated caller is strictly anonymous viewer
-  return {
-    username: "anonymous",
-    role: "viewer",
-  };
+  return { username, role };
 }
 
 /**

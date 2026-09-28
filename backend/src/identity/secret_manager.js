@@ -27,7 +27,21 @@ class SecretManager {
   }
 
   initializeDefaultKeys(initialSecret) {
-    const defaultSecret = initialSecret || crypto.randomBytes(32).toString("hex");
+    let defaultSecret = initialSecret || process.env.JWT_SECRET;
+    
+    // Fail startup in production if missing/short
+    if (process.env.NODE_ENV === "production" || process.env.NODE_ENV === "prod") {
+      if (!defaultSecret || defaultSecret.length < 32) {
+        throw new Error("FATAL: JWT_SECRET must be provided in production and be at least 32 characters long for cryptographic security.");
+      }
+    }
+    
+    // Fallback for dev/test
+    if (!defaultSecret) {
+      defaultSecret = crypto.randomBytes(32).toString("hex");
+      console.warn("WARNING: JWT_SECRET not provided. A random ephemeral secret was generated. Tokens will NOT survive restarts.");
+    }
+    
     this.addKey("jwt_signing", {
       kid: `key_${Date.now()}_init`,
       secret: defaultSecret,
