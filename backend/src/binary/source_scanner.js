@@ -214,7 +214,24 @@ const SKIP_DIRS = new Set([
   "dist", "build", "target", "vendor", ".gradle", ".mvn", "coverage",
 ]);
 
+
+const CS_PATTERNS = [
+  { re: /System\.Security\.Cryptography\.(Aes|DES|RC2|Rijndael|TripleDES|RSA|DSA|ECDsa|MD5|SHA1|SHA256|SHA384|SHA512)/i, extract: m => ({ algorithm: m[1], lib: 'System.Security.Cryptography' }) },
+  { re: /new\s+(RSACryptoServiceProvider|DSACryptoServiceProvider|AesCryptoServiceProvider|MD5CryptoServiceProvider|SHA1CryptoServiceProvider)\s*\(/i, extract: m => ({ algorithm: m[1].replace('CryptoServiceProvider',''), lib: 'System.Security.Cryptography' }) },
+  { re: /\b(HMACSHA1|HMACSHA256|HMACSHA384|HMACSHA512|HMACMD5)\b/i, extract: m => ({ algorithm: m[1], lib: 'System.Security.Cryptography' }) }
+];
+
+const RUST_PATTERNS = [
+  { re: /ring::(aead|digest|signature|pbkdf2)::([A-Za-z0-9_]+)/, extract: m => ({ algorithm: m[2], lib: 'ring' }) },
+  { re: /aes_gcm::(Aes128Gcm|Aes256Gcm)/, extract: m => ({ algorithm: m[1], lib: 'aes-gcm' }) },
+  { re: /rsa::(RsaPrivateKey|RsaPublicKey)/, extract: m => ({ algorithm: 'RSA', lib: 'rsa' }) },
+  { re: /sha2::(Sha256|Sha512|Sha384)/, extract: m => ({ algorithm: m[1], lib: 'sha2' }) },
+  { re: /md5::Md5/, extract: m => ({ algorithm: 'MD5', lib: 'md5' }) }
+];
+
 const LANG_MAP = {
+    '.cs': { lang: 'csharp', patterns: CS_PATTERNS },
+    '.rs': { lang: 'rust', patterns: RUST_PATTERNS },
   ".c": { lang: "c", patterns: C_PATTERNS },
   ".h": { lang: "c", patterns: C_PATTERNS },
   ".cpp": { lang: "cpp", patterns: C_PATTERNS },
@@ -541,6 +558,7 @@ async function scanSourceZip(zipFilePath, options = {}) {
 
       let isZipEnded = false;
       let pendingReads = 0;
+      const MAX_CONCURRENT = 100;
 
       function checkDone() {
         if (isZipEnded && pendingReads === 0) {
@@ -573,21 +591,33 @@ async function scanSourceZip(zipFilePath, options = {}) {
         }
       }
 
-      zipfile.readEntry();
+      
+      let isReadingEntry = false;
+      function nextEntry() {
+        if (!isZipEnded && !isReadingEntry && pendingReads < MAX_CONCURRENT) {
+          isReadingEntry = true;
+          zipfile.readEntry();
+        }
+      }
+
+      nextEntry();
+
       zipfile.on('entry', (entry) => {
+        isReadingEntry = false;
+
         if (/\/$/.test(entry.fileName)) {
-          return zipfile.readEntry();
+          return nextEntry();
         }
 
         const parts = entry.fileName.split('/');
         if (parts.some(p => SKIP_DIRS.has(p))) {
-          return zipfile.readEntry();
+          return nextEntry();
         }
 
         const ext = path.extname(entry.fileName).toLowerCase();
         const langInfo = LANG_MAP[ext];
         if (!langInfo) {
-          return zipfile.readEntry();
+          return nextEntry();
         }
 
         if (totalFiles >= maxFiles) {
@@ -599,10 +629,12 @@ async function scanSourceZip(zipFilePath, options = {}) {
         totalFiles++;
 
         pendingReads++;
+        nextEntry(); // Immediately ask for next entry up to concurrency limit!
+
         zipfile.openReadStream(entry, (err, readStream) => {
           if (err) {
             pendingReads--;
-            zipfile.readEntry();
+            nextEntry();
             checkDone();
             return;
           }
@@ -612,7 +644,7 @@ async function scanSourceZip(zipFilePath, options = {}) {
           });
           readStream.on('error', () => {
             pendingReads--;
-            zipfile.readEntry();
+            nextEntry();
             checkDone();
           });
           readStream.on('end', () => {
@@ -689,7 +721,7 @@ async function scanSourceZip(zipFilePath, options = {}) {
                 }
               }
             }
-            zipfile.readEntry();
+            nextEntry();
             checkDone();
           });
         });
