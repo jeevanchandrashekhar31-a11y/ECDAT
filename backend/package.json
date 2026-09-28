@@ -4,8 +4,8 @@
   "description": "",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "start:demo": "node -e \"process.env.AUTH_MODE='demo'; require('./src/server.js')\"",
+    "start": "node --max-old-space-size=400 src/server.js",
+    "start:demo": "node --max-old-space-size=400 -e \"process.env.AUTH_MODE='demo'; require('./src/server.js')\"",
     "dev": "nodemon src/server.js",
     "migrate": "node src/db/migrate.js",
     "test": "node --test",
@@ -32,7 +32,8 @@
     "ioredis": "^6.0.0",
     "knex": "^3.3.0",
     "multer": "^2.3.0",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "yauzl": "^3.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
