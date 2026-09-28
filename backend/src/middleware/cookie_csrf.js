@@ -104,6 +104,7 @@ function clearAuthCookies(res) {
   res.appendHeader("Set-Cookie", `${ACCESS_COOKIE_NAME}=; ${clearFlags}; HttpOnly`);
   res.appendHeader("Set-Cookie", `${REFRESH_COOKIE_NAME}=; Path=/api/v1/auth; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=None; Secure`);
   res.appendHeader("Set-Cookie", `${CSRF_COOKIE_NAME}=; ${clearFlags}`);
+  res.appendHeader("Set-Cookie", `ecdat_eval_session=; ${clearFlags}; HttpOnly`);
 }
 
 /**
