@@ -187,7 +187,7 @@ async function extractZipArchive(zipFilePath, targetDir) {
   
   // Use async spawn so the event loop stays alive (keep-alive heartbeats can fire)
   const { spawn } = require('child_process');
-  const EXTRACT_TIMEOUT_MS = 300000; // 5 min max for extraction
+  const EXTRACT_TIMEOUT_MS = 900000; // 15 min max for extraction
 
   const runAsync = (cmd, args) => new Promise((resolve, reject) => {
     const child = spawn(cmd, args, { stdio: 'ignore' });
@@ -500,7 +500,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       const defaultMaxFiles = isZipUpload ? 150000 : 150000;
       const maxFiles = (req.body && req.body.max_files) ? parseInt(req.body.max_files) : defaultMaxFiles;
 
-      const SCAN_TIMEOUT_MS = 300000; // 5 minute hard limit. Keep-alive prevents proxy timeouts.
+      const SCAN_TIMEOUT_MS = 900000; // 15 minute hard limit. Keep-alive prevents proxy timeouts.
       const timeoutSentinel = new Promise((_, reject) =>
         setTimeout(() => reject(new Error(`SCAN_TIMEOUT: Scan exceeded ${SCAN_TIMEOUT_MS / 1000}s. The archive has too many files for the free-tier instance. Try a smaller project or use a Git URL instead.`)), SCAN_TIMEOUT_MS)
       );
