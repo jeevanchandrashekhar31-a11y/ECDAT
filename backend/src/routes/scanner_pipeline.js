@@ -185,29 +185,47 @@ async function _runGitClone(repoUrl, targetDir, timeoutMs = 3600000) {
 async function extractZipArchive(zipFilePath, targetDir) {
   fs.mkdirSync(targetDir, { recursive: true });
   
-  // 1. Try ultra-fast native unzip or tar
+  // Use async spawn so the event loop stays alive (keep-alive heartbeats can fire)
+  const { spawn } = require('child_process');
+  const EXTRACT_TIMEOUT_MS = 30000; // 30s max for extraction
+
+  const runAsync = (cmd, args) => new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { stdio: 'ignore' });
+    const timer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch {}
+      reject(new Error(`Extraction timed out after ${EXTRACT_TIMEOUT_MS / 1000}s`));
+    }, EXTRACT_TIMEOUT_MS);
+    child.on('close', code => {
+      clearTimeout(timer);
+      if (code === 0) resolve();
+      else reject(new Error(`Extraction exited with code ${code}`));
+    });
+    child.on('error', err => { clearTimeout(timer); reject(err); });
+  });
+
+  // 1. Try native unzip (Linux/Render) or tar (Windows)
   try {
-    const { execSync } = require('child_process');
     if (process.platform === 'win32') {
-      execSync(`tar -xf "${zipFilePath}" -C "${targetDir}"`, { stdio: 'ignore' });
+      await runAsync('tar', ['-xf', zipFilePath, '-C', targetDir]);
     } else {
-      execSync(`unzip -q -o "${zipFilePath}" -d "${targetDir}"`, { stdio: 'ignore' });
+      await runAsync('unzip', ['-q', '-o', zipFilePath, '-d', targetDir]);
     }
     return; // Success
   } catch (e) {
-    // Ignore error and fall back
+    // Ignore error and fall back to Python
   }
 
-  // 2. Fallback to Python archive_guard (Windows/fallback)
+  // 2. Fallback to Python archive_guard — cap at 5000 files to avoid extracting all 61k
   await runPythonCommand([
     path.join(REPO_ROOT, 'scanners', 'common', 'archive_guard.py'),
     'extract', zipFilePath, targetDir,
     '--max-size-mb', '2000',
     '--max-entry-mb', '500',
-    '--max-files', '10000000',
+    '--max-files', '5000',
     '--allow-nested',
-  ], 3600000);
+  ], EXTRACT_TIMEOUT_MS);
 }
+
 
 /**
  * Safely parses any URL or host string into a clean hostname and port
