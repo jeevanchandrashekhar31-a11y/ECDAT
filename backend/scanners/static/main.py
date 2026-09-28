@@ -65,8 +65,8 @@ def main():
 
     if not 1 <= args.max_file_size_mb <= 100:
         parser.error("--max-file-size-mb must be between 1 and 100")
-    if not 1 <= args.max_files <= 10000:
-        parser.error("--max-files must be between 1 and 10000")
+    if not 1 <= args.max_files <= 10000000:
+        parser.error("--max-files must be between 1 and 10000000")
     if not 1 <= args.max_depth <= 100:
         parser.error("--max-depth must be between 1 and 100")
 

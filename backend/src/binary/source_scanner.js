@@ -155,6 +155,20 @@ const JAVA_PATTERNS = [
   { re: /SignatureAlgorithm\.(\w+)/g, extract: (m) => ({ lib: "JJWT", algorithm: m[1] }) },
 ];
 
+const C_PATTERNS = [
+  { re: /\b(md5|MD5|EVP_md5)\b/g, extract: () => ({ lib: "c-stdlib", algorithm: "MD5", usage: "hash" }) },
+  { re: /\b(sha1|SHA1|EVP_sha1)\b/g, extract: () => ({ lib: "c-stdlib", algorithm: "SHA-1", usage: "hash" }) },
+  { re: /\b(des|DES|EVP_des)\b/g, extract: () => ({ lib: "c-stdlib", algorithm: "DES", usage: "cipher" }) },
+  { re: /\b(des3|DES3|des_ede|EVP_des_ede)\b/g, extract: () => ({ lib: "c-stdlib", algorithm: "3DES", usage: "cipher" }) },
+  { re: /\b(rc2|RC2|EVP_rc2)\b/g, extract: () => ({ lib: "c-stdlib", algorithm: "RC2", usage: "cipher" }) },
+  { re: /\b(rc4|RC4|EVP_rc4)\b/g, extract: () => ({ lib: "c-stdlib", algorithm: "RC4", usage: "cipher" }) },
+  { re: /\b(ecb|ECB)\b/g, extract: () => ({ lib: "c-stdlib", algorithm: "ECB_Mode", usage: "cipher_mode" }) },
+  { re: /\b(?:RSA_generate_key(?:_ex)?|RSA\.generate)\b/g, extract: () => ({ lib: "c-stdlib", algorithm: "RSA", usage: "key-generation" }) },
+  { re: /\b(ECDH|ecdh|ECDHE|ec_key_new_by_curve_name)\b/g, extract: () => ({ lib: "c-stdlib", algorithm: "ECDH", usage: "key-exchange" }) },
+  { re: /\b(rand|srand)\b/g, extract: () => ({ lib: "c-stdlib", algorithm: "Weak_PRNG", usage: "prng" }) },
+  { re: /\b(openssl|mbedtls|wolfssl|libsodium)\b/g, extract: (m) => ({ lib: m[1], algorithm: "Crypto_Library", usage: "import" }) },
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Algorithm normalizer — maps raw detections to canonical names
 // ─────────────────────────────────────────────────────────────────────────────
@@ -201,6 +215,11 @@ const SKIP_DIRS = new Set([
 ]);
 
 const LANG_MAP = {
+  ".c": { lang: "c", patterns: C_PATTERNS },
+  ".h": { lang: "c", patterns: C_PATTERNS },
+  ".cpp": { lang: "cpp", patterns: C_PATTERNS },
+  ".hpp": { lang: "cpp", patterns: C_PATTERNS },
+  ".cc": { lang: "cpp", patterns: C_PATTERNS },
   ".py": { lang: "python", patterns: PYTHON_PATTERNS },
   ".js": { lang: "javascript", patterns: JS_PATTERNS },
   ".mjs": { lang: "javascript", patterns: JS_PATTERNS },

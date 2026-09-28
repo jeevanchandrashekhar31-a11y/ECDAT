@@ -184,6 +184,21 @@ async function _runGitClone(repoUrl, targetDir, timeoutMs = 3600000) {
  */
 async function extractZipArchive(zipFilePath, targetDir) {
   fs.mkdirSync(targetDir, { recursive: true });
+  
+  // 1. Try ultra-fast native unzip or tar
+  try {
+    const { execSync } = require('child_process');
+    if (process.platform === 'win32') {
+      execSync(`tar -xf "${zipFilePath}" -C "${targetDir}"`, { stdio: 'ignore' });
+    } else {
+      execSync(`unzip -q -o "${zipFilePath}" -d "${targetDir}"`, { stdio: 'ignore' });
+    }
+    return; // Success
+  } catch (e) {
+    // Ignore error and fall back
+  }
+
+  // 2. Fallback to Python archive_guard (Windows/fallback)
   await runPythonCommand([
     path.join(REPO_ROOT, 'scanners', 'common', 'archive_guard.py'),
     'extract', zipFilePath, targetDir,
@@ -476,7 +491,7 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     }
     try {
       await runPythonCommand(
-        [path.join(REPO_ROOT, 'scanners', 'static', 'main.py'), targetDir, "-o", tempOut, "--include-ext", ".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.ts,.tsx,.py,.java,.json,.yml,.yaml,.properties,.ini,.xml,.env", "--fail-on", "none"],
+        [path.join(REPO_ROOT, 'scanners', 'static', 'main.py'), targetDir, "-o", tempOut, "--include-ext", ".c,.h,.cpp,.hpp,.cc,.go,.js,.mjs,.cjs,.ts,.tsx,.py,.java,.json,.yml,.yaml,.properties,.ini,.xml,.env", "--max-files", "5000", "--fail-on", "none"],
         3600000
       );
       const pyData = loadJsonSafe(tempOut);
