@@ -1,0 +1,40 @@
+name: ECDAT External Benchmarks
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Run weekly on Sundays
+  workflow_dispatch:
+    inputs:
+      mock_run:
+        description: 'Run with mock data for CI validation'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  run-benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Benchmarks and Evaluate CI Gate
+        run: |
+          cd benchmarks/external
+          if [ "${{ github.event.inputs.mock_run }}" == "true" ] || [ "${{ github.event_name }}" == "pull_request" ]; then
+            python run_benchmarks.py --mock
+          else
+            python run_benchmarks.py --config datasets.json
+          fi
+
+      - name: Upload Benchmark Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report
+          path: benchmarks/external/benchmark_report.md
