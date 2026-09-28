@@ -435,8 +435,23 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
 
         const tempZipPath = path.resolve(ARTIFACTS_DIR, 'uploads', `${uploadSessionId}.zip`);
         fs.renameSync(zipFile.path, tempZipPath);
+        
+        try {
+          await extractZipArchive(tempZipPath, uploadDir);
+        } catch (extractErr) {
+          try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+          const rawErr = extractErr.message || String(extractErr);
+          const cleanErr = rawErr.replace(/.*::error::/s, '').trim();
+          return res.status(400).json({
+            success: false,
+            error: `Archive extraction failed: ${cleanErr || rawErr}`
+          });
+        } finally {
+          try { fs.unlinkSync(tempZipPath); } catch {}
+        }
+
         scanLabel = scanLabel || `Uploaded ZIP: ${zipFile.originalname}`;
-        targetDir = tempZipPath; // Direct ZIP path for in-memory scanning
+        targetDir = uploadDir;
       } else {
         // Multi-file upload: move files from tmp to uploadDir safely
         for (const file of req.files) {

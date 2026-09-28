@@ -656,8 +656,8 @@ async function getEnterpriseDashboardViews(options = {}) {
     certItems = certAssets.map((ca) => {
       const meta = ca.metadata || {};
       const cert = ca.certificate || {};
-      const keySize = ca.key_size || meta.key_size || cert.key_size || null;
-      const algorithm = cert.algo_family || cert.algorithm || ca.algorithm || "RSA";
+      const keySize = ca.key_size || meta.key_size || cert.key_size || cert.public_key_size || null;
+      const algorithm = cert.public_key_algorithm || cert.algo_family || cert.algorithm || ca.algorithm || "RSA";
       const isWeak = keySize && ((algorithm.toUpperCase().includes("RSA") && keySize < 2048) || (algorithm.toUpperCase().includes("EC") && keySize < 224));
 
       const subjectDn = cert.subjectName || cert.subject_dn || meta.subject_dn || ca.primary_identifier || `Certificate [${ca.id}]`;
