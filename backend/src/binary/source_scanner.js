@@ -517,4 +517,166 @@ async function scanSourceDirectory(scanPath, options = {}) {
   };
 }
 
-module.exports = { scanSourceDirectory, buildCbom, extractFromFile, LANG_MAP, SKIP_DIRS };
+/**
+ * Scans a ZIP archive directly in memory without extracting to disk.
+ * Greatly speeds up scanning for massive test suites.
+ */
+async function scanSourceZip(zipFilePath, options = {}) {
+  const AdmZip = require('adm-zip');
+  const zip = new AdmZip(zipFilePath);
+  const entries = zip.getEntries();
+  
+  const maxFiles = options.maxFiles || 150000;
+  const components = [];
+  const componentMap = new Map();
+  const languages = new Set();
+  let totalFindingsRaw = 0;
+  let totalFiles = 0;
+
+  for (const entry of entries) {
+    if (entry.isDirectory) continue;
+    
+    const parts = entry.entryName.split('/');
+    if (parts.some(p => SKIP_DIRS.has(p))) continue;
+
+    const ext = path.extname(entry.name).toLowerCase();
+    const langInfo = LANG_MAP[ext];
+    if (!langInfo) continue;
+
+    if (totalFiles >= maxFiles) break;
+    totalFiles++;
+    
+    if (totalFiles % 100 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+
+    let content = "";
+    try {
+      content = entry.getData().toString("utf8");
+    } catch {
+      continue;
+    }
+
+    const findings = [];
+    const lines = content.split("\n");
+
+    for (const { re, extract } of langInfo.patterns) {
+      const regex = new RegExp(re.source, re.flags.includes("g") ? re.flags : re.flags + "g");
+      let match;
+      while ((match = regex.exec(content)) !== null) {
+        try {
+          const info = extract(match);
+          if (!info) continue;
+
+          const lineNumber = content.slice(0, match.index).split("\n").length;
+          const lineContent = lines[lineNumber - 1]?.trim() || "";
+          const algorithm = normalizeAlgorithm(info.algorithm || info.usage);
+          if (!algorithm) continue;
+
+          findings.push({
+            algorithm,
+            rawMatch: match[0].slice(0, 120),
+            library: info.lib || "unknown",
+            keySize: info.keySize || null,
+            usage: info.usage || null,
+            isPQC: info.isPQC || false,
+            filePath: entry.entryName,
+            lineNumber,
+            evidence: lineContent.slice(0, 200),
+            lang: langInfo.lang,
+          });
+        } catch { }
+      }
+    }
+
+    if (findings.length > 0) languages.add(langInfo.lang);
+    totalFindingsRaw += findings.length;
+
+    for (const f of findings) {
+      const key = `${f.algorithm}|${f.library}|${f.keySize || ""}`;
+      
+      if (!componentMap.has(key)) {
+        const bomRef = `${key.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}-${components.length}`;
+        const component = {
+          type: "cryptographic-asset",
+          name: f.algorithm,
+          bomRef,
+          version: f.keySize ? `${f.keySize}-bit` : undefined,
+          properties: [
+            { name: "ecdat:library", value: f.library },
+            { name: "ecdat:language", value: f.lang },
+            { name: "ecdat:sourceFile", value: f.filePath },
+            { name: "ecdat:lineNumber", value: String(f.lineNumber) },
+            { name: "ecdat:evidence", value: f.evidence },
+          ].filter(Boolean),
+          cryptoProperties: {
+            assetType: "algorithm",
+            algorithmProperties: {
+              primitive: inferPrimitive(f.algorithm),
+              ...(f.keySize ? { parameterSetIdentifier: String(f.keySize) } : {}),
+            },
+          },
+          evidence: {
+            occurrences: [{
+              location: f.filePath,
+              line: f.lineNumber,
+              symbol: f.rawMatch,
+            }],
+          },
+        };
+        componentMap.set(key, component);
+        components.push(component);
+      } else {
+        const existingComponent = componentMap.get(key);
+        if (existingComponent.evidence.occurrences.length < 1000) {
+          existingComponent.evidence.occurrences.push({
+            location: f.filePath,
+            line: f.lineNumber,
+            symbol: f.rawMatch,
+          });
+        }
+      }
+    }
+  }
+
+  const scanId = `scan_src_${crypto.randomUUID()}`;
+  const cbom = {
+    bomFormat: "CycloneDX",
+    specVersion: "1.6",
+    serialNumber: `urn:uuid:${crypto.randomUUID()}`,
+    version: 1,
+    metadata: {
+      timestamp: new Date().toISOString(),
+      tools: [{ vendor: "ECDAT", name: "Source Code Scanner", version: "2.0.0" }],
+      component: {
+        type: "application",
+        name: options.projectName || path.basename(zipFilePath),
+        description: `Source code scan of ${zipFilePath}`,
+      },
+    },
+    components,
+    _scanMeta: {
+      scanId,
+      scanPath: zipFilePath,
+      totalFilesScanned: totalFiles,
+      totalFindingsRaw,
+      totalComponents: components.length,
+      languages: Array.from(languages),
+    },
+  };
+
+  return {
+    cbom,
+    stats: {
+      totalFiles,
+      totalFindingsRaw,
+      totalComponents: components.length,
+      languages: Array.from(languages),
+      pqcComponents: components.filter((c) =>
+        c.properties?.some((p) => p.name === "ecdat:isPQC" && p.value === "true")
+      ).length,
+    },
+  };
+}
+
+module.exports = { scanSourceDirectory, scanSourceZip, buildCbom, extractFromFile, LANG_MAP, SKIP_DIRS };

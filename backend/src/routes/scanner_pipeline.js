@@ -434,22 +434,9 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
         }
 
         const tempZipPath = path.resolve(ARTIFACTS_DIR, 'uploads', `${uploadSessionId}.zip`);
-        fs.copyFileSync(zipFile.path, tempZipPath);
-        try { fs.unlinkSync(zipFile.path); } catch {}
-        try {
-          await extractZipArchive(tempZipPath, uploadDir);
-        } catch (extractErr) {
-          try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
-          const rawErr = extractErr.message || String(extractErr);
-          const cleanErr = rawErr.replace(/.*::error::/s, '').trim();
-          return res.status(400).json({
-            success: false,
-            error: `Archive extraction failed: ${cleanErr || rawErr}`
-          });
-        } finally {
-          try { fs.unlinkSync(tempZipPath); } catch {}
-        }
+        fs.renameSync(zipFile.path, tempZipPath);
         scanLabel = scanLabel || `Uploaded ZIP: ${zipFile.originalname}`;
+        targetDir = tempZipPath; // Direct ZIP path for in-memory scanning
       } else {
         // Multi-file upload: move files from tmp to uploadDir safely
         for (const file of req.files) {
@@ -458,8 +445,8 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
           try { fs.unlinkSync(file.path); } catch {}
         }
         scanLabel = scanLabel || `Uploaded Project (${req.files.length} files)`;
+        targetDir = uploadDir;
       }
-      targetDir = uploadDir;
     }
     // C. Explicit target_dir mode
     else {
@@ -492,11 +479,11 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
     // DUAL-ENGINE SCANNING
     // Engine 1: Node.js source_scanner (primary - JS/TS/Py/Go/Java)
     // Engine 2: Python static scanner (supplemental - C/C++)
-    const { scanSourceDirectory } = require("../binary/source_scanner");
+    const { scanSourceDirectory, scanSourceZip } = require("../binary/source_scanner");
     let nodeScanResult;
     try {
       // Allow up to 150,000 files to fully process massive archives like Juliet Test Suite
-      const isZipUpload = req.files && req.files.length > 0;
+      const isZipUpload = req.files && req.files.some(f => f.originalname?.toLowerCase().endsWith('.zip') || f.mimetype === 'application/zip' || f.mimetype === 'application/x-zip-compressed');
       const defaultMaxFiles = isZipUpload ? 150000 : 150000;
       const maxFiles = (req.body && req.body.max_files) ? parseInt(req.body.max_files) : defaultMaxFiles;
 
@@ -504,11 +491,13 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
       const timeoutSentinel = new Promise((_, reject) =>
         setTimeout(() => reject(new Error(`SCAN_TIMEOUT: Scan exceeded ${SCAN_TIMEOUT_MS / 1000}s. The archive has too many files for the free-tier instance. Try a smaller project or use a Git URL instead.`)), SCAN_TIMEOUT_MS)
       );
+      
+      const scanPromise = isZipUpload && targetDir.endsWith('.zip')
+          ? scanSourceZip(targetDir, { maxFiles, projectName: scanLabel || path.basename(targetDir) })
+          : scanSourceDirectory(targetDir, { maxFiles, projectName: scanLabel || path.basename(targetDir) });
+
       nodeScanResult = await Promise.race([
-        scanSourceDirectory(targetDir, {
-          maxFiles,
-          projectName: scanLabel || path.basename(targetDir),
-        }),
+        scanPromise,
         timeoutSentinel,
       ]);
     } catch (nodeScanErr) {
@@ -516,6 +505,15 @@ router.post('/scan/static', concurrencyQuotaMiddleware(), RATE_LIMITS.scanSubmis
         return res.status(408).json({ success: false, error: nodeScanErr.message });
       }
       return res.status(500).json({ success: false, error: "Node.js source scanner failed: " + nodeScanErr.message });
+    } finally {
+      if (isGitMode) {
+        try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+      } else if (req.files) {
+        if (targetDir.endsWith('.zip')) {
+          try { fs.unlinkSync(targetDir); } catch {}
+        }
+        try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch {}
+      }
     }
 
     // Python scanner fallback removed to massively speed up scan times and prevent timeouts.
