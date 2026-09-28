@@ -481,6 +481,7 @@ def code_findings_to_cbom(findings: List[CodeCryptoFinding]) -> Bom:
     return bom
 
 
+def binary_finding_to_cbom(finding: BinaryContainerFinding) -> Bom:
     bom = Bom()
 
     comp = Component(
