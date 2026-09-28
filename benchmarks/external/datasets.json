@@ -1,80 +1,24 @@
 {
   "synthetic_datasets": [
     {
-      "name": "OWASP CryptoAPI-Bench",
-      "language": "java",
-      "url": "https://github.com/OWASP/CryptoAPI-Bench",
-      "type": "synthetic"
-    },
-    {
-      "name": "CamBench",
-      "language": "java",
-      "url": "https://github.com/cambench/cambench",
-      "type": "synthetic"
-    },
-    {
       "name": "Juliet",
-      "languages": ["c", "java"],
-      "cwes": ["CWE-327", "CWE-328", "CWE-326", "CWE-321", "CWE-329", "CWE-330", "CWE-780"],
+      "languages": [
+        "c",
+        "java"
+      ],
+      "cwes": [
+        "CWE-327",
+        "CWE-328",
+        "CWE-326",
+        "CWE-321",
+        "CWE-329",
+        "CWE-330",
+        "CWE-780"
+      ],
       "type": "synthetic"
     }
   ],
-  "real_repositories": [
-    {
-      "name": "Django",
-      "language": "python",
-      "url": "https://github.com/django/django",
-      "commit": "a6873133604f3281ab3bdf31ff477d9c6ffdebc6"
-    },
-    {
-      "name": "requests",
-      "language": "python",
-      "url": "https://github.com/psf/requests",
-      "commit": "4e7380186100af3bd8ec2cfbb3ee1853412ab424"
-    },
-    {
-      "name": "cryptography",
-      "language": "python",
-      "url": "https://github.com/pyca/cryptography",
-      "commit": "ff91e47d4e339e3c9cf1c26b9a896d744b41a995"
-    },
-    {
-      "name": "bouncycastle",
-      "language": "java",
-      "url": "https://github.com/bcgit/bc-java",
-      "commit": "787c8052abcfdf7325c942859c25bb32cd835cbb"
-    },
-    {
-      "name": "OpenSSL apps",
-      "language": "c",
-      "url": "https://github.com/openssl/openssl",
-      "commit": "1d6c8e31f0cf2f9908cf67215264817a0211be17"
-    },
-    {
-      "name": "Node crypto users",
-      "language": "javascript",
-      "url": "https://github.com/nodejs/node",
-      "commit": "5505d9eef270e515d9a9f24ce3d20c57193f9c6c"
-    },
-    {
-      "name": "Go x/crypto",
-      "language": "go",
-      "url": "https://github.com/golang/crypto",
-      "commit": "0000000000000000000000000000000000000000"
-    },
-    {
-      "name": "spring-security",
-      "language": "java",
-      "url": "https://github.com/spring-projects/spring-security",
-      "commit": "abcdef1234567890"
-    },
-    {
-      "name": "Rust ring",
-      "language": "rust",
-      "url": "https://github.com/briansmith/ring",
-      "commit": "fedcba0987654321"
-    }
-  ],
+  "real_repositories": [],
   "baselines": [
     "Semgrep",
     "CodeQL",

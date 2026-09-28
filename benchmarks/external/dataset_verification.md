@@ -1,0 +1,14 @@
+# Dataset Verification
+- **OWASP CryptoAPI-Bench**: Failed to clone from https://github.com/OWASP/CryptoAPI-Bench
+- Dropped synthetic dataset: CamBench
+- **Juliet (c)**: Failed to download from https://samate.nist.gov/SRD/testsuites/juliet/Juliet_Test_Suite_v1.3_for_C_Cpp.zip (HTTP Error 403: Forbidden)
+- **Juliet (java)**: Failed to download from https://samate.nist.gov/SRD/testsuites/juliet/Juliet_Test_Suite_v1.3_for_Java.zip (HTTP Error 403: Forbidden)
+- Dropped real repository: Django (git fetch a6873133604f3281ab3bdf31ff477d9c6ffdebc6 failed)
+- Dropped real repository: requests (git fetch 4e7380186100af3bd8ec2cfbb3ee1853412ab424 failed)
+- Dropped real repository: cryptography (git fetch ff91e47d4e339e3c9cf1c26b9a896d744b41a995 failed)
+- Dropped real repository: bouncycastle (git fetch 787c8052abcfdf7325c942859c25bb32cd835cbb failed)
+- Dropped real repository: OpenSSL apps (git fetch 1d6c8e31f0cf2f9908cf67215264817a0211be17 failed)
+- Dropped real repository: Node crypto users (git fetch 5505d9eef270e515d9a9f24ce3d20c57193f9c6c failed)
+- Dropped real repository: Go x/crypto (git fetch 0000000000000000000000000000000000000000 failed)
+- Dropped real repository: spring-security (git fetch abcdef1234567890 failed)
+- Dropped real repository: Rust ring (git fetch fedcba0987654321 failed)
