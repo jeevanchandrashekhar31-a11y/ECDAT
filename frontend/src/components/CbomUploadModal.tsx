@@ -260,8 +260,8 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
           setScanProgress('Complete! Loading results…');
           onSuccess(scanRes.scan_id);
           onClose();
-        } else if (scanRes && scanRes.success === false && scanRes.error) {
-          setError(scanRes.error);
+        } else if (scanRes && scanRes.success === false && (scanRes as any).error) {
+          setError((scanRes as any).error);
           setScanProgress('');
         } else if (scanRes && !scanRes.scan_id && (scanRes.success || scanRes.message)) {
           setSuccessMessage(scanRes.message || 'Scan completed, but no cryptographic assets were found in this target.');
