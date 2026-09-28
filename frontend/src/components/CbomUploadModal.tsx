@@ -199,6 +199,10 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               });
             } else if (staticSubMode === 'folder') {
               if (!folderFiles || folderFiles.length === 0) throw new Error('Please select a project folder containing source code.');
+              const totalSize = folderFiles.reduce((acc, f) => acc + f.size, 0);
+              if (totalSize > 250 * 1024 * 1024) {
+                throw new Error('Folder size exceeds 250MB. Please compress it into a .ZIP archive and use the "Upload Project (.ZIP)" tab.');
+              }
               scanRes = await api.triggerStaticScan(folderFiles, {
                 scan_label: scanLabel.trim() || undefined,
                 policy_profile: policyProfile,
@@ -208,6 +212,9 @@ export const CbomUploadModal: React.FC<CbomUploadModalProps> = ({ isOpen, onClos
               });
             } else {
               if (!scanUploadFile) throw new Error('Please select a project .ZIP archive or source file to scan.');
+              if (scanUploadFile.size > 250 * 1024 * 1024) {
+                throw new Error('Upload size exceeds 250MB limit. Please use the CLI scanner for massive repositories.');
+              }
               scanRes = await api.triggerStaticScan(scanUploadFile || undefined, {
                 scan_label: scanLabel.trim() || undefined,
                 policy_profile: policyProfile,
