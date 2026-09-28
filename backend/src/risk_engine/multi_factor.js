@@ -25,6 +25,7 @@
  */
 
 const { Severities, MoscaStatus, QuantumRelevance } = require("./types");
+const { normalizeAlgorithm } = require("./normalizer");
 
 // Default configurable weights for each factor
 const DEFAULT_FACTOR_WEIGHTS = {
@@ -84,8 +85,14 @@ function calculateMultiFactorRisk(context = {}, customWeights = {}) {
     }
   }
 
-  const algo = (context.algorithm || "").toUpperCase();
-  const keySize = parseInt(context.keySize || context.key_size, 10);
+  const rawAlgo = (context.algorithm || "").toUpperCase();
+  const rawKeySize = parseInt(context.keySize || context.key_size, 10);
+  const normalized = normalizeAlgorithm(rawAlgo, isNaN(rawKeySize) ? null : rawKeySize);
+  const matchedRule = normalized.matchedRule || {};
+  
+  const algo = normalized.canonicalName.toUpperCase();
+  const keySize = normalized.keySize;
+
   const protocol = (context.protocol || "").toUpperCase();
   const tlsVersion = (context.tlsVersion || context.tls_version || "").toUpperCase();
   const cert = context.certificateProperties || {};
@@ -93,13 +100,15 @@ function calculateMultiFactorRisk(context = {}, customWeights = {}) {
   // 1. ALGORITHM WEAKNESS (0 - 20 pts)
   let algoPts = 0;
   let algoRationale = "Standard, modern cryptographic algorithm.";
-  if (["MD5", "DES", "RC4", "3DES"].some((w) => algo.includes(w))) {
+  const classRisk = (matchedRule.classical_risk_level || "").toLowerCase();
+  
+  if (classRisk === "critical") {
     algoPts = 20;
     algoRationale = `Broken / compromised algorithm (${algo}) with known practical collisions or key recoveries.`;
-  } else if (["SHA1", "SHA-1"].some((w) => algo.includes(w))) {
+  } else if (classRisk === "high") {
     algoPts = 14;
     algoRationale = `Deprecated algorithm (${algo}) susceptible to chosen-prefix collisions.`;
-  } else if (["BLOWFISH", "IDEA", "CAST5"].some((w) => algo.includes(w))) {
+  } else if (classRisk === "medium") {
     algoPts = 8;
     algoRationale = `Legacy 64-bit block cipher (${algo}) vulnerable to birthday/Sweet32 attacks.`;
   }
@@ -175,21 +184,25 @@ function calculateMultiFactorRisk(context = {}, customWeights = {}) {
   }
   recordFactor("certificate_state", certPts, 15, certRationale);
 
+  
+
   // 5. QUANTUM VULNERABILITY (0 - 15 pts)
   let qPts = 0;
   let qRationale = "Cryptographic asset is quantum-resilient or post-quantum native.";
-  const isShor = ["RSA", "ECC", "ECDSA", "ECDH", "DH", "DSA", "ED25519", "X25519"].some((w) => algo.includes(w));
-  const isGrover = algo.includes("AES") && (keySize === 128 || (!keySize && algo.includes("128")));
-
+  
+  const qRel = (matchedRule.quantum_relevance || "unknown").toLowerCase();
+  const isShor = qRel === "shor_vulnerable";
+  const isGrover = qRel === "grover_sensitive";
+  
   if (isShor) {
     qPts = 15;
     qRationale = `Shor algorithm vulnerable: ${algo} asymmetric primitives completely broken by a Cryptanalytically Relevant Quantum Computer (CRQC).`;
   } else if (isGrover) {
     qPts = 6;
-    qRationale = "Grover algorithm sensitive: AES-128 security halved to 64-bit quantum equivalent.";
+    qRationale = "Grover algorithm sensitive: symmetric/hash security halved to quantum equivalent.";
   }
   recordFactor("quantum_vulnerability", qPts, 15, qRationale, {
-    quantum_relevance: isShor ? QuantumRelevance.SHOR_VULNERABLE : isGrover ? QuantumRelevance.GROVER_SENSITIVE : QuantumRelevance.QUANTUM_SAFE,
+    quantum_relevance: matchedRule.quantum_relevance || QuantumRelevance.UNKNOWN,
   });
 
   // 6. DATA LIFETIME (0 - 10 pts)

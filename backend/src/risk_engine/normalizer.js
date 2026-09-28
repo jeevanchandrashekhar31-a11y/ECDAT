@@ -13,9 +13,12 @@ function normalizeAlgorithm(rawName, explicitKeySize = null) {
     };
   }
 
+  
   const rules = getRules();
   const algos = rules.algorithm_risk?.algorithms || [];
+  const pqcAlgos = rules.pqc_algorithm_catalog?.algorithms || [];
   const clean = rawName.trim().toLowerCase();
+
 
   // 1. Try to extract key size if embedded, e.g. "rsa-2048", "aes-256", "sha-256"
   let parsedKeySize = explicitKeySize;
@@ -130,7 +133,9 @@ function normalizeAlgorithm(rawName, explicitKeySize = null) {
       keySize: null,
     };
   }
-  if (clean.includes("+") || clean.includes("hybrid")) {
+  
+  // Hybrid Check First
+  if (clean.includes("+") || clean.includes("hybrid") || clean.match(/(x25519|secp256r1).*?(ml-?kem|kyber)/i)) {
     return {
       canonicalName: "Hybrid Post-Quantum",
       matchedRule: {
@@ -142,6 +147,48 @@ function normalizeAlgorithm(rawName, explicitKeySize = null) {
       keySize: parsedKeySize,
     };
   }
+
+  // PQC Catalog Exact/Alias matching
+  for (const algo of pqcAlgos) {
+    if (algo.id.toLowerCase() === clean || algo.standard_name.toLowerCase() === clean) {
+      return {
+        canonicalName: algo.standard_name,
+        matchedRule: { ...algo, quantum_relevance: "quantum_safe" },
+        keySize: parsedKeySize,
+      };
+    }
+    if (algo.aliases && algo.aliases.some((a) => a.toLowerCase() === clean || clean.includes(a.toLowerCase()))) {
+      return {
+        canonicalName: algo.standard_name,
+        matchedRule: { ...algo, quantum_relevance: "quantum_safe" },
+        keySize: parsedKeySize,
+      };
+    }
+  }
+
+  // Fallbacks for generic PQC (if standard name wasn't strictly provided, e.g., "kyber" without size)
+  if (clean.includes("kyber") || clean.includes("ml-kem") || clean.includes("mlkem")) {
+    return {
+      canonicalName: "ML-KEM (Unspecified Size)",
+      matchedRule: { id: "ml-kem", canonical_name: "ML-KEM", quantum_relevance: "quantum_safe", category: "post_quantum" },
+      keySize: parsedKeySize,
+    };
+  }
+  if (clean.includes("dilithium") || clean.includes("ml-dsa") || clean.includes("mldsa")) {
+    return {
+      canonicalName: "ML-DSA (Unspecified Size)",
+      matchedRule: { id: "ml-dsa", canonical_name: "ML-DSA", quantum_relevance: "quantum_safe", category: "post_quantum" },
+      keySize: parsedKeySize,
+    };
+  }
+  if (clean.includes("sphincs") || clean.includes("slh-dsa") || clean.includes("slhdsa")) {
+    return {
+      canonicalName: "SLH-DSA (Unspecified Size)",
+      matchedRule: { id: "slh-dsa", canonical_name: "SLH-DSA", quantum_relevance: "quantum_safe", category: "post_quantum" },
+      keySize: parsedKeySize,
+    };
+  }
+
   if (clean.includes("kyber") || clean.includes("ml-kem")) {
     return {
       canonicalName: "ML-KEM",
@@ -289,9 +336,10 @@ function normalizeAlgorithm(rawName, explicitKeySize = null) {
     }
   }
 
+  
   return {
-    canonicalName: rawName,
-    matchedRule: null,
+    canonicalName: "unclassified",
+    matchedRule: { id: "unclassified", canonical_name: "unclassified", category: "unclassified", quantum_relevance: "unknown" },
     keySize: parsedKeySize,
   };
 }
