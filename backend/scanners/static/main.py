@@ -136,16 +136,17 @@ def main():
                 confidence=match["confidence"],
                 finding_type=match["finding_type"],
                 severity=match["severity"],
+                api_symbol=match.get("api_symbol"),
             )
             regex_findings.append(finding)
 
         final_file_findings = {}
         for f in ast_findings:
-            key_algo = f"{f.file_path}:{f.line_number}:{f.algorithm}:{f.rule_id}"
+            key_algo = f"{f.file_path}:{f.line_number}:{f.algorithm}:{getattr(f, 'api_symbol', getattr(f, 'rule_id', None))}"
             final_file_findings[key_algo] = f
 
         for f in regex_findings:
-            key_algo = f"{f.file_path}:{f.line_number}:{f.algorithm}:{f.rule_id}"
+            key_algo = f"{f.file_path}:{f.line_number}:{f.algorithm}:{getattr(f, 'api_symbol', getattr(f, 'rule_id', None))}"
             if key_algo not in final_file_findings:
                 final_file_findings[key_algo] = f
 
@@ -156,7 +157,7 @@ def main():
             )
             secret_findings = SecretSafeDetector.create_static_findings(secret_candidates)
             for sf in secret_findings:
-                key_algo = f"{sf.file_path}:{sf.line_number}:{sf.algorithm}:{sf.rule_id}"
+                key_algo = f"{sf.file_path}:{sf.line_number}:{sf.algorithm}:{getattr(sf, 'api_symbol', getattr(sf, 'rule_id', None))}"
                 if key_algo not in final_file_findings:
                     final_file_findings[key_algo] = sf
         except Exception:
@@ -193,6 +194,10 @@ def main():
                 scan_errors.append(ParserFailureError(f"Worker crashed on {fpath}: {e}", {"file": str(fpath)}, fatal=False))
 
     print(f"Found {len(findings)} potential cryptographic usage sites.")
+    
+    # Count ast+regex merged findings
+    ast_regex_count = sum(1 for f in findings if f.analysis_source == "ast+regex")
+    print(f"Merged ast+regex findings: {ast_regex_count}")
 
     if args.llm_verify:
         from scanners.static.llm_verifier import LLMVerifier
@@ -258,6 +263,8 @@ def main():
                 reason=finding.reason,
                 fingerprint=getattr(finding, "fingerprint", None),
                 secret_type=getattr(finding, "secret_type", None),
+                rule_id=getattr(finding, "rule_id", None),
+                api_symbol=getattr(finding, "api_symbol", None),
             )
             ccf_findings.append(ccf)
             

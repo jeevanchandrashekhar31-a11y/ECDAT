@@ -226,7 +226,7 @@ class CCppCryptoDetector:
             return
 
         # 1.2 Direct Hashes
-        if func_text in ("MD5_Init", "MD5", "MD4_Init", "MD2_Init"):
+        if func_text in ("MD5_Init", "MD5_Update", "MD5_Final", "MD5", "MD4_Init", "MD2_Init"):
             self._add_finding(
                 lineno,
                 "C_WEAK_HASH_MD5",
@@ -235,9 +235,10 @@ class CCppCryptoDetector:
                 "critical",
                 "OpenSSL",
                 f"Direct legacy hash {func_text}() used",
+                api_symbol=func_text,
             )
             return
-        if func_text in ("SHA1_Init", "SHA1"):
+        if func_text in ("SHA1_Init", "SHA1_Update", "SHA1_Final", "SHA1"):
             self._add_finding(
                 lineno,
                 "C_WEAK_HASH_SHA1",
@@ -859,6 +860,7 @@ class CCppCryptoDetector:
         severity: str,
         library: str,
         reason: str,
+        api_symbol: Optional[str] = None,
     ):
         evidence_line = ""
         if 1 <= line_number <= len(self.lines):
@@ -882,5 +884,6 @@ class CCppCryptoDetector:
             analysis_source="ast_semantic",
             needs_human_review=(severity in ("critical", "high")),
             reason=f"[{library}] {reason}",
+            api_symbol=api_symbol,
         )
         self.findings.append(finding)

@@ -127,6 +127,7 @@ def scan_single_file(
                 confidence=m.get("confidence", "medium"),
                 finding_type=m.get("finding_type", "crypto_api_call"),
                 severity=m.get("severity", "medium"),
+                api_symbol=m.get("api_symbol"),
             )
             regex_findings.append(f_item)
     except Exception as re_err:
@@ -140,9 +141,37 @@ def scan_single_file(
 
     # 4. Deduplicate Findings
     dedup: Dict[str, Dict[str, Any]] = {}
+    
+    def _merge_finding(f_obj, source: str):
+        # We assume rule_id holds the api_symbol for AST (e.g. MD5_Init). For regex, we combine them.
+        key = f"{f_obj.file_path}:{f_obj.line_number}:{f_obj.algorithm}:{f_obj.rule_id if source == 'ast' else 'regex_fallback'}"
+        if key not in dedup:
+            dedup[key] = {
+                "file_path": f_obj.file_path,
+                "line_number": f_obj.line_number,
+                "rule_id": f_obj.rule_id,
+                "algorithm": f_obj.algorithm,
+                "evidence": f_obj.evidence,
+                "confidence": f_obj.confidence,
+                "finding_type": f_obj.finding_type,
+                "severity": f_obj.severity,
+                "analysis_source": source,
+            }
+        else:
+            # Upgrade confidence if higher
+            conf_levels = {"low": 1, "medium": 2, "high": 3}
+            existing = dedup[key]
+            if conf_levels.get(f_obj.confidence, 0) > conf_levels.get(existing["confidence"], 0):
+                existing["confidence"] = f_obj.confidence
+            if source not in existing["analysis_source"]:
+                existing["analysis_source"] = f"{existing['analysis_source']}+{source}"
+                
+    # We group AST and Regex overlapping calls. Since regex doesn't know api_symbol, 
+    # we first add AST findings, then when adding Regex findings, if they match an existing AST finding's line/algorithm, we merge them!
     for af in ast_findings:
-        # Use (file, line, primitive, api_symbol) equivalent
-        key = f"{af.file_path}:{af.line_number}:{af.algorithm}:{af.rule_id}"
+        # Use (file, line, primitive, api_symbol)
+        api_sym = getattr(af, "api_symbol", None) or getattr(af, "rule_id", "unknown")
+        key = f"{af.file_path}:{af.line_number}:{af.algorithm}:{api_sym}"
         dedup[key] = {
             "file_path": af.file_path,
             "line_number": af.line_number,
@@ -153,22 +182,38 @@ def scan_single_file(
             "finding_type": af.finding_type,
             "severity": af.severity,
             "analysis_source": "ast",
+            "api_symbol": getattr(af, "api_symbol", None),
         }
 
     for rf in regex_findings:
-        key = f"{rf.file_path}:{rf.line_number}:{rf.algorithm}:{rf.rule_id}"
-        if key not in dedup:
-            dedup[key] = {
-                "file_path": rf.file_path,
-                "line_number": rf.line_number,
-                "rule_id": rf.rule_id,
-                "algorithm": rf.algorithm,
-                "evidence": rf.evidence,
-                "confidence": rf.confidence,
-                "finding_type": rf.finding_type,
-                "severity": rf.severity,
-                "analysis_source": "regex",
-            }
+        rf_sym = getattr(rf, "api_symbol", None)
+        # Find AST findings on same file, line, and algorithm
+        existing_keys = [k for k in dedup.keys() if k.startswith(f"{rf.file_path}:{rf.line_number}:{rf.algorithm}:")]
+        
+        merged = False
+        for ek in existing_keys:
+            ek_sym = dedup[ek].get("api_symbol")
+            if not ek_sym or (rf_sym and ek_sym == rf_sym) or not rf_sym:
+                if "regex" not in dedup[ek]["analysis_source"]:
+                    dedup[ek]["analysis_source"] += "+regex"
+                merged = True
+                break
+                
+        if not merged:
+            key = f"{rf.file_path}:{rf.line_number}:{rf.algorithm}:{rf_sym or rf.rule_id}"
+            if key not in dedup:
+                dedup[key] = {
+                    "file_path": rf.file_path,
+                    "line_number": rf.line_number,
+                    "rule_id": rf.rule_id,
+                    "algorithm": rf.algorithm,
+                    "evidence": rf.evidence,
+                    "confidence": rf.confidence,
+                    "finding_type": rf.finding_type,
+                    "severity": rf.severity,
+                    "analysis_source": "regex",
+                    "api_symbol": rf_sym,
+                }
 
     # 5. Secret-Safe Key Candidate Detection
     try:
