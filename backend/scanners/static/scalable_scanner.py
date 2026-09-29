@@ -141,6 +141,7 @@ def scan_single_file(
 
     # 4. Deduplicate Findings
     dedup: Dict[str, Dict[str, Any]] = {}
+    line_algo_index: Dict[str, List[str]] = {}
     
     def _merge_finding(f_obj, source: str):
         # We assume rule_id holds the api_symbol for AST (e.g. MD5_Init). For regex, we combine them.
@@ -184,20 +185,38 @@ def scan_single_file(
             "analysis_source": "ast",
             "api_symbol": getattr(af, "api_symbol", None),
         }
+        
+        prefix = f"{af.file_path}:{af.line_number}:{af.algorithm}"
+        if prefix not in line_algo_index:
+            line_algo_index[prefix] = []
+        line_algo_index[prefix].append(key)
 
     for rf in regex_findings:
         rf_sym = getattr(rf, "api_symbol", None)
-        # Find AST findings on same file, line, and algorithm
-        existing_keys = [k for k in dedup.keys() if k.startswith(f"{rf.file_path}:{rf.line_number}:{rf.algorithm}:")]
+        prefix = f"{rf.file_path}:{rf.line_number}:{rf.algorithm}"
+        existing_keys = line_algo_index.get(prefix, [])
         
         merged = False
-        for ek in existing_keys:
-            ek_sym = dedup[ek].get("api_symbol")
-            if not ek_sym or (rf_sym and ek_sym == rf_sym) or not rf_sym:
+        if rf_sym:
+            exact_key = f"{prefix}:{rf_sym}"
+            if exact_key in dedup:
+                if "regex" not in dedup[exact_key]["analysis_source"]:
+                    dedup[exact_key]["analysis_source"] += "+regex"
+                merged = True
+                
+            if not merged:
+                for ek in existing_keys:
+                    if not dedup[ek].get("api_symbol"):
+                        if "regex" not in dedup[ek]["analysis_source"]:
+                            dedup[ek]["analysis_source"] += "+regex"
+                        merged = True
+                        break
+        else:
+            if existing_keys:
+                ek = existing_keys[0]
                 if "regex" not in dedup[ek]["analysis_source"]:
                     dedup[ek]["analysis_source"] += "+regex"
                 merged = True
-                break
                 
         if not merged:
             key = f"{rf.file_path}:{rf.line_number}:{rf.algorithm}:{rf_sym or rf.rule_id}"
@@ -214,6 +233,9 @@ def scan_single_file(
                     "analysis_source": "regex",
                     "api_symbol": rf_sym,
                 }
+                if prefix not in line_algo_index:
+                    line_algo_index[prefix] = []
+                line_algo_index[prefix].append(key)
 
     # 5. Secret-Safe Key Candidate Detection
     try:
