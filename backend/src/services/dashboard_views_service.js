@@ -286,13 +286,22 @@ async function getEnterpriseDashboardViews(options = {}) {
 
       findings = fRows.map((f) => {
         const ra = raMap.get(f.id) || {};
+        
+        let backfilledKeySize = f.key_size;
+        if (!backfilledKeySize && f.algorithm) {
+          const { keySize } = normalizeAlgorithm(f.algorithm);
+          if (keySize) {
+            backfilledKeySize = keySize;
+          }
+        }
+        
         return {
           id: f.id,
           scan_id: f.scan_id,
           asset_id: f.asset_id,
           component_id: f.component_id,
           algorithm: f.algorithm,
-          key_size: f.key_size,
+          key_size: backfilledKeySize,
           category: f.category,
           finding_type: f.finding_type,
           location: f.location,
@@ -326,14 +335,20 @@ async function getEnterpriseDashboardViews(options = {}) {
   }
 
   if (findings.length === 0 && inMemoryScan?.classified_findings?.length > 0) {
-    findings = inMemoryScan.classified_findings.map((f, i) => ({
-      id: f.id || `find_${i + 1}`,
-      scan_id: scanId,
-      asset_id: f.asset_id || `asset_${(i % 5) + 1}`,
-      component_id: f.component_id || `comp_${i + 1}`,
-      algorithm: f.algorithm || "UNKNOWN",
-      key_size: f.key_size || null,
-      category: f.category || "algorithm",
+    findings = inMemoryScan.classified_findings.map((f, i) => {
+      let backfilledKeySize = f.key_size || null;
+      if (!backfilledKeySize && f.algorithm) {
+        const { keySize } = normalizeAlgorithm(f.algorithm);
+        if (keySize) backfilledKeySize = keySize;
+      }
+      return {
+        id: f.id || `find_${i + 1}`,
+        scan_id: scanId,
+        asset_id: f.asset_id || `asset_${(i % 5) + 1}`,
+        component_id: f.component_id || `comp_${i + 1}`,
+        algorithm: f.algorithm || "UNKNOWN",
+        key_size: backfilledKeySize,
+        category: f.category || "algorithm",
       finding_type: f.finding_type || "static",
       location: f.location || "unspecified",
       line_number: f.line_number ?? null,
@@ -345,8 +360,9 @@ async function getEnterpriseDashboardViews(options = {}) {
       mosca_margin_years: f.mosca_margin_years ?? 0,
       metadata: f.metadata || f.properties || {},
       certificate: f.certificate || {},
-    }));
-  }
+    };
+  });
+}
 
   // If clean state with zero scans / zero findings, return pure authentic zero payload
   if (findings.length === 0) {

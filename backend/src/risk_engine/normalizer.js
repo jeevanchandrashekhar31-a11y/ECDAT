@@ -22,7 +22,7 @@ function normalizeAlgorithm(rawName, explicitKeySize = null) {
 
   // 1. Try to extract key size if embedded, e.g. "rsa-2048", "aes-256", "sha-256"
   let parsedKeySize = explicitKeySize;
-  const keySizeMatch = clean.match(/[-_](\d{3,4})\b/);
+  const keySizeMatch = clean.match(/[-_](\d{3,4})(?:[-_]|$)/);
   if (!parsedKeySize && keySizeMatch) {
     const size = parseInt(keySizeMatch[1], 10);
     // Don't mistake sha-256 / sha-384 / sha-512 for a key size
