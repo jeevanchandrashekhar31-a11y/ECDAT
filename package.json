@@ -21,5 +21,8 @@
     "security-gate": "python scripts/final_quality_gate.py",
     "evidence:verify": "python scripts/generate_security_evidence.py --verify",
     "clear-data": "npm --prefix backend run clear-data"
+  },
+  "dependencies": {
+    "playwright": "^1.63.0"
   }
 }

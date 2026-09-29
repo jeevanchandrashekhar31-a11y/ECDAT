@@ -89,6 +89,7 @@ def scan_file_ast(path: Path, root: Path) -> List[CodeCryptoFinding]:
                     finding_type="algorithm",
                     confidence="high",
                     library="stdlib",
+                    rule_id=capture_name,
                 )
             )
 

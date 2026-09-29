@@ -245,6 +245,7 @@ def apply_regex_rules(content: str) -> list:
                         "confidence": rule["confidence"],
                         "finding_type": rule["finding_type"],
                         "severity": rule["severity"],
+                        "api_symbol": f"{match.group(0)}_{match.start()}",
                     }
                 )
                 if len(matches) >= MAX_REGEX_FINDINGS_PER_FILE:

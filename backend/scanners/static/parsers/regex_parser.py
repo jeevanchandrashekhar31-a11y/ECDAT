@@ -41,6 +41,7 @@ def scan_file_regex(path: Path, root: Path) -> List[CodeCryptoFinding]:
                 algorithm=key_kind,
                 finding_type="hardcoded_key",
                 confidence="high",
+                rule_id="ECDAT-STATIC-KEY",
             )
         )
 
@@ -56,6 +57,7 @@ def scan_file_regex(path: Path, root: Path) -> List[CodeCryptoFinding]:
                 algorithm="MD5",
                 finding_type="algorithm",
                 confidence="medium",  # Regex is less confident than AST
+                rule_id="ECDAT-STATIC",
             )
         )
 
@@ -69,6 +71,7 @@ def scan_file_regex(path: Path, root: Path) -> List[CodeCryptoFinding]:
                 algorithm="SHA1",
                 finding_type="algorithm",
                 confidence="medium",
+                rule_id="ECDAT-STATIC",
             )
         )
 
@@ -92,6 +95,7 @@ def scan_file_regex(path: Path, root: Path) -> List[CodeCryptoFinding]:
                 key_size=key_size,
                 finding_type="algorithm",
                 confidence="medium",
+                rule_id="ECDAT-STATIC",
             )
         )
 
@@ -105,6 +109,7 @@ def scan_file_regex(path: Path, root: Path) -> List[CodeCryptoFinding]:
                 algorithm="ECC/DH",
                 finding_type="algorithm",
                 confidence="medium",
+                rule_id="ECDAT-STATIC",
             )
         )
 

@@ -295,7 +295,7 @@ class SecretSafeDetector:
         if not any(k in content for k in suspicious_keywords):
             return content, candidates
 
-        lines = content.splitlines()
+        lines = None
         claimed_spans: List[Tuple[int, int]] = []
 
         def is_overlapping(start: int, end: int) -> bool:
@@ -305,6 +305,9 @@ class SecretSafeDetector:
             return False
 
         def get_line_info(start_idx: int) -> Tuple[int, str]:
+            nonlocal lines
+            if lines is None:
+                lines = content.splitlines()
             line_no = content.count("\n", 0, start_idx) + 1
             raw_line = lines[line_no - 1].strip() if 1 <= line_no <= len(lines) else ""
             return line_no, raw_line

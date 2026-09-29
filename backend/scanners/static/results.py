@@ -11,6 +11,7 @@ class StaticFinding(BaseModel):
     confidence: str
     finding_type: str
     severity: Optional[str] = None
+    api_symbol: Optional[str] = None
     analysis_source: str = "regex"
     needs_human_review: bool = False
     reason: Optional[str] = None

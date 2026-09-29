@@ -85,10 +85,13 @@ class CodeCryptoFinding(BaseModel):
     data_sensitivity: str = "internal"
     business_criticality: str = "medium"
     detection_method: str = "deterministic"
+    analysis_source: Optional[str] = None
     needs_human_review: bool = False
     reason: Optional[str] = None
     fingerprint: Optional[str] = None
     secret_type: Optional[str] = None
+    rule_id: Optional[str] = None
+    api_symbol: Optional[str] = None
 
 
 class BinaryContainerFinding(BaseModel):

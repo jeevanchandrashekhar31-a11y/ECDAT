@@ -350,7 +350,8 @@ def code_finding_to_cbom(finding: CodeCryptoFinding) -> Bom:
         crypto_props = CryptoProperties(asset_type=CryptoAssetType.ALGORITHM, algorithm_properties=algo_props)
         comp_name = f"{algo_name}-{key_size_str}" if key_size_str else algo_name
 
-    evidence = ComponentEvidence(occurrences=[Occurrence(location=finding.file_path, line=finding.line)])
+    # Pass api_symbol as additional_context to allow dedup to distinguish api_symbols on the same line
+    evidence = ComponentEvidence(occurrences=[Occurrence(location=finding.file_path, line=finding.line, additional_context=finding.api_symbol or finding.rule_id)])
 
     comp = Component(
         type=ComponentType.CRYPTOGRAPHIC_ASSET,
@@ -368,6 +369,8 @@ def code_finding_to_cbom(finding: CodeCryptoFinding) -> Bom:
         comp.properties.add(Property(name="ecdat:needs_human_review", value=str(finding.needs_human_review).lower()))
     if getattr(finding, "reason", None):
         comp.properties.add(Property(name="ecdat:reason", value=finding.reason))
+    if getattr(finding, "analysis_source", None):
+        comp.properties.add(Property(name="ecdat:analysis_source", value=finding.analysis_source))
     if getattr(finding, "fingerprint", None):
         comp.properties.add(Property(name="ecdat:fingerprint", value=finding.fingerprint))
     comp.properties.add(Property(name="ecdat:scanner", value="static_scanner"))
@@ -429,7 +432,7 @@ def code_findings_to_cbom(findings: List[CodeCryptoFinding]) -> Bom:
             comp_name = f"{algo_name}-{key_size_str}" if key_size_str else algo_name
 
         if finding.bom_ref not in algo_comps:
-            evidence = ComponentEvidence(occurrences=[Occurrence(location=finding.file_path, line=finding.line)])
+            evidence = ComponentEvidence(occurrences=[Occurrence(location=finding.file_path, line=finding.line, additional_context=getattr(finding, 'api_symbol', None) or finding.rule_id)])
             comp = Component(
                 type=ComponentType.CRYPTOGRAPHIC_ASSET,
                 name=comp_name,
@@ -460,15 +463,16 @@ def code_findings_to_cbom(findings: List[CodeCryptoFinding]) -> Bom:
             comp.properties.add(Property(name="ecdat:evidence_nature", value="observed"))
             
             algo_comps[finding.bom_ref] = comp
-            algo_locs[finding.bom_ref] = {(finding.file_path, finding.line)}
+            algo_locs[finding.bom_ref] = {(finding.file_path, finding.line, getattr(finding, 'api_symbol', None) or finding.rule_id)}
             bom.components.add(comp)
             bom.register_dependency(target_comp, [comp])
         else:
             comp = algo_comps[finding.bom_ref]
-            loc_key = (finding.file_path, finding.line)
+            ctx = getattr(finding, 'api_symbol', None) or finding.rule_id
+            loc_key = (finding.file_path, finding.line, ctx)
             locs = algo_locs[finding.bom_ref]
             if loc_key not in locs:
-                new_occ = Occurrence(location=finding.file_path, line=finding.line)
+                new_occ = Occurrence(location=finding.file_path, line=finding.line, additional_context=ctx)
                 if hasattr(comp.evidence.occurrences, "add"):
                     comp.evidence.occurrences.add(new_occ)
                 else:
@@ -870,8 +874,6 @@ def runtime_event_to_cbom(event: Any) -> Bom:
 def merge_cboms(cboms: List[Bom]) -> Bom:
     merged = Bom()
     comp_map = {}
-    comp_locs_map = {}  # Cache of existing locations to avoid O(N^2) set recreation
-
     for bom in cboms:
         for comp in bom.components:
             ref = comp.bom_ref.value
@@ -879,35 +881,32 @@ def merge_cboms(cboms: List[Bom]) -> Bom:
                 comp_map[ref] = comp
                 merged.components.add(comp)
                 
-                # Initialize the location cache for this component
-                if comp.evidence and comp.evidence.occurrences:
-                    comp_locs_map[ref] = {
-                        (o.location, getattr(o, "line", None)) 
-                        for o in comp.evidence.occurrences
-                    }
-                else:
-                    comp_locs_map[ref] = set()
+                pass
             else:
                 # Merge occurrences
                 existing = comp_map[ref]
                 if comp.evidence and comp.evidence.occurrences:
                     if not existing.evidence:
                         existing.evidence = ComponentEvidence(occurrences=[])
-                        comp_locs_map[ref] = set()
                     if not existing.evidence.occurrences:
                         existing.evidence.occurrences = []
-                        comp_locs_map[ref] = set()
-                    
-                    # Add new occurrences, using the O(1) external cache
-                    existing_locs = comp_locs_map[ref]
+                        
+                    # Restore O(1) deduplication keyed on (location, line, additional_context aka rule_id)
+                    # This ensures we don't drop DISTINCT api calls sharing a line, but drop true duplicates.
+                    if not hasattr(existing, "_locs_cache"):
+                        existing._locs_cache = set()
+                        for occ in existing.evidence.occurrences:
+                            key = (occ.location, getattr(occ, "line", None), getattr(occ, "additional_context", None))
+                            existing._locs_cache.add(key)
+                            
                     for new_occ in comp.evidence.occurrences:
-                        loc_key = (new_occ.location, getattr(new_occ, "line", None))
-                        if loc_key not in existing_locs:
+                        loc_key = (new_occ.location, getattr(new_occ, "line", None), getattr(new_occ, "additional_context", None))
+                        if loc_key not in existing._locs_cache:
+                            existing._locs_cache.add(loc_key)
                             if hasattr(existing.evidence.occurrences, "add"):
                                 existing.evidence.occurrences.add(new_occ)
                             else:
                                 existing.evidence.occurrences.append(new_occ)
-                            existing_locs.add(loc_key)
 
         for dep in bom.dependencies:
             # Note: dependency merging logic assumes dependencies with identical ref are inherently identical sets.
