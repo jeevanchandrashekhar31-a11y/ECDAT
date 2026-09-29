@@ -488,7 +488,16 @@ async function getAllScans(tenantContext = null) {
         },
         overall_cicd_pass: s.cicd_pass,
       },
-      coverage_stats: s.coverage_stats ? (typeof s.coverage_stats === "string" ? JSON.parse(s.coverage_stats) : s.coverage_stats) : null,
+      coverage_stats: (() => {
+        if (!s.coverage_stats) return null;
+        if (typeof s.coverage_stats !== "string") return s.coverage_stats;
+        try {
+          return JSON.parse(s.coverage_stats);
+        } catch (e) {
+          console.warn(`Failed to parse coverage_stats in getAllScans for scan ${s.id}:`, e.message);
+          return null;
+        }
+      })(),
     }));
   }
 
@@ -545,9 +554,18 @@ async function getScanById(scanId, tenantContext = null) {
     if (!scanRow) return null;
 
     const cbomRow = await db("cboms").where({ scan_id: scanId }).first();
-    const annotatedBom = cbomRow
-      ? (typeof cbomRow.annotated_json === "string" ? JSON.parse(cbomRow.annotated_json) : cbomRow.annotated_json)
-      : null;
+    let annotatedBom = null;
+    if (cbomRow && cbomRow.annotated_json) {
+      if (typeof cbomRow.annotated_json === "string") {
+        try {
+          annotatedBom = JSON.parse(cbomRow.annotated_json);
+        } catch (e) {
+          console.warn(`Failed to parse annotated_json for scan ${scanId}:`, e.message);
+        }
+      } else {
+        annotatedBom = cbomRow.annotated_json;
+      }
+    }
 
     return {
       id: scanRow.id,
@@ -575,7 +593,16 @@ async function getScanById(scanId, tenantContext = null) {
         },
         overall_cicd_pass: scanRow.cicd_pass,
       },
-      coverage_stats: scanRow.coverage_stats ? (typeof scanRow.coverage_stats === "string" ? JSON.parse(scanRow.coverage_stats) : scanRow.coverage_stats) : null,
+      coverage_stats: (() => {
+        if (!scanRow.coverage_stats) return null;
+        if (typeof scanRow.coverage_stats !== "string") return scanRow.coverage_stats;
+        try {
+          return JSON.parse(scanRow.coverage_stats);
+        } catch (e) {
+          console.warn(`Failed to parse coverage_stats for scan ${scanId}:`, e.message);
+          return null;
+        }
+      })(),
       annotated_bom: annotatedBom,
     };
   }
