@@ -1,24 +1,42 @@
 {
-  "catalog_version": "1.0",
+  "catalog_version": "1.0.0",
   "last_updated": "2026-09-29T00:00:00Z",
-  "algorithms": {
-    "MD5": { "role": "hash", "hybrid_capable": false },
-    "SHA1": { "role": "hash", "hybrid_capable": false },
-    "DES": { "role": "symmetric", "hybrid_capable": false },
-    "3DES": { "role": "symmetric", "hybrid_capable": false },
-    "RSA": {
+  "algorithms": [
+    {
+      "name": "MD5",
+      "role": "hash",
+      "hybrid_capable": false
+    },
+    {
+      "name": "SHA1",
+      "role": "hash",
+      "hybrid_capable": false
+    },
+    {
+      "name": "DES",
+      "role": "symmetric",
+      "hybrid_capable": false
+    },
+    {
+      "name": "3DES",
+      "role": "symmetric",
+      "hybrid_capable": false
+    },
+    {
+      "name": "RSA",
       "role": "signature",
       "hybrid_capable": true,
       "pqc_equivalent": "ML-DSA-65",
       "hybrid_equivalent": "RSA3072-ML-DSA-65",
       "size_delta_bytes": 1184
     },
-    "ECDH": {
+    {
+      "name": "ECDH",
       "role": "kem",
       "hybrid_capable": true,
       "pqc_equivalent": "ML-KEM-768",
       "hybrid_equivalent": "X25519-ML-KEM-768",
       "size_delta_bytes": 1056
     }
-  }
+  ]
 }

@@ -108,7 +108,8 @@ def get_hybrid_logic(algorithm: str, public_api_surface: bool, consumer_count: O
         with open(cat_path, "r") as f:
             catalog = json.load(f)
             
-    algo_info = catalog.get("algorithms", {}).get(algorithm.upper(), {})
+    algorithms_list = catalog.get("algorithms", [])
+    algo_info = next((a for a in algorithms_list if a.get("name", "").upper() == algorithm.upper()), {})
     role = algo_info.get("role", "unknown")
     if role not in ["kem", "signature"]:
         return False, f"hybrid not applicable: {algorithm} is a {role}, not a key-establishment primitive"
