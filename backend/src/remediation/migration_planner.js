@@ -23,7 +23,7 @@ const {
   RemediationEffort,
   AssetType,
 } = require("../risk_engine/types");
-const { lookupPqcAlgorithm, listAlgorithmsByUsage } = require("../pqc_knowledge");
+const { lookupPqcAlgorithm, listAlgorithmsByUsage, listAlgorithmsByCategory } = require("../pqc_knowledge");
 const { classifyFinding } = require("../risk_engine/classifier");
 
 const MigrationLifecyclePhases = Object.freeze({
@@ -98,104 +98,71 @@ function identifyReplacementCandidates(asset) {
   const algo = (asset.algorithm || asset.name || "Unknown").toUpperCase();
   const assetType = asset.asset_type || asset.assetType || "file";
   const candidates = [];
+  
+  const currentInfo = lookupPqcAlgorithm(algo);
+  if (!currentInfo) {
+    return candidates;
+  }
 
-  if (algo.includes("X25519") || algo.includes("ECDH") || algo.includes("DIFFIE-HELLMAN") || algo.includes("DH") || algo.startsWith("TLS")) {
-    // Key exchange / TLS
-    candidates.push({
-      role: "PRIMARY_PQC_HYBRID",
-      algorithm: "X25519MLKEM768",
-      standard: "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
-      iana_group: "0x11ec (4588)",
-      security_level: 3,
-      rationale: "Standardized TLS 1.3 hybrid key exchange combining X25519 with ML-KEM-768. Protects against HNDL while preserving classical security.",
-      trade_offs: "ClientHello size increases by ~1.2 KB; supported in OpenSSL 3.4+, Chrome, Cloudflare.",
-    });
+  // Look for hybrid combinations that include the current algorithm as the classical component
+  const hybridOptions = listAlgorithmsByCategory("hybrid").filter(a => 
+    a.hybrid_components && 
+    a.hybrid_components.classical_component && 
+    a.hybrid_components.classical_component.toUpperCase() === currentInfo.standard_name.toUpperCase()
+  );
 
-    candidates.push({
-      role: "FIPS_REGULATED_HYBRID",
-      algorithm: "SecP256r1MLKEM768",
-      standard: "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
-      iana_group: "0x11ed (4589)",
-      security_level: 3,
-      rationale: "FIPS-compliant hybrid group combining NIST P-256 with ML-KEM-768 for regulated enterprise environments.",
-      trade_offs: "Slightly higher compute than X25519; standard MTU compliance.",
+  if (hybridOptions.length > 0) {
+    hybridOptions.forEach(opt => {
+      candidates.push({
+        role: "PRIMARY_PQC_HYBRID",
+        algorithm: opt.standard_name,
+        standard: opt.standard_reference,
+        security_level: opt.nist_quantum_security_level,
+        rationale: `Dynamic mapping: Transition to ${opt.standard_name} hybrid. ${opt.authority_recommendations?.nist || ''}`,
+        trade_offs: `Requires composite handling. Classical component: ${opt.hybrid_components.classical_component}, PQC component: ${opt.hybrid_components.post_quantum_component}.`
+      });
     });
-
+  } else if (currentInfo.mechanism_type === "key_exchange") {
+    const pqcKems = listAlgorithmsByCategory("post_quantum").filter(a => a.mechanism_type === "key_exchange");
+    if (pqcKems.length > 0) {
+      candidates.push({
+        role: "PRIMARY_PQC",
+        algorithm: pqcKems[0].standard_name,
+        standard: pqcKems[0].standard_reference,
+        security_level: pqcKems[0].nist_quantum_security_level,
+        rationale: pqcKems[0].authority_recommendations?.nist || "NIST recommended KEM.",
+        trade_offs: "May cause MTU fragmentation."
+      });
+    }
+  } else if (currentInfo.mechanism_type === "digital_signature") {
+    const pqcSigs = listAlgorithmsByCategory("post_quantum").filter(a => a.mechanism_type === "digital_signature");
+    if (pqcSigs.length > 0) {
+      candidates.push({
+        role: "PRIMARY_PQC_SIGNATURE",
+        algorithm: pqcSigs[0].standard_name,
+        standard: pqcSigs[0].standard_reference,
+        security_level: pqcSigs[0].nist_quantum_security_level,
+        rationale: pqcSigs[0].authority_recommendations?.nist || "NIST recommended signature.",
+        trade_offs: "Larger signature sizes."
+      });
+    }
+  } else if (currentInfo.mechanism_type === "hash") {
     candidates.push({
-      role: "HIGH_ASSURANCE_CNSA2",
-      algorithm: "SecP384r1MLKEM1024",
-      standard: "NIST FIPS 203 & NSA CNSA 2.0",
-      iana_group: "0x11ef (4591)",
-      security_level: 5,
-      rationale: "Category 5 maximum security hybrid group mandated by NSA CNSA 2.0 for classified data.",
-      trade_offs: "Key share size (1665B) exceeds 1500-byte MTU, requiring TCP segmentation handling.",
+        role: "PRIMARY_HASH",
+        algorithm: "SHA-256",
+        standard: "NIST FIPS 180-4",
+        security_level: 0,
+        rationale: "Standard cryptographically secure classical hash. Collision resistant.",
+        trade_offs: "None; universal compatibility."
     });
-  } else if (algo.includes("RSA") && (assetType === AssetType.CERTIFICATE || assetType === "certificate" || assetType === "signing_key")) {
-    // Digital Signatures / Certificates
+  } else if (currentInfo.mechanism_type === "symmetric_cipher") {
     candidates.push({
-      role: "PRIMARY_PQC_SIGNATURE",
-      algorithm: "ML-DSA-65",
-      standard: "NIST FIPS 204",
-      security_level: 3,
-      rationale: "Primary post-quantum digital signature standard. Fast verification, robust lattice security.",
-      trade_offs: "Signature size is 3309 bytes (vs 256 bytes for RSA-2048). Requires composite X.509 support.",
-    });
-
-    candidates.push({
-      role: "STATELESS_HASH_FALLBACK",
-      algorithm: "SLH-DSA-SHA2-128s",
-      standard: "NIST FIPS 205",
-      security_level: 1,
-      rationale: "Stateless hash-based signature scheme. Conservative fallback if lattice assumptions fail.",
-      trade_offs: "Signatures are 7856 bytes; slower signing speed, compact 32-byte public key.",
-    });
-
-    candidates.push({
-      role: "TRANSITIONAL_CLASSICAL",
-      algorithm: "RSA-3072",
-      standard: "NIST SP 800-56B / FIPS 186-5",
-      security_level: 0,
-      rationale: "Interim classical key size upgrade to satisfy classical compliance through 2030.",
-      trade_offs: "Zero quantum resilience; interim compliance only.",
-    });
-  } else if (assetType === "firmware" || assetType === "bootloader" || algo.includes("FIRMWARE")) {
-    // Stateful Hash Firmware Signatures
-    candidates.push({
-      role: "STATEFUL_HASH_PRIMARY",
-      algorithm: "LMS/HSS",
-      standard: "NIST SP 800-208 & RFC 8554",
-      security_level: 3,
-      rationale: "Mandated under CNSA 2.0 for firmware and software signing. Extremely fast ASIC verification.",
-      trade_offs: "Strict non-volatile monotonic state management required. Key reuse destroys private key.",
-    });
-  } else if (algo.includes("MD5") || algo.includes("SHA1") || algo.includes("SHA-1")) {
-    // Hash replacement
-    candidates.push({
-      role: "PRIMARY_HASH",
-      algorithm: "SHA-256",
-      standard: "NIST FIPS 180-4",
-      security_level: 0,
-      rationale: "Standard cryptographically secure classical hash. Collision resistant.",
-      trade_offs: "None; universal compatibility.",
-    });
-
-    candidates.push({
-      role: "QUANTUM_RESILIENT_HASH",
-      algorithm: "SHA-384 / SHA-512 / SHA3-256",
-      standard: "NIST FIPS 180-4 & FIPS 202",
-      security_level: 3,
-      rationale: "High-security hash providing >= 192 bits of collision resistance against quantum attacks.",
-      trade_offs: "Slightly larger hash digests (48-64 bytes).",
-    });
-  } else if (algo.includes("DES") || algo.includes("3DES") || algo.includes("RC4")) {
-    // Symmetric cipher replacement
-    candidates.push({
-      role: "PRIMARY_SYMMETRIC",
-      algorithm: "AES-256-GCM",
-      standard: "NIST FIPS 197 & SP 800-38D",
-      security_level: 5,
-      rationale: "Full 256-bit symmetric encryption providing 128 bits of post-quantum security under Grover's algorithm.",
-      trade_offs: "Hardware accelerated on modern CPUs (AES-NI).",
+        role: "PRIMARY_SYMMETRIC",
+        algorithm: "AES-256-GCM",
+        standard: "NIST FIPS 197 & SP 800-38D",
+        security_level: 5,
+        rationale: "Full 256-bit symmetric encryption providing 128 bits of post-quantum security under Grover's algorithm.",
+        trade_offs: "Hardware accelerated on modern CPUs (AES-NI)."
     });
   }
 

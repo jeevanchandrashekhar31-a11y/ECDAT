@@ -361,7 +361,11 @@ graph TB
 
 ## ✨ Core Features & Capabilities
 
-### 1. 🔍 Multi-Modal Cryptographic Scanner
+### 1. 🗺️ Evidence-Grounded Dynamic PQC Migration Planner
+
+ECDAT now features a real, evidence-grounded PQC migration roadmap generator. Every output field in the generated roadmap traces directly to real scan data and is dynamically computed using the comprehensive PQC Knowledge Base (`rules/pqc_algorithm_catalog.json`). There are no hand-written templates, no static lookup tables standing in for computation, and no hardcoded recommendations. The system maps current vulnerabilities to their exact NIST-compliant hybrid or standalone post-quantum equivalents.
+
+### 2. 🔍 Multi-Modal Cryptographic Scanner
 
 The scanner is **not a grep**. It operates in layered intelligence:
 

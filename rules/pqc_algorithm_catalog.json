@@ -13,7 +13,11 @@
     {
       "id": "ml_kem_512",
       "standard_name": "ML-KEM-512",
-      "aliases": ["mlkem512", "Kyber512", "FIPS203-ML-KEM-512"],
+      "aliases": [
+        "mlkem512",
+        "Kyber512",
+        "FIPS203-ML-KEM-512"
+      ],
       "category": "post_quantum",
       "mechanism_type": "key_exchange",
       "standard_reference": "NIST FIPS 203",
@@ -58,7 +62,11 @@
     {
       "id": "ml_kem_768",
       "standard_name": "ML-KEM-768",
-      "aliases": ["mlkem768", "Kyber768", "FIPS203-ML-KEM-768"],
+      "aliases": [
+        "mlkem768",
+        "Kyber768",
+        "FIPS203-ML-KEM-768"
+      ],
       "category": "post_quantum",
       "mechanism_type": "key_exchange",
       "standard_reference": "NIST FIPS 203",
@@ -103,7 +111,11 @@
     {
       "id": "ml_kem_1024",
       "standard_name": "ML-KEM-1024",
-      "aliases": ["mlkem1024", "Kyber1024", "FIPS203-ML-KEM-1024"],
+      "aliases": [
+        "mlkem1024",
+        "Kyber1024",
+        "FIPS203-ML-KEM-1024"
+      ],
       "category": "post_quantum",
       "mechanism_type": "key_exchange",
       "standard_reference": "NIST FIPS 203",
@@ -148,7 +160,11 @@
     {
       "id": "ml_dsa_44",
       "standard_name": "ML-DSA-44",
-      "aliases": ["mldsa44", "Dilithium2", "FIPS204-ML-DSA-44"],
+      "aliases": [
+        "mldsa44",
+        "Dilithium2",
+        "FIPS204-ML-DSA-44"
+      ],
       "category": "post_quantum",
       "mechanism_type": "digital_signature",
       "standard_reference": "NIST FIPS 204",
@@ -193,7 +209,11 @@
     {
       "id": "ml_dsa_65",
       "standard_name": "ML-DSA-65",
-      "aliases": ["mldsa65", "Dilithium3", "FIPS204-ML-DSA-65"],
+      "aliases": [
+        "mldsa65",
+        "Dilithium3",
+        "FIPS204-ML-DSA-65"
+      ],
       "category": "post_quantum",
       "mechanism_type": "digital_signature",
       "standard_reference": "NIST FIPS 204",
@@ -238,7 +258,11 @@
     {
       "id": "ml_dsa_87",
       "standard_name": "ML-DSA-87",
-      "aliases": ["mldsa87", "Dilithium5", "FIPS204-ML-DSA-87"],
+      "aliases": [
+        "mldsa87",
+        "Dilithium5",
+        "FIPS204-ML-DSA-87"
+      ],
       "category": "post_quantum",
       "mechanism_type": "digital_signature",
       "standard_reference": "NIST FIPS 204",
@@ -283,7 +307,11 @@
     {
       "id": "slh_dsa_sha2_128s",
       "standard_name": "SLH-DSA-SHA2-128s",
-      "aliases": ["slhdsa128s", "SPHINCS+-SHA2-128s", "FIPS205-SLH-DSA"],
+      "aliases": [
+        "slhdsa128s",
+        "SPHINCS+-SHA2-128s",
+        "FIPS205-SLH-DSA"
+      ],
       "category": "post_quantum",
       "mechanism_type": "digital_signature",
       "standard_reference": "NIST FIPS 205",
@@ -328,7 +356,10 @@
     {
       "id": "slh_dsa_sha2_256s",
       "standard_name": "SLH-DSA-SHA2-256s",
-      "aliases": ["slhdsa256s", "SPHINCS+-SHA2-256s"],
+      "aliases": [
+        "slhdsa256s",
+        "SPHINCS+-SHA2-256s"
+      ],
       "category": "post_quantum",
       "mechanism_type": "digital_signature",
       "standard_reference": "NIST FIPS 205",
@@ -373,7 +404,13 @@
     {
       "id": "lms_hss",
       "standard_name": "LMS/HSS",
-      "aliases": ["LMS", "HSS", "Leighton-Micali-Signature", "RFC8554", "SP800-208-LMS"],
+      "aliases": [
+        "LMS",
+        "HSS",
+        "Leighton-Micali-Signature",
+        "RFC8554",
+        "SP800-208-LMS"
+      ],
       "category": "post_quantum",
       "mechanism_type": "stateful_hash_signature",
       "standard_reference": "NIST SP 800-208 & RFC 8554",
@@ -418,7 +455,12 @@
     {
       "id": "xmss_mt",
       "standard_name": "XMSS/XMSS^MT",
-      "aliases": ["XMSS", "XMSS-MT", "RFC8391", "SP800-208-XMSS"],
+      "aliases": [
+        "XMSS",
+        "XMSS-MT",
+        "RFC8391",
+        "SP800-208-XMSS"
+      ],
       "category": "post_quantum",
       "mechanism_type": "stateful_hash_signature",
       "standard_reference": "NIST SP 800-208 & RFC 8391",
@@ -463,7 +505,11 @@
     {
       "id": "x25519_mlkem768",
       "standard_name": "X25519MLKEM768",
-      "aliases": ["x25519mlkem768", "X25519-ML-KEM-768", "x25519_kyber768"],
+      "aliases": [
+        "x25519mlkem768",
+        "X25519-ML-KEM-768",
+        "x25519_kyber768"
+      ],
       "category": "hybrid",
       "mechanism_type": "key_exchange",
       "standard_reference": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
@@ -483,7 +529,10 @@
         "crypto_agility_guidance": "Recommended default for all enterprise TLS 1.3 endpoints transitioning to post-quantum protection."
       },
       "interoperability_considerations": {
-        "iana_codepoints": ["4588", "0x11ec"],
+        "iana_codepoints": [
+          "4588",
+          "0x11ec"
+        ],
         "client_server_support": "Standardized IANA codepoint 0x11ec. Native in OpenSSL 3.4+, Chrome 131+, Cloudflare, AWS.",
         "pki_x509_support": "Not applicable (ephemeral key exchange only).",
         "fallback_handling": "If peer does not support 0x11ec, falls back seamlessly to classical X25519 without security downgrade."
@@ -512,7 +561,10 @@
     {
       "id": "secp256r1_mlkem768",
       "standard_name": "SecP256r1MLKEM768",
-      "aliases": ["secp256r1mlkem768", "P256-ML-KEM-768"],
+      "aliases": [
+        "secp256r1mlkem768",
+        "P256-ML-KEM-768"
+      ],
       "category": "hybrid",
       "mechanism_type": "key_exchange",
       "standard_reference": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
@@ -532,7 +584,10 @@
         "crypto_agility_guidance": "Recommended for regulated enterprise environments (BFSI, healthcare) requiring FIPS 140 classical components."
       },
       "interoperability_considerations": {
-        "iana_codepoints": ["4589", "0x11ed"],
+        "iana_codepoints": [
+          "4589",
+          "0x11ed"
+        ],
         "client_server_support": "Standardized IANA codepoint 0x11ed. Supported in OpenSSL 3.4+, Windows Schannel preview, Java 24.",
         "pki_x509_support": "Not applicable (ephemeral key exchange).",
         "fallback_handling": "Falls back to P-256 if client or server does not support ML-KEM."
@@ -561,7 +616,10 @@
     {
       "id": "x25519_mlkem1024",
       "standard_name": "X25519MLKEM1024",
-      "aliases": ["x25519mlkem1024", "X25519-ML-KEM-1024"],
+      "aliases": [
+        "x25519mlkem1024",
+        "X25519-ML-KEM-1024"
+      ],
       "category": "hybrid",
       "mechanism_type": "key_exchange",
       "standard_reference": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
@@ -581,7 +639,10 @@
         "crypto_agility_guidance": "Recommended for high-value data transmission requiring Level 5 quantum resilience."
       },
       "interoperability_considerations": {
-        "iana_codepoints": ["4590", "0x11ee"],
+        "iana_codepoints": [
+          "4590",
+          "0x11ee"
+        ],
         "client_server_support": "Standardized IANA codepoint 0x11ee.",
         "pki_x509_support": "Not applicable.",
         "fallback_handling": "Seamless fallback to X25519."
@@ -610,7 +671,10 @@
     {
       "id": "secp384r1_mlkem1024",
       "standard_name": "SecP384r1MLKEM1024",
-      "aliases": ["secp384r1mlkem1024", "P384-ML-KEM-1024"],
+      "aliases": [
+        "secp384r1mlkem1024",
+        "P384-ML-KEM-1024"
+      ],
       "category": "hybrid",
       "mechanism_type": "key_exchange",
       "standard_reference": "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design",
@@ -630,7 +694,10 @@
         "crypto_agility_guidance": "Recommended for government, aerospace, and defense environments adhering to CNSA 2.0."
       },
       "interoperability_considerations": {
-        "iana_codepoints": ["4591", "0x11ef"],
+        "iana_codepoints": [
+          "4591",
+          "0x11ef"
+        ],
         "client_server_support": "Standardized IANA codepoint 0x11ef.",
         "pki_x509_support": "Not applicable.",
         "fallback_handling": "Falls back to P-384."
@@ -659,7 +726,9 @@
     {
       "id": "sntrup761x25519_sha512",
       "standard_name": "sntrup761x25519-sha512@openssh.com",
-      "aliases": ["sntrup761x25519"],
+      "aliases": [
+        "sntrup761x25519"
+      ],
       "category": "hybrid",
       "mechanism_type": "key_exchange",
       "standard_reference": "OpenSSH 9.0+ & IETF draft-tinnes-ssh-pq-kex",
@@ -708,7 +777,9 @@
     {
       "id": "mlkem768x25519_sha512",
       "standard_name": "mlkem768x25519-sha512@openssh.com",
-      "aliases": ["mlkem768x25519"],
+      "aliases": [
+        "mlkem768x25519"
+      ],
       "category": "hybrid",
       "mechanism_type": "key_exchange",
       "standard_reference": "IETF draft-kampanakis-curdle-ssh-pq-kex & NIST FIPS 203",
@@ -757,7 +828,10 @@
     {
       "id": "x25519_kyber768_draft00",
       "standard_name": "X25519Kyber768Draft00",
-      "aliases": ["x25519kyber768draft00", "X25519Kyber768"],
+      "aliases": [
+        "x25519kyber768draft00",
+        "X25519Kyber768"
+      ],
       "category": "hybrid",
       "mechanism_type": "key_exchange",
       "standard_reference": "IETF draft-kwiatkowski-tls-ecdhe-kyber-00",
@@ -777,7 +851,10 @@
         "crypto_agility_guidance": "MIGRATE IMMEDIATELY: Uses pre-standard Round 3 Kyber with unassigned codepoint 0x6399."
       },
       "interoperability_considerations": {
-        "iana_codepoints": ["25497", "0x6399"],
+        "iana_codepoints": [
+          "25497",
+          "0x6399"
+        ],
         "client_server_support": "Deprecated in modern browsers; superseded by IANA standardized 0x11ec.",
         "pki_x509_support": "Not applicable.",
         "fallback_handling": "Deprecated codepoint must be disabled in favor of 0x11ec."
@@ -806,7 +883,9 @@
     {
       "id": "x25519",
       "standard_name": "X25519",
-      "aliases": ["curve25519"],
+      "aliases": [
+        "curve25519"
+      ],
       "category": "classical",
       "mechanism_type": "key_exchange",
       "standard_reference": "RFC 7748 / RFC 8446",
@@ -826,7 +905,10 @@
         "crypto_agility_guidance": "Vulnerable to Shor's algorithm. Retain as classical anchor in hybrid schemes (X25519MLKEM768)."
       },
       "interoperability_considerations": {
-        "iana_codepoints": ["29", "0x001d"],
+        "iana_codepoints": [
+          "29",
+          "0x001d"
+        ],
         "client_server_support": "Universally supported across TLS 1.3 implementations.",
         "pki_x509_support": "RFC 8410.",
         "fallback_handling": "Standard fallback."
@@ -851,7 +933,10 @@
     {
       "id": "secp256r1",
       "standard_name": "secp256r1",
-      "aliases": ["prime256v1", "NIST P-256"],
+      "aliases": [
+        "prime256v1",
+        "NIST P-256"
+      ],
       "category": "classical",
       "mechanism_type": "key_exchange",
       "standard_reference": "FIPS 186-5 & RFC 8446",
@@ -871,7 +956,10 @@
         "crypto_agility_guidance": "Vulnerable to Shor's algorithm. Pair with ML-KEM-768 in SecP256r1MLKEM768."
       },
       "interoperability_considerations": {
-        "iana_codepoints": ["23", "0x0017"],
+        "iana_codepoints": [
+          "23",
+          "0x0017"
+        ],
         "client_server_support": "Universal worldwide support in TLS 1.2 and 1.3.",
         "pki_x509_support": "Universal.",
         "fallback_handling": "Standard."
@@ -896,7 +984,9 @@
     {
       "id": "secp384r1",
       "standard_name": "secp384r1",
-      "aliases": ["NIST P-384"],
+      "aliases": [
+        "NIST P-384"
+      ],
       "category": "classical",
       "mechanism_type": "key_exchange",
       "standard_reference": "FIPS 186-5 & RFC 8446",
@@ -916,7 +1006,10 @@
         "crypto_agility_guidance": "Pair with ML-KEM-1024 for high-security hybrid transitions."
       },
       "interoperability_considerations": {
-        "iana_codepoints": ["24", "0x0018"],
+        "iana_codepoints": [
+          "24",
+          "0x0018"
+        ],
         "client_server_support": "Universal in enterprise and government systems.",
         "pki_x509_support": "Universal.",
         "fallback_handling": "Standard."
@@ -941,7 +1034,10 @@
     {
       "id": "rsa_key_exchange",
       "standard_name": "RSA",
-      "aliases": ["RSA-KeyExchange", "static-rsa"],
+      "aliases": [
+        "RSA-KeyExchange",
+        "static-rsa"
+      ],
       "category": "classical",
       "mechanism_type": "key_exchange",
       "standard_reference": "PKCS#1 & RFC 5246",
@@ -986,7 +1082,10 @@
     {
       "id": "dhe_key_exchange",
       "standard_name": "DHE",
-      "aliases": ["Diffie-Hellman", "EDH"],
+      "aliases": [
+        "Diffie-Hellman",
+        "EDH"
+      ],
       "category": "classical",
       "mechanism_type": "key_exchange",
       "standard_reference": "RFC 7919 & RFC 5246",
@@ -1006,7 +1105,10 @@
         "crypto_agility_guidance": "Vulnerable to Shor's algorithm. Migrate directly to hybrid ML-KEM."
       },
       "interoperability_considerations": {
-        "iana_codepoints": ["256", "0x0100"],
+        "iana_codepoints": [
+          "256",
+          "0x0100"
+        ],
         "client_server_support": "Deprecated in modern deployments due to Logjam vulnerabilities.",
         "pki_x509_support": "Not applicable.",
         "fallback_handling": "Fallback to ECDHE or hybrid."
@@ -1031,7 +1133,10 @@
     {
       "id": "rsa_signature",
       "standard_name": "RSA",
-      "aliases": ["rsa-sha256", "sha256WithRSAEncryption"],
+      "aliases": [
+        "rsa-sha256",
+        "sha256WithRSAEncryption"
+      ],
       "category": "classical",
       "mechanism_type": "digital_signature",
       "standard_reference": "RFC 8017 & NIST SP 800-56B",
@@ -1076,7 +1181,10 @@
     {
       "id": "ecdsa_signature",
       "standard_name": "ECDSA",
-      "aliases": ["ecdsa-with-SHA256", "ecdsa-with-SHA384"],
+      "aliases": [
+        "ecdsa-with-SHA256",
+        "ecdsa-with-SHA384"
+      ],
       "category": "classical",
       "mechanism_type": "digital_signature",
       "standard_reference": "FIPS 186-5 & ANSI X9.62",

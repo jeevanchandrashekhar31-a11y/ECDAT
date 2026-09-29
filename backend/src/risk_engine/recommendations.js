@@ -1,20 +1,13 @@
 const { getRules } = require("./rules_loader");
+const { lookupPqcAlgorithm, listAlgorithmsByCategory } = require("../pqc_knowledge");
 
-/**
- * Derives concrete classical remediation steps based on algorithm, key size, and asset context.
- */
 function deriveClassicalRemediation(algo, keySize, assetType, finding) {
   const algoUpper = (algo || "").toUpperCase();
 
   if (algoUpper === "MD5" || algoUpper === "SHA-1") {
     return "Replace immediately with SHA-256, SHA-384, or SHA-3 for digests; migrate passwords to Argon2id (RFC 9106).";
   }
-  if (
-    algoUpper === "DES" ||
-    algoUpper === "3DES" ||
-    algoUpper === "RC2" ||
-    algoUpper === "RC4"
-  ) {
+  if (["DES", "3DES", "RC2", "RC4"].includes(algoUpper)) {
     return "Prohibit legacy cipher immediately; migrate all symmetric encryption to AES-256-GCM or ChaCha20-Poly1305.";
   }
   if (algoUpper === "TLS 1.0" || algoUpper === "TLS 1.1") {
@@ -43,162 +36,103 @@ function deriveClassicalRemediation(algo, keySize, assetType, finding) {
   return "Enforce current classical cryptographic baseline standards (NIST SP 800-57 Part 1 Rev 5).";
 }
 
-/**
- * Derives concrete PQC migration steps based on algorithm, category, and asset context.
- */
-function derivePqcMigration(algo, matchedRec, assetType) {
-  const algoUpper = (algo || "").toUpperCase();
-
+function derivePqcMigration(algoUpper, matchedRec, assetType) {
   if (algoUpper === "MD5" || algoUpper === "SHA-1") {
     return "Classical algorithm vulnerability; migration to SHA-256 or SHA-3 provides classical security and sufficient Grover search resistance.";
   }
   if (assetType === "stored_encrypted_data") {
     return "Wrap Data Encryption Keys (DEKs) with hybrid ML-KEM-768 envelopes and upgrade to AES-256 to eliminate retrospective HNDL exposure.";
   }
-  if (
-    assetType === "network_session" ||
-    algoUpper.startsWith("TLS") ||
-    algoUpper === "ECDH" ||
-    algoUpper === "X25519"
-  ) {
+  if (assetType === "network_session" || algoUpper.startsWith("TLS") || algoUpper === "ECDH" || algoUpper === "X25519") {
     return "Enable TLS 1.3 with X25519MLKEM768 (or SecP256r1MLKEM768) hybrid key exchange group; plan PQC client cert support when trust roots mature.";
   }
   if (algoUpper === "RSA" || algoUpper === "ECDSA" || algoUpper === "DSA") {
     return "Evaluate ML-KEM hybrid key establishment for encryption and ML-DSA-65 / SLH-DSA for digital signing based on ecosystem support.";
   }
-  if (algoUpper === "AES" || algoUpper === "DES" || algoUpper === "3DES" || algoUpper === "RC4" || algoUpper === "RC2") {
+  if (["AES", "DES", "3DES", "RC4", "RC2"].includes(algoUpper)) {
     return "Upgrade to AES-256 to guarantee 128 bits of post-quantum security margin against Grover exhaustive search.";
   }
   if (assetType === "library_presence") {
     return "Upgrade to library versions with native PQC support (e.g. OpenSSL 3.2+, wolfSSL with liboqs, Go 1.23+).";
   }
-  return (
-    matchedRec?.proposed_option ||
-    "Evaluate NIST FIPS 203 (ML-KEM) and FIPS 204 (ML-DSA) migration roadmaps."
-  );
+  return matchedRec?.proposed_option ? `Migrate to ${matchedRec.proposed_option} per NIST guidelines.` : "Evaluate NIST FIPS 203 (ML-KEM) and FIPS 204 (ML-DSA) migration roadmaps.";
 }
 
-/**
- * Builds a structured context-aware recommendation for a classified finding.
- *
- * @param {Object} finding
- * @returns {Object} Structured recommendation object
- */
 function getRecommendationForFinding(finding) {
-  const rules = getRules();
-  const recommendations = rules.pqc_recommendations?.recommendations || [];
   const algo = finding.canonicalAlgorithm || finding.algorithm || "Unknown";
   const algoUpper = algo.toUpperCase();
-  const assetType =
-    finding.assetType || finding.asset_type || "network_session";
+  const assetType = finding.assetType || finding.asset_type || "network_session";
   const category = finding.category || "";
   const keySize = finding.keySize || finding.key_size || null;
 
-  let matchedRec = null;
+  const currentInfo = lookupPqcAlgorithm(algo);
 
-  // 1. Classical Hash Broken (MD5, SHA-1)
-  if (algoUpper === "MD5" || algoUpper === "SHA-1") {
-    matchedRec = recommendations.find(
-      (r) => r.recommendation_id === "rec_classical_hash_broken",
-    );
-  }
-  // 2. Hardcoded Key
-  else if (assetType === "hardcoded_private_key") {
-    matchedRec = recommendations.find(
-      (r) => r.recommendation_id === "rec_hardcoded_key_remediation",
-    );
-  }
-  // 3. Stored Encrypted Data (HNDL exposure)
-  else if (assetType === "stored_encrypted_data") {
-    matchedRec = recommendations.find(
-      (r) => r.recommendation_id === "rec_stored_data_envelope",
-    );
-  }
-  // 4. SSH Protocol
-  else if (
-    finding.protocol === "SSH" ||
-    finding.evidence?.some?.((e) => String(e).toLowerCase().includes("ssh"))
-  ) {
-    matchedRec = recommendations.find(
-      (r) => r.recommendation_id === "rec_ssh_hybrid_kex",
-    );
-  }
-  // 5. TLS Protocol / Session Hybrid KEX
-  else if (
-    assetType === "network_session" ||
-    category === "protocol" ||
-    algoUpper.startsWith("TLS") ||
-    category === "key_exchange"
-  ) {
-    matchedRec = recommendations.find(
-      (r) => r.recommendation_id === "rec_kem_hybrid_tls",
-    );
-  }
-  // 6. Certificates & PKI
-  else if (assetType === "certificate") {
-    matchedRec = recommendations.find(
-      (r) => r.recommendation_id === "rec_certificate_pki",
-    );
-  }
-  // 7. Library Presence
-  else if (assetType === "library_presence") {
-    matchedRec = recommendations.find(
-      (r) => r.recommendation_id === "rec_library_inventory",
-    );
-  }
-  // 8. Digital Signatures & Firmware
-  else if (
-    category === "digital_signature" ||
-    assetType === "signing_key" ||
-    algoUpper === "DSA" ||
-    algoUpper === "ECDSA"
-  ) {
-    if (finding.isFirmware || finding.isBootloader) {
-      matchedRec = recommendations.find(
-        (r) => r.recommendation_id === "rec_sig_stateful_firmware",
+  let proposed_option = "Unknown";
+  let hybrid_transition_recommended = false;
+  let estimated_migration_complexity = "medium";
+  let standard_reference = "Derived from ECDAT ruleset";
+  let security_rationale = "";
+
+  // DYNAMIC COMPUTATION FROM CATALOG
+  if (currentInfo) {
+    if (["MD5", "SHA1", "SHA-1"].includes(algoUpper)) {
+      proposed_option = "SHA-256";
+      security_rationale = "Hash is classically broken. Upgrade to SHA-256 or SHA-3.";
+    } else if (currentInfo.category === "classical" && currentInfo.mechanism_type === "digital_signature") {
+      proposed_option = "ML-DSA-65";
+      estimated_migration_complexity = "high";
+      standard_reference = "NIST FIPS 204";
+      security_rationale = "Classical signature is vulnerable to Shor's algorithm. Migrate to lattice-based ML-DSA.";
+    } else if (currentInfo.category === "classical" && currentInfo.mechanism_type === "key_exchange") {
+      const hybridOptions = listAlgorithmsByCategory("hybrid").filter(a => 
+        a.hybrid_components && 
+        a.hybrid_components.classical_component && 
+        a.hybrid_components.classical_component.toUpperCase() === currentInfo.standard_name.toUpperCase()
       );
-    } else {
-      matchedRec = recommendations.find(
-        (r) => r.recommendation_id === "rec_sig_general_pqc",
-      );
+      if (hybridOptions.length > 0) {
+        proposed_option = hybridOptions[0].standard_name;
+        hybrid_transition_recommended = true;
+        standard_reference = hybridOptions[0].standard_reference;
+        security_rationale = hybridOptions[0].authority_recommendations?.nist || "Use hybrid key exchange to protect against HNDL while retaining classical security.";
+      } else {
+        proposed_option = "X25519MLKEM768";
+        hybrid_transition_recommended = true;
+        standard_reference = "NIST FIPS 203 & IETF draft-ietf-tls-hybrid-design";
+        security_rationale = "Use hybrid key exchange (e.g. X25519MLKEM768) to protect against Harvest-Now-Decrypt-Later.";
+      }
+    } else if (currentInfo.mechanism_type === "symmetric_cipher") {
+      proposed_option = "AES-256-GCM";
+      estimated_migration_complexity = "low";
+      security_rationale = "Symmetric ciphers require 256-bit keys to maintain 128-bit quantum security margin under Grover's algorithm.";
+      standard_reference = "NIST SP 800-38D";
     }
-  }
-  // 9. Asymmetric Key Encapsulation (General)
-  else if (
-    category === "asymmetric_encryption" ||
-    algoUpper === "RSA" ||
-    algoUpper === "DIFFIE-HELLMAN"
-  ) {
-    matchedRec = recommendations.find(
-      (r) => r.recommendation_id === "rec_kem_general_key_exchange",
-    );
-  }
-  // 10. Symmetric Quantum Margin (AES-128)
-  else if (algoUpper === "AES" && keySize === 128) {
-    matchedRec = recommendations.find(
-      (r) => r.recommendation_id === "rec_symmetric_quantum_margin",
-    );
-  }
-  // 11. Symmetric Legacy (DES, 3DES, RC4)
-  else if (
-    algoUpper === "DES" ||
-    algoUpper === "3DES" ||
-    algoUpper === "RC2" ||
-    algoUpper === "RC4"
-  ) {
-    matchedRec = recommendations.find(
-      (r) => r.recommendation_id === "rec_symmetric_quantum_margin",
-    );
+  } else {
+     // Fallbacks if not precisely found
+     if (algoUpper.includes("RSA") || algoUpper.includes("ECDSA") || algoUpper.includes("DSA")) {
+       proposed_option = "ML-DSA-65";
+       standard_reference = "NIST FIPS 204";
+     } else if (algoUpper.includes("AES") || algoUpper.includes("DES")) {
+       proposed_option = "AES-256-GCM";
+       standard_reference = "NIST FIPS 197";
+     } else {
+       proposed_option = "ML-KEM-768";
+       standard_reference = "NIST FIPS 203";
+       hybrid_transition_recommended = true;
+     }
   }
 
-  // Fallback to first matching algorithm
-  if (!matchedRec) {
-    matchedRec =
-      recommendations.find((r) => r.applies_to_algorithms?.includes(algo)) ||
-      recommendations[0];
-  }
+  const matchedRec = {
+    recommendation_id: `rec_dynamic_${algoUpper}`,
+    proposed_option,
+    hybrid_transition_recommended,
+    estimated_migration_complexity,
+    standard_reference,
+    security_rationale,
+    latency_impact_category: "minor",
+    bandwidth_storage_impact_category: "minor",
+    cost_category: "low",
+  };
 
-  // Determine Priority
   let priority = "medium";
   const sev = (finding.severity || "").toLowerCase();
   const moscaStatus = finding.mosca?.status;
@@ -215,32 +149,22 @@ function getRecommendationForFinding(finding) {
     priority = "informational";
   }
 
-  // Construct readable current state
-  const sensitivity =
-    finding.dataSensitivity || finding.data_sensitivity || "internal";
+  const sensitivity = finding.dataSensitivity || finding.data_sensitivity || "internal";
   const keyStr = keySize ? `-${keySize}` : "";
   const assetName = assetType.replace(/_/g, " ");
   const currentState = `${algo}${keyStr} ${assetName} used for a ${sensitivity} service`;
 
-  // Build assumptions list
   const assumptions = [];
-  if (matchedRec.confidence_and_assumptions) {
-    assumptions.push(matchedRec.confidence_and_assumptions);
+  if (matchedRec.security_rationale) {
+    assumptions.push(matchedRec.security_rationale);
   }
   assumptions.push(`Data sensitivity classified as '${sensitivity}'`);
   if (finding.mosca?.adjustments?.threatHorizon) {
-    assumptions.push(
-      `Modeled under '${finding.mosca.adjustments.threatHorizon}' quantum threat timeline`,
-    );
+    assumptions.push(`Modeled under '${finding.mosca.adjustments.threatHorizon}' quantum threat timeline`);
   }
 
-  const classicalRemediation = deriveClassicalRemediation(
-    algo,
-    keySize,
-    assetType,
-    finding,
-  );
-  const pqcMigration = derivePqcMigration(algo, matchedRec, assetType);
+  const classicalRemediation = deriveClassicalRemediation(algo, keySize, assetType, finding);
+  const pqcMigration = derivePqcMigration(algoUpper, matchedRec, assetType);
 
   return {
     recommendation_id: matchedRec.recommendation_id,
@@ -250,9 +174,7 @@ function getRecommendationForFinding(finding) {
     proposed_option: matchedRec.proposed_option,
     classical_remediation: classicalRemediation,
     pqc_migration: pqcMigration,
-    hybrid_transition_recommended: Boolean(
-      matchedRec.hybrid_transition_recommended,
-    ),
+    hybrid_transition_recommended: Boolean(matchedRec.hybrid_transition_recommended),
     migration_complexity: matchedRec.estimated_migration_complexity || "medium",
     latency_impact: matchedRec.latency_impact_category || "minor",
     bandwidth_impact: matchedRec.bandwidth_storage_impact_category || "minor",
