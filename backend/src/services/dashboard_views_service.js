@@ -382,8 +382,9 @@ async function getEnterpriseDashboardViews(options = {}) {
   const totalAssets = assets.length;
 
   // Weighted enterprise security posture score (0 - 100)
+  // Fix: Penalty should strictly drag down score, not be diluted by sheer volume of informational findings
   const penalty = criticalCount * 15 + highCount * 7 + mediumCount * 3 + quantumAtRiskCount * 5;
-  const postureScore = Math.max(12, Math.min(100, Math.round(100 - penalty / Math.max(1, totalFindings))));
+  const postureScore = Math.max(12, Math.min(100, Math.round(100 - penalty)));
   const asymmetricFindings = findings.filter(f => {
     const { matchedRule } = normalizeAlgorithm(f.algorithm, f.key_size);
     const category = matchedRule?.category || "";
