@@ -841,3 +841,12 @@ ECDAT is the answer to the question every CISO in India needs answered before Q-
 *Live Demo: [https://ecdat-one.vercel.app](https://ecdat-one.vercel.app)*
 
 </div>
+
+ # # #   5 .   D a t a - G r o u n d e d   P Q C   M i g r a t i o n   P l a n n e r 
+ 
+ G e n e r a t e s   a   p h a s e d   c r y p t o g r a p h i c   m i g r a t i o n   r o a d m a p   s t r i c t l y   d e r i v e d   f r o m   t h e   u n d e r l y i n g   C B O M   d a t a .   
+ -   * * N o   H a r d c o d e d   T e m p l a t e s * * :   E v e r y   e n t r y   i s   c a l c u l a t e d   b a s e d   o n   e x a c t   f i l e   o c c u r r e n c e   c o u n t s ,   c o d e   c o n t e x t s ,   a n d   q u a n t u m   v u l n e r a b i l i t y   a l g o r i t h m s . 
+ -   * * H y b r i d   T r a n s i t i o n   L o g i c * * :   A u t o m a t i c a l l y   i d e n t i f i e s   k e y - e s t a b l i s h m e n t   p r o t o c o l s   s u i t a b l e   f o r   h y b r i d   m i g r a t i o n   s t a t e s   ( e . g . ,   R S A 3 0 7 2 - M L - D S A - 6 5 )   b a s e d   o n   r e a l   d o w n s t r e a m   c o n s u m e r   c o u n t s   a n d   p u b l i c   A P I   e x p o s u r e . 
+ -   * * D y n a m i c   P h a s i n g * * :   D y n a m i c a l l y   s l o t s   t a s k s   a c r o s s   5   d i s t i n c t   i m p l e m e n t a t i o n   p h a s e s   b a s e d   o n   e m p i r i c a l   p r i o r i t y ,   l a t e n c y / b a n d w i d t h   s i z e   d e l t a s ,   a n d   M O S C A   c o n s t r a i n t s . 
+  
+ 
